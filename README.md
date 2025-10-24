@@ -1,7 +1,7 @@
 # 🕋 Smart Hajj Voice Bot
 
 ## 🎯 Overview
-**Smart Hajj Voice Bot** is an AI-powered assistant designed to help pilgrims **verify licensed Hajj and Umrah agencies** and **prevent fraud or scams** during the booking process.  
+**Smart Hajj Voice Bot** is an AI-powered assistant designed to help pilgrims **verify licensed Hajj agencies** and **prevent fraud or scams** during the booking process.  
 The system supports **multilingual voice interaction** (Arabic & English) and connects to trusted data sources to ensure accuracy.
 
 ## ⚙️ Key Features
