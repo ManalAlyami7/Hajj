@@ -273,7 +273,7 @@ The database has a table 'agencies' with columns:
 - is_authorized (Yes for authorized, No for not authorized)
 
 Convert the following user question into a valid SQL query.
-If no valid SQL can be generated from the question, return "NO_SQL".
+If no valid SQL can be generated from the question, respond in a nice and polite way.
 Return only the SQL query, no explanation, no markdown formatting.
 
 Question: {user_input}
