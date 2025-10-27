@@ -2,5 +2,4 @@ streamlit
 pandas
 sqlalchemy
 openai
-time
 difflib
