@@ -521,7 +521,7 @@ st.markdown("""
 
 if "chat_memory" not in st.session_state:
     welcome_msg = "السلام عليكم ورحمة الله وبركاته! 🌙\n\nأهلاً بك في مساعد معلومات الحج الذكي. كيف يمكنني مساعدتك اليوم؟" if language == "العربية" else "Welcome! 👋\n\nI'm your Hajj Data Assistant. Ask me anything about Hajj companies, locations, or authorization status!"
-    st.session_state.chat_memory = [{"role": "assistant", "content": welcome_msg, "timestamp": time.time()}]
+    st.session_state.chat_memory = [{"role": "assistant", "content": welcome_msg, "timestamp": datetime.now(ZoneInfo("Asia/Riyadh")).timestamp()}]
 if "last_result_df" not in st.session_state:
     st.session_state.last_result_df = None
 if "selected_question" not in st.session_state:
@@ -563,7 +563,7 @@ else:
 
 if user_input:
     # append user message to memory
-    st.session_state.chat_memory.append({"role": "user", "content": user_input, "timestamp": time.time()})
+    st.session_state.chat_memory.append({"role": "user", "content": user_input, "timestamp": datetime.now(ZoneInfo("Asia/Riyadh")).timestamp()})
     with st.chat_message("user", avatar="👤"):
         st.markdown(user_input)
         st.markdown(f"<div class='caption'>🕐 {now_str()}</div>", unsafe_allow_html=True)
@@ -599,7 +599,7 @@ Message: {user_input}
                 is_arabic = any("\u0600" <= ch <= "\u06FF" for ch in user_input)
                 greeting_text = "السلام عليكم ورحمة الله وبركاته! 🌙\n\nكيف يمكنني مساعدتك في البحث عن معلومات شركات الحج؟" if is_arabic else "Hello! 👋\n\nHow can I help you find information about Hajj companies today?"
                 st.markdown(greeting_text)
-                st.session_state.chat_memory.append({"role": "assistant", "content": greeting_text, "timestamp": time.time()})
+                st.session_state.chat_memory.append({"role": "assistant", "content": greeting_text, "timestamp": datetime.now(ZoneInfo("Asia/Riyadh")).timestamp()})
                 #st.experimental_rerun()
 
             # GENERAL_HAJJ (e.g., rituals)
@@ -616,11 +616,11 @@ Message: {user_input}
                     )
                     answer_text = hajj_resp.choices[0].message.content.strip()
                     st.markdown(answer_text)
-                    st.session_state.chat_memory.append({"role": "assistant", "content": answer_text, "timestamp": time.time()})
+                    st.session_state.chat_memory.append({"role": "assistant", "content": answer_text, "timestamp": datetime.now(ZoneInfo("Asia/Riyadh")).timestamp()})
                 except Exception as e:
                     err = "عذراً، واجهت مشكلة في الإجابة." if language == "العربية" else "Sorry, I encountered an error."
                     st.error(f"{err} {e}")
-                    st.session_state.chat_memory.append({"role": "assistant", "content": f"{err} {e}", "timestamp": time.time()})
+                    st.session_state.chat_memory.append({"role": "assistant", "content": f"{err} {e}", "timestamp": datetime.now(ZoneInfo("Asia/Riyadh")).timestamp()})
                 #st.experimental_rerun()
 
             # DATABASE queries
@@ -710,7 +710,7 @@ Return ONLY the SQL SELECT query or NO_SQL.
                                     if language == "العربية" else
                                     "Sorry, I couldn't convert that to a safe SQL query. Try rephrasing or ask for general results.")
                         st.warning(fallback)
-                        st.session_state.chat_memory.append({"role": "assistant", "content": fallback, "timestamp": time.time()})
+                        st.session_state.chat_memory.append({"role": "assistant", "content": fallback, "timestamp": datetime.now(ZoneInfo("Asia/Riyadh")).timestamp()})
 
                 # Present results (if any)
                 if result_df is not None and not result_df.empty:
@@ -750,7 +750,7 @@ Give a concise summary with key insights (1-3 short sentences)."""
 
                     st.dataframe(result_df, use_container_width=True, height=400)
                     csv = result_df.to_csv(index=False).encode('utf-8')
-                    st.download_button(label="📥 Download Results (CSV)", data=csv, file_name=f"hajj_results_{int(time.time())}.csv", mime="text/csv")
+                    st.download_button(label="📥 Download Results (CSV)", data=csv, file_name=f"hajj_results_{int(datetime.now(ZoneInfo("Asia/Riyadh")).timestamp())}.csv", mime="text/csv")
 
                     with st.expander("🔍 View SQL Query"):
                         st.code(sql_query, language="sql")
@@ -761,20 +761,20 @@ Give a concise summary with key insights (1-3 short sentences)."""
                         "role": "assistant",
                         "content": answer_text,
                         "dataframe": result_df,
-                        "timestamp": time.time()
+                        "timestamp": datetime.now(ZoneInfo("Asia/Riyadh")).timestamp()
                     })
                     st.session_state.last_result_df = result_df
 
                 elif sql_error:
                     status_msg = "❌ Query failed"
                     st.error(f"{status_msg}: {sql_error}")
-                    st.session_state.chat_memory.append({"role": "assistant", "content": f"Query failed: {sql_error}", "timestamp": time.time()})
+                    st.session_state.chat_memory.append({"role": "assistant", "content": f"Query failed: {sql_error}", "timestamp": datetime.now(ZoneInfo("Asia/Riyadh")).timestamp()})
                 else:
                     # No results or no SQL
                     nores = ("لم يتم العثور على نتائج. حاول إعادة صياغة السؤال أو توسيع نطاق البحث."
                              if language == "العربية" else
                              "No results found. Try rephrasing the question or broadening the search.")
                     st.warning(nores)
-                    st.session_state.chat_memory.append({"role": "assistant", "content": nores, "timestamp": time.time()})
+                    st.session_state.chat_memory.append({"role": "assistant", "content": nores, "timestamp": datetime.now(ZoneInfo("Asia/Riyadh")).timestamp()})
 
 # EOF
