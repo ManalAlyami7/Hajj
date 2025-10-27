@@ -16,6 +16,8 @@ import time
 import re
 import html
 from typing import Optional, Dict, Any, List
+from zoneinfo import ZoneInfo
+
 
 # -----------------------------
 # Page & CSS
@@ -323,7 +325,7 @@ st.markdown("""
 # Utilities
 # -----------------------------
 def now_str():
-    return datetime.fromtimestamp(time.time()).strftime("%I:%M %p")
+    return datetime.now(ZoneInfo("Asia/Riyadh")).strftime("%I:%M %p")
 
 def escape_sql(value: str) -> str:
     """Escape single quotes for safe interpolation if ever needed (we use parameterized queries)."""
