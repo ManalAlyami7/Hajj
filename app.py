@@ -511,9 +511,8 @@ with st.sidebar:
 # Header & Session init
 # -----------------------------
 st.markdown("""
-<div class="header-container">
-     <h1> 🕋</h1>       
-    <h1 class="main-title"> Hajj Data Intelligence</h1>
+<div class="header-container">   
+    <h1> 🕋</h1><h1 class="main-title"> Hajj Data Intelligence</h1>
     <p class="subtitle">Ask anything about Hajj companies worldwide • AI-powered • Real-time data</p>
 </div>
 """, unsafe_allow_html=True)
