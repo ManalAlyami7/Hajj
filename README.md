@@ -1,27 +1,59 @@
-# 🕋 Smart Hajj Voice Bot
+# 🕋 Hajj Data Chatbot
 
-## 🎯 Overview
-**Smart Hajj Voice Bot** is an AI-powered assistant designed to help pilgrims **verify licensed Hajj agencies** and **prevent fraud or scams** during the booking process.  
-The system supports **multilingual voice interaction** (Arabic & English) and connects to trusted data sources to ensure accuracy.
+An enhanced multilingual chatbot for exploring Hajj company data with natural language queries.
 
-## ⚙️ Key Features
-- 🎙️ **Voice Interaction** — Speech-to-text and text-to-speech for natural dialogue.  
-- 🌐 **Automatic Language Detection** — Supports both Arabic and English seamlessly.  
-- ✅ **Agency Verification** — Matches input against official Ministry of Hajj & Umrah data.  
-- ⚠️ **Fraud Detection** — Flags unlisted or potentially fake agencies.  
-- 💬 **Streamlit Interface** — Simple web-based app for demo and testing.
+## Features
 
-## 🧠 Tech Stack
-- Python · Streamlit · SQLite/MySQL  
-- OpenAI Whisper (Speech-to-Text)  
-- Google TTS or ElevenLabs (Text-to-Speech)  
-- FuzzyWuzzy / RapidFuzz for name matching  
-- Ministry of Hajj & Umrah Open Data (API / Scraped)  
+- 🌍 **Multilingual Support**: Seamlessly handles Arabic and English queries
+- 🎨 **Modern UI**: Beautiful, responsive design with custom styling
+- 📊 **Data Visualization**: Interactive tables and statistics
+- 💾 **Export Functionality**: Download query results as CSV
+- 🔍 **Transparent Queries**: View the generated SQL for each query
+- 💡 **Example Questions**: Quick-start templates in both languages
+- 📈 **Database Statistics**: Real-time insights about your data
 
-## 🗂️ System Workflow
-1. User speaks or types an agency name.  
-2. The system detects the language automatically.  
-3. Voice is transcribed to text → verified in database.  
-4. The model responds with voice and text results.  
-5. Unverified agencies are flagged as potentially fraudulent.
+## Setup
 
+1. Install dependencies:
+\`\`\`bash
+pip install -r requirements.txt
+\`\`\`
+
+2. Create a `.streamlit/secrets.toml` file with your OpenAI API key:
+\`\`\`toml
+key = "your-openai-api-key"
+\`\`\`
+
+3. Ensure your `hajj_companies.db` SQLite database is in the same directory
+
+4. Run the app:
+\`\`\`bash
+streamlit run app.py
+\`\`\`
+
+## Database Schema
+
+The app expects a table named `agencies` with the following columns:
+- `hajj_company_ar`: Arabic company name
+- `hajj_company_en`: English company name
+- `city`: City location
+- `country`: Country location
+- `email`: Contact email
+- `is_authorized`: Authorization status (1 or 0)
+
+## Usage
+
+Simply type your question in natural language (Arabic or English) and the chatbot will:
+1. Convert your question to SQL
+2. Query the database
+3. Present results in a natural, conversational format
+4. Display data in an interactive table
+5. Allow you to download results
+
+## Example Questions
+
+- "Show me all authorized Hajj companies"
+- "List companies in Saudi Arabia"
+- "How many agencies are in each country?"
+- "أظهر لي الشركات المعتمدة"
+- "ما هي الشركات في مكة؟"
