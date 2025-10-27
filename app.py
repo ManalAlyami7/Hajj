@@ -3,6 +3,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 from openai import OpenAI
 import time
+from difflib import get_close_matches
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -94,21 +95,13 @@ def get_database_engine():
 
 engine = get_database_engine()
 
-# --- OpenAI client ---
-@st.cache_resource
-def get_openai_client():
-    api_key = st.secrets["key"]
-    return OpenAI(api_key=api_key)
-
-client = get_openai_client()
-
 # --- Get database statistics ---
 @st.cache_data(ttl=300)
 def get_db_stats():
     try:
         with engine.connect() as conn:
             total_agencies = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies"), conn).iloc[0]['count']
-            authorized = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies WHERE is_authorized = 'Yes'"), conn).iloc[0]['count']
+            authorized = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies WHERE is_authorized = 1"), conn).iloc[0]['count']
             countries = pd.read_sql(text("SELECT COUNT(DISTINCT country) as count FROM agencies"), conn).iloc[0]['count']
             cities = pd.read_sql(text("SELECT COUNT(DISTINCT city) as count FROM agencies"), conn).iloc[0]['count']
             return {
@@ -119,6 +112,75 @@ def get_db_stats():
             }
     except:
         return None
+
+# --- Get all unique values from database for fuzzy matching ---
+@st.cache_data(ttl=300)
+def get_database_values():
+    """Get all unique values from database for fuzzy matching"""
+    try:
+        with engine.connect() as conn:
+            companies_ar = pd.read_sql(text("SELECT DISTINCT hajj_company_ar FROM agencies WHERE hajj_company_ar IS NOT NULL"), conn)['hajj_company_ar'].tolist()
+            companies_en = pd.read_sql(text("SELECT DISTINCT hajj_company_en FROM agencies WHERE hajj_company_en IS NOT NULL"), conn)['hajj_company_en'].tolist()
+            cities = pd.read_sql(text("SELECT DISTINCT city FROM agencies WHERE city IS NOT NULL"), conn)['city'].tolist()
+            countries = pd.read_sql(text("SELECT DISTINCT country FROM agencies WHERE country IS NOT NULL"), conn)['country'].tolist()
+            
+            return {
+                'companies_ar': companies_ar,
+                'companies_en': companies_en,
+                'cities': cities,
+                'countries': countries
+            }
+    except:
+        return None
+
+# --- Fuzzy matching function ---
+def find_fuzzy_matches(user_query, db_values, threshold=0.6):
+    """
+    Find fuzzy matches for user query in database values
+    Returns dict with field names and their closest matches
+    """
+    matches = {}
+    words = user_query.lower().split()
+    
+    for word in words:
+        if len(word) < 3:  # Skip very short words
+            continue
+            
+        # Check each field
+        for field_name, values in db_values.items():
+            if not values:
+                continue
+                
+            # Find close matches
+            close_matches = get_close_matches(
+                word, 
+                [str(v).lower() for v in values], 
+                n=3, 
+                cutoff=threshold
+            )
+            
+            if close_matches:
+                # Get original case values
+                original_matches = []
+                for match in close_matches:
+                    for original in values:
+                        if str(original).lower() == match:
+                            original_matches.append(original)
+                            break
+                
+                if field_name not in matches:
+                    matches[field_name] = []
+                matches[field_name].extend(original_matches)
+    
+    return matches
+
+# --- OpenAI client ---
+@st.cache_resource
+def get_openai_client():
+    api_key = st.secrets["key"]
+    return OpenAI(api_key=api_key)
+
+client = get_openai_client()
 
 # --- Sidebar ---
 with st.sidebar:
@@ -260,9 +322,115 @@ if user_input:
 
     # Show loading spinner
     with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            # --- Step 1: Generate SQL query ---
-            prompt_sql = f"""
+        with st.spinner("🤔 Thinking..."):
+            # --- Step 0: Detect intent (greeting, database query, or general Hajj question) ---
+            intent_prompt = f"""
+Analyze the user's message and classify it into one of these categories:
+1. GREETING - if it's a greeting like hi, hello, how are you, etc.
+2. DATABASE - if it's asking for specific data about Hajj companies (names, locations, emails, authorization status)
+3. GENERAL_HAJJ - if it's asking general questions about Hajj (rituals, requirements, history, etc.)
+
+User message: {user_input}
+
+Respond with only one word: GREETING, DATABASE, or GENERAL_HAJJ
+"""
+
+            try:
+                intent_response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are an intent classification assistant."},
+                        {"role": "user", "content": intent_prompt}
+                    ]
+                )
+                intent = intent_response.choices[0].message.content.strip().upper()
+            except Exception as e:
+                intent = "DATABASE"  # Default to database query if intent detection fails
+            
+            # --- Handle GREETING intent ---
+            if intent == "GREETING":
+                greeting_prompt = f"""
+You are a friendly Hajj information assistant. The user has greeted you.
+Respond warmly in the same language they used (Arabic or English).
+Keep it brief and friendly, and let them know you can help with:
+- Information about Hajj companies and agencies
+- General questions about Hajj rituals and requirements
+
+User message: {user_input}
+"""
+                try:
+                    greeting_response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": "You are a friendly multilingual Hajj assistant."},
+                            {"role": "user", "content": greeting_prompt}
+                        ]
+                    )
+                    answer_text = greeting_response.choices[0].message.content.strip()
+                except Exception as e:
+                    # Fallback greeting
+                    if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
+                        answer_text = "السلام عليكم ورحمة الله وبركاته! كيف يمكنني مساعدتك اليوم؟ يمكنني مساعدتك في معلومات عن شركات الحج أو الإجابة على أسئلة عامة عن الحج."
+                    else:
+                        answer_text = "Hello! How can I help you today? I can assist you with information about Hajj companies or answer general questions about Hajj."
+                
+                st.markdown(answer_text)
+                st.session_state.chat_memory.append({
+                    "role": "assistant",
+                    "content": answer_text
+                })
+            
+            # --- Handle GENERAL_HAJJ intent ---
+            elif intent == "GENERAL_HAJJ":
+                hajj_prompt = f"""
+You are a knowledgeable Hajj information assistant. Answer the user's question about Hajj.
+- Detect the user's language (Arabic or English) and respond in the same language
+- Provide accurate, helpful information about Hajj rituals, requirements, history, etc.
+- Be concise but informative
+- If you're not sure, be honest about it
+
+User question: {user_input}
+
+Previous conversation context:
+{st.session_state.chat_memory[-5:] if len(st.session_state.chat_memory) > 1 else []}
+"""
+                try:
+                    hajj_response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": "You are a knowledgeable multilingual Hajj information assistant."},
+                            {"role": "user", "content": hajj_prompt}
+                        ]
+                    )
+                    answer_text = hajj_response.choices[0].message.content.strip()
+                except Exception as e:
+                    if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
+                        answer_text = "عذراً، واجهت مشكلة في الإجابة على سؤالك. يرجى المحاولة مرة أخرى."
+                    else:
+                        answer_text = "I'm sorry, I encountered an issue answering your question. Please try again."
+                
+                st.markdown(answer_text)
+                st.session_state.chat_memory.append({
+                    "role": "assistant",
+                    "content": answer_text
+                })
+            
+            # --- Handle DATABASE intent ---
+            else:
+                db_values = get_database_values()
+                fuzzy_matches = None
+                
+                if db_values:
+                    fuzzy_matches = find_fuzzy_matches(user_input, db_values)
+                
+                fuzzy_context = ""
+                if fuzzy_matches:
+                    fuzzy_context = "\n\nPossible matches found in database (use these for better results):\n"
+                    for field, matches in fuzzy_matches.items():
+                        fuzzy_context += f"- {field}: {', '.join(matches[:3])}\n"
+                
+                # --- Step 1: Generate SQL query ---
+                prompt_sql = f"""
 You are a Text-to-SQL assistant for a database of Hajj agencies.
 The database has a table 'agencies' with columns:
 - hajj_company_ar (Arabic name)
@@ -270,51 +438,54 @@ The database has a table 'agencies' with columns:
 - city
 - country
 - email
-- is_authorized (Yes for authorized, No for not authorized)
+- is_authorized (1 for authorized, 0 for not authorized)
 
 Convert the following user question into a valid SQL query.
-If no valid SQL can be generated from the question, respond in a nice and polite way.
+Use LIKE with wildcards (%) for flexible text matching to handle typos.
+For example: WHERE city LIKE '%Riyadh%' instead of WHERE city = 'Riyadh'
+{fuzzy_context}
+If no valid SQL can be generated from the question, return "NO_SQL".
 Return only the SQL query, no explanation, no markdown formatting.
 
 Question: {user_input}
 """
 
-            try:
-                sql_response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": "You are a Text-to-SQL assistant for Hajj agencies."},
-                        {"role": "user", "content": prompt_sql}
-                    ]
-                )
-                sql_query = sql_response.choices[0].message.content.strip().strip("`").replace("sql", "").strip()
-                
-                # Check if it's a valid SQL query
-                if sql_query == "NO_SQL" or not sql_query.upper().startswith("SELECT"):
-                    sql_query = None
-                    
-            except Exception as e:
-                sql_query = None
-                st.error(f"⚠️ Error generating SQL: {e}")
-
-            # --- Step 2: Execute SQL safely ---
-            result_df = None
-            sql_error = None
-            
-            if sql_query:
                 try:
-                    with engine.connect() as conn:
-                        result_df = pd.read_sql(text(sql_query), conn)
+                    sql_response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": "You are a Text-to-SQL assistant for Hajj agencies."},
+                            {"role": "user", "content": prompt_sql}
+                        ]
+                    )
+                    sql_query = sql_response.choices[0].message.content.strip().strip("`").replace("sql", "").strip()
+                    
+                    # Check if it's a valid SQL query
+                    if sql_query == "NO_SQL" or not sql_query.upper().startswith("SELECT"):
+                        sql_query = None
+                        
                 except Exception as e:
-                    sql_error = str(e)
-                    result_df = None
+                    sql_query = None
+                    st.error(f"⚠️ Error generating SQL: {e}")
 
-            # --- Step 3: Generate natural language response ---
-            if result_df is not None and not result_df.empty:
-                summary_data = result_df.head(20).to_dict(orient="records")
-                row_count = len(result_df)
+                # --- Step 2: Execute SQL safely ---
+                result_df = None
+                sql_error = None
+                
+                if sql_query:
+                    try:
+                        with engine.connect() as conn:
+                            result_df = pd.read_sql(text(sql_query), conn)
+                    except Exception as e:
+                        sql_error = str(e)
+                        result_df = None
 
-                rephrase_prompt = f"""
+                # --- Step 3: Generate natural language response ---
+                if result_df is not None and not result_df.empty:
+                    summary_data = result_df.head(20).to_dict(orient="records")
+                    row_count = len(result_df)
+
+                    rephrase_prompt = f"""
 You are a multilingual assistant that explains database results clearly and naturally.
 - Detect the user's language automatically (Arabic or English).
 - Reply in the same language.
@@ -328,71 +499,97 @@ Database results (showing first 20 of {row_count} total):
 {summary_data}
 """
 
-                try:
-                    rephrase_response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=[
-                            {"role": "system", "content": "You are a multilingual summarization assistant."},
-                            {"role": "user", "content": rephrase_prompt}
-                        ]
+                    try:
+                        rephrase_response = client.chat.completions.create(
+                            model="gpt-4o-mini",
+                            messages=[
+                                {"role": "system", "content": "You are a multilingual summarization assistant."},
+                                {"role": "user", "content": rephrase_prompt}
+                            ]
+                        )
+                        answer_text = rephrase_response.choices[0].message.content.strip()
+                    except Exception as e:
+                        answer_text = "I found some results for you. Please see the table below."
+                    
+                    if fuzzy_matches:
+                        correction_note = ""
+                        if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
+                            correction_note = "💡 تم تصحيح بعض المصطلحات تلقائياً للحصول على نتائج أفضل."
+                        else:
+                            correction_note = "💡 Some terms were automatically corrected for better results."
+                        st.info(correction_note)
+                    
+                    # Display answer
+                    st.markdown(answer_text)
+                    
+                    # Display results table
+                    st.dataframe(result_df, use_container_width=True)
+                    
+                    # Add download button
+                    csv = result_df.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="📥 Download Results (CSV)",
+                        data=csv,
+                        file_name="hajj_companies_results.csv",
+                        mime="text/csv",
                     )
-                    answer_text = rephrase_response.choices[0].message.content.strip()
-                except Exception as e:
-                    answer_text = "I found some results for you. Please see the table below."
-                
-                # Display answer
-                st.markdown(answer_text)
-                
-                # Display results table
-                st.dataframe(result_df, use_container_width=True)
-                
-                # Add download button
-                csv = result_df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="📥 Download Results (CSV)",
-                    data=csv,
-                    file_name="hajj_companies_results.csv",
-                    mime="text/csv",
-                )
-                
-                # Show SQL query in expander for transparency
-                with st.expander("🔍 View SQL Query"):
-                    st.code(sql_query, language="sql")
-                
-                # Save to memory with dataframe
-                st.session_state.chat_memory.append({
-                    "role": "assistant",
-                    "content": answer_text,
-                    "dataframe": result_df,
-                    "timestamp": time.time()
-                })
-                
-            elif sql_error:
-                # SQL execution error
-                error_msg = "⚠️ I encountered an error while searching the database. Please try rephrasing your question."
-                st.error(error_msg)
-                
-                with st.expander("🔍 Technical Details"):
-                    st.code(f"SQL Query:\n{sql_query}\n\nError:\n{sql_error}")
-                
-                st.session_state.chat_memory.append({
-                    "role": "assistant",
-                    "content": error_msg
-                })
-                
-            else:
-                # No results or couldn't generate SQL
-                if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
-                    answer_text = "عذراً، لم أتمكن من العثور على نتائج مطابقة. يمكنك تجربة صياغة السؤال بطريقة مختلفة أو اختيار أحد الأمثلة من القائمة الجانبية."
+                    
+                    # Show SQL query in expander for transparency
+                    with st.expander("🔍 View SQL Query"):
+                        st.code(sql_query, language="sql")
+                    
+                    # Save to memory with dataframe
+                    st.session_state.chat_memory.append({
+                        "role": "assistant",
+                        "content": answer_text,
+                        "dataframe": result_df,
+                        "timestamp": time.time()
+                    })
+                    
+                elif sql_error:
+                    # SQL execution error
+                    error_msg = "⚠️ I encountered an error while searching the database. Please try rephrasing your question."
+                    st.error(error_msg)
+                    
+                    with st.expander("🔍 Technical Details"):
+                        st.code(f"SQL Query:\n{sql_query}\n\nError:\n{sql_error}")
+                    
+                    st.session_state.chat_memory.append({
+                        "role": "assistant",
+                        "content": error_msg
+                    })
+                    
                 else:
-                    answer_text = "I couldn't find any matching results. Try rephrasing your question or select an example from the sidebar."
-                
-                st.info(answer_text)
-                
-                st.session_state.chat_memory.append({
-                    "role": "assistant",
-                    "content": answer_text
-                })
+                    no_results_msg = ""
+                    
+                    if fuzzy_matches:
+                        # Show suggestions based on fuzzy matches
+                        if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
+                            no_results_msg = "عذراً، لم أتمكن من العثور على نتائج مطابقة تماماً. هل تقصد أحد هذه؟\n\n"
+                        else:
+                            no_results_msg = "I couldn't find exact matches. Did you mean one of these?\n\n"
+                        
+                        for field, matches in fuzzy_matches.items():
+                            field_label = field.replace('_', ' ').title()
+                            no_results_msg += f"**{field_label}:** {', '.join(matches[:3])}\n\n"
+                        
+                        if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
+                            no_results_msg += "يمكنك إعادة صياغة سؤالك باستخدام أحد هذه الاقتراحات."
+                        else:
+                            no_results_msg += "Try rephrasing your question using one of these suggestions."
+                    else:
+                        # No fuzzy matches found
+                        if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
+                            no_results_msg = "عذراً، لم أتمكن من العثور على نتائج مطابقة. يمكنك تجربة صياغة السؤال بطريقة مختلفة أو اختيار أحد الأمثلة من القائمة الجانبية."
+                        else:
+                            no_results_msg = "I couldn't find any matching results. Try rephrasing your question or select an example from the sidebar."
+                    
+                    st.info(no_results_msg)
+                    
+                    st.session_state.chat_memory.append({
+                        "role": "assistant",
+                        "content": no_results_msg
+                    })
 
     # Rerun to update the chat
     st.rerun()
