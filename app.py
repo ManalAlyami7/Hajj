@@ -494,7 +494,6 @@ with st.sidebar:
         st.session_state.chat_memory = []
         st.session_state.last_result_df = None
         st.session_state.selected_question = None
-        st.experimental_rerun()
 
     st.markdown("---")
     st.markdown("<h3>ℹ️ Features</h3>", unsafe_allow_html=True)
