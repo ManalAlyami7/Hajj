@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
 from openai import OpenAI
+from datetime import datetime
 import time
 
 # --- Page Configuration ---
@@ -15,20 +16,15 @@ st.set_page_config(
 # --- Custom CSS for better UI ---
 st.markdown("""
 <style>
-    /* Main container styling */
     .main {
         background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     }
-    
-    /* Header styling */
     .stTitle {
         color: #1e3a5f;
         font-weight: 700;
         text-align: center;
         padding: 1rem 0;
     }
-    
-    /* Chat message styling */
     .stChatMessage {
         background-color: white;
         border-radius: 15px;
@@ -36,13 +32,9 @@ st.markdown("""
         margin: 0.5rem 0;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    
-    /* Sidebar styling */
     .css-1d391kg {
         background: linear-gradient(180deg, #1e3a5f 0%, #2c5f8d 100%);
     }
-    
-    /* Example questions styling */
     .example-question {
         background: white;
         padding: 0.75rem 1rem;
@@ -52,13 +44,10 @@ st.markdown("""
         cursor: pointer;
         transition: all 0.3s ease;
     }
-    
     .example-question:hover {
         transform: translateX(5px);
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
-    
-    /* Stats card styling */
     .stat-card {
         background: white;
         padding: 1rem;
@@ -67,22 +56,14 @@ st.markdown("""
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         margin: 0.5rem 0;
     }
-    
     .stat-number {
         font-size: 2rem;
         font-weight: bold;
         color: #2c5f8d;
     }
-    
     .stat-label {
         color: #666;
         font-size: 0.9rem;
-    }
-    
-    /* Table styling */
-    .dataframe {
-        border-radius: 10px;
-        overflow: hidden;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -97,7 +78,10 @@ engine = get_database_engine()
 # --- OpenAI client ---
 @st.cache_resource
 def get_openai_client():
-    api_key = st.secrets["key"]
+    api_key = st.secrets.get("key", None)
+    if not api_key:
+        st.warning("⚠️ OpenAI API key missing in Streamlit secrets.")
+        st.stop()
     return OpenAI(api_key=api_key)
 
 client = get_openai_client()
@@ -111,12 +95,7 @@ def get_db_stats():
             authorized = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies WHERE is_authorized = 'Yes'"), conn).iloc[0]['count']
             countries = pd.read_sql(text("SELECT COUNT(DISTINCT country) as count FROM agencies"), conn).iloc[0]['count']
             cities = pd.read_sql(text("SELECT COUNT(DISTINCT city) as count FROM agencies"), conn).iloc[0]['count']
-            return {
-                'total': total_agencies,
-                'authorized': authorized,
-                'countries': countries,
-                'cities': cities
-            }
+            return {'total': total_agencies, 'authorized': authorized, 'countries': countries, 'cities': cities}
     except:
         return None
 
@@ -124,48 +103,34 @@ def get_db_stats():
 with st.sidebar:
     st.markdown("### 🕋 Hajj Data Assistant")
     st.markdown("---")
-    
+
+    # Language Toggle
+    language = st.radio("🌐 Language", ["English", "العربية"], horizontal=True)
+
     # Database Statistics
     st.markdown("### 📊 Database Statistics")
     stats = get_db_stats()
-    
     if stats:
         col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"""
+        for key, label in zip(
+            ["total", "countries", "authorized", "cities"],
+            ["Total Agencies", "Countries", "Authorized", "Cities"]
+        ):
+            html = f"""
             <div class="stat-card">
-                <div class="stat-number">{stats['total']}</div>
-                <div class="stat-label">Total Agencies</div>
+                <div class="stat-number">{stats[key]}</div>
+                <div class="stat-label">{label}</div>
             </div>
-            """, unsafe_allow_html=True)
-            
-            st.markdown(f"""
-            <div class="stat-card">
-                <div class="stat-number">{stats['countries']}</div>
-                <div class="stat-label">Countries</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown(f"""
-            <div class="stat-card">
-                <div class="stat-number">{stats['authorized']}</div>
-                <div class="stat-label">Authorized</div>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.markdown(f"""
-            <div class="stat-card">
-                <div class="stat-number">{stats['cities']}</div>
-                <div class="stat-label">Cities</div>
-            </div>
-            """, unsafe_allow_html=True)
-    
+            """
+            if key in ["total", "countries"]:
+                col1.markdown(html, unsafe_allow_html=True)
+            else:
+                col2.markdown(html, unsafe_allow_html=True)
+
     st.markdown("---")
-    
+
     # Example Questions
     st.markdown("### 💡 Example Questions")
-    
     example_questions = [
         "Show me all authorized Hajj companies",
         "List companies in Saudi Arabia",
@@ -174,24 +139,22 @@ with st.sidebar:
         "أظهر لي الشركات المعتمدة",
         "ما هي الشركات في مكة؟"
     ]
-    
     for i, question in enumerate(example_questions):
         if st.button(question, key=f"example_{i}", use_container_width=True):
             st.session_state.selected_question = question
-    
+
     st.markdown("---")
-    
-    # Clear chat button
+
+    # Clear Chat
     if st.button("🧹 Clear Chat History", use_container_width=True):
         st.session_state.chat_memory = []
+        st.session_state.last_result_df = None
         st.rerun()
-    
+
     st.markdown("---")
     st.markdown("### ℹ️ About")
     st.markdown("""
     This chatbot helps you explore Hajj company data using natural language.
-    
-    **Features:**
     - 🌍 Multilingual (Arabic/English)
     - 🔍 Natural language queries
     - 📊 Data visualization
@@ -200,77 +163,70 @@ with st.sidebar:
 
 # --- Main Content ---
 st.title("🕋 Hajj Data Chatbot")
-st.markdown("""
+
+intro_text_en = """
 <div style='text-align: center; padding: 1rem; background: white; border-radius: 10px; margin-bottom: 2rem;'>
-    <p style='color: #666; margin: 0;'>
-        Ask questions about Hajj companies, their cities, countries, emails, or authorization status in Arabic or English.
-    </p>
+    <p style='color: #666; margin: 0;'>Ask questions about Hajj companies, their cities, countries, emails, or authorization status.</p>
 </div>
-""", unsafe_allow_html=True)
+"""
+intro_text_ar = """
+<div style='text-align: center; padding: 1rem; background: white; border-radius: 10px; margin-bottom: 2rem;'>
+    <p style='color: #666; margin: 0;'>اسأل عن شركات الحج، المدن، الدول، البريد الإلكتروني أو حالة الاعتماد.</p>
+</div>
+"""
+st.markdown(intro_text_ar if language == "العربية" else intro_text_en, unsafe_allow_html=True)
 
-# --- Initialize session state ---
+# --- Session State ---
 if "chat_memory" not in st.session_state:
-    st.session_state.chat_memory = []
-    # Add welcome message
-    st.session_state.chat_memory.append({
+    st.session_state.chat_memory = [{
         "role": "assistant",
-        "content": "السلام عليكم! Welcome to the Hajj Data Chatbot. I can help you find information about Hajj companies. Try asking me a question or click on an example from the sidebar!"
-    })
-
+        "content": "السلام عليكم! Welcome to the Hajj Data Chatbot. Ask me about Hajj companies or select an example from the sidebar.",
+        "timestamp": time.time()
+    }]
 if "last_result_df" not in st.session_state:
     st.session_state.last_result_df = None
-
 if "selected_question" not in st.session_state:
     st.session_state.selected_question = None
 
-# --- Display chat history ---
+# --- Display Chat ---
 for msg in st.session_state.chat_memory:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
-        
-        # Show table if it exists in the message
+        if msg.get("timestamp"):
+            st.caption(datetime.fromtimestamp(msg["timestamp"]).strftime("🕓 %I:%M %p"))
         if "dataframe" in msg:
             st.dataframe(msg["dataframe"], use_container_width=True)
-            
-            # Add download button
             csv = msg["dataframe"].to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="📥 Download Results (CSV)",
                 data=csv,
                 file_name="hajj_companies_results.csv",
                 mime="text/csv",
-                key=f"download_{msg.get('timestamp', 0)}"
+                key=f"download_{msg['timestamp']}"
             )
 
-# --- Handle selected example question ---
+# --- Handle Input ---
 if st.session_state.selected_question:
     user_input = st.session_state.selected_question
     st.session_state.selected_question = None
 else:
-    user_input = st.chat_input("Ask a question about Hajj companies...")
+    user_input = st.chat_input("Ask a question about Hajj companies..." if language == "English" else "اسأل عن شركات الحج...")
 
-# --- Process user input ---
 if user_input:
-    # Add user message to memory
-    st.session_state.chat_memory.append({"role": "user", "content": user_input})
-
-    # Display user message
+    st.session_state.chat_memory.append({"role": "user", "content": user_input, "timestamp": time.time()})
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Show loading spinner
     with st.chat_message("assistant"):
         with st.spinner("🤔 Thinking..."):
-            # --- Step 0: Detect intent (greeting, database query, or general Hajj question) ---
+            # --- Intent Detection ---
             intent_prompt = f"""
-Analyze the user's message and classify it into one of these categories:
-1. GREETING - if it's a greeting like hi, hello, how are you, etc.
-2. DATABASE - if it's asking for specific data about Hajj companies (names, locations, emails, authorization status)
-3. GENERAL_HAJJ - if it's asking general questions about Hajj (rituals, requirements, history, etc.)
-
-User message: {user_input}
-
-Respond with only one word: GREETING, DATABASE, or GENERAL_HAJJ
+You are an intent classifier for a multilingual chatbot.
+Examples:
+- "مرحبا" → GREETING
+- "ما الشركات المصرحة؟" → DATABASE
+- "ما أركان الحج؟" → GENERAL_HAJJ
+Classify this message: {user_input}
 """
 
             try:
@@ -282,211 +238,104 @@ Respond with only one word: GREETING, DATABASE, or GENERAL_HAJJ
                     ]
                 )
                 intent = intent_response.choices[0].message.content.strip().upper()
-            except Exception as e:
-                intent = "DATABASE"  # Default to database query if intent detection fails
-            
-            # --- Handle GREETING intent ---
-            if intent == "GREETING":
-                greeting_prompt = f"""
-You are a friendly Hajj information assistant. The user has greeted you.
-Respond warmly in the same language they used (Arabic or English).
-Keep it brief and friendly, and let them know you can help with:
-- Information about Hajj companies and agencies
-- General questions about Hajj rituals and requirements
+            except:
+                intent = "DATABASE"
 
-User message: {user_input}
-"""
-                try:
-                    greeting_response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=[
-                            {"role": "system", "content": "You are a friendly multilingual Hajj assistant."},
-                            {"role": "user", "content": greeting_prompt}
-                        ]
-                    )
-                    answer_text = greeting_response.choices[0].message.content.strip()
-                except Exception as e:
-                    # Fallback greeting
-                    if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
-                        answer_text = "السلام عليكم ورحمة الله وبركاته! كيف يمكنني مساعدتك اليوم؟ يمكنني مساعدتك في معلومات عن شركات الحج أو الإجابة على أسئلة عامة عن الحج."
-                    else:
-                        answer_text = "Hello! How can I help you today? I can assist you with information about Hajj companies or answer general questions about Hajj."
-                
-                st.markdown(answer_text)
-                st.session_state.chat_memory.append({
-                    "role": "assistant",
-                    "content": answer_text
-                })
-            
-            # --- Handle GENERAL_HAJJ intent ---
+            # --- GREETING ---
+            if intent == "GREETING":
+                greeting_text = "السلام عليكم ورحمة الله وبركاته! كيف يمكنني مساعدتك اليوم؟" if any("\u0600" <= ch <= "\u06FF" for ch in user_input) else "Hello! How can I assist you today?"
+                st.markdown(greeting_text)
+                st.session_state.chat_memory.append({"role": "assistant", "content": greeting_text, "timestamp": time.time()})
+
+            # --- GENERAL_HAJJ ---
             elif intent == "GENERAL_HAJJ":
                 hajj_prompt = f"""
-You are a knowledgeable Hajj information assistant. Answer the user's question about Hajj.
-- Detect the user's language (Arabic or English) and respond in the same language
-- Provide accurate, helpful information about Hajj rituals, requirements, history, etc.
-- Be concise but informative
-- If you're not sure, be honest about it
-
+You are a multilingual Hajj assistant. Answer in the user's language.
 User question: {user_input}
-
-Previous conversation context:
-{st.session_state.chat_memory[-5:] if len(st.session_state.chat_memory) > 1 else []}
 """
                 try:
                     hajj_response = client.chat.completions.create(
                         model="gpt-4o-mini",
                         messages=[
-                            {"role": "system", "content": "You are a knowledgeable multilingual Hajj information assistant."},
+                            {"role": "system", "content": "You are a knowledgeable Hajj assistant."},
                             {"role": "user", "content": hajj_prompt}
                         ]
                     )
                     answer_text = hajj_response.choices[0].message.content.strip()
-                except Exception as e:
-                    if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
-                        answer_text = "عذراً، واجهت مشكلة في الإجابة على سؤالك. يرجى المحاولة مرة أخرى."
-                    else:
-                        answer_text = "I'm sorry, I encountered an issue answering your question. Please try again."
-                
+                except:
+                    answer_text = "عذراً، لم أتمكن من الإجابة على سؤالك." if language == "العربية" else "Sorry, I couldn’t answer your question."
                 st.markdown(answer_text)
-                st.session_state.chat_memory.append({
-                    "role": "assistant",
-                    "content": answer_text
-                })
-            
-            # --- Handle DATABASE intent ---
-            else:
-                # --- Step 1: Generate SQL query ---
-                prompt_sql = f"""
-You are a Text-to-SQL assistant for a database of Hajj agencies.
-The database has a table 'agencies' with columns:
-- hajj_company_ar (Arabic name)
-- hajj_company_en (English name)
-- city
-- country
-- email
-- is_authorized (Yes for authorized, No for not authorized)
+                st.session_state.chat_memory.append({"role": "assistant", "content": answer_text, "timestamp": time.time()})
 
-Convert the following user question into a valid SQL query.
-If no valid SQL can be generated from the question, return "NO_SQL".
-Return only the SQL query, no explanation, no markdown formatting.
+            # --- DATABASE ---
+            else:
+                sql_prompt = f"""
+You are a Text-to-SQL assistant. The table 'agencies' has columns:
+hajj_company_ar, hajj_company_en, city, country, email, is_authorized.
+Convert the user's question into a SQL query or return "NO_SQL".
 
 Question: {user_input}
 """
-
                 try:
                     sql_response = client.chat.completions.create(
                         model="gpt-4o-mini",
                         messages=[
-                            {"role": "system", "content": "You are a Text-to-SQL assistant for Hajj agencies."},
-                            {"role": "user", "content": prompt_sql}
+                            {"role": "system", "content": "You are a Text-to-SQL assistant."},
+                            {"role": "user", "content": sql_prompt}
                         ]
                     )
                     sql_query = sql_response.choices[0].message.content.strip().strip("`").replace("sql", "").strip()
-                    
-                    # Check if it's a valid SQL query
                     if sql_query == "NO_SQL" or not sql_query.upper().startswith("SELECT"):
                         sql_query = None
-                        
-                except Exception as e:
+                except:
                     sql_query = None
-                    st.error(f"⚠️ Error generating SQL: {e}")
 
-                # --- Step 2: Execute SQL safely ---
-                result_df = None
-                sql_error = None
-                
+                result_df, sql_error = None, None
                 if sql_query:
                     try:
                         with engine.connect() as conn:
                             result_df = pd.read_sql(text(sql_query), conn)
                     except Exception as e:
                         sql_error = str(e)
-                        result_df = None
 
-                # --- Step 3: Generate natural language response ---
                 if result_df is not None and not result_df.empty:
-                    summary_data = result_df.head(20).to_dict(orient="records")
                     row_count = len(result_df)
-
+                    summary = result_df.head(20).to_dict(orient="records")
                     rephrase_prompt = f"""
-You are a multilingual assistant that explains database results clearly and naturally.
-- Detect the user's language automatically (Arabic or English).
-- Reply in the same language.
-- Do NOT mention SQL, tables, or databases.
-- Be concise but friendly, like a helpful guide.
-- If there are many results, mention the total count.
-
+You are a multilingual assistant summarizing database results.
 User question: {user_input}
-
-Database results (showing first 20 of {row_count} total):
-{summary_data}
+Results (first 20 of {row_count}): {summary}
 """
-
                     try:
                         rephrase_response = client.chat.completions.create(
                             model="gpt-4o-mini",
                             messages=[
-                                {"role": "system", "content": "You are a multilingual summarization assistant."},
+                                {"role": "system", "content": "You are a summarization assistant."},
                                 {"role": "user", "content": rephrase_prompt}
                             ]
                         )
                         answer_text = rephrase_response.choices[0].message.content.strip()
-                    except Exception as e:
-                        answer_text = "I found some results for you. Please see the table below."
-                    
-                    # Display answer
+                    except:
+                        answer_text = "Here are the results found."
+
                     st.markdown(answer_text)
-                    
-                    # Display results table
                     st.dataframe(result_df, use_container_width=True)
-                    
-                    # Add download button
                     csv = result_df.to_csv(index=False).encode('utf-8')
-                    st.download_button(
-                        label="📥 Download Results (CSV)",
-                        data=csv,
-                        file_name="hajj_companies_results.csv",
-                        mime="text/csv",
-                    )
-                    
-                    # Show SQL query in expander for transparency
+                    st.download_button("📥 Download Results (CSV)", csv, "hajj_results.csv", "text/csv")
                     with st.expander("🔍 View SQL Query"):
                         st.code(sql_query, language="sql")
-                    
-                    # Save to memory with dataframe
+
                     st.session_state.chat_memory.append({
                         "role": "assistant",
                         "content": answer_text,
                         "dataframe": result_df,
                         "timestamp": time.time()
                     })
-                    
                 elif sql_error:
-                    # SQL execution error
-                    error_msg = "⚠️ I encountered an error while searching the database. Please try rephrasing your question."
-                    st.error(error_msg)
-                    
-                    with st.expander("🔍 Technical Details"):
-                        st.code(f"SQL Query:\n{sql_query}\n\nError:\n{sql_error}")
-                    
-                    st.session_state.chat_memory.append({
-                        "role": "assistant",
-                        "content": error_msg
-                    })
-                    
+                    st.error("⚠️ Database error. Try rephrasing your question.")
+                    with st.expander("Details"):
+                        st.code(f"SQL: {sql_query}\n\nError: {sql_error}")
                 else:
-                    # No results or couldn't generate SQL
-                    if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
-                        answer_text = "عذراً، لم أتمكن من العثور على نتائج مطابقة. يمكنك تجربة صياغة السؤال بطريقة مختلفة أو اختيار أحد الأمثلة من القائمة الجانبية."
-                    else:
-                        answer_text = "I couldn't find any matching results. Try rephrasing your question or select an example from the sidebar."
-                    
-                    st.info(answer_text)
-                    
-                    st.session_state.chat_memory.append({
-                        "role": "assistant",
-                        "content": answer_text
-                    })
-
-    # Rerun to update the chat
-    st.rerun()
+                    no_res = "عذراً، لم أجد نتائج مطابقة." if language == "العربية" else "I couldn't find any matching results."
+                    st.info(no_res)
+                    st.session_state.chat_memory.append({"role": "assistant", "content": no_res, "timestamp": time.time()})
