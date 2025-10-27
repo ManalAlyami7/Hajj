@@ -7,28 +7,35 @@ from rapidfuzz import process, fuzz
 # --- Connect to local database ---
 engine = create_engine("sqlite:///hajj_companies.db")
 api_key = st.secrets["key"]
-# --- OpenAI client ---
-client = OpenAI(api_key=api_key)  # Replace with your key
+client = OpenAI(api_key=api_key)
 
 # --- Streamlit setup ---
 st.set_page_config(page_title="🕋 Hajj Chatbot", page_icon="🕋", layout="centered")
 st.title("🕋 Hajj Data Chatbot")
 st.caption("Ask questions about Hajj companies, their cities, countries, emails, or authorization status.")
+
 # --- Memory (list of messages) ---
 if "chat_memory" not in st.session_state:
-    st.session_state.chat_memory = []  # stores conversation as list of dicts
+    st.session_state.chat_memory = []
 
 # --- Display chat history ---
 for msg in st.session_state.chat_memory:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
+# --- Fuzzy filter function ---
+def fuzzy_filter(df, columns, query, threshold=80):
+    mask = pd.Series(False, index=df.index)
+    for col in columns:
+        matches = process.extract(query, df[col], scorer=fuzz.token_sort_ratio, limit=None)
+        for value, score, idx in matches:
+            if score >= threshold:
+                mask[idx] = True
+    return df[mask]
+
 # --- User input ---
 if user_input := st.chat_input("Ask a question about Hajj companies..."):
-    # Add user message to memory
     st.session_state.chat_memory.append({"role": "user", "content": user_input})
-
-    # Display user message
     with st.chat_message("user"):
         st.markdown(user_input)
 
@@ -44,16 +51,15 @@ The database has a table 'agencies' with columns:
 - is_authorized
 
 Convert the following user question into a valid SQL query.
-if no valid SQL can be generated from the question, be nice and informative, make sure they know you are designed for Hajj.
-Return only the SQL query, no explanation.
+If no valid SQL can be generated from the question, reply politely.
+Return only the SQL query.
 Question: {user_input}
 """
-
     try:
         sql_response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a Text-to-SQL and translation for Hajj Agnencies and services."},
+                {"role": "system", "content": "You are a Text-to-SQL assistant for Hajj agencies."},
                 {"role": "user", "content": prompt_sql}
             ]
         )
@@ -62,64 +68,37 @@ Question: {user_input}
         sql_query = None
         st.error(f"Error generating SQL: {e}")
 
-    # --- Step 2: Execute SQL safely ---
+    # --- Step 2: Execute SQL & Fuzzy Search ---
+    try:
+        if sql_query:
+            with engine.connect() as conn:
+                result_df = pd.read_sql(text(sql_query), conn)
 
-# --- Step 2: Fuzzy search ---
-def fuzzy_filter(df, column_list, query, threshold=80):
-    """
-    df: DataFrame to search
-    column_list: columns to perform fuzzy matching on
-    query: user input
-    threshold: minimum match score
-    """
-    mask = pd.Series(False, index=df.index)
-    for col in column_list:
-        matches = process.extract(query, df[col], scorer=fuzz.token_sort_ratio, limit=None)
-        # matches is a list of tuples (value, score, index)
-        for match_value, score, idx in matches:
-            if score >= threshold:
-                mask[idx] = True
-    return df[mask]
-
-# --- Step 2a: Execute SQL safely ---
-try:
-    if sql_query:
-        with engine.connect() as conn:
-            result_df = pd.read_sql(text(sql_query), conn)
-            
-        # --- Step 2b: Apply fuzzy search ---
-        result_df = fuzzy_filter(
-            result_df, 
-            column_list=["hajj_company_ar", "hajj_company_en", "city", "country"], 
-            query=user_input,
-            threshold=80
-        )
-    else:
-        result_df = pd.DataFrame()
-except Exception as e:
-    result_df = pd.DataFrame({"Error": [str(e)]})
-
+            # Apply fuzzy search on key columns
+            result_df = fuzzy_filter(
+                result_df,
+                columns=["hajj_company_ar", "hajj_company_en", "city", "country"],
+                query=user_input,
+                threshold=80
+            )
+        else:
+            result_df = pd.DataFrame()
+    except Exception as e:
+        result_df = pd.DataFrame({"Error": [str(e)]})
 
     # --- Step 3: Rephrase results naturally (multilingual) ---
     if not result_df.empty:
         summary_data = result_df.head(10).to_dict(orient="records")
-
         rephrase_prompt = f"""
-You are a multilingual assistant that explains database results clearly and naturally.
+You are a multilingual assistant explaining results naturally.
 - Detect the user's language automatically (Arabic or English).
 - Reply in the same language.
-- Do NOT mention SQL, tables, or databases.
-- Be concise but friendly, like a helpful guide.
+- Do NOT mention SQL or databases.
 
 User question: {user_input}
-
-Conversation so far:
-{st.session_state.chat_memory}
-
-Database results:
-{summary_data}
+Conversation so far: {st.session_state.chat_memory}
+Database results: {summary_data}
 """
-
         try:
             rephrase_response = client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -129,7 +108,7 @@ Database results:
                 ]
             )
             answer_text = rephrase_response.choices[0].message.content.strip()
-        except Exception as e:
+        except Exception:
             answer_text = "I found some results, but couldn't summarize them right now."
     else:
         # Detect Arabic
