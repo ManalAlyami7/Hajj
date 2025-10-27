@@ -101,7 +101,7 @@ def get_db_stats():
     try:
         with engine.connect() as conn:
             total_agencies = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies"), conn).iloc[0]['count']
-            authorized = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies WHERE is_authorized = 'Yes'"), conn).iloc[0]['count']
+            authorized = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies WHERE is_authorized = 1"), conn).iloc[0]['count']
             countries = pd.read_sql(text("SELECT COUNT(DISTINCT country) as count FROM agencies"), conn).iloc[0]['count']
             cities = pd.read_sql(text("SELECT COUNT(DISTINCT city) as count FROM agencies"), conn).iloc[0]['count']
             return {
@@ -133,34 +133,76 @@ def get_database_values():
     except:
         return None
 
-# --- Fuzzy matching function ---
+# --- Enhanced fuzzy matching with better entity recognition ---
 def find_fuzzy_matches(user_query, db_values, threshold=0.6):
     """
-    Find fuzzy matches for user query in database values
+    Find fuzzy matches for user query in database values with intelligent field detection
     Returns dict with field names and their closest matches
     """
     matches = {}
-    words = user_query.lower().split()
+    query_lower = user_query.lower()
+    
+    # Keywords that indicate location queries
+    location_keywords = ['in', 'from', 'at', 'located', 'في', 'من', 'الموجودة', 'الموجود']
+    is_location_query = any(keyword in query_lower for keyword in location_keywords)
+    
+    # Extract potential search terms (words longer than 2 characters)
+    words = [w for w in user_query.split() if len(w) > 2 and w.lower() not in location_keywords]
     
     for word in words:
-        if len(word) < 3:  # Skip very short words
-            continue
+        word_lower = word.lower()
+        
+        # Prioritize cities if it's a location query
+        if is_location_query:
+            # Check cities first
+            if db_values.get('cities'):
+                city_matches = get_close_matches(
+                    word_lower,
+                    [str(v).lower() for v in db_values['cities']],
+                    n=5,
+                    cutoff=threshold
+                )
+                if city_matches:
+                    original_matches = []
+                    for match in city_matches:
+                        for original in db_values['cities']:
+                            if str(original).lower() == match:
+                                original_matches.append(original)
+                                break
+                    matches['cities'] = original_matches
+                    continue
             
-        # Check each field
+            # Check countries second
+            if db_values.get('countries'):
+                country_matches = get_close_matches(
+                    word_lower,
+                    [str(v).lower() for v in db_values['countries']],
+                    n=5,
+                    cutoff=threshold
+                )
+                if country_matches:
+                    original_matches = []
+                    for match in country_matches:
+                        for original in db_values['countries']:
+                            if str(original).lower() == match:
+                                original_matches.append(original)
+                                break
+                    matches['countries'] = original_matches
+                    continue
+        
+        # Check all fields if not a location query or no location matches found
         for field_name, values in db_values.items():
-            if not values:
+            if not values or field_name in matches:
                 continue
-                
-            # Find close matches
+            
             close_matches = get_close_matches(
-                word, 
-                [str(v).lower() for v in values], 
-                n=3, 
+                word_lower,
+                [str(v).lower() for v in values],
+                n=3,
                 cutoff=threshold
             )
             
             if close_matches:
-                # Get original case values
                 original_matches = []
                 for match in close_matches:
                     for original in values:
@@ -168,9 +210,8 @@ def find_fuzzy_matches(user_query, db_values, threshold=0.6):
                             original_matches.append(original)
                             break
                 
-                if field_name not in matches:
-                    matches[field_name] = []
-                matches[field_name].extend(original_matches)
+                if original_matches:
+                    matches[field_name] = original_matches
     
     return matches
 
@@ -423,13 +464,29 @@ Previous conversation context:
                 if db_values:
                     fuzzy_matches = find_fuzzy_matches(user_input, db_values)
                 
+                # --- Build better fuzzy context with explicit SQL hints ---
                 fuzzy_context = ""
                 if fuzzy_matches:
-                    fuzzy_context = "\n\nPossible matches found in database (use these for better results):\n"
-                    for field, matches in fuzzy_matches.items():
-                        fuzzy_context += f"- {field}: {', '.join(matches[:3])}\n"
+                    fuzzy_context = "\n\nIMPORTANT - Fuzzy matches found (USE THESE EXACT VALUES in your SQL):\n"
+                    
+                    if 'cities' in fuzzy_matches:
+                        fuzzy_context += f"- For CITY field, use: {fuzzy_matches['cities'][0]}\n"
+                        fuzzy_context += f"  SQL example: WHERE city = '{fuzzy_matches['cities'][0]}'\n"
+                    
+                    if 'countries' in fuzzy_matches:
+                        fuzzy_context += f"- For COUNTRY field, use: {fuzzy_matches['countries'][0]}\n"
+                        fuzzy_context += f"  SQL example: WHERE country = '{fuzzy_matches['countries'][0]}'\n"
+                    
+                    if 'companies_en' in fuzzy_matches:
+                        fuzzy_context += f"- For COMPANY (English), use: {fuzzy_matches['companies_en'][0]}\n"
+                        fuzzy_context += f"  SQL example: WHERE hajj_company_en = '{fuzzy_matches['companies_en'][0]}'\n"
+                    
+                    if 'companies_ar' in fuzzy_matches:
+                        fuzzy_context += f"- For COMPANY (Arabic), use: {fuzzy_matches['companies_ar'][0]}\n"
+                        fuzzy_context += f"  SQL example: WHERE hajj_company_ar = '{fuzzy_matches['companies_ar'][0]}'\n"
                 
                 # --- Step 1: Generate SQL query ---
+                # --- Enhanced SQL generation prompt with better fuzzy match integration ---
                 prompt_sql = f"""
 You are a Text-to-SQL assistant for a database of Hajj agencies.
 The database has a table 'agencies' with columns:
@@ -438,11 +495,13 @@ The database has a table 'agencies' with columns:
 - city
 - country
 - email
-- is_authorized (Yes for authorized, No for not authorized)
+- is_authorized (1 for authorized, 0 for not authorized)
 
-Convert the following user question into a valid SQL query.
-Use LIKE with wildcards (%) for flexible text matching to handle typos.
-For example: WHERE city LIKE '%Riyadh%' instead of WHERE city = 'Riyadh'
+IMPORTANT INSTRUCTIONS:
+1. If fuzzy matches are provided below, USE THE EXACT VALUES shown in the SQL examples
+2. Do NOT modify or approximate the fuzzy match values
+3. Use exact equality (=) when fuzzy matches are provided
+4. Only use LIKE with % wildcards if NO fuzzy matches are provided
 {fuzzy_context}
 If no valid SQL can be generated from the question, return "NO_SQL".
 Return only the SQL query, no explanation, no markdown formatting.
@@ -511,13 +570,24 @@ Database results (showing first 20 of {row_count} total):
                     except Exception as e:
                         answer_text = "I found some results for you. Please see the table below."
                     
+                    # --- Show correction note with the actual correction made ---
                     if fuzzy_matches:
-                        correction_note = ""
-                        if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
-                            correction_note = "💡 تم تصحيح بعض المصطلحات تلقائياً للحصول على نتائج أفضل."
-                        else:
-                            correction_note = "💡 Some terms were automatically corrected for better results."
-                        st.info(correction_note)
+                        correction_parts = []
+                        if 'cities' in fuzzy_matches:
+                            correction_parts.append(f"city: {fuzzy_matches['cities'][0]}")
+                        if 'countries' in fuzzy_matches:
+                            correction_parts.append(f"country: {fuzzy_matches['countries'][0]}")
+                        if 'companies_en' in fuzzy_matches:
+                            correction_parts.append(f"company: {fuzzy_matches['companies_en'][0]}")
+                        if 'companies_ar' in fuzzy_matches:
+                            correction_parts.append(f"شركة: {fuzzy_matches['companies_ar'][0]}")
+                        
+                        if correction_parts:
+                            if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
+                                correction_note = f"💡 تم تصحيح البحث إلى: {' | '.join(correction_parts)}"
+                            else:
+                                correction_note = f"💡 Search corrected to: {' | '.join(correction_parts)}"
+                            st.info(correction_note)
                     
                     # Display answer
                     st.markdown(answer_text)
