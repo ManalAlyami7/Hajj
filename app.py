@@ -108,7 +108,7 @@ def get_db_stats():
     try:
         with engine.connect() as conn:
             total_agencies = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies"), conn).iloc[0]['count']
-            authorized = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies WHERE is_authorized = 1"), conn).iloc[0]['count']
+            authorized = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies WHERE is_authorized = 'Yes'"), conn).iloc[0]['count']
             countries = pd.read_sql(text("SELECT COUNT(DISTINCT country) as count FROM agencies"), conn).iloc[0]['count']
             cities = pd.read_sql(text("SELECT COUNT(DISTINCT city) as count FROM agencies"), conn).iloc[0]['count']
             return {
@@ -364,7 +364,7 @@ The database has a table 'agencies' with columns:
 - city
 - country
 - email
-- is_authorized (1 for authorized, 0 for not authorized)
+- is_authorized (Yes for authorized, No for not authorized)
 
 Convert the following user question into a valid SQL query.
 If no valid SQL can be generated from the question, return "NO_SQL".
