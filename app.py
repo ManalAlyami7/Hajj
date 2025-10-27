@@ -260,7 +260,7 @@ if user_input:
 
     # Show loading spinner
     with st.chat_message("assistant"):
-        with st.spinner("🤔 Thinking..."):
+        with st.spinner("Thinking..."):
             # --- Step 1: Generate SQL query ---
             prompt_sql = f"""
 You are a Text-to-SQL assistant for a database of Hajj agencies.
@@ -270,7 +270,7 @@ The database has a table 'agencies' with columns:
 - city
 - country
 - email
-- is_authorized (1 for authorized, 0 for not authorized)
+- is_authorized (Yes for authorized, No for not authorized)
 
 Convert the following user question into a valid SQL query.
 If no valid SQL can be generated from the question, return "NO_SQL".
