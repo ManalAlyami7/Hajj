@@ -338,6 +338,17 @@ Respond with exactly one word: GREETING, DATABASE, or GENERAL_HAJJ"""
 
 Question: {user_input}
 
+IMPORTANT RULES:
+1. Use LIKE with wildcards (%) for city/country names to handle variations (e.g., "Mecca", "Makkah", "مكة")
+2. For authorization, use: is_authorized = 'Yes'
+3. Use LOWER() for case-insensitive matching
+4. Return complete company information including both Arabic and English names
+5. Limit results to 100 rows unless specifically asked for more
+
+EXAMPLES:
+- "authorized agencies in Mecca" → SELECT * FROM agencies WHERE is_authorized = 'Yes' AND LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%' LIMIT 100
+- "companies in Saudi Arabia" → SELECT * FROM agencies WHERE LOWER(country) LIKE '%saudi%' LIMIT 100
+
 Return ONLY the SQL SELECT query, nothing else. If the question cannot be answered with SQL, return "NO_SQL"."""
 
                 sql_query = None
@@ -410,9 +421,10 @@ Provide a brief, natural summary."""
                         mime="text/csv"
                     )
                     
-                    # Show SQL query
-                    with st.expander("🔍 View Generated SQL Query"):
+                    # Show SQL query (always visible for transparency)
+                    with st.expander("🔍 View Generated SQL Query", expanded=False):
                         st.code(sql_query, language="sql")
+                        st.caption(f"Retrieved {row_count} rows from database")
 
                     st.session_state.chat_memory.append({
                         "role": "assistant",
@@ -436,6 +448,12 @@ Provide a brief, natural summary."""
                 else:
                     no_results_msg = "عذراً، لم أجد أي نتائج مطابقة لسؤالك." if language == "العربية" else "I couldn't find any results matching your question."
                     st.info(no_results_msg)
+                    
+                    # Show what was attempted
+                    if sql_query:
+                        st.caption("💡 Try rephrasing your question or use different keywords (e.g., 'Makkah' instead of 'Mecca')")
+                        with st.expander("🔍 Generated SQL Query"):
+                            st.code(sql_query, language="sql")
                     
                     st.session_state.chat_memory.append({
                         "role": "assistant",
