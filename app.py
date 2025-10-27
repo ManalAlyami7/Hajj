@@ -21,7 +21,7 @@ from typing import Optional, Dict, Any, List
 # Page & CSS
 # -----------------------------
 st.set_page_config(
-    page_title="🕋 Hajj Chatbot",
+    page_title="Hajj Chatbot",
     page_icon="🕋",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -36,7 +36,7 @@ st.markdown("""
     }
     
     .main {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #667eea 0%, #764bat 2 100%);
         background-attachment: fixed;
     }
     
@@ -599,7 +599,7 @@ Message: {user_input}
                 greeting_text = "السلام عليكم ورحمة الله وبركاته! 🌙\n\nكيف يمكنني مساعدتك في البحث عن معلومات شركات الحج؟" if is_arabic else "Hello! 👋\n\nHow can I help you find information about Hajj companies today?"
                 st.markdown(greeting_text)
                 st.session_state.chat_memory.append({"role": "assistant", "content": greeting_text, "timestamp": time.time()})
-                st.experimental_rerun()
+                #st.experimental_rerun()
 
             # GENERAL_HAJJ (e.g., rituals)
             elif intent == "GENERAL_HAJJ":
@@ -620,7 +620,7 @@ Message: {user_input}
                     err = "عذراً، واجهت مشكلة في الإجابة." if language == "العربية" else "Sorry, I encountered an error."
                     st.error(f"{err} {e}")
                     st.session_state.chat_memory.append({"role": "assistant", "content": f"{err} {e}", "timestamp": time.time()})
-                st.experimental_rerun()
+                #st.experimental_rerun()
 
             # DATABASE queries
             else:
