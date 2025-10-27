@@ -305,6 +305,7 @@ Question: {user_input}
                     summary = result_df.head(20).to_dict(orient="records")
                     rephrase_prompt = f"""
 You are a multilingual assistant summarizing database results.
+always answer in the user's language.
 User question: {user_input}
 Results (first 20 of {row_count}): {summary}
 """
