@@ -4,6 +4,7 @@ from sqlalchemy import create_engine, text
 from openai import OpenAI
 from datetime import datetime
 import time
+import re
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -31,9 +32,6 @@ st.markdown("""
         padding: 1rem;
         margin: 0.5rem 0;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    .css-1d391kg {
-        background: linear-gradient(180deg, #1e3a5f 0%, #2c5f8d 100%);
     }
     .example-question {
         background: white;
@@ -71,13 +69,19 @@ st.markdown("""
 # --- Connect to local database ---
 @st.cache_resource
 def get_database_engine():
-    return create_engine("sqlite:///hajj_companies.db")
+    """Initialize and return database engine"""
+    try:
+        return create_engine("sqlite:///hajj_companies.db")
+    except Exception as e:
+        st.error(f"Database connection failed: {e}")
+        st.stop()
 
 engine = get_database_engine()
 
 # --- OpenAI client ---
 @st.cache_resource
 def get_openai_client():
+    """Initialize OpenAI client with API key"""
     api_key = st.secrets.get("key", None)
     if not api_key:
         st.warning("⚠️ OpenAI API key missing in Streamlit secrets.")
@@ -89,15 +93,44 @@ client = get_openai_client()
 # --- Get database statistics ---
 @st.cache_data(ttl=300)
 def get_db_stats():
+    """Fetch database statistics with error handling"""
     try:
         with engine.connect() as conn:
-            total_agencies = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies"), conn).iloc[0]['count']
-            authorized = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies WHERE is_authorized = 'Yes'"), conn).iloc[0]['count']
-            countries = pd.read_sql(text("SELECT COUNT(DISTINCT country) as count FROM agencies"), conn).iloc[0]['count']
-            cities = pd.read_sql(text("SELECT COUNT(DISTINCT city) as count FROM agencies"), conn).iloc[0]['count']
-            return {'total': total_agencies, 'authorized': authorized, 'countries': countries, 'cities': cities}
-    except:
+            stats = {
+                'total': pd.read_sql(text("SELECT COUNT(*) as count FROM agencies"), conn).iloc[0]['count'],
+                'authorized': pd.read_sql(text("SELECT COUNT(*) as count FROM agencies WHERE is_authorized = 'Yes'"), conn).iloc[0]['count'],
+                'countries': pd.read_sql(text("SELECT COUNT(DISTINCT country) as count FROM agencies"), conn).iloc[0]['count'],
+                'cities': pd.read_sql(text("SELECT COUNT(DISTINCT city) as count FROM agencies"), conn).iloc[0]['count']
+            }
+            return stats
+    except Exception as e:
+        st.error(f"Failed to load statistics: {e}")
         return None
+
+def sanitize_sql(sql_query):
+    """Basic SQL injection prevention"""
+    dangerous_keywords = ['DROP', 'DELETE', 'INSERT', 'UPDATE', 'ALTER', 'CREATE', 'EXEC', 'EXECUTE']
+    sql_upper = sql_query.upper()
+    for keyword in dangerous_keywords:
+        if keyword in sql_upper:
+            return None
+    return sql_query
+
+def extract_sql_from_response(response_text):
+    """Extract SQL query from markdown code blocks or plain text"""
+    # Try to find SQL in code blocks
+    code_block_pattern = r'```(?:sql)?\s*(SELECT.*?)```'
+    match = re.search(code_block_pattern, response_text, re.IGNORECASE | re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    
+    # Try to find SELECT statement directly
+    select_pattern = r'(SELECT\s+.*?(?:;|$))'
+    match = re.search(select_pattern, response_text, re.IGNORECASE | re.DOTALL)
+    if match:
+        return match.group(1).strip().rstrip(';')
+    
+    return None
 
 # --- Sidebar ---
 with st.sidebar:
@@ -112,20 +145,21 @@ with st.sidebar:
     stats = get_db_stats()
     if stats:
         col1, col2 = st.columns(2)
-        for key, label in zip(
-            ["total", "countries", "authorized", "cities"],
-            ["Total Agencies", "Countries", "Authorized", "Cities"]
-        ):
+        stat_items = [
+            ("total", "Total Agencies", col1),
+            ("countries", "Countries", col1),
+            ("authorized", "Authorized", col2),
+            ("cities", "Cities", col2)
+        ]
+        
+        for key, label, col in stat_items:
             html = f"""
             <div class="stat-card">
                 <div class="stat-number">{stats[key]}</div>
                 <div class="stat-label">{label}</div>
             </div>
             """
-            if key in ["total", "countries"]:
-                col1.markdown(html, unsafe_allow_html=True)
-            else:
-                col2.markdown(html, unsafe_allow_html=True)
+            col.markdown(html, unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -164,23 +198,26 @@ with st.sidebar:
 # --- Main Content ---
 st.title("🕋 Hajj Data Chatbot")
 
-intro_text_en = """
-<div style='text-align: center; padding: 1rem; background: white; border-radius: 10px; margin-bottom: 2rem;'>
-    <p style='color: #666; margin: 0;'>Ask questions about Hajj companies, their cities, countries, emails, or authorization status.</p>
-</div>
-"""
-intro_text_ar = """
-<div style='text-align: center; padding: 1rem; background: white; border-radius: 10px; margin-bottom: 2rem;'>
-    <p style='color: #666; margin: 0;'>اسأل عن شركات الحج، المدن، الدول، البريد الإلكتروني أو حالة الاعتماد.</p>
-</div>
-"""
-st.markdown(intro_text_ar if language == "العربية" else intro_text_en, unsafe_allow_html=True)
+intro_text = {
+    "English": """
+    <div style='text-align: center; padding: 1rem; background: white; border-radius: 10px; margin-bottom: 2rem;'>
+        <p style='color: #666; margin: 0;'>Ask questions about Hajj companies, their cities, countries, emails, or authorization status.</p>
+    </div>
+    """,
+    "العربية": """
+    <div style='text-align: center; padding: 1rem; background: white; border-radius: 10px; margin-bottom: 2rem;'>
+        <p style='color: #666; margin: 0;'>اسأل عن شركات الحج، المدن، الدول، البريد الإلكتروني أو حالة الاعتماد.</p>
+    </div>
+    """
+}
+st.markdown(intro_text[language], unsafe_allow_html=True)
 
-# --- Session State ---
+# --- Session State Initialization ---
 if "chat_memory" not in st.session_state:
+    welcome_msg = "السلام عليكم! أهلاً بك في روبوت معلومات الحج. كيف يمكنني مساعدتك؟" if language == "العربية" else "Welcome to the Hajj Data Chatbot! How can I assist you today?"
     st.session_state.chat_memory = [{
         "role": "assistant",
-        "content": "السلام عليكم! Welcome to the Hajj Data Chatbot. Ask me about Hajj companies or select an example from the sidebar.",
+        "content": welcome_msg,
         "timestamp": time.time()
     }]
 if "last_result_df" not in st.session_state:
@@ -188,111 +225,146 @@ if "last_result_df" not in st.session_state:
 if "selected_question" not in st.session_state:
     st.session_state.selected_question = None
 
-# --- Display Chat ---
+# --- Display Chat History ---
 for msg in st.session_state.chat_memory:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
         if msg.get("timestamp"):
             st.caption(datetime.fromtimestamp(msg["timestamp"]).strftime("🕓 %I:%M %p"))
-        if "dataframe" in msg:
+        if "dataframe" in msg and msg["dataframe"] is not None:
             st.dataframe(msg["dataframe"], use_container_width=True)
             csv = msg["dataframe"].to_csv(index=False).encode('utf-8')
             st.download_button(
                 label="📥 Download Results (CSV)",
                 data=csv,
-                file_name="hajj_companies_results.csv",
+                file_name=f"hajj_companies_{int(msg['timestamp'])}.csv",
                 mime="text/csv",
                 key=f"download_{msg['timestamp']}"
             )
 
-# --- Handle Input ---
+# --- Handle User Input ---
+user_input = None
 if st.session_state.selected_question:
     user_input = st.session_state.selected_question
     st.session_state.selected_question = None
 else:
-    user_input = st.chat_input("Ask a question about Hajj companies..." if language == "English" else "اسأل عن شركات الحج...")
+    placeholder_text = "اسأل عن شركات الحج..." if language == "العربية" else "Ask a question about Hajj companies..."
+    user_input = st.chat_input(placeholder_text)
 
 if user_input:
-    st.session_state.chat_memory.append({"role": "user", "content": user_input, "timestamp": time.time()})
+    # Add user message
+    st.session_state.chat_memory.append({
+        "role": "user",
+        "content": user_input,
+        "timestamp": time.time()
+    })
+    
     with st.chat_message("user"):
         st.markdown(user_input)
+        st.caption(datetime.fromtimestamp(time.time()).strftime("🕓 %I:%M %p"))
 
+    # Process query
     with st.chat_message("assistant"):
-        with st.spinner("🤔 Thinking..."):
-            # --- Intent Detection ---
-            intent_prompt = f"""
-Analyze the user's message and classify it into one of these categories:
-1. GREETING - if it's a greeting like hi, hello, how are you, etc.
-2. DATABASE - if it's asking for specific data about Hajj companies (names, locations, emails, authorization status)
-3. GENERAL_HAJJ - if it's asking general questions about Hajj (rituals, requirements, history, etc.)
+        with st.spinner("🤔 Processing your question..."):
+            
+            # --- Step 1: Intent Detection ---
+            intent_prompt = f"""Analyze this message and classify it as one word:
+- GREETING: greetings like hello, hi, how are you
+- DATABASE: questions about Hajj company data (names, locations, emails, authorization)
+- GENERAL_HAJJ: general Hajj questions (rituals, requirements, history)
 
-User message: {user_input}
+Message: {user_input}
 
-Respond with only one word: GREETING, DATABASE, or GENERAL_HAJJ
-"""
+Respond with exactly one word: GREETING, DATABASE, or GENERAL_HAJJ"""
 
+            intent = "DATABASE"  # Default fallback
             try:
                 intent_response = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
-                        {"role": "system", "content": "You are an intent classification assistant."},
+                        {"role": "system", "content": "You classify user intents. Respond with only one word."},
                         {"role": "user", "content": intent_prompt}
-                    ]
+                    ],
+                    temperature=0,
+                    max_tokens=10
                 )
                 intent = intent_response.choices[0].message.content.strip().upper()
-            except:
-                intent = "DATABASE"
+            except Exception as e:
+                st.warning(f"Intent detection failed: {e}")
 
-            # --- GREETING ---
+            # --- Handle GREETING ---
             if intent == "GREETING":
-                greeting_text = "السلام عليكم ورحمة الله وبركاته! كيف يمكنني مساعدتك اليوم؟" if any("\u0600" <= ch <= "\u06FF" for ch in user_input) else "Hello! How can I assist you today?"
+                is_arabic = any("\u0600" <= ch <= "\u06FF" for ch in user_input)
+                greeting_text = "السلام عليكم ورحمة الله وبركاته! كيف يمكنني مساعدتك اليوم؟" if is_arabic else "Hello! How can I assist you with Hajj company information today?"
                 st.markdown(greeting_text)
-                st.session_state.chat_memory.append({"role": "assistant", "content": greeting_text, "timestamp": time.time()})
+                st.session_state.chat_memory.append({
+                    "role": "assistant",
+                    "content": greeting_text,
+                    "timestamp": time.time()
+                })
 
-            # --- GENERAL_HAJJ ---
+            # --- Handle GENERAL_HAJJ ---
             elif intent == "GENERAL_HAJJ":
-                hajj_prompt = f"""
-You are a multilingual Hajj assistant. Answer in the user's language.
-User question: {user_input}
-"""
                 try:
                     hajj_response = client.chat.completions.create(
                         model="gpt-4o-mini",
                         messages=[
-                            {"role": "system", "content": "You are a knowledgeable Hajj assistant."},
-                            {"role": "user", "content": hajj_prompt}
-                        ]
+                            {"role": "system", "content": "You are a knowledgeable Islamic scholar assistant specializing in Hajj. Respond in the user's language (Arabic or English)."},
+                            {"role": "user", "content": user_input}
+                        ],
+                        temperature=0.7
                     )
                     answer_text = hajj_response.choices[0].message.content.strip()
-                except:
-                    answer_text = "عذراً، لم أتمكن من الإجابة على سؤالك." if language == "العربية" else "Sorry, I couldn’t answer your question."
-                st.markdown(answer_text)
-                st.session_state.chat_memory.append({"role": "assistant", "content": answer_text, "timestamp": time.time()})
+                    st.markdown(answer_text)
+                    st.session_state.chat_memory.append({
+                        "role": "assistant",
+                        "content": answer_text,
+                        "timestamp": time.time()
+                    })
+                except Exception as e:
+                    error_msg = "عذراً، واجهت مشكلة في الإجابة على سؤالك." if language == "العربية" else "Sorry, I encountered an error answering your question."
+                    st.error(f"{error_msg}\n\nError: {e}")
 
-            # --- DATABASE ---
+            # --- Handle DATABASE Query ---
             else:
-                sql_prompt = f"""
-You are a Text-to-SQL assistant. The table 'agencies' has columns:
-hajj_company_ar, hajj_company_en, city, country, email, is_authorized.
-Convert the user's question into a SQL query or return "NO_SQL".
+                # Generate SQL
+                sql_prompt = f"""Convert this question to SQL for the 'agencies' table with columns:
+- hajj_company_ar (Arabic company name)
+- hajj_company_en (English company name)
+- city (city name)
+- country (country name)
+- email (email address)
+- is_authorized ('Yes' or 'No')
 
 Question: {user_input}
-"""
+
+Return ONLY the SQL SELECT query, nothing else. If the question cannot be answered with SQL, return "NO_SQL"."""
+
+                sql_query = None
                 try:
                     sql_response = client.chat.completions.create(
                         model="gpt-4o-mini",
                         messages=[
-                            {"role": "system", "content": "You are a Text-to-SQL assistant."},
+                            {"role": "system", "content": "You are a SQL expert. Generate only valid SELECT queries."},
                             {"role": "user", "content": sql_prompt}
-                        ]
+                        ],
+                        temperature=0
                     )
-                    sql_query = sql_response.choices[0].message.content.strip().strip("`").replace("sql", "").strip()
-                    if sql_query == "NO_SQL" or not sql_query.upper().startswith("SELECT"):
-                        sql_query = None
-                except:
-                    sql_query = None
+                    raw_sql = sql_response.choices[0].message.content.strip()
+                    
+                    # Extract and clean SQL
+                    sql_query = extract_sql_from_response(raw_sql)
+                    
+                    if sql_query and sql_query != "NO_SQL":
+                        sql_query = sanitize_sql(sql_query)
+                
+                except Exception as e:
+                    st.error(f"SQL generation failed: {e}")
 
-                result_df, sql_error = None, None
+                # Execute SQL
+                result_df = None
+                sql_error = None
+                
                 if sql_query:
                     try:
                         with engine.connect() as conn:
@@ -300,32 +372,46 @@ Question: {user_input}
                     except Exception as e:
                         sql_error = str(e)
 
+                # Present results
                 if result_df is not None and not result_df.empty:
                     row_count = len(result_df)
-                    summary = result_df.head(20).to_dict(orient="records")
-                    rephrase_prompt = f"""
-You are a multilingual assistant summarizing database results.
-always answer in the user's language.
-User question: {user_input}
-Results (first 20 of {row_count}): {summary}
-"""
+                    preview_data = result_df.head(20).to_dict(orient="records")
+                    
+                    # Generate natural language summary
+                    summary_prompt = f"""Summarize these database results in the user's language ({"Arabic" if language == "العربية" else "English"}):
+
+Question: {user_input}
+Total results: {row_count}
+Sample data: {preview_data}
+
+Provide a brief, natural summary."""
+
                     try:
-                        rephrase_response = client.chat.completions.create(
+                        summary_response = client.chat.completions.create(
                             model="gpt-4o-mini",
                             messages=[
-                                {"role": "system", "content": "You are a summarization assistant."},
-                                {"role": "user", "content": rephrase_prompt}
+                                {"role": "system", "content": "You summarize database results naturally."},
+                                {"role": "user", "content": summary_prompt}
                             ]
                         )
-                        answer_text = rephrase_response.choices[0].message.content.strip()
+                        answer_text = summary_response.choices[0].message.content.strip()
                     except:
-                        answer_text = "Here are the results found."
+                        answer_text = f"Found {row_count} results." if language == "English" else f"تم العثور على {row_count} نتيجة."
 
                     st.markdown(answer_text)
                     st.dataframe(result_df, use_container_width=True)
+                    
+                    # Download button
                     csv = result_df.to_csv(index=False).encode('utf-8')
-                    st.download_button("📥 Download Results (CSV)", csv, "hajj_results.csv", "text/csv")
-                    with st.expander("🔍 View SQL Query"):
+                    st.download_button(
+                        label="📥 Download Results (CSV)",
+                        data=csv,
+                        file_name=f"hajj_results_{int(time.time())}.csv",
+                        mime="text/csv"
+                    )
+                    
+                    # Show SQL query
+                    with st.expander("🔍 View Generated SQL Query"):
                         st.code(sql_query, language="sql")
 
                     st.session_state.chat_memory.append({
@@ -334,11 +420,28 @@ Results (first 20 of {row_count}): {summary}
                         "dataframe": result_df,
                         "timestamp": time.time()
                     })
+                
                 elif sql_error:
-                    st.error("⚠️ Database error. Try rephrasing your question.")
-                    with st.expander("Details"):
-                        st.code(f"SQL: {sql_query}\n\nError: {sql_error}")
+                    error_msg = "حدث خطأ في قاعدة البيانات. حاول إعادة صياغة سؤالك." if language == "العربية" else "A database error occurred. Try rephrasing your question."
+                    st.error(error_msg)
+                    with st.expander("🔧 Technical Details"):
+                        st.code(f"Generated SQL:\n{sql_query}\n\nError:\n{sql_error}")
+                    
+                    st.session_state.chat_memory.append({
+                        "role": "assistant",
+                        "content": error_msg,
+                        "timestamp": time.time()
+                    })
+                
                 else:
-                    no_res = "عذراً، لم أجد نتائج مطابقة." if language == "العربية" else "I couldn't find any matching results."
-                    st.info(no_res)
-                    st.session_state.chat_memory.append({"role": "assistant", "content": no_res, "timestamp": time.time()})
+                    no_results_msg = "عذراً، لم أجد أي نتائج مطابقة لسؤالك." if language == "العربية" else "I couldn't find any results matching your question."
+                    st.info(no_results_msg)
+                    
+                    st.session_state.chat_memory.append({
+                        "role": "assistant",
+                        "content": no_results_msg,
+                        "timestamp": time.time()
+                    })
+
+        # Show timestamp
+        st.caption(datetime.fromtimestamp(time.time()).strftime("🕓 %I:%M %p"))
