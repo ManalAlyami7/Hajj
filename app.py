@@ -512,7 +512,7 @@ with st.sidebar:
 # -----------------------------
 st.markdown("""
 <div class="header-container">   
-    <h1> 🕋</h1><h1 class="main-title"> Hajj Data Intelligence</h1>
+   <h1>🕋 <span class="main-title">Hajj Data Intelligence</span></h1>
     <p class="subtitle">Ask anything about Hajj companies worldwide • AI-powered • Real-time data</p>
 </div>
 """, unsafe_allow_html=True)
