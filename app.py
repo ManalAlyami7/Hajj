@@ -59,7 +59,7 @@ Question: {user_input}
         sql_response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a Text-to-SQL assistant for Hajj agencies."},
+                {"role": "system", "content": "You are a Text-to-SQL and translation assistant for Hajj agencies."},
                 {"role": "user", "content": prompt_sql}
             ]
         )
