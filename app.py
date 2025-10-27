@@ -3,7 +3,6 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 from openai import OpenAI
 import time
-from difflib import get_close_matches
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -95,13 +94,21 @@ def get_database_engine():
 
 engine = get_database_engine()
 
+# --- OpenAI client ---
+@st.cache_resource
+def get_openai_client():
+    api_key = st.secrets["key"]
+    return OpenAI(api_key=api_key)
+
+client = get_openai_client()
+
 # --- Get database statistics ---
 @st.cache_data(ttl=300)
 def get_db_stats():
     try:
         with engine.connect() as conn:
             total_agencies = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies"), conn).iloc[0]['count']
-            authorized = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies WHERE is_authorized = 'Yes'"), conn).iloc[0]['count']
+            authorized = pd.read_sql(text("SELECT COUNT(*) as count FROM agencies WHERE is_authorized = 1"), conn).iloc[0]['count']
             countries = pd.read_sql(text("SELECT COUNT(DISTINCT country) as count FROM agencies"), conn).iloc[0]['count']
             cities = pd.read_sql(text("SELECT COUNT(DISTINCT city) as count FROM agencies"), conn).iloc[0]['count']
             return {
@@ -112,116 +119,6 @@ def get_db_stats():
             }
     except:
         return None
-
-# --- Get all unique values from database for fuzzy matching ---
-@st.cache_data(ttl=300)
-def get_database_values():
-    """Get all unique values from database for fuzzy matching"""
-    try:
-        with engine.connect() as conn:
-            companies_ar = pd.read_sql(text("SELECT DISTINCT hajj_company_ar FROM agencies WHERE hajj_company_ar IS NOT NULL"), conn)['hajj_company_ar'].tolist()
-            companies_en = pd.read_sql(text("SELECT DISTINCT hajj_company_en FROM agencies WHERE hajj_company_en IS NOT NULL"), conn)['hajj_company_en'].tolist()
-            cities = pd.read_sql(text("SELECT DISTINCT city FROM agencies WHERE city IS NOT NULL"), conn)['city'].tolist()
-            countries = pd.read_sql(text("SELECT DISTINCT country FROM agencies WHERE country IS NOT NULL"), conn)['country'].tolist()
-            
-            return {
-                'companies_ar': companies_ar,
-                'companies_en': companies_en,
-                'cities': cities,
-                'countries': countries
-            }
-    except:
-        return None
-
-# --- Enhanced fuzzy matching with better entity recognition ---
-def find_fuzzy_matches(user_query, db_values, threshold=0.6):
-    """
-    Find fuzzy matches for user query in database values with intelligent field detection
-    Returns dict with field names and their closest matches
-    """
-    matches = {}
-    query_lower = user_query.lower()
-    
-    # Keywords that indicate location queries
-    location_keywords = ['in', 'from', 'at', 'located', 'في', 'من', 'الموجودة', 'الموجود']
-    is_location_query = any(keyword in query_lower for keyword in location_keywords)
-    
-    # Extract potential search terms (words longer than 2 characters)
-    words = [w for w in user_query.split() if len(w) > 2 and w.lower() not in location_keywords]
-    
-    for word in words:
-        word_lower = word.lower()
-        
-        # Prioritize cities if it's a location query
-        if is_location_query:
-            # Check cities first
-            if db_values.get('cities'):
-                city_matches = get_close_matches(
-                    word_lower,
-                    [str(v).lower() for v in db_values['cities']],
-                    n=5,
-                    cutoff=threshold
-                )
-                if city_matches:
-                    original_matches = []
-                    for match in city_matches:
-                        for original in db_values['cities']:
-                            if str(original).lower() == match:
-                                original_matches.append(original)
-                                break
-                    matches['cities'] = original_matches
-                    continue
-            
-            # Check countries second
-            if db_values.get('countries'):
-                country_matches = get_close_matches(
-                    word_lower,
-                    [str(v).lower() for v in db_values['countries']],
-                    n=5,
-                    cutoff=threshold
-                )
-                if country_matches:
-                    original_matches = []
-                    for match in country_matches:
-                        for original in db_values['countries']:
-                            if str(original).lower() == match:
-                                original_matches.append(original)
-                                break
-                    matches['countries'] = original_matches
-                    continue
-        
-        # Check all fields if not a location query or no location matches found
-        for field_name, values in db_values.items():
-            if not values or field_name in matches:
-                continue
-            
-            close_matches = get_close_matches(
-                word_lower,
-                [str(v).lower() for v in values],
-                n=3,
-                cutoff=threshold
-            )
-            
-            if close_matches:
-                original_matches = []
-                for match in close_matches:
-                    for original in values:
-                        if str(original).lower() == match:
-                            original_matches.append(original)
-                            break
-                
-                if original_matches:
-                    matches[field_name] = original_matches
-    
-    return matches
-
-# --- OpenAI client ---
-@st.cache_resource
-def get_openai_client():
-    api_key = st.secrets["key"]
-    return OpenAI(api_key=api_key)
-
-client = get_openai_client()
 
 # --- Sidebar ---
 with st.sidebar:
@@ -458,35 +355,7 @@ Previous conversation context:
             
             # --- Handle DATABASE intent ---
             else:
-                db_values = get_database_values()
-                fuzzy_matches = None
-                
-                if db_values:
-                    fuzzy_matches = find_fuzzy_matches(user_input, db_values)
-                
-                # --- Build better fuzzy context with explicit SQL hints ---
-                fuzzy_context = ""
-                if fuzzy_matches:
-                    fuzzy_context = "\n\nIMPORTANT - Fuzzy matches found (USE THESE EXACT VALUES in your SQL):\n"
-                    
-                    if 'cities' in fuzzy_matches:
-                        fuzzy_context += f"- For CITY field, use: {fuzzy_matches['cities'][0]}\n"
-                        fuzzy_context += f"  SQL example: WHERE city = '{fuzzy_matches['cities'][0]}'\n"
-                    
-                    if 'countries' in fuzzy_matches:
-                        fuzzy_context += f"- For COUNTRY field, use: {fuzzy_matches['countries'][0]}\n"
-                        fuzzy_context += f"  SQL example: WHERE country = '{fuzzy_matches['countries'][0]}'\n"
-                    
-                    if 'companies_en' in fuzzy_matches:
-                        fuzzy_context += f"- For COMPANY (English), use: {fuzzy_matches['companies_en'][0]}\n"
-                        fuzzy_context += f"  SQL example: WHERE hajj_company_en = '{fuzzy_matches['companies_en'][0]}'\n"
-                    
-                    if 'companies_ar' in fuzzy_matches:
-                        fuzzy_context += f"- For COMPANY (Arabic), use: {fuzzy_matches['companies_ar'][0]}\n"
-                        fuzzy_context += f"  SQL example: WHERE hajj_company_ar = '{fuzzy_matches['companies_ar'][0]}'\n"
-                
                 # --- Step 1: Generate SQL query ---
-                # --- Enhanced SQL generation prompt with better fuzzy match integration ---
                 prompt_sql = f"""
 You are a Text-to-SQL assistant for a database of Hajj agencies.
 The database has a table 'agencies' with columns:
@@ -495,14 +364,9 @@ The database has a table 'agencies' with columns:
 - city
 - country
 - email
-- is_authorized (Yes for authorized, No for not authorized)
+- is_authorized (1 for authorized, 0 for not authorized)
 
-IMPORTANT INSTRUCTIONS:
-1. If fuzzy matches are provided below, USE THE EXACT VALUES shown in the SQL examples
-2. Do NOT modify or approximate the fuzzy match values
-3. Use exact equality (=) when fuzzy matches are provided
-4. Only use LIKE with % wildcards if NO fuzzy matches are provided
-{fuzzy_context}
+Convert the following user question into a valid SQL query.
 If no valid SQL can be generated from the question, return "NO_SQL".
 Return only the SQL query, no explanation, no markdown formatting.
 
@@ -570,25 +434,6 @@ Database results (showing first 20 of {row_count} total):
                     except Exception as e:
                         answer_text = "I found some results for you. Please see the table below."
                     
-                    # --- Show correction note with the actual correction made ---
-                    if fuzzy_matches:
-                        correction_parts = []
-                        if 'cities' in fuzzy_matches:
-                            correction_parts.append(f"city: {fuzzy_matches['cities'][0]}")
-                        if 'countries' in fuzzy_matches:
-                            correction_parts.append(f"country: {fuzzy_matches['countries'][0]}")
-                        if 'companies_en' in fuzzy_matches:
-                            correction_parts.append(f"company: {fuzzy_matches['companies_en'][0]}")
-                        if 'companies_ar' in fuzzy_matches:
-                            correction_parts.append(f"شركة: {fuzzy_matches['companies_ar'][0]}")
-                        
-                        if correction_parts:
-                            if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
-                                correction_note = f"💡 تم تصحيح البحث إلى: {' | '.join(correction_parts)}"
-                            else:
-                                correction_note = f"💡 Search corrected to: {' | '.join(correction_parts)}"
-                            st.info(correction_note)
-                    
                     # Display answer
                     st.markdown(answer_text)
                     
@@ -630,35 +475,17 @@ Database results (showing first 20 of {row_count} total):
                     })
                     
                 else:
-                    no_results_msg = ""
-                    
-                    if fuzzy_matches:
-                        # Show suggestions based on fuzzy matches
-                        if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
-                            no_results_msg = "عذراً، لم أتمكن من العثور على نتائج مطابقة تماماً. هل تقصد أحد هذه؟\n\n"
-                        else:
-                            no_results_msg = "I couldn't find exact matches. Did you mean one of these?\n\n"
-                        
-                        for field, matches in fuzzy_matches.items():
-                            field_label = field.replace('_', ' ').title()
-                            no_results_msg += f"**{field_label}:** {', '.join(matches[:3])}\n\n"
-                        
-                        if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
-                            no_results_msg += "يمكنك إعادة صياغة سؤالك باستخدام أحد هذه الاقتراحات."
-                        else:
-                            no_results_msg += "Try rephrasing your question using one of these suggestions."
+                    # No results or couldn't generate SQL
+                    if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
+                        answer_text = "عذراً، لم أتمكن من العثور على نتائج مطابقة. يمكنك تجربة صياغة السؤال بطريقة مختلفة أو اختيار أحد الأمثلة من القائمة الجانبية."
                     else:
-                        # No fuzzy matches found
-                        if any("\u0600" <= ch <= "\u06FF" for ch in user_input):
-                            no_results_msg = "عذراً، لم أتمكن من العثور على نتائج مطابقة. يمكنك تجربة صياغة السؤال بطريقة مختلفة أو اختيار أحد الأمثلة من القائمة الجانبية."
-                        else:
-                            no_results_msg = "I couldn't find any matching results. Try rephrasing your question or select an example from the sidebar."
+                        answer_text = "I couldn't find any matching results. Try rephrasing your question or select an example from the sidebar."
                     
-                    st.info(no_results_msg)
+                    st.info(answer_text)
                     
                     st.session_state.chat_memory.append({
                         "role": "assistant",
-                        "content": no_results_msg
+                        "content": answer_text
                     })
 
     # Rerun to update the chat
