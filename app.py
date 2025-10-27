@@ -221,12 +221,14 @@ if user_input:
         with st.spinner("🤔 Thinking..."):
             # --- Intent Detection ---
             intent_prompt = f"""
-You are an intent classifier for a multilingual chatbot.
-Examples:
-- "مرحبا" → GREETING
-- "ما الشركات المصرحة؟" → DATABASE
-- "ما أركان الحج؟" → GENERAL_HAJJ
-Classify this message: {user_input}
+Analyze the user's message and classify it into one of these categories:
+1. GREETING - if it's a greeting like hi, hello, how are you, etc.
+2. DATABASE - if it's asking for specific data about Hajj companies (names, locations, emails, authorization status)
+3. GENERAL_HAJJ - if it's asking general questions about Hajj (rituals, requirements, history, etc.)
+
+User message: {user_input}
+
+Respond with only one word: GREETING, DATABASE, or GENERAL_HAJJ
 """
 
             try:
