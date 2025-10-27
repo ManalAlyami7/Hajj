@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
 from openai import OpenAI
+from rapidfuzz import process, fuzz
 
 # --- Connect to local database ---
 engine = create_engine("sqlite:///hajj_companies.db")
@@ -62,14 +63,42 @@ Question: {user_input}
         st.error(f"Error generating SQL: {e}")
 
     # --- Step 2: Execute SQL safely ---
-    try:
-        if sql_query:
-            with engine.connect() as conn:
-                result_df = pd.read_sql(text(sql_query), conn)
-        else:
-            result_df = pd.DataFrame()
-    except Exception as e:
-        result_df = pd.DataFrame({"Error": [str(e)]})
+
+# --- Step 2: Fuzzy search ---
+def fuzzy_filter(df, column_list, query, threshold=80):
+    """
+    df: DataFrame to search
+    column_list: columns to perform fuzzy matching on
+    query: user input
+    threshold: minimum match score
+    """
+    mask = pd.Series(False, index=df.index)
+    for col in column_list:
+        matches = process.extract(query, df[col], scorer=fuzz.token_sort_ratio, limit=None)
+        # matches is a list of tuples (value, score, index)
+        for match_value, score, idx in matches:
+            if score >= threshold:
+                mask[idx] = True
+    return df[mask]
+
+# --- Step 2a: Execute SQL safely ---
+try:
+    if sql_query:
+        with engine.connect() as conn:
+            result_df = pd.read_sql(text(sql_query), conn)
+            
+        # --- Step 2b: Apply fuzzy search ---
+        result_df = fuzzy_filter(
+            result_df, 
+            column_list=["hajj_company_ar", "hajj_company_en", "city", "country"], 
+            query=user_input,
+            threshold=80
+        )
+    else:
+        result_df = pd.DataFrame()
+except Exception as e:
+    result_df = pd.DataFrame({"Error": [str(e)]})
+
 
     # --- Step 3: Rephrase results naturally (multilingual) ---
     if not result_df.empty:
