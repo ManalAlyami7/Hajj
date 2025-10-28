@@ -888,10 +888,12 @@ Return only the SQL SELECT query or NO_SQL.
                     # Execute SQL
                     # -----------------------------
                     if sql_query:
+                        st.wrtie(sql_query)
                         st.write("💾 Executing query...")
                         try:
                             with engine.connect() as conn:
                                 result_df = pd.read_sql(text(sql_query), conn)
+
                                 st.write(f"✅ Found {len(result_df)} results")
                         except Exception as e:
                             sql_error = str(e)
