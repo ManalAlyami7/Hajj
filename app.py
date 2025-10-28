@@ -451,7 +451,7 @@ def extract_sql_from_response(response_text: str) -> Optional[str]:
 def get_database_engine():
     """Initialize database engine"""
     try:
-        return create_engine("sqlite:///agencies.db")
+        return create_engine("sqlite:///hajj_companies.db")
     except Exception as e:
         st.error(f"❌ Database connection failed: {e}")
         st.stop()
