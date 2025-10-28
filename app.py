@@ -595,7 +595,7 @@ with st.sidebar:
 st.markdown(f"""
 <div class="header-container{' rtl' if st.session_state.new_language == 'العربية' else ''}">
     <h1>
-        <span class="main-title">🕋</span> {t('main_title', st.session_state.new_language)}
+        🕋 <span class="main-title">{t('main_title', st.session_state.new_language)}</span>
     </h1>
     <p class="subtitle">{t('subtitle', st.session_state.new_language)}</p>
 </div>
