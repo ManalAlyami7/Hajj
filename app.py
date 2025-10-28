@@ -451,7 +451,7 @@ def extract_sql_from_response(response_text: str) -> Optional[str]:
 def get_database_engine():
     """Initialize database engine"""
     try:
-        return create_engine("sqlite:///hajj_companies.db")
+        return create_engine("sqlite:///agencies.db")
     except Exception as e:
         st.error(f"❌ Database connection failed: {e}")
         st.stop()
@@ -629,16 +629,16 @@ def heuristic_sql_fallback(question: str) -> Optional[str]:
     
     # Basic patterns
     if any(word in question for word in ['all', 'show', 'list']):
-        return "SELECT * FROM hajj_companies LIMIT 100"
+        return "SELECT * FROM agencies LIMIT 100"
         
     if 'authorized' in question or 'autorized' in question:
-        return "SELECT * FROM hajj_companies WHERE is_autorized = 'Yes' LIMIT 100"
+        return "SELECT * FROM agencies WHERE is_autorized = 'Yes' LIMIT 100"
         
     if 'saudi' in question or 'ksa' in question:
-        return "SELECT * FROM hajj_companies WHERE LOWER(Country) LIKE '%saudi%' LIMIT 100"
+        return "SELECT * FROM agencies WHERE LOWER(Country) LIKE '%saudi%' LIMIT 100"
         
     if 'email' in question:
-        return "SELECT * FROM hajj_companies WHERE email IS NOT NULL AND email != '' LIMIT 100"
+        return "SELECT * FROM agencies WHERE email IS NOT NULL AND email != '' LIMIT 100"
         
     return None
 def show_result_summary(df: pd.DataFrame) -> None:
@@ -830,7 +830,7 @@ Message: {user_input}
 
                     normalized_input = fuzzy_normalize(user_input)
                     sql_prompt = f"""
-You are a SQL expert. Convert the user's request into a single SELECT query for the 'hajj_companies' table.
+You are a SQL expert. Convert the user's request into a single SELECT query for the 'agencies' table.
 
 Columns:
 - "Hajj Company (Arabic)"
