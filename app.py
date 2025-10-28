@@ -834,7 +834,7 @@ You are a SQL expert. Convert the user's request into a single SELECT query for 
 
 Columns:
 - hajj_company_ar
-- ajj_company_en
+- hajj_company_en
 - formatted_address
 - city
 - country 
