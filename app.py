@@ -20,7 +20,7 @@ TRANSLATIONS = {
         # Sidebar
         "assistant_title": "🕋 Hajj Assistant",
         "assistant_subtitle": "Your AI-powered guide",
-        "new_language_title": "🌐 new_language",
+        "language_title": "🌐 language",
         "stats_title": "📊 Live Statistics",
         "examples_title": "💡 Quick Examples",
         "clear_chat": "🧹 Clear Chat History",
@@ -91,7 +91,7 @@ TRANSLATIONS = {
         # Sidebar
         "assistant_title": "🕋 مساعد الحج",
         "assistant_subtitle": "دليلك الذكي المدعوم بالذكاء الاصطناعي",
-        "new_language_title": "🌐 اللغة",
+        "language_title": "🌐 اللغة",
         "stats_title": "📊 الإحصائيات المباشرة",
         "examples_title": "💡 أمثلة سريعة",
         "clear_chat": "🧹 مسح سجل المحادثة",
@@ -504,7 +504,7 @@ with st.sidebar:
     st.markdown("---")
 
     # new_language Toggle
-    st.markdown(f"<h3>{t('new_language_title', st.session_state.new_language)}</h3>", unsafe_allow_html=True)
+    st.markdown(f"<h3>{t('language_title', st.session_state.new_language)}</h3>", unsafe_allow_html=True)
     new_language_choice = st.radio(
         "",
         ["English 🇬🇧", "العربية 🇸🇦"],
@@ -594,8 +594,8 @@ with st.sidebar:
 # -----------------------------
 st.markdown(f"""
 <div class="header-container{' rtl' if st.session_state.new_language == 'العربية' else ''}">
-    <h1 class="main-title">
-        <span>🕋</span> {t('main_title', st.session_state.new_language)}
+    <h1>
+        <span class="main-title">🕋</span> {t('main_title', st.session_state.new_language)}
     </h1>
     <p class="subtitle">{t('subtitle', st.session_state.new_language)}</p>
 </div>
