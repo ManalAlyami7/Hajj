@@ -14,7 +14,7 @@ TRANSLATIONS = {
     "English": {
         # Header
         "page_title": "Hajj Chatbot",
-        "main_title": "🕋 Hajj Data Intelligence",
+        "main_title": "Hajj Data Intelligence",
         "subtitle": "Ask anything about Hajj companies worldwide • AI-powered • Real-time data",
         
         # Sidebar
@@ -85,7 +85,7 @@ TRANSLATIONS = {
     "العربية": {
         # Header
         "page_title": "روبوت الحج",
-        "main_title": "🕋 معلومات بيانات الحج الذكية",
+        "main_title": "معلومات بيانات الحج الذكية",
         "subtitle": "اسأل عن شركات الحج حول العالم • مدعوم بالذكاء الاصطناعي • بيانات فورية",
         
         # Sidebar
@@ -594,7 +594,9 @@ with st.sidebar:
 # -----------------------------
 st.markdown(f"""
 <div class="header-container{' rtl' if st.session_state.new_language == 'العربية' else ''}">
-    <h1 class="main-title">{t('main_title', st.session_state.new_language)}</h1>
+    <h1 class="main-title">
+        <span>🕋</span> {t('main_title', st.session_state.new_language)}
+    </h1>
     <p class="subtitle">{t('subtitle', st.session_state.new_language)}</p>
 </div>
 """, unsafe_allow_html=True)
