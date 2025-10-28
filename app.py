@@ -629,16 +629,16 @@ def heuristic_sql_fallback(question: str) -> Optional[str]:
     
     # Basic patterns
     if any(word in question for word in ['all', 'show', 'list']):
-        return "SELECT * FROM agencies LIMIT 100"
+        return "SELECT * FROM hajj_companies LIMIT 100"
         
-    if 'authorized' in question:
-        return "SELECT * FROM agencies WHERE is_authorized = 'Yes' LIMIT 100"
+    if 'authorized' in question or 'autorized' in question:
+        return "SELECT * FROM hajj_companies WHERE is_autorized = 'Yes' LIMIT 100"
         
     if 'saudi' in question or 'ksa' in question:
-        return "SELECT * FROM agencies WHERE LOWER(country) LIKE '%saudi%' LIMIT 100"
+        return "SELECT * FROM hajj_companies WHERE LOWER(Country) LIKE '%saudi%' LIMIT 100"
         
     if 'email' in question:
-        return "SELECT * FROM agencies WHERE email IS NOT NULL AND email != '' LIMIT 100"
+        return "SELECT * FROM hajj_companies WHERE email IS NOT NULL AND email != '' LIMIT 100"
         
     return None
 def show_result_summary(df: pd.DataFrame) -> None:
@@ -649,8 +649,8 @@ def show_result_summary(df: pd.DataFrame) -> None:
     with col2:
         st.markdown(f"<div class='badge badge-success'>✅ {len(df.columns)} Columns</div>", unsafe_allow_html=True)
     with col3:
-        if "is_authorized" in df.columns:
-            auth_count = len(df[df["is_authorized"] == "Yes"])
+        if "is_autorized" in df.columns:
+            auth_count = len(df[df["is_autorized"] == "Yes"])
             st.markdown(f"<div class='badge badge-success'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
     
     st.dataframe(df, use_container_width=True, height=300)
@@ -830,23 +830,27 @@ Message: {user_input}
 
                     normalized_input = fuzzy_normalize(user_input)
                     sql_prompt = f"""
-You are a SQL expert. Convert the user's request into a single SELECT query for the 'agencies' table.
+You are a SQL expert. Convert the user's request into a single SELECT query for the 'hajj_companies' table.
 
 Columns:
-- hajj_company_ar
-- hajj_company_en
-- city
-- country
+- "Hajj Company (Arabic)"
+- "Hajj Company (English)"
+- formattedAddress
+- City
+- Country 
 - email
-- is_authorized ('Yes' or 'No')
+- Contact_Info
+- Rating Reviews
+- is_autorized ('Yes' or 'No')
 
 Rules:
 1. Return ONLY one valid SELECT query or 'NO_SQL'.
-2. Use LOWER(...) and LIKE for text.
-3. Use is_authorized='Yes' when filtering authorized companies.
-4. Limit to 100 rows unless the user asks for more.
-5. Include both Arabic and English names.
+2. Use LOWER(...) and LIKE for text searches.
+3. Use is_autorized='Yes' when filtering authorized companies.
+4. Limit to 100 rows unless user asks for more.
+5. Include both Arabic and English company names.
 6. Use '{normalized_input}' for fuzzy matches if needed.
+7. Use double quotes for column names with spaces.
 
 User question: {user_input}
 Return only the SQL SELECT query or NO_SQL.
