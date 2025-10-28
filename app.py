@@ -632,7 +632,7 @@ def heuristic_sql_fallback(question: str) -> Optional[str]:
         return "SELECT * FROM agencies LIMIT 100"
         
     if 'authorized' in question or 'autorized' in question:
-        return "SELECT * FROM agencies WHERE is_autorized = 'Yes' LIMIT 100"
+        return "SELECT * FROM agencies WHERE is_authorized = 'Yes' LIMIT 100"
         
     if 'saudi' in question or 'ksa' in question:
         return "SELECT * FROM agencies WHERE LOWER(Country) LIKE '%saudi%' LIMIT 100"
@@ -649,8 +649,8 @@ def show_result_summary(df: pd.DataFrame) -> None:
     with col2:
         st.markdown(f"<div class='badge badge-success'>✅ {len(df.columns)} Columns</div>", unsafe_allow_html=True)
     with col3:
-        if "is_autorized" in df.columns:
-            auth_count = len(df[df["is_autorized"] == "Yes"])
+        if "is_authorized" in df.columns:
+            auth_count = len(df[df["is_authorized"] == "Yes"])
             st.markdown(f"<div class='badge badge-success'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
     
     st.dataframe(df, use_container_width=True, height=300)
@@ -833,20 +833,20 @@ Message: {user_input}
 You are a SQL expert. Convert the user's request into a single SELECT query for the 'agencies' table.
 
 Columns:
-- "Hajj Company (Arabic)"
-- "Hajj Company (English)"
-- formattedAddress
-- City
-- Country 
+- hajj_company_ar
+- ajj_company_en
+- formatted_address
+- city
+- country 
 - email
-- Contact_Info
-- Rating Reviews
-- is_autorized ('Yes' or 'No')
+- contact_Info
+- rating_reviews
+- is_authorized ('Yes' or 'No')
 
 Rules:
 1. Return ONLY one valid SELECT query or 'NO_SQL'.
 2. Use LOWER(...) and LIKE for text searches.
-3. Use is_autorized='Yes' when filtering authorized companies.
+3. Use is_authorized='Yes' when filtering authorized companies.
 4. Limit to 100 rows unless user asks for more.
 5. Include both Arabic and English company names.
 6. Use '{normalized_input}' for fuzzy matches if needed.
