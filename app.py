@@ -888,7 +888,7 @@ Return only the SQL SELECT query or NO_SQL.
                     # Execute SQL
                     # -----------------------------
                     if sql_query:
-                        st.wrtie(sql_query)
+                        st.write(sql_query)
                         st.write("💾 Executing query...")
                         try:
                             with engine.connect() as conn:
