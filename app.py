@@ -1101,7 +1101,6 @@ if "show_voice_interface" not in st.session_state:
 
 if st.query_params.get("micClicked") or st.session_state.show_voice_interface:
     st.session_state.show_voice_interface = True
-    st.rerun()
 
 
 # Floating mic button (using CSS .mic-inside-input)
@@ -1182,7 +1181,7 @@ st.markdown("""
     /* Microphone button inside chat input */
     .mic-inside-input {
         position: fixed;
-        bottom: 60px;
+        bottom: 57px;
         right: 40px;
         z-index: 1000;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
