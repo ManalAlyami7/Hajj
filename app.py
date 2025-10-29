@@ -1099,9 +1099,30 @@ Give 1–3 short sentences of insights.
 if "show_voice_interface" not in st.session_state:
     st.session_state.show_voice_interface = False
 
-if st.button("🎤", key="open_voice"):
+if st.experimental_get_query_params().get("micClicked") or st.session_state.show_voice_interface:
     st.session_state.show_voice_interface = True
     st.rerun()
+
+
+# Floating mic button (using CSS .mic-inside-input)
+st.markdown("""
+<button class="mic-inside-input" onclick="document.dispatchEvent(new Event('micClicked'))">
+    🎤
+</button>
+
+<script>
+const button = document.querySelector('.mic-inside-input');
+button.addEventListener('click', () => {
+    // Trigger Streamlit rerun by setting a hidden input
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'micClicked';
+    input.value = 'true';
+    document.querySelector('form').appendChild(input);
+    document.querySelector('form').submit();
+});
+</script>
+""", unsafe_allow_html=True)
 
 # Voice Bot CSS
 st.markdown("""
