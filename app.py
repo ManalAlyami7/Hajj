@@ -1099,7 +1099,7 @@ Give 1–3 short sentences of insights.
 if "show_voice_interface" not in st.session_state:
     st.session_state.show_voice_interface = False
 
-if st.experimental_get_query_params().get("micClicked") or st.session_state.show_voice_interface:
+if st.query_params().get("micClicked") or st.session_state.show_voice_interface:
     st.session_state.show_voice_interface = True
     st.rerun()
 
