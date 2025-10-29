@@ -755,11 +755,22 @@ if user_input:
             # -----------------------------
             intent = "DATABASE"
             try:
-                intent_prompt = f"""
-Classify the user's message into one of: GREETING, DATABASE, GENERAL_HAJJ.
-Respond with exactly one word.
-Message: {user_input}
-"""
+               # Intent Detection - UPDATED
+                intent_prompt = f"""You are a fraud prevention assistant for Hajj pilgrims. Classify this message:
+
+                GREETING: greetings like hello, hi, how are you, salam
+                DATABASE: questions about verifying Hajj agencies, checking authorization, company details
+                GENERAL_HAJJ: general Hajj questions (rituals, requirements)
+
+                CRITICAL CONTEXT:
+                - 415 fake Hajj offices were closed in 2025
+                - 269,000+ unauthorized pilgrims were stopped
+                - Our mission is to prevent fraud and protect pilgrims
+                - Always emphasize verification and authorization
+
+                Message: {user_input}
+
+                Respond with ONE WORD: GREETING, DATABASE, or GENERAL_HAJJ"""
                 resp = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
@@ -780,11 +791,48 @@ Message: {user_input}
             # -----------------------------
             if intent == "GREETING":
                 is_arabic = any("\u0600" <= ch <= "\u06FF" for ch in user_input)
-                greeting_text = (
-                    "السلام عليكم ورحمة الله وبركاته! 🌙\n\nكيف يمكنني مساعدتك في البحث عن معلومات شركات الحج؟"
-                    if is_arabic else
-                    "Hello! 👋\n\nHow can I help you find information about Hajj companies today?"
-                )
+                
+                # Create a conversational prompt based on language
+                greeting_prompt = {
+                    "role": "system",
+                    "content": """You are a friendly Hajj assistant. Generate a warm, natural greeting that:
+                    1. Acknowledges the user's greeting
+                    2. Expresses willingness to help
+                    3. Mentions you can help with Hajj company information
+                    4. Keeps response under 3 sentences
+                    5. Uses emojis appropriately
+                    """ + ("6. Respond in Arabic" if is_arabic else "6. Respond in English")
+                }
+
+                try:
+                    greeting_response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            greeting_prompt,
+                            {"role": "user", "content": user_input}
+                        ],
+                        temperature=0.7,
+                        max_tokens=150
+                    )
+                    
+                    greeting_text = greeting_response.choices[0].message.content.strip()
+                    
+                    # Fallback greetings if API fails
+                    if not greeting_text:
+                        greeting_text = (
+                            "السلام عليكم ورحمة الله وبركاته! 🌙\n\nكيف يمكنني مساعدتك في البحث عن معلومات شركات الحج؟"
+                            if is_arabic else
+                            "Hello! 👋\n\nHow can I help you find information about Hajj companies today?"
+                        )
+                        
+                except Exception:
+                    # Fallback on API failure
+                    greeting_text = (
+                        "السلام عليكم ورحمة الله وبركاته! 🌙\n\nكيف يمكنني مساعدتك في البحث عن معلومات شركات الحج؟"
+                        if is_arabic else
+                        "Hello! 👋\n\nHow can I help you find information about Hajj companies today?"
+                    )
+
                 st.markdown(greeting_text)
                 st.session_state.chat_memory.append({
                     "role": "assistant",
@@ -829,10 +877,16 @@ Message: {user_input}
                     st.write("🧠 Generating SQL query...")
 
                     normalized_input = fuzzy_normalize(user_input)
-                    sql_prompt = f"""
-You are a SQL expert. Convert the user's request into a single SELECT query for the 'agencies' table.
+                  
+                    # SQL Generation - UPDATED FOR FRAUD PREVENTION
+                    sql_prompt = f"""You are a fraud prevention SQL expert protecting Hajj pilgrims.
 
-Columns:
+CRITICAL MISSION: Help verify if agencies are Ministry-authorized to prevent fraud.
+- 415 fake offices closed in 2025
+- 269,000+ unauthorized pilgrims stopped
+- Focus on AUTHORIZED agencies (is_authorized = 'Yes')
+
+Table 'agencies' columns:
 - hajj_company_ar
 - hajj_company_en
 - formatted_address
@@ -843,17 +897,83 @@ Columns:
 - rating_reviews
 - is_authorized ('Yes' or 'No')
 
-Rules:
-1. Return ONLY one valid SELECT query or 'NO_SQL'.
-2. Use LOWER(...) and LIKE for text searches.
-3. Use is_authorized='Yes' when filtering authorized companies.
-4. Limit to 100 rows unless user asks for more.
-5. Include both Arabic and English company names.
-6. Use '{normalized_input}' for fuzzy matches if needed.
-7. Use double quotes for column names with spaces.
+User question: {user_input}
+
+IMPORTANT RULES:
+1. PRIORITIZE is_authorized = 'Yes' in queries when relevant
+2. Use LOWER() and LIKE for flexible matching
+3. When user asks "is X authorized", check is_authorized status
+4. Always include both Arabic and English company names
+5. Limit to 100 unless specified
+
+EXAMPLES:
+- "Is ABC company authorized?" → SELECT * FROM agencies WHERE (LOWER(hajj_company_en) LIKE '%abc%' OR LOWER(hajj_company_ar) LIKE '%abc%') LIMIT 10
+- "authorized companies in Mecca" → SELECT * FROM agencies WHERE is_authorized = 'Yes' AND (LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%') LIMIT 100
+CRITICAL: Database contains MIXED LANGUAGES - Arabic, English, Urdu, misspellings, variations!
+
+Real database examples:
+- Cities: "مكة المكرمة", "Makkah", "Makkah Al Mukarramah", "MAKKAH", "Mecca"
+- Countries: "السعودية", "Saudi Arabia", "Saudi Arabia (Kingdom)", "Saudi Arabia (Kingsdom)", "المملكة العربية السعودية"
+
+RULES FOR LOCATION QUERIES:
+1. ALWAYS use multiple LIKE conditions with OR for location matching
+2. Include Arabic AND English variations in same query
+3. Use partial matching with % wildcards
+4. Don't assume exact spelling - database has typos and variations
+
+LOCATION PATTERN EXAMPLES:
+
+For "Mecca" or "مكة" queries:
+WHERE (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%' OR LOWER(city) LIKE '%makka%')
+
+For "Saudi Arabia" or "السعودية":
+WHERE (country LIKE '%السعودية%' OR LOWER(country) LIKE '%saudi%' OR country LIKE '%المملكة%')
+
+For "Medina" or "المدينة":
+WHERE (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%')
+
+For "Pakistan" or "باكستان":
+WHERE (country LIKE '%باكستان%' OR LOWER(country) LIKE '%pakistan%' OR country LIKE '%پاکستان%')
+
+For "Egypt" or "مصر":
+WHERE (country LIKE '%مصر%' OR LOWER(country) LIKE '%egypt%')
+
+AUTHORIZATION PRIORITY:
+- When verifying specific company: check is_authorized status
+- When user says "authorized": add AND is_authorized = 'Yes'
+- Always show authorization status in results
 
 User question: {user_input}
-Return only the SQL SELECT query or NO_SQL.
+
+EXAMPLES:
+
+Q: "Show companies in مكة"
+A: SELECT * FROM agencies WHERE (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%') LIMIT 100
+
+Q: "Authorized agencies in Makkah"
+A: SELECT * FROM agencies WHERE is_authorized = 'Yes' AND (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%') LIMIT 100
+
+Q: "Companies in Saudi Arabia"
+A: SELECT * FROM agencies WHERE (country LIKE '%السعودية%' OR LOWER(country) LIKE '%saudi%' OR country LIKE '%المملكة%') LIMIT 100
+
+Q: "Is ABC Hajj Services authorized?"
+A: SELECT * FROM agencies WHERE (LOWER(hajj_company_en) LIKE '%abc%' OR hajj_company_ar LIKE '%abc%') LIMIT 10
+
+Q: "Pakistan authorized companies"
+A: SELECT * FROM agencies WHERE is_authorized = 'Yes' AND (country LIKE '%باكستان%' OR LOWER(country) LIKE '%pakistan%' OR country LIKE '%پاکستان%') LIMIT 100
+
+COMMON DATABASE VARIATIONS TO HANDLE:
+- "Makkah Al Mukarramah" = "مكة المكرمة" = "Mecca"
+- "Al Madinah Al Munawwarah" = "المدينة المنورة" = "Medina"  
+- "Ar Riyadh" = "الرياض" = "Riyadh"
+- "Jeddah" = "جدة" = "Jiddah"
+- "Saudi Arabia (Kingsdom)" [typo] = "السعودية" = "KSA"
+- "Türkiye" = "Turkey" = "تركيا"
+- "Indonesia" = "إندونيسيا"
+
+Return ONLY the SQL SELECT query or NO_SQL if impossible.
+
+
 """
                     sql_query = None
                     try:
