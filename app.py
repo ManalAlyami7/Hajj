@@ -755,13 +755,12 @@ if user_input:
             # -----------------------------
             # Intent Detection
             # -----------------------------
-            intent = "DATABASE"
             try:
                # Intent Detection - UPDATED
                 intent_prompt = f"""You are a fraud prevention assistant for Hajj pilgrims. Classify this message:
 
-                GREETING: greetings like hello, hi, how are you, salam
-                DATABASE: questions about verifying Hajj agencies, checking authorization, company details
+                GREETING: greetings like hello, hi, how are you, salam, if no agency info is provided and user want to chat.
+                DATABASE: questions about verifying specific Hajj agencies, checking authorization, company details, locations, contacts, etc.
                 GENERAL_HAJJ: general Hajj questions (rituals, requirements)
 
                 CRITICAL CONTEXT:
