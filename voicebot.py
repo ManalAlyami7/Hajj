@@ -396,7 +396,7 @@ st.markdown("<div class='status-hint'>Click below to upload audio or record your
 # Audio Upload Section
 # -----------------------------
 st.markdown("<br>", unsafe_allow_html=True)
-
+audio_file=None
 
 
 if audio_file is not None:
