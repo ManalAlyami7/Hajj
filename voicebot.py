@@ -358,7 +358,7 @@ col1, col2, col3 = st.columns([2, 6, 2])
 with col1:
     if st.button(t("back"), key="back_button"):
         st.session_state.show_voice_interface = False
-        st.switch_page("Home.py")
+        st.switch_page("app.py")
 
 # Title Section
 st.markdown(f"""
@@ -441,7 +441,7 @@ if audio_file is not None:
                         if st.button(t("search_btn"), type="primary", use_container_width=True, key="search_now"):
                             st.session_state.selected_question = transcribed_text
                             st.session_state.show_voice_interface = False
-                            st.switch_page("Home.py")
+                            st.switch_page("app.py")
                 
                 except Exception as e:
                     st.session_state.is_recording = False
