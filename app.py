@@ -1107,26 +1107,6 @@ with mic_col3:
         st.rerun()
 
 
-# Floating mic button (using CSS .mic-inside-input)
-st.markdown("""
-<button class="mic-inside-input" onclick="document.dispatchEvent(new Event('micClicked'))">
-    🎤
-</button>
-
-<script>
-const button = document.querySelector('.mic-inside-input');
-button.addEventListener('click', () => {
-    // Trigger Streamlit rerun by setting a hidden input
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'micClicked';
-    input.value = 'true';
-    document.querySelector('form').appendChild(input);
-    document.querySelector('form').submit();
-});
-</script>
-""", unsafe_allow_html=True)
-
 # Voice Bot CSS
 st.markdown("""
 <style>
@@ -1211,13 +1191,21 @@ st.markdown("""
 st.markdown("""
 <style>
 .stButton>button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    font-size: 1.5rem;
-    color: white;
-    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+    position: fixed;
+        bottom: 57px;
+        right: 40px;
+        z-index: 1000;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
 }
 .stButton>button:hover {
     transform: scale(1.1);
