@@ -1095,50 +1095,14 @@ Give 1–3 short sentences of insights.
                         "timestamp": get_current_time()
                     })
 # -----------------------------
-# Voice Bot Interface
+# Voice Bot Interface - Page Mode
 # -----------------------------
 if "show_voice_interface" not in st.session_state:
     st.session_state.show_voice_interface = False
 
-# Floating Microphone Button
+# Voice Bot CSS
 st.markdown("""
 <style>
-    .floating-mic {
-        position: fixed;
-        bottom: 100px;
-        right: 30px;
-        z-index: 9999;
-    }
-    
-    .mic-button {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
-        animation: pulse 2s infinite;
-    }
-    
-    .mic-button:hover {
-        transform: scale(1.1);
-        box-shadow: 0 6px 30px rgba(102, 126, 234, 0.7);
-    }
-    
-    @keyframes pulse {
-        0%, 100% {
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
-        }
-        50% {
-            box-shadow: 0 4px 30px rgba(102, 126, 234, 0.8);
-        }
-    }
-    
     .voice-interface {
         background: rgba(255, 255, 255, 0.98);
         backdrop-filter: blur(10px);
@@ -1186,17 +1150,14 @@ st.markdown("""
         color: #666;
         margin-top: 1rem;
     }
+    
+    .stChatInputContainer {
+        position: relative;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# Microphone button in fixed position
-mic_col1, mic_col2, mic_col3 = st.columns([6, 1, 1])
-with mic_col3:
-    if st.button("🎤", key="mic_button", help="Voice Bot"):
-        st.session_state.show_voice_interface = not st.session_state.show_voice_interface
-        st.rerun()
-
-# Voice Interface
+# Check if we should show voice interface
 if st.session_state.show_voice_interface:
     st.markdown("<div class='voice-interface'>", unsafe_allow_html=True)
     
@@ -1307,6 +1268,9 @@ if st.session_state.show_voice_interface:
                         st.error(f"❌ {'حدث خطأ في توليد الصوت' if st.session_state.new_language == 'العربية' else 'Audio generation error'}: {str(e)}")
     
     st.markdown("</div>", unsafe_allow_html=True)
+
+# -----------------------------
+# -----------------------------
 # -----------------------------
 # EOF
 # -----------------------------
