@@ -1095,6 +1095,12 @@ Give 1–3 short sentences of insights.
                         "timestamp": get_current_time()
                     })
 # -----------------------------
+# Voice Bot Interface
+# -----------------------------
+# -----------------------------
+# Voice Bot Interface - Page Mode
+# -----------------------------
+# -----------------------------
 # Voice Bot Interface - Page Mode
 # -----------------------------
 if "show_voice_interface" not in st.session_state:
@@ -1153,6 +1159,30 @@ st.markdown("""
     
     .stChatInputContainer {
         position: relative;
+    }
+    
+    /* Microphone button inside chat input */
+    .mic-inside-input {
+        position: fixed;
+        bottom: 20px;
+        right: 80px;
+        z-index: 1000;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .mic-inside-input:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1269,6 +1299,9 @@ if st.session_state.show_voice_interface:
     
     st.markdown("</div>", unsafe_allow_html=True)
 
+# -----------------------------
+# EOF
+# -----------------------------
 # -----------------------------
 # -----------------------------
 # -----------------------------
