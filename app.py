@@ -1095,12 +1095,6 @@ Give 1–3 short sentences of insights.
                         "timestamp": get_current_time()
                     })
 # -----------------------------
-# Voice Bot Interface
-# -----------------------------
-# -----------------------------
-# Voice Bot Interface - Page Mode
-# -----------------------------
-# -----------------------------
 # Voice Bot Interface - Page Mode
 # -----------------------------
 if "show_voice_interface" not in st.session_state:
@@ -1230,7 +1224,7 @@ if st.session_state.show_voice_interface:
     
     # File uploader for audio (simulating voice recording)
     audio_file = st.file_uploader(
-        "🎙 " + ("سجل صوتك أو ارفع ملف صوتي" if st.session_state.new_language == "العربية" else "Record or upload audio"),
+        "🎙️ " + ("سجل صوتك أو ارفع ملف صوتي" if st.session_state.new_language == "العربية" else "Record or upload audio"),
         type=["wav", "mp3", "m4a", "ogg"],
         key="audio_upload"
     )
@@ -1250,7 +1244,7 @@ if st.session_state.show_voice_interface:
                 transcribed_text = transcription.text
                 
                 st.success("✅ " + ("تم التحويل بنجاح!" if st.session_state.new_language == "العربية" else "Transcription successful!"))
-                st.info(f"{'النص المحول' if st.session_state.new_language == 'العربية' else 'Transcribed Text'}:** {transcribed_text}")
+                st.info(f"**{'النص المحول' if st.session_state.new_language == 'العربية' else 'Transcribed Text'}:** {transcribed_text}")
                 
                 # Process the transcribed text
                 if st.button("🔍 " + ("بحث" if st.session_state.new_language == "العربية" else "Search"), type="primary"):
@@ -1299,11 +1293,4 @@ if st.session_state.show_voice_interface:
     
     st.markdown("</div>", unsafe_allow_html=True)
 
-# -----------------------------
-# EOF
-# -----------------------------
-# -----------------------------
-# -----------------------------
-# -----------------------------
-# EOF
 # -----------------------------
