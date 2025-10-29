@@ -1,5 +1,7 @@
 # -----------------------------
 # Voice Bot Interface - Page Mode
+
+st.button("🎤 " + ("مساعد الصوت" if st.session_state.new_language == "العربية" else "Voice Assistant"), key="voice_bot_button")
 # -----------------------------
 if "show_voice_interface" not in st.session_state:
     st.session_state.show_voice_interface = False
