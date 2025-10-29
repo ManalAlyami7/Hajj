@@ -397,12 +397,7 @@ st.markdown("<div class='status-hint'>Click below to upload audio or record your
 # -----------------------------
 st.markdown("<br>", unsafe_allow_html=True)
 
-audio_file = st.file_uploader(
-    "Upload Audio File",
-    type=["wav", "mp3", "m4a", "ogg", "webm", "flac"],
-    label_visibility="collapsed",
-    help="Upload an audio file to transcribe"
-)
+
 
 if audio_file is not None:
     # Display audio player
