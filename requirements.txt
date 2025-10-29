@@ -3,3 +3,5 @@ pandas
 sqlalchemy
 openai
 pytz
+streamlit-webrtc 
+pydub
