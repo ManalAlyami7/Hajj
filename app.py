@@ -6,10 +6,6 @@ from datetime import datetime
 import pytz
 import re
 from typing import Optional, Dict, List
-import tempfile
-from streamlit_webrtc import webrtc_streamer, AudioProcessorBase
-from pydub import AudioSegment
-
 
 # -----------------------------
 # TRANSLATIONS DICTIONARY
@@ -166,51 +162,7 @@ def t(key: str, lang: str = "English", **kwargs) -> str:
         return text.format(**kwargs)
     return text
 
-def show_mic_modal():
-    st.markdown("""
-        <style>
-        .mic-modal {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            background-color: rgba(0,0,0,0.85);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 9999;
-            color: white;
-        }
-        .mic-icon {
-            font-size: 120px;
-            text-align: center;
-            color: #00e676;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        </style>
-        <div class="mic-modal"><div class="mic-icon">🎙️<br><p>Listening...</p></div></div>
-    """, unsafe_allow_html=True)
-
-    class AudioProcessor(AudioProcessorBase):
-        def __init__(self) -> None:
-            self.frames = []
-
-        def recv_audio(self, frame):
-            self.frames.append(frame.to_ndarray().flatten())
-            return frame
-
-    webrtc_ctx = webrtc_streamer(
-        key="mic_input",
-        mode="sendonly",
-        audio_receiver_size=256,
-        media_stream_constraints={"audio": True, "video": False},
-    )
-
-    if not webrtc_ctx.state.playing:
-        st.stop()
-
+    
 
 def get_current_time() -> float:
     """Get current timestamp in Riyadh timezone"""
@@ -243,24 +195,7 @@ st.markdown("""
     * {
         font-family: 'Inter', 'Cairo', sans-serif;
     }
-    #mic-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background-color: #00e676;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    font-size: 30px;
-    cursor: pointer;
-    z-index: 9999;
-    box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
-}
-    #mic-button:hover {
-        background-color: #00c853;
-    }
+    
     .main {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         background-attachment: fixed;
@@ -800,22 +735,6 @@ for idx, msg in enumerate(st.session_state.chat_memory):
 # -----------------------------
 placeholder_text = "اكتب سؤالك هنا... 💬" if st.session_state.new_language == "العربية" else "Ask your question here... 💬"
 user_input = st.session_state.selected_question or st.chat_input(placeholder_text)
-mic_clicked = st.button("🎙️", key="mic-button", help="Talk to assistant")
-
-if mic_clicked:
-    show_mic_modal()
-    st.info("Recording complete! Transcribing...")
-
-    # Simulate audio transcription (replace with Whisper or real recorder)
-    audio_path = "your_voice.wav"  # placeholder
-    with open(audio_path, "rb") as audio_file:
-        transcription = client.audio.transcriptions.create(
-            model="gpt-4o-mini-transcribe",
-            file=audio_file
-        )
-    user_input = transcription.text
-
-
 st.session_state.selected_question = None
 
 if user_input:
