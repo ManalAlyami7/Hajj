@@ -1182,8 +1182,8 @@ st.markdown("""
     /* Microphone button inside chat input */
     .mic-inside-input {
         position: fixed;
-        bottom: 20px;
-        right: 80px;
+        bottom: 40px;
+        right: 70px;
         z-index: 1000;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border: none;
