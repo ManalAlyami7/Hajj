@@ -1099,8 +1099,12 @@ Give 1–3 short sentences of insights.
 if "show_voice_interface" not in st.session_state:
     st.session_state.show_voice_interface = False
 
-if st.query_params.get("micClicked") or st.session_state.show_voice_interface:
-    st.session_state.show_voice_interface = True
+# Floating mic button
+mic_col1, mic_col2, mic_col3 = st.columns([9, 1, 1])
+with mic_col3:
+    if st.button("🎤", key="open_voice"):
+        st.session_state.show_voice_interface = True
+        st.rerun()
 
 
 # Floating mic button (using CSS .mic-inside-input)
@@ -1203,6 +1207,25 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+.stButton>button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+    color: white;
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+}
+.stButton>button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
+}
+</style>
+""", unsafe_allow_html=True)
+
 
 # Check if we should show voice interface
 if st.session_state.show_voice_interface:
