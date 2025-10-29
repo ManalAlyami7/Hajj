@@ -1099,12 +1099,6 @@ Give 1–3 short sentences of insights.
 if "show_voice_interface" not in st.session_state:
     st.session_state.show_voice_interface = False
 
-# Floating mic button
-mic_col1, mic_col2, mic_col3 = st.columns([9, 1, 1])
-with mic_col3:
-    if st.button("🎤", key="mic-inside-input"):
-        st.session_state.show_voice_interface = True
-        st.rerun()
 
 
 # Voice Bot CSS
@@ -1163,7 +1157,7 @@ st.markdown("""
     }
     
     /* Microphone button inside chat input */
-    #mic-inside-input {
+    .mic-inline{
         position: fixed;
         bottom: 57px;
         right: 40px;
@@ -1181,7 +1175,7 @@ st.markdown("""
         transition: all 0.3s ease;
     }
     
-    .mic-inside-input:hover {
+    .mic-inline:hover {
         transform: scale(1.1);
         box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
     }
@@ -1190,116 +1184,49 @@ st.markdown("""
 
 
 
-# Check if we should show voice interface
-if st.session_state.show_voice_interface:
-    st.markdown("<div class='voice-interface'>", unsafe_allow_html=True)
-    
-    # Back button
-    col1, col2, col3 = st.columns([1, 6, 1])
-    with col1:
-        if st.button("← Back", key="back_button"):
-            st.session_state.show_voice_interface = False
-            st.rerun()
-    
-    st.markdown(f"""
-    <h2 style='color: #667eea; margin-bottom: 1rem;'>
-        🎤 {'مساعد الصوت للحج' if st.session_state.new_language == 'العربية' else 'Voice Assistant'}
-    </h2>
-    """, unsafe_allow_html=True)
-    
-    # Voice visualizer
-    st.markdown("""
-    <div class='voice-visualizer'>
-        <div style='font-size: 4rem;'>🎤</div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Instructions
-    instructions = """
-    <div class='voice-text'>
-        {} 🎧
-    </div>
-    <div class='voice-status'>
-        {}
-    </div>
-    """.format(
-        "اضغط على الزر أدناه وتحدث" if st.session_state.new_language == "العربية" else "Click the button below and speak",
-        "سيتم تحويل صوتك إلى نص تلقائياً" if st.session_state.new_language == "العربية" else "Your voice will be converted to text automatically"
-    )
-    st.markdown(instructions, unsafe_allow_html=True)
-    
-    # Audio recorder
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # File uploader for audio (simulating voice recording)
-    audio_file = st.file_uploader(
-        "🎙 " + ("سجل صوتك أو ارفع ملف صوتي" if st.session_state.new_language == "العربية" else "Record or upload audio"),
-        type=["wav", "mp3", "m4a", "ogg"],
-        key="audio_upload"
-    )
-    
-    if audio_file is not None:
+
+# 🎤 Microphone button beside input
+st.markdown("""
+<button class="mic-inline" onclick="window.location.reload();" title="Voice Assistant">🎤</button>
+""", unsafe_allow_html=True)
+
+
+# VOICE INTERFACE
+# -----------------------------
+if st.session_state.show_voice:
+    st.markdown("<div style='background:white;border-radius:20px;padding:2rem;text-align:center;'>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='color:#667eea;'>🎤 {t('voice_assistant', st.session_state.lang)}</h2>", unsafe_allow_html=True)
+
+    st.markdown("<div style='font-size:4rem;'>🎧</div>", unsafe_allow_html=True)
+    st.markdown("Click below to record or upload your voice.")
+
+    audio_file = st.file_uploader("🎙 Upload your voice", type=["wav", "mp3", "m4a", "ogg"])
+    if audio_file:
         st.audio(audio_file)
-        
-        with st.spinner("🔄 " + ("جارٍ تحويل الصوت إلى نص..." if st.session_state.new_language == "العربية" else "Converting speech to text...")):
+        with st.spinner("Converting speech to text..."):
             try:
-                # Transcribe audio using OpenAI Whisper
                 transcription = client.audio.transcriptions.create(
                     model="whisper-1",
                     file=audio_file,
-                    language="ar" if st.session_state.new_language == "العربية" else "en"
+                    language="ar" if st.session_state.lang == "العربية" else "en"
                 )
-                
-                transcribed_text = transcription.text
-                
-                st.success("✅ " + ("تم التحويل بنجاح!" if st.session_state.new_language == "العربية" else "Transcription successful!"))
-                st.info(f"{'النص المحول' if st.session_state.new_language == 'العربية' else 'Transcribed Text'}:** {transcribed_text}")
-                
-                # Process the transcribed text
-                if st.button("🔍 " + ("بحث" if st.session_state.new_language == "العربية" else "Search"), type="primary"):
-                    st.session_state.selected_question = transcribed_text
-                    st.session_state.show_voice_interface = False
-                    st.rerun()
-                    
+                text_out = transcription.text
+                st.success("✅ Transcription successful!")
+                st.info(f"🗣 Text: {text_out}")
             except Exception as e:
-                st.error(f"❌ {'حدث خطأ في التحويل' if st.session_state.new_language == 'العربية' else 'Transcription error'}: {str(e)}")
-    
-    # Alternative: Text-to-Speech for responses
-    st.markdown("<br><hr><br>", unsafe_allow_html=True)
-    st.markdown(f"""
-    <h3 style='color: #667eea;'>
-        🔊 {'الاستماع للردود' if st.session_state.new_language == 'العربية' else 'Listen to Responses'}
-    </h3>
-    """, unsafe_allow_html=True)
-    
-    if st.session_state.chat_memory and len(st.session_state.chat_memory) > 1:
-        last_response = st.session_state.chat_memory[-1]
-        if last_response.get("role") == "assistant":
-            response_text = last_response.get("content", "")
-            
-            if st.button("🔊 " + ("استمع للرد الأخير" if st.session_state.new_language == "العربية" else "Listen to Last Response")):
-                with st.spinner("🎵 " + ("جارٍ توليد الصوت..." if st.session_state.new_language == "العربية" else "Generating audio...")):
-                    try:
-                        # Generate speech using OpenAI TTS
-                        speech_response = client.audio.speech.create(
-                            model="tts-1",
-                            voice="alloy",
-                            input=response_text[:500]  # Limit to 500 chars for demo
-                        )
-                        
-                        # Save to temporary file
-                        import tempfile
-                        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
-                            tmp_file.write(speech_response.content)
-                            tmp_file_path = tmp_file.name
-                        
-                        # Play audio
-                        with open(tmp_file_path, "rb") as audio:
-                            st.audio(audio.read(), format="audio/mp3")
-                            
-                    except Exception as e:
-                        st.error(f"❌ {'حدث خطأ في توليد الصوت' if st.session_state.new_language == 'العربية' else 'Audio generation error'}: {str(e)}")
-    
+                st.error(f"❌ Error: {e}")
+
+    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color:#667eea;'>🔊 Listen to Response</h3>", unsafe_allow_html=True)
+    if st.session_state.chat and st.session_state.chat[-1]["role"] == "assistant":
+        response_text = st.session_state.chat[-1]["content"]
+        if st.button("🎧 Listen"):
+            with st.spinner("Generating audio..."):
+                try:
+                    tts = client.audio.speech.create(model="tts-1", voice="alloy", input=response_text[:400])
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+                        tmp.write(tts.content)
+                        st.audio(tmp.name)
+                except Exception as e:
+                    st.error(f"❌ Audio error: {e}")
     st.markdown("</div>", unsafe_allow_html=True)
-
-
