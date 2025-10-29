@@ -1102,7 +1102,7 @@ if "show_voice_interface" not in st.session_state:
 # Floating mic button
 mic_col1, mic_col2, mic_col3 = st.columns([9, 1, 1])
 with mic_col3:
-    if st.button("🎤", key="open_voice"):
+    if st.button("🎤", key="voice_button"):
         st.session_state.show_voice_interface = True
         st.rerun()
 
@@ -1190,7 +1190,7 @@ st.markdown("""
 
 st.markdown("""
 <style>
-.stButton>button {
+#voice_button button {
     position: fixed;
         bottom: 57px;
         right: 40px;
