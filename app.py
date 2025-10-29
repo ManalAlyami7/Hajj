@@ -239,7 +239,24 @@ st.markdown("""
     * {
         font-family: 'Inter', 'Cairo', sans-serif;
     }
-    
+    #mic-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #00e676;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    font-size: 30px;
+    cursor: pointer;
+    z-index: 9999;
+    box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
+}
+    #mic-button:hover {
+        background-color: #00c853;
+    }
     .main {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         background-attachment: fixed;
