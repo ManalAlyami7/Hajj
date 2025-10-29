@@ -1102,7 +1102,7 @@ if "show_voice_interface" not in st.session_state:
 # Floating mic button
 mic_col1, mic_col2, mic_col3 = st.columns([9, 1, 1])
 with mic_col3:
-    if st.button("🎤", key="voice_button"):
+    if st.button("🎤", key="mic-inside-input"):
         st.session_state.show_voice_interface = True
         st.rerun()
 
@@ -1163,7 +1163,7 @@ st.markdown("""
     }
     
     /* Microphone button inside chat input */
-    .mic-inside-input {
+    #mic-inside-input {
         position: fixed;
         bottom: 57px;
         right: 40px;
@@ -1188,31 +1188,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("""
-<style>
-#voice_button button {
-    position: fixed;
-        bottom: 57px;
-        right: 40px;
-        z-index: 1000;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
-        transition: all 0.3s ease;
-}
-.stButton>button:hover {
-    transform: scale(1.1);
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
-}
-</style>
-""", unsafe_allow_html=True)
 
 
 # Check if we should show voice interface
