@@ -1009,6 +1009,8 @@ COMMON DATABASE VARIATIONS TO HANDLE:
 - "Türkiye" = "Turkey" = "تركيا"
 - "Indonesia" = "إندونيسيا"
 
+when user asks about how many or number of, include COUNT in SQL.
+
 Return ONLY the SQL SELECT query or NO_SQL if impossible.
 
 
