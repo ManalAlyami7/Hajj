@@ -429,6 +429,7 @@ def extract_sql_from_response(response_text: str) -> Optional[str]:
     """Extract SQL query from LLM response"""
     if not response_text:
         return None
+
     
     # Try code blocks first
     code_block_pattern = r'```(?:sql)?\s*(SELECT[\s\S]*?)```'
@@ -446,6 +447,20 @@ def extract_sql_from_response(response_text: str) -> Optional[str]:
         return "NO_SQL"
     
     return None
+cache = {}
+def normalize_text(name):
+                if not name or not isinstance(name, str) or name.strip() == "":
+                    return None
+                name = name.strip()
+                if name in cache:
+                    return cache[name]
+                try:
+                    translated = translator.translate(name)
+                    normalized = translated.strip().lower()
+                except Exception:
+                    normalized = name.lower()
+                cache[name] = normalized
+                return normalized
 
 # -----------------------------
 # Database & OpenAI Setup
@@ -483,21 +498,6 @@ def get_db_stats():
             cities_df = pd.read_sql(text("SELECT DISTINCT city FROM agencies"), conn)
 
             translator = GoogleTranslator(source='auto', target='en')
-            cache = {}
-
-            def normalize_text(name):
-                if not name or not isinstance(name, str) or name.strip() == "":
-                    return None
-                name = name.strip()
-                if name in cache:
-                    return cache[name]
-                try:
-                    translated = translator.translate(name)
-                    normalized = translated.strip().lower()
-                except Exception:
-                    normalized = name.lower()
-                cache[name] = normalized
-                return normalized
 
             # Apply translation-based normalization
             countries_df['normalized'] = countries_df['country'].apply(normalize_text)
