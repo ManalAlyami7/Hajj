@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import create_engine, text
 from openai import OpenAI
+import openai
 from datetime import datetime
 import pytz
 import io
@@ -187,6 +188,9 @@ def is_vague_input(user_input):
     return False
 
 def tts_to_bytesio(text, voice="alloy"):
+    """
+    Returns BytesIO of TTS audio ready for st.audio
+    """
     audio_bytes = io.BytesIO()
     with openai.audio.speech.with_streaming_response.create(
         model="gpt-4o-mini-tts",
@@ -194,9 +198,10 @@ def tts_to_bytesio(text, voice="alloy"):
         input=text
     ) as response:
         response.stream_to_file(audio_bytes)
+
+    # VERY IMPORTANT: seek back to start
     audio_bytes.seek(0)
     return audio_bytes
-
 # -----------------------------
 # Page Configuration
 # -----------------------------
@@ -900,14 +905,17 @@ Respond with ONLY ONE WORD: GREETING, DATABASE, or GENERAL_HAJJ
                     )
 
                 st.markdown(greeting_text)
+                voice_map = {
+                    "العربية": "alloy-ar",
+                    "English": "alloy",
+                    "Urdu": "alloy-ur"
+                }
+                voice = voice_map.get(st.session_state.get("new_language", "English"), "alloy")
+
                 if st.button("🎙️ Listen", key=f"tts_{greeting_text}"):
-                    voice_map = {
-                        "العربية": "alloy-ar",
-                        "English": "alloy",
-                        "Urdu": "alloy-ur"
-                    }
-                    voice = voice_map.get(st.session_state.new_language, "alloy")
                     audio_bytes = tts_to_bytesio(greeting_text, voice)
+                    # Make sure BytesIO is at position 0
+                    audio_bytes.seek(0)
                     st.audio(audio_bytes, format="audio/mp3")
                 st.session_state.chat_memory.append({
                     "role": "assistant",
