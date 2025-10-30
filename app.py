@@ -506,26 +506,11 @@ def get_db_stats():
     """Fetch database statistics with normalization for multilingual names"""
     try:
         with engine.connect() as conn:
-            # Fetch distinct names
-            countries_df = pd.read_sql(text("SELECT DISTINCT country FROM agencies"), conn)
-            cities_df = pd.read_sql(text("SELECT DISTINCT city FROM agencies"), conn)
-
-
-      
-            # Count unique normalized names
-            unique_countries = countries_df['normalized'].nunique()
-            unique_cities = cities_df['normalized'].nunique()
-
-            # Query total and authorized counts
-            total = pd.read_sql(text("SELECT COUNT(DISTINCT hajj_company_en) AS count FROM agencies"), conn).iloc[0]['count']
-            authorized = pd.read_sql(text("SELECT COUNT(DISTINCT hajj_company_en) AS count FROM agencies WHERE is_authorized = 'Yes'"), conn).iloc[0]['count']
-            unique_countries = pd.read_sql(text("SELECT COUNT(DISTINCT country) AS count FROM agencies"), conn).iloc[0]['count']
-            unique_cities = pd.read_sql(text("SELECT COUNT(DISTINCT city) AS count FROM agencies"), conn).iloc[0]['count']
             return {
-                'total': total,
-                'authorized': authorized,
-                'countries': unique_countries,
-                'cities': unique_cities
+                'total': pd.read_sql(text("SELECT COUNT(DISTINCT hajj_company_en) AS count FROM agencies"), conn).iloc[0]['count'],
+                'authorized':  pd.read_sql(text("SELECT COUNT(DISTINCT hajj_company_en) AS count FROM agencies WHERE is_authorized = 'Yes'"), conn).iloc[0]['count'],
+                'countries': pd.read_sql(text("SELECT COUNT(DISTINCT country) AS count FROM agencies"), conn).iloc[0]['count'],
+                'cities': pd.read_sql(text("SELECT COUNT(DISTINCT city) AS count FROM agencies"), conn).iloc[0]['count']
             }
 
     except Exception as e:
