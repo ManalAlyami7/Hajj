@@ -1072,18 +1072,19 @@ Respond with ONLY ONE WORD: GREETING, DATABASE, or GENERAL_HAJJ
                     else:
                         if is_vague_input(user_input):
                             msg = (
-                                " تفضل! أنا هنا لمساعدتك في العثور على الوكالات المعتمدة من وزارة الحج والعمرة."
+                                "تفضل! أنا هنا لمساعدتك في العثور على الوكالات المعتمدة من وزارة الحج والعمرة."
                                 if st.session_state.new_language == "العربية"
                                 else "Go ahead! I'm here to help you find authorized agencies from the Ministry of Hajj and Umrah."
                             )
                             st.info(msg)
                         else:
                             msg = (
-                            "عذراً، لا يمكن تحويل هذا الطلب إلى استعلام SQL آمن."
-                            if st.session_state.new_language == "العربية"
-                            else "Sorry, I couldn't convert that to a safe SQL query."
-                        )
+                                "عذراً، لا يمكن تحويل هذا الطلب إلى استعلام SQL آمن."
+                                if st.session_state.new_language == "العربية"
+                                else "Sorry, I couldn't convert that to a safe SQL query."
+                            )
                             st.warning(msg)
+
                         st.session_state.chat_memory.append({
                             "role": "assistant",
                             "content": msg,
