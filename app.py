@@ -186,17 +186,14 @@ def is_vague_input(user_input):
         return True
     return False
 
-def speak_text_openai(text, voice="alloy"):
-    """
-    Generate TTS audio using OpenAI TTS model.
-    Returns BytesIO object for st.audio
-    """
-    audio_resp = client.audio.speech.create(
+def tts_to_bytesio(text, voice="alloy"):
+    audio_bytes = io.BytesIO()
+    with openai.audio.speech.with_streaming_response.create(
         model="gpt-4o-mini-tts",
         voice=voice,
         input=text
-    )
-    audio_bytes = io.BytesIO(audio_resp.audio)
+    ) as response:
+        response.stream_to_file(audio_bytes)
     audio_bytes.seek(0)
     return audio_bytes
 
@@ -903,15 +900,14 @@ Respond with ONLY ONE WORD: GREETING, DATABASE, or GENERAL_HAJJ
                     )
 
                 st.markdown(greeting_text)
-                if st.button("🔊 Listen", key=f"tts_{greeting_text}"):
-                    # Map voice by language
-                    voice_map = {"العربية": "alloy-ar", "English": "alloy", "Urdu": "alloy-ur"}
+                if st.button("🎙️ Listen", key=f"tts_{greeting_text}"):
+                    voice_map = {
+                        "العربية": "alloy-ar",
+                        "English": "alloy",
+                        "Urdu": "alloy-ur"
+                    }
                     voice = voice_map.get(st.session_state.new_language, "alloy")
-                    
-                    # Generate audio
-                    audio_bytes = speak_text_openai(greeting_text, voice=voice)
-                    
-                    # Play audio
+                    audio_bytes = tts_to_bytesio(greeting_text, voice)
                     st.audio(audio_bytes, format="audio/mp3")
                 st.session_state.chat_memory.append({
                     "role": "assistant",
