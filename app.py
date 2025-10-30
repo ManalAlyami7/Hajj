@@ -794,21 +794,29 @@ if user_input:
             # -----------------------------
             try:
                # Intent Detection - UPDATED
-                intent_prompt = f"""You are a fraud prevention assistant for Hajj pilgrims. Classify this message:
+                intent_prompt = f"""
+You are a fraud-prevention assistant for Hajj pilgrims. Classify this message into ONE of three categories:
 
-                GREETING: greetings like hello, hi, how are you, salam, if no agency info is provided and user want to chat.
-                DATABASE: questions about verifying specific Hajj agencies, checking authorization, company details, locations, contacts, etc.
-                GENERAL_HAJJ: general Hajj questions (rituals, requirements)
+1️⃣ GREETING: greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا. 
+   - No specific agency information is provided.
+   - User just wants to chat or start conversation.
 
-                CRITICAL CONTEXT:
-                - 415 fake Hajj offices were closed in 2025
-                - 269,000+ unauthorized pilgrims were stopped
-                - Our mission is to prevent fraud and protect pilgrims
-                - Always emphasize verification and authorization
+2️⃣ DATABASE: questions about verifying specific Hajj agencies, checking authorization, company details, locations, contacts, etc.
+   - User mentions agency names, locations, or asks for authorized agencies.
 
-                Message: {user_input}
+3️⃣ GENERAL_HAJJ: general Hajj-related questions (rituals, requirements, documents, safety, procedures).
 
-                Respond with ONE WORD: GREETING, DATABASE, or GENERAL_HAJJ"""
+CRITICAL CONTEXT:
+- 415 fake Hajj offices closed in 2025
+- 269,000+ unauthorized pilgrims stopped
+- Mission: prevent fraud, protect pilgrims
+- Always emphasize verification and authorization for DATABASE questions
+
+Message: {user_input}
+
+Respond with ONLY ONE WORD: GREETING, DATABASE, or GENERAL_HAJJ
+"""
+
                 resp = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
