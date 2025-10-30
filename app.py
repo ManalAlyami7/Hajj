@@ -176,6 +176,15 @@ def format_time(timestamp: float) -> str:
     dt = datetime.fromtimestamp(timestamp, riyadh_tz)
     return dt.strftime("%I:%M %p")
 
+def is_vague_input(user_input):
+    """Detect if the user input is too vague for SQL generation."""
+    keywords = ["agency", "company", "office", "وكالة", "شركة"]
+    stripped = user_input.lower().strip()
+    # Treat as vague if it contains only generic words or is too short
+    if len(stripped.split()) < 3 and any(k in stripped for k in keywords):
+        return True
+    return False
+
 # -----------------------------
 # Page Configuration
 # -----------------------------
@@ -692,7 +701,6 @@ def show_result_summary(df: pd.DataFrame) -> None:
             auth_count = len(df[df["is_authorized"] == "Yes"])
             st.markdown(f"<div class='badge badge-success'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
     
-    st.dataframe(df, use_container_width=True, height=300)
 
 def show_download_button(df: pd.DataFrame) -> None:
     """Display download button for results"""
@@ -1062,12 +1070,20 @@ Respond with ONLY ONE WORD: GREETING, DATABASE, or GENERAL_HAJJ
                             sql_error = str(e)
                             st.write(f"❌ Query failed: {e}")
                     else:
-                        msg = (
+                        if is_vague_input(user_input):
+                            msg = (
+                                " تفضل! أنا هنا لمساعدتك في العثور على الوكالات المعتمدة من وزارة الحج والعمرة."
+                                if st.session_state.new_language == "العربية"
+                                else "Go ahead! I'm here to help you find authorized agencies from the Ministry of Hajj and Umrah."
+                            )
+                            st.info(msg)
+                        else:
+                            msg = (
                             "عذراً، لا يمكن تحويل هذا الطلب إلى استعلام SQL آمن."
                             if st.session_state.new_language == "العربية"
                             else "Sorry, I couldn't convert that to a safe SQL query."
                         )
-                        st.warning(msg)
+                            st.warning(msg)
                         st.session_state.chat_memory.append({
                             "role": "assistant",
                             "content": msg,
