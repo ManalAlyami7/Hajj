@@ -474,21 +474,6 @@ def extract_sql_from_response(response_text: str) -> Optional[str]:
     
     return None
 cache = {}
-def normalize_text(name):
-                translator = GoogleTranslator(source='auto', target='en')
-
-                if not name or not isinstance(name, str) or name.strip() == "":
-                    return None
-                name = name.strip()
-                if name in cache:
-                    return cache[name]
-                try:
-                    translated = translator.translate(name)
-                    normalized = translated.strip().lower()
-                except Exception:
-                    normalized = name.lower()
-                cache[name] = normalized
-                return normalized
 
 # -----------------------------
 # Database & OpenAI Setup
@@ -526,10 +511,7 @@ def get_db_stats():
             cities_df = pd.read_sql(text("SELECT DISTINCT city FROM agencies"), conn)
 
 
-            # Apply translation-based normalization
-            countries_df['normalized'] = countries_df['country'].apply(normalize_text)
-            cities_df['normalized'] = cities_df['city'].apply(normalize_text)
-
+      
             # Count unique normalized names
             unique_countries = countries_df['normalized'].nunique()
             unique_cities = cities_df['normalized'].nunique()
@@ -537,7 +519,8 @@ def get_db_stats():
             # Query total and authorized counts
             total = pd.read_sql(text("SELECT COUNT(DISTINCT hajj_company_en) AS count FROM agencies"), conn).iloc[0]['count']
             authorized = pd.read_sql(text("SELECT COUNT(DISTINCT hajj_company_en) AS count FROM agencies WHERE is_authorized = 'Yes'"), conn).iloc[0]['count']
-
+            unique_countries = pd.read_sql(text("SELECT COUNT(DISTINCT country) AS count FROM agencies"), conn).iloc[0]['count']
+            unique_cities = pd.read_sql(text("SELECT COUNT(DISTINCT city) AS count FROM agencies"), conn).iloc[0]['count']
             return {
                 'total': total,
                 'authorized': authorized,
