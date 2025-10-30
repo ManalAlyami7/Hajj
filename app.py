@@ -1157,6 +1157,8 @@ OUTPUT STYLE:
 - For agency results → numbered or bulleted list (up to 10)
 - For counts → one clear sentence
 - For locations → short analytical summary
+- For emails or contacts → mention availability and samples 
+- summarize based on what the user asked and highlight key insights
 
 Examples:
 
