@@ -6,6 +6,7 @@ from datetime import datetime
 import pytz
 import re
 from typing import Optional, Dict, List
+from deep_translator import GoogleTranslator
 
 # -----------------------------
 # TRANSLATIONS DICTIONARY
@@ -476,11 +477,42 @@ def get_db_stats():
     """Fetch database statistics"""
     try:
         with engine.connect() as conn:
+           
+
+            # Fetch distinct names
+            countries_df = pd.read_sql(text("SELECT DISTINCT country FROM agencies"), conn)
+            cities_df = pd.read_sql(text("SELECT DISTINCT city FROM agencies"), conn)
+
+            # Initialize translator
+            translator = GoogleTranslator(source='auto', target='en')
+
+            # Define normalization function
+            def normalize_text(name):
+                if not name or not isinstance(name, str):
+                    return None
+                name = name.strip().lower()
+                try:
+                    # Translate to English automatically
+                    translated = translator.translate(name)
+                    return translated.strip().lower()
+                except Exception:
+                    return name.lower()
+
+            # Apply translation-based normalization
+            countries_df['normalized'] = countries_df['country'].apply(normalize_text)
+            cities_df['normalized'] = cities_df['city'].apply(normalize_text)
+
+            # Count unique normalized names
+            unique_countries = countries_df['normalized'].nunique()
+            unique_cities = cities_df['normalized'].nunique()
+
+    
+
             return {
-                'total': pd.read_sql(text("SELECT COUNT(*) as count FROM agencies"), conn).iloc[0]['count'],
-                'authorized': pd.read_sql(text("SELECT COUNT(*) as count FROM agencies WHERE is_authorized = 'Yes'"), conn).iloc[0]['count'],
-                'countries': pd.read_sql(text("SELECT COUNT(DISTINCT country) as count FROM agencies"), conn).iloc[0]['count'],
-                'cities': pd.read_sql(text("SELECT COUNT(DISTINCT city) as count FROM agencies"), conn).iloc[0]['count']
+                'total': pd.read_sql(text("SELECT COUNT(DISTINCT hajj_company_en) as count FROM agencies"), conn).iloc[0]['count'],
+                'authorized': pd.read_sql(text("SELECT COUNT(DISTINCT hajj_company_en as count FROM agencies WHERE is_authorized = 'Yes'"), conn).iloc[0]['count'],
+                'countries': unique_countries,
+                'cities': unique_cities
             }
     except:
         return {'total': 0, 'authorized': 0, 'countries': 0, 'cities': 0}
