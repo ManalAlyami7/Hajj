@@ -964,7 +964,7 @@ if user_input:
     6. Never assume or add “Saudi Arabia” unless mentioned explicitly.
     7. When user asks about “countries that have agencies” → use `DISTINCT country` from `agencies`
     8. Always return agency-related data only, not external or world data.
-    --------------------------------------------
+    9    --------------------------------------------
 
     🌍 LOCATION MATCHING PATTERNS:
     Use flexible LIKE and LOWER() conditions for cities/countries.
@@ -1073,12 +1073,52 @@ if user_input:
                     row_count = len(result_df)
                     sample = result_df.head(20).to_dict(orient="records")
                     summary_prompt = f"""
-Summarize these SQL query results concisely in {'Arabic' if st.session_state.new_language == 'العربية' else 'English'}.
-Question: {user_input}
-Total rows: {row_count}
-Sample: {sample}
-Give 1–3 short sentences of insights.
+You are a multilingual fraud-prevention analyst for Hajj agencies.
+Your task is to summarize SQL query results clearly and concisely in 
+{'Arabic' if st.session_state.new_language == 'العربية' else 'English'}.
+
+Context:
+- User question: {user_input}
+- Total rows returned: {row_count}
+- Sample results: {sample}
+
+INSTRUCTIONS:
+1. Adapt the tone and structure to the user’s intent:
+   - If the query lists *agencies*, summarize as bullet points with ✅/❌ authorization indicators.
+   - If the query counts *countries, cities, or agencies*, give a numeric summary.
+   - If it’s a location-based query (e.g., Makkah, Egypt), mention key countries or cities.
+2. Keep it concise — 1–3 sentences or short bullets.
+3. Avoid restating the full query. Focus on insights.
+4. Use language consistent with the user’s input ({'Arabic' if st.session_state.new_language == 'العربية' else 'English'}).
+5. When possible, highlight:
+   - How many are authorized vs unauthorized
+   - Notable countries or cities
+   - Example agency names
+
+OUTPUT STYLE:
+- For agency results → numbered or bulleted list (up to 10)
+- For counts → one clear sentence
+- For locations → short analytical summary
+
+Examples:
+
+🔹 **English (agencies example):**
+✅ 10 agencies found related to “Al-Rahma”:
+1. AL RAHMA HAJJ & UMRA TRAVEL AGENCY — Cairo, Egypt — ✅ Authorized  
+2. Al Salam & Al Rahma Co. — Makkah, Saudi Arabia — ✅ Authorized  
+3. Dar Al Rahma — Jeddah, Saudi Arabia — ❌ Not Authorized  
+→ 7 of 10 agencies are authorized.
+
+🔹 **Arabic (count example):**
+تم العثور على **45 وكالة معتمدة** في المدينة المنورة.  
+تعمل معظم الوكالات من **السعودية** و **مصر**، مع تقييمات عالية للخدمة.
+
+🔹 **English (count example):**
+There are 45 authorized agencies in Medina, mostly from Saudi Arabia and Egypt.
+
+Now summarize the query results based on the above rules.
 """
+
                     try:
                         summ_resp = client.chat.completions.create(
                             model="gpt-4o-mini",
