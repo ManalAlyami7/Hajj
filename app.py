@@ -475,6 +475,8 @@ def extract_sql_from_response(response_text: str) -> Optional[str]:
     return None
 cache = {}
 def normalize_text(name):
+                translator = GoogleTranslator(source='auto', target='en')
+
                 if not name or not isinstance(name, str) or name.strip() == "":
                     return None
                 name = name.strip()
@@ -523,7 +525,6 @@ def get_db_stats():
             countries_df = pd.read_sql(text("SELECT DISTINCT country FROM agencies"), conn)
             cities_df = pd.read_sql(text("SELECT DISTINCT city FROM agencies"), conn)
 
-            translator = GoogleTranslator(source='auto', target='en')
 
             # Apply translation-based normalization
             countries_df['normalized'] = countries_df['country'].apply(normalize_text)
