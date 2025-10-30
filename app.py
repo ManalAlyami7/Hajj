@@ -4,6 +4,7 @@ from sqlalchemy import create_engine, text
 from openai import OpenAI
 from datetime import datetime
 import pytz
+import io
 import re
 from typing import Optional, Dict, List
 from deep_translator import GoogleTranslator
@@ -184,6 +185,20 @@ def is_vague_input(user_input):
     if len(stripped.split()) < 3 and any(k in stripped for k in keywords):
         return True
     return False
+
+def speak_text_openai(text, voice="alloy"):
+    """
+    Generate TTS audio using OpenAI TTS model.
+    Returns BytesIO object for st.audio
+    """
+    audio_resp = client.audio.speech.create(
+        model="gpt-4o-mini-tts",
+        voice=voice,
+        input=text
+    )
+    audio_bytes = io.BytesIO(audio_resp.audio)
+    audio_bytes.seek(0)
+    return audio_bytes
 
 # -----------------------------
 # Page Configuration
@@ -888,6 +903,16 @@ Respond with ONLY ONE WORD: GREETING, DATABASE, or GENERAL_HAJJ
                     )
 
                 st.markdown(greeting_text)
+                if st.button("🔊 Listen", key=f"tts_{greeting_text}"):
+                    # Map voice by language
+                    voice_map = {"العربية": "alloy-ar", "English": "alloy", "Urdu": "alloy-ur"}
+                    voice = voice_map.get(st.session_state.new_language, "alloy")
+                    
+                    # Generate audio
+                    audio_bytes = speak_text_openai(greeting_text, voice=voice)
+                    
+                    # Play audio
+                    st.audio(audio_bytes, format="audio/mp3")
                 st.session_state.chat_memory.append({
                     "role": "assistant",
                     "content": greeting_text,
