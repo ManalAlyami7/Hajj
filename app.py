@@ -478,6 +478,81 @@ client = get_openai_client()
 
 @st.cache_data(ttl=300)
 
+
+def fuzzy_normalize(text: str) -> str:
+    """Normalize text for fuzzy matching"""
+    # Remove diacritics and special characters
+    import unicodedata
+    normalized = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
+    # Convert to lowercase and remove extra spaces
+    normalized = ' '.join(normalized.lower().split())
+    return normalized
+def heuristic_sql_fallback(question: str) -> Optional[str]:
+    """Generate SQL query based on simple heuristics when AI fails"""
+    question = question.lower()
+    
+    # Basic patterns
+    if any(word in question for word in ['all', 'show', 'list']):
+        return "SELECT * FROM agencies LIMIT 100"
+        
+    if 'authorized' in question or 'autorized' in question:
+        return "SELECT * FROM agencies WHERE is_authorized = 'Yes' LIMIT 100"
+        
+    if 'saudi' in question or 'ksa' in question:
+        return "SELECT * FROM agencies WHERE LOWER(Country) LIKE '%saudi%' LIMIT 100"
+        
+    if 'email' in question:
+        return "SELECT * FROM agencies WHERE email IS NOT NULL AND email != '' LIMIT 100"
+        
+    return None
+def show_result_summary(df: pd.DataFrame) -> None:
+    """Display summary statistics and columns for results"""
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"<div class='badge badge-info'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"<div class='badge badge-success'>✅ {len(df.columns)} Columns</div>", unsafe_allow_html=True)
+    with col3:
+        if "is_authorized" in df.columns:
+            auth_count = len(df[df["is_authorized"] == "Yes"])
+            st.markdown(f"<div class='badge badge-success'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
+    
+
+def show_download_button(df: pd.DataFrame) -> None:
+    """Display download button for results"""
+    csv = df.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        label=t("download_csv", st.session_state.new_language),
+        data=csv,
+        file_name=f"hajj_data_{int(datetime.now().timestamp())}.csv",
+        mime="text/csv"
+    )
+
+def show_sql_expander(sql_query: str, row_count: int) -> None:
+    """Display SQL query in expandable section"""
+    with st.expander(t("view_sql", st.session_state.new_language)):
+        st.code(sql_query, language="sql")
+        st.caption(t("executed_caption", st.session_state.new_language, count=row_count))
+def build_chat_context(limit: int = 6) -> List[Dict[str, str]]:
+    """Build chat context from recent messages"""
+    context = [{"role": "system", "content": """You are a helpful assistant specializing in Hajj-related information.
+    - Be concise and accurate
+    - Use Arabic when user asks in Arabic
+    - Stick to factual information
+    - Avoid religious rulings or fatwa
+    - Focus on practical information"""}]
+    
+    recent = st.session_state.chat_memory[-limit:] if len(st.session_state.chat_memory) > limit else st.session_state.chat_memory
+    
+    for msg in recent:
+        if "dataframe" in msg:  # Skip messages with data results
+            continue
+        context.append({
+            "role": msg["role"],
+            "content": msg["content"]
+        })
+    
+    return context
 def get_db_stats():
     """Fetch database statistics with normalization for multilingual names"""
     try:
@@ -1118,77 +1193,3 @@ if user_input:
                 "timestamp": get_current_time()
             })
 
-def fuzzy_normalize(text: str) -> str:
-    """Normalize text for fuzzy matching"""
-    # Remove diacritics and special characters
-    import unicodedata
-    normalized = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
-    # Convert to lowercase and remove extra spaces
-    normalized = ' '.join(normalized.lower().split())
-    return normalized
-def heuristic_sql_fallback(question: str) -> Optional[str]:
-    """Generate SQL query based on simple heuristics when AI fails"""
-    question = question.lower()
-    
-    # Basic patterns
-    if any(word in question for word in ['all', 'show', 'list']):
-        return "SELECT * FROM agencies LIMIT 100"
-        
-    if 'authorized' in question or 'autorized' in question:
-        return "SELECT * FROM agencies WHERE is_authorized = 'Yes' LIMIT 100"
-        
-    if 'saudi' in question or 'ksa' in question:
-        return "SELECT * FROM agencies WHERE LOWER(Country) LIKE '%saudi%' LIMIT 100"
-        
-    if 'email' in question:
-        return "SELECT * FROM agencies WHERE email IS NOT NULL AND email != '' LIMIT 100"
-        
-    return None
-def show_result_summary(df: pd.DataFrame) -> None:
-    """Display summary statistics and columns for results"""
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown(f"<div class='badge badge-info'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"<div class='badge badge-success'>✅ {len(df.columns)} Columns</div>", unsafe_allow_html=True)
-    with col3:
-        if "is_authorized" in df.columns:
-            auth_count = len(df[df["is_authorized"] == "Yes"])
-            st.markdown(f"<div class='badge badge-success'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
-    
-
-def show_download_button(df: pd.DataFrame) -> None:
-    """Display download button for results"""
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label=t("download_csv", st.session_state.new_language),
-        data=csv,
-        file_name=f"hajj_data_{int(datetime.now().timestamp())}.csv",
-        mime="text/csv"
-    )
-
-def show_sql_expander(sql_query: str, row_count: int) -> None:
-    """Display SQL query in expandable section"""
-    with st.expander(t("view_sql", st.session_state.new_language)):
-        st.code(sql_query, language="sql")
-        st.caption(t("executed_caption", st.session_state.new_language, count=row_count))
-def build_chat_context(limit: int = 6) -> List[Dict[str, str]]:
-    """Build chat context from recent messages"""
-    context = [{"role": "system", "content": """You are a helpful assistant specializing in Hajj-related information.
-    - Be concise and accurate
-    - Use Arabic when user asks in Arabic
-    - Stick to factual information
-    - Avoid religious rulings or fatwa
-    - Focus on practical information"""}]
-    
-    recent = st.session_state.chat_memory[-limit:] if len(st.session_state.chat_memory) > limit else st.session_state.chat_memory
-    
-    for msg in recent:
-        if "dataframe" in msg:  # Skip messages with data results
-            continue
-        context.append({
-            "role": msg["role"],
-            "content": msg["content"]
-        })
-    
-    return context
