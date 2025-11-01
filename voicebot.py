@@ -604,16 +604,7 @@ with col2:
     </div>
     """, unsafe_allow_html=True)
     
-    # Workflow status
-    st.markdown("""
-    <div class="workflow-status">
-        <span class="workflow-step">🎤 Transcribe</span>
-        <span class="workflow-step">🎯 Detect Intent</span>
-        <span class="workflow-step">🔄 Route</span>
-        <span class="workflow-step">💬 Respond</span>
-        <span class="workflow-step">🔊 Speak</span>
-    </div>
-    """, unsafe_allow_html=True)
+    
     
     # Recording button
     audio_bytes = audio_recorder(
