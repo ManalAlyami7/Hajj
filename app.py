@@ -9,18 +9,20 @@ import io
 import re
 from typing import Optional, Dict, List
 from deep_translator import GoogleTranslator
+from typing_extensions import TypedDict
+
+# LangGraph imports
+from langgraph.graph import StateGraph, START, END
 
 # -----------------------------
-# TRANSLATIONS DICTIONARY
+# TRANSLATIONS DICTIONARY (unchanged)
 # -----------------------------
 TRANSLATIONS = {
     "English": {
-        # Header
+        # (same translations as you had; truncated in this snippet to keep file short)
         "page_title": "Hajj Chatbot",
         "main_title": "Hajj Data Intelligence",
         "subtitle": "Ask anything about Hajj companies worldwide • AI-powered • Real-time data",
-        
-        # Sidebar
         "assistant_title": "🕋 Hajj Assistant",
         "assistant_subtitle": "Your AI-powered guide",
         "language_title": "🌐 language",
@@ -28,14 +30,10 @@ TRANSLATIONS = {
         "examples_title": "💡 Quick Examples",
         "clear_chat": "🧹 Clear Chat History",
         "features_title": "ℹ️ Features",
-        
-        # Stats
         "total_agencies": "Total Agencies",
         "authorized": "Authorized",
         "countries": "Countries",
         "cities": "Cities",
-        
-        # Examples
         "ex_all_auth": "🔍 All authorized companies",
         "ex_all_auth_q": "Show me all authorized Hajj companies",
         "ex_saudi": "🇸🇦 Companies in Saudi Arabia",
@@ -44,8 +42,6 @@ TRANSLATIONS = {
         "ex_by_country_q": "How many agencies are in each country?",
         "ex_emails": "📧 Companies with emails",
         "ex_emails_q": "Find companies with email addresses",
-        
-        # Features
         "feat_ai": "AI-Powered Search",
         "feat_ai_desc": "Natural language queries",
         "feat_multilingual": "Multilingual",
@@ -56,8 +52,6 @@ TRANSLATIONS = {
         "feat_export_desc": "Download as CSV",
         "feat_secure": "Secure",
         "feat_secure_desc": "SQL injection protection",
-        
-        # Chat
         "welcome_msg": "Welcome! 👋\n\nI'm your Hajj Data Assistant. Ask me anything about Hajj companies, locations, or authorization status!",
         "input_placeholder": "Ask your question here... 💬",
         "thinking": "🤔 Analyzing your question...",
@@ -67,16 +61,12 @@ TRANSLATIONS = {
         "found_results": "✅ Found {count} results",
         "sql_generated": "✅ SQL query generated",
         "query_failed": "❌ Query failed",
-        
-        # Results
         "results_badge": "📊 {count} Results",
         "columns_badge": "✅ {count} Columns",
         "authorized_badge": "🔒 {count} Authorized",
         "download_csv": "📥 Download Results (CSV)",
         "view_sql": "🔍 View SQL Query",
         "executed_caption": "Executed in database • {count} rows returned",
-        
-        # Messages
         "greeting": "Hello! 👋\n\nI'm doing great, thank you! I'm here to help you find information about Hajj companies. What would you like to know?",
         "no_results": "No results found. Try rephrasing the question or broadening the search.",
         "sql_error": "A database error occurred. Try rephrasing your question.",
@@ -86,12 +76,10 @@ TRANSLATIONS = {
         "no_sql": "Sorry, I couldn't convert that to a safe SQL query. Try rephrasing or ask for general results.",
     },
     "العربية": {
-        # Header
+        # (Arabic translations likewise — keep the same as your original)
         "page_title": "روبوت الحج",
         "main_title": "معلومات بيانات الحج الذكية",
         "subtitle": "اسأل عن شركات الحج حول العالم • مدعوم بالذكاء الاصطناعي • بيانات فورية",
-        
-        # Sidebar
         "assistant_title": "🕋 مساعد الحج",
         "assistant_subtitle": "دليلك الذكي المدعوم بالذكاء الاصطناعي",
         "language_title": "🌐 اللغة",
@@ -99,14 +87,10 @@ TRANSLATIONS = {
         "examples_title": "💡 أمثلة سريعة",
         "clear_chat": "🧹 مسح سجل المحادثة",
         "features_title": "ℹ️ المميزات",
-        
-        # Stats
         "total_agencies": "إجمالي الشركات",
         "authorized": "المعتمدة",
         "countries": "الدول",
         "cities": "المدن",
-        
-        # Examples
         "ex_all_auth": "🔍 جميع الشركات المعتمدة",
         "ex_all_auth_q": "أظهر لي جميع شركات الحج المعتمدة",
         "ex_saudi": "🇸🇦 شركات في السعودية",
@@ -115,8 +99,6 @@ TRANSLATIONS = {
         "ex_by_country_q": "كم عدد الشركات في كل دولة؟",
         "ex_emails": "📧 شركات لديها بريد إلكتروني",
         "ex_emails_q": "ابحث عن الشركات التي لديها بريد إلكتروني",
-        
-        # Features
         "feat_ai": "بحث ذكي",
         "feat_ai_desc": "استعلامات باللغة الطبيعية",
         "feat_multilingual": "متعدد اللغات",
@@ -127,8 +109,6 @@ TRANSLATIONS = {
         "feat_export_desc": "تحميل بصيغة CSV",
         "feat_secure": "آمن",
         "feat_secure_desc": "حماية من هجمات SQL",
-        
-        # Chat
         "welcome_msg": "السلام عليكم ورحمة الله وبركاته! 🌙\n\nأهلاً بك في مساعد معلومات الحج الذكي. كيف يمكنني مساعدتك اليوم؟",
         "input_placeholder": "اكتب سؤالك هنا... 💬",
         "thinking": "🤔 جارٍ تحليل سؤالك...",
@@ -138,16 +118,12 @@ TRANSLATIONS = {
         "found_results": "✅ تم العثور على {count} نتيجة",
         "sql_generated": "✅ تم إنشاء استعلام SQL",
         "query_failed": "❌ فشل الاستعلام",
-        
-        # Results
         "results_badge": "📊 {count} نتيجة",
         "columns_badge": "✅ {count} عمود",
         "authorized_badge": "🔒 {count} معتمدة",
         "download_csv": "📥 تحميل النتائج (CSV)",
         "view_sql": "🔍 عرض استعلام SQL",
         "executed_caption": "تم التنفيذ في قاعدة البيانات • {count} صف تم إرجاعه",
-        
-        # Messages
         "greeting": "وعليكم السلام ورحمة الله وبركاته! 🌙\n\nالحمد لله، أنا بخير! أنا هنا لمساعدتك في العثور على معلومات شركات الحج. كيف يمكنني مساعدتك؟",
         "no_results": "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال أو توسيع نطاق البحث.",
         "sql_error": "حدث خطأ في قاعدة البيانات. حاول إعادة صياغة سؤالك.",
@@ -529,9 +505,7 @@ if "last_result_df" not in st.session_state:
 if "selected_question" not in st.session_state:
     st.session_state.selected_question = None
 
-# -----------------------------
-# Sidebar
-# -----------------------------
+# Sidebar simplified (kept core interactions)
 with st.sidebar:
     st.markdown(f"<h2 style='text-align: center; color: white; margin-bottom: 0;'>{t('assistant_title', st.session_state.new_language)}</h2>", unsafe_allow_html=True)
     st.markdown(f"<p style='text-align: center; color: rgba(255,255,255,0.7); font-size: 0.9rem;'>{t('assistant_subtitle', st.session_state.new_language)}</p>", unsafe_allow_html=True)
@@ -624,171 +598,60 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
 # -----------------------------
-# Main Header
-# -----------------------------
-st.markdown(f"""
-<div class="header-container{' rtl' if st.session_state.new_language == 'العربية' else ''}">
-    <h1>
-        🕋 <span class="main-title">{t('main_title', st.session_state.new_language)}</span>
-    </h1>
-    <p class="subtitle">{t('subtitle', st.session_state.new_language)}</p>
-</div>
-""", unsafe_allow_html=True)
-# -----------------------------
-# Initialize Session State
-# -----------------------------
-if "chat_memory" not in st.session_state:
-    st.session_state.chat_memory = [{
-        "role": "assistant",
-        "content": t("welcome_msg", st.session_state.new_language),
-        "timestamp": get_current_time()
-    }]
 
-if "last_result_df" not in st.session_state:
-    st.session_state.last_result_df = None
+# Header
+st.markdown(f"<h1>🕋 {t('main_title', st.session_state.new_language)}</h1>", unsafe_allow_html=True)
+st.markdown(f"<p>{t('subtitle', st.session_state.new_language)}</p>", unsafe_allow_html=True)
 
-if "selected_question" not in st.session_state:
-    st.session_state.selected_question = None
-def fuzzy_normalize(text: str) -> str:
-    """Normalize text for fuzzy matching"""
-    # Remove diacritics and special characters
-    import unicodedata
-    normalized = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
-    # Convert to lowercase and remove extra spaces
-    normalized = ' '.join(normalized.lower().split())
-    return normalized
-def heuristic_sql_fallback(question: str) -> Optional[str]:
-    """Generate SQL query based on simple heuristics when AI fails"""
-    question = question.lower()
-    
-    # Basic patterns
-    if any(word in question for word in ['all', 'show', 'list']):
-        return "SELECT * FROM agencies LIMIT 100"
-        
-    if 'authorized' in question or 'autorized' in question:
-        return "SELECT * FROM agencies WHERE is_authorized = 'Yes' LIMIT 100"
-        
-    if 'saudi' in question or 'ksa' in question:
-        return "SELECT * FROM agencies WHERE LOWER(Country) LIKE '%saudi%' LIMIT 100"
-        
-    if 'email' in question:
-        return "SELECT * FROM agencies WHERE email IS NOT NULL AND email != '' LIMIT 100"
-        
-    return None
-def show_result_summary(df: pd.DataFrame) -> None:
-    """Display summary statistics and columns for results"""
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown(f"<div class='badge badge-info'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"<div class='badge badge-success'>✅ {len(df.columns)} Columns</div>", unsafe_allow_html=True)
-    with col3:
-        if "is_authorized" in df.columns:
-            auth_count = len(df[df["is_authorized"] == "Yes"])
-            st.markdown(f"<div class='badge badge-success'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
-    
-
-def show_download_button(df: pd.DataFrame) -> None:
-    """Display download button for results"""
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label=t("download_csv", st.session_state.new_language),
-        data=csv,
-        file_name=f"hajj_data_{int(datetime.now().timestamp())}.csv",
-        mime="text/csv"
-    )
-
-def show_sql_expander(sql_query: str, row_count: int) -> None:
-    """Display SQL query in expandable section"""
-    with st.expander(t("view_sql", st.session_state.new_language)):
-        st.code(sql_query, language="sql")
-        st.caption(t("executed_caption", st.session_state.new_language, count=row_count))
-def build_chat_context(limit: int = 6) -> List[Dict[str, str]]:
-    """Build chat context from recent messages"""
-    context = [{"role": "system", "content": """You are a helpful assistant specializing in Hajj-related information.
-    - Be concise and accurate
-    - Use Arabic when user asks in Arabic
-    - Stick to factual information
-    - Avoid religious rulings or fatwa
-    - Focus on practical information"""}]
-    
-    recent = st.session_state.chat_memory[-limit:] if len(st.session_state.chat_memory) > limit else st.session_state.chat_memory
-    
-    for msg in recent:
-        if "dataframe" in msg:  # Skip messages with data results
-            continue
-        context.append({
-            "role": msg["role"],
-            "content": msg["content"]
-        })
-    
-    return context
-
-# -----------------------------
-# Display Chat History
-# -----------------------------
+# Display chat history
 for idx, msg in enumerate(st.session_state.chat_memory):
     role = msg.get("role", "assistant")
     avatar = "🕋" if role == "assistant" else "👤"
     with st.chat_message(role, avatar=avatar):
         st.markdown(msg.get("content", ""))
         if msg.get("timestamp"):
-            st.markdown(
-                f"<div class='caption'>🕐 {datetime.fromtimestamp(msg['timestamp']).strftime('%I:%M %p')}</div>",
-                unsafe_allow_html=True
-            )
-
+            st.markdown(f"<div style='color: #777; font-size:0.8rem'>🕐 {format_time(msg['timestamp'])}</div>", unsafe_allow_html=True)
         if "dataframe" in msg and msg["dataframe"] is not None:
-            df = msg["dataframe"]
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.markdown(f"<div class='badge badge-info'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
-            with col2:
-                st.markdown(f"<div class='badge badge-success'>✅ {len(df.columns)} Columns</div>", unsafe_allow_html=True)
-            with col3:
-                if "is_authorized" in df.columns:
-                    auth_count = len(df[df["is_authorized"] == "Yes"])
-                    st.markdown(f"<div class='badge badge-success'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
+            st.dataframe(msg["dataframe"], use_container_width=True, height=300)
+            csv = msg["dataframe"].to_csv(index=False).encode("utf-8")
+            st.download_button(label="📥 CSV", data=csv, file_name=f"hajj_data_{int(msg['timestamp'])}.csv", mime="text/csv", key=f"dl_{idx}")
 
-            st.dataframe(df, use_container_width=True, height=300)
-
-            csv = df.to_csv(index=False).encode("utf-8")
-            st.download_button(
-                label="📥 CSV",
-                data=csv,
-                file_name=f"hajj_data_{int(msg['timestamp'])}.csv",
-                mime="text/csv",
-                key=f"download_{idx}"
-            )
-
-# -----------------------------
-# Handle User Input
-# -----------------------------
 placeholder_text = "اكتب سؤالك هنا... 💬" if st.session_state.new_language == "العربية" else "Ask your question here... 💬"
 user_input = st.session_state.selected_question or st.chat_input(placeholder_text)
 st.session_state.selected_question = None
 
-if user_input:
-    # Record user message
-    st.session_state.chat_memory.append({
-        "role": "user",
-        "content": user_input,
-        "timestamp": get_current_time()
-    })
+# -----------------------------
+# LangGraph State schema
+# -----------------------------
+class GraphState(TypedDict, total=False):
+    user_input: str
+    language: str
+    intent: str
+    is_vague: bool
+    sql_query: Optional[str]
+    raw_sql_text: Optional[str]
+    sql_error: Optional[str]
+    result_rows: Optional[List[Dict]]
+    columns: Optional[List[str]]
+    row_count: Optional[int]
+    summary: Optional[str]
+    greeting_text: Optional[str]
+    general_answer: Optional[str]
 
-    with st.chat_message("user", avatar="👤"):
-        st.markdown(user_input)
-        st.markdown(f"<div class='caption'>🕐 {format_time(get_current_time())}</div>", unsafe_allow_html=True)
+# -----------------------------
+# Node implementations
+# Each node accepts the shared 'state' dict and returns a partial dict update.
+# -----------------------------
+def node_detect_intent(state: GraphState) -> dict:
+    user_input = state.get("user_input", "")
+    language = state.get("language", "English")
+    # Heuristics quick check
+    is_arabic = any("\u0600" <= ch <= "\u06FF" for ch in user_input)
+    state_update = {"is_vague": is_vague_input(user_input)}
+    intent = None
 
-    # Assistant thinking...
-    with st.chat_message("assistant", avatar="🕋"):
-        with st.spinner("🤔 Analyzing your question..."):
-            # -----------------------------
-            # Intent Detection
-            # -----------------------------
-            try:
-               # Intent Detection - UPDATED
-                intent_prompt = f"""
+    # Build intent prompt (kept consistent with previous prompt)
+    intent_prompt = f"""
 You are a fraud-prevention assistant for Hajj pilgrims. Classify this message into ONE of three categories:
 
 1️⃣ GREETING: greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا. 
@@ -810,137 +673,75 @@ Message: {user_input}
 
 Respond with ONLY ONE WORD: GREETING, DATABASE, or GENERAL_HAJJ
 """
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role":"system","content":"You classify intents. Respond with one word."},
+                      {"role":"user","content": intent_prompt}],
+            temperature=0,
+            max_tokens=8
+        )
+        candidate = resp.choices[0].message.content.strip().upper()
+        if candidate in ("GREETING", "DATABASE", "GENERAL_HAJJ"):
+            intent = candidate
+    except Exception as e:
+        # fallback heuristics
+        ui = user_input.lower()
+        if any(g in ui for g in ["hello", "hi", "salam", "السلام"]):
+            intent = "GREETING"
+        elif any(k in ui for k in ["company", "agency", "معتمد", "شركات", "agency", "is authorized", "authorized"]):
+            intent = "DATABASE"
+        else:
+            intent = "GENERAL_HAJJ"
 
-                resp = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": "You classify intents. Respond with one word."},
-                        {"role": "user", "content": intent_prompt}
-                    ],
-                    temperature=0,
-                    max_tokens=8
-                )
-                candidate = resp.choices[0].message.content.strip().upper()
-                if candidate in ("GREETING", "DATABASE", "GENERAL_HAJJ"):
-                    intent = candidate
-            except Exception as e:
-                st.warning(f"⚠️ Intent detection issue: {e}")
+    state_update["intent"] = intent
+    return state_update
 
-            # -----------------------------
-            # Handle GREETING Intent
-            # -----------------------------
-            if intent == "GREETING":
-                is_arabic = any("\u0600" <= ch <= "\u06FF" for ch in user_input)
-                
-                # Create a conversational prompt based on language
-                greeting_prompt = {
-                    "role": "system",
-                    "content": """You are a friendly Hajj assistant. Generate a warm, natural greeting that:
-                    1. Acknowledges the user's greeting
-                    2. Expresses willingness to help
-                    3. Mentions you can help with Hajj company information
-                    4. Keeps response under 3 sentences
-                    5. Uses emojis appropriately
-                    """ + ("6. Respond in Arabic" if is_arabic else "6. Respond in English")
-                }
+def node_respond_greeting(state: GraphState) -> dict:
+    user_input = state.get("user_input", "")
+    lang = state.get("language", "English")
+    is_arabic = lang == "العربية" or any("\u0600" <= ch <= "\u06FF" for ch in user_input)
 
-                try:
-                    greeting_response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=[
-                            greeting_prompt,
-                            {"role": "user", "content": user_input}
-                        ],
-                        temperature=0.7,
-                        max_tokens=150
-                    )
-                    
-                    greeting_text = greeting_response.choices[0].message.content.strip()
-                    
-                    # Fallback greetings if API fails
-                    if not greeting_text:
-                        greeting_text = (
-                            "السلام عليكم ورحمة الله وبركاته! 🌙\n\nكيف يمكنني مساعدتك في البحث عن معلومات شركات الحج؟"
-                            if is_arabic else
-                            "Hello! 👋\n\nHow can I help you find information about Hajj companies today?"
-                        )
-                        
-                except Exception:
-                    # Fallback on API failure
-                    greeting_text = (
-                        "السلام عليكم ورحمة الله وبركاته! 🌙\n\nكيف يمكنني مساعدتك في البحث عن معلومات شركات الحج؟"
-                        if is_arabic else
-                        "Hello! 👋\n\nHow can I help you find information about Hajj companies today?"
-                    )
+    greeting_prompt = {
+        "role": "system",
+        "content": """You are a friendly Hajj assistant. Generate a warm, natural greeting that:
+1. Acknowledges the user's greeting
+2. Expresses willingness to help
+3. Mentions you can help with Hajj company information
+4. Keeps response under 3 sentences
+5. Uses emojis appropriately""" + (" Respond in Arabic." if is_arabic else " Respond in English.")
+    }
+    try:
+        greeting_response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[greeting_prompt, {"role":"user","content": user_input}],
+            temperature=0.7,
+            max_tokens=150
+        )
+        greeting_text = greeting_response.choices[0].message.content.strip()
+    except Exception:
+        greeting_text = t("greeting", "العربية") if is_arabic else t("greeting", "English")
 
-                st.markdown(greeting_text)
-                voice_map = {
-                    "العربية": "alloy-ar",
-                    "English": "alloy",
-                    "Urdu": "alloy-ur"
-                }
-                voice = voice_map.get(st.session_state.get("new_language", "English"), "alloy")
+    return {"greeting_text": greeting_text}
 
-                if st.button("🎙️ Listen", key=f"tts_{greeting_text}"):
-                    audio_bytes = tts_to_bytesio(greeting_text, voice)
-                    # Make sure BytesIO is at position 0
-                    audio_bytes.seek(0)
-                    st.audio(audio_bytes, format="audio/mp3")
-                st.session_state.chat_memory.append({
-                    "role": "assistant",
-                    "content": greeting_text,
-                    "timestamp": get_current_time()
-                })
+def node_respond_general(state: GraphState) -> dict:
+    # Use LLM to answer general Hajj questions (non-database)
+    user_input = state.get("user_input", "")
+    try:
+        context = [{"role":"system","content":"You are a helpful assistant specialized in Hajj information. Be concise and factual."},
+                   {"role":"user","content": user_input}]
+        resp = client.chat.completions.create(model="gpt-4o-mini", messages=context, temperature=0.6, max_tokens=400)
+        answer = resp.choices[0].message.content.strip()
+    except Exception as e:
+        answer = t("general_error", state.get("language", "English"))
+    return {"general_answer": answer}
 
-            # -----------------------------
-            # Handle GENERAL_HAJJ Intent
-            # -----------------------------
-            elif intent == "GENERAL_HAJJ":
-                try:
-                    context = build_chat_context(limit=6)
-                    context.append({"role": "user", "content": user_input})
-                    hajj_resp = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=context,
-                        temperature=0.6,
-                        max_tokens=400
-                    )
-                    answer_text = hajj_resp.choices[0].message.content.strip()
-                    st.markdown(answer_text)
-                    st.session_state.chat_memory.append({
-                        "role": "assistant",
-                        "content": answer_text,
-                        "timestamp": get_current_time()
-                    })
-                except Exception as e:
-                    err = "عذراً، واجهت مشكلة في الإجابة." if st.session_state.new_language == "العربية" else "Sorry, I encountered an error."
-                    st.error(f"{err} {e}")
-                    st.session_state.chat_memory.append({
-                        "role": "assistant",
-                        "content": f"{err} {e}",
-                        "timestamp": get_current_time()
-                    })
+def node_generate_sql(state: GraphState) -> dict:
+    user_input = state.get("user_input", "")
+    language = state.get("language", "English")
+    normalized_input = fuzzy_normalize(user_input)
 
-            # -----------------------------
-            # Handle DATABASE Intent
-            # -----------------------------
-            else:
-
-             if is_vague_input(user_input):
-                            msg = (
-                                "تفضل! أنا هنا لمساعدتك في العثور على الوكالات المعتمدة من وزارة الحج والعمرة."
-                                if st.session_state.new_language == "العربية"
-                                else "Go ahead! I'm here to help you find authorized agencies from the Ministry of Hajj and Umrah."
-                            )
-                            st.info(msg)
-             else:
-                with st.status("🔍 Searching database...", expanded=True):
-                    st.write("🧠 Generating SQL query...")
-
-                    normalized_input = fuzzy_normalize(user_input)
-                  
-                    # SQL Generation - UPDATED FOR FRAUD PREVENTION
-                    sql_prompt = f"""
+    sql_prompt = f"""
     You are a multilingual SQL fraud-prevention expert protecting Hajj pilgrims.
 
     🎯 MISSION: Generate an SQL query for database analysis on Hajj agencies.
@@ -1033,72 +834,56 @@ Respond with ONLY ONE WORD: GREETING, DATABASE, or GENERAL_HAJJ
     Q: "Show all cities where agencies exist"
     → SELECT DISTINCT city FROM agencies LIMIT 100;
     """
+    raw_sql = None
+    try:
+        sql_resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role":"system","content":"You output only a SELECT query or NO_SQL."},
+                      {"role":"user","content": sql_prompt}],
+            temperature=0
+        )
+        raw_sql = sql_resp.choices[0].message.content.strip()
+        sql_query = extract_sql_from_response(raw_sql)
+        if sql_query == "NO_SQL":
+            sql_query = None
+    except Exception:
+        sql_query = None
 
-                    sql_query = None
-                    try:
-                        sql_resp = client.chat.completions.create(
-                            model="gpt-4o-mini",
-                            messages=[
-                                {"role": "system", "content": "You output only a SELECT query or NO_SQL."},
-                                {"role": "user", "content": sql_prompt}
-                            ],
-                            temperature=0
-                        )
-                        raw_sql = sql_resp.choices[0].message.content.strip()
-                        sql_query = extract_sql_from_response(raw_sql)
-                        if sql_query == "NO_SQL":
-                            sql_query = None
-                    except Exception as e:
-                        st.write(f"❌ SQL generation failed: {e}")
-                        sql_query = None
+    if not raw_sql or not sql_query:
+        heur = heuristic_sql_fallback(user_input)
+        sql_query = heur
 
-                    # -----------------------------
-                    # Heuristic fallback
-                    # -----------------------------
-                    if not sql_query:
-                        heur_sql = heuristic_sql_fallback(user_input)
-                        if heur_sql:
-                            sql_query = heur_sql
+    sql_query = sanitize_sql(sql_query) if sql_query else None
 
-                    sql_query = sanitize_sql(sql_query) if sql_query else None
-                    result_df, sql_error = None, None
+    return {"sql_query": sql_query, "raw_sql_text": raw_sql if raw_sql else None}
 
-                    # -----------------------------
-                    # Execute SQL
-                    # -----------------------------
-                    if sql_query:
-                        st.write("💾 Executing query...")
-                        try:
-                            with engine.connect() as conn:
-                                result_df = pd.read_sql(text(sql_query), conn)
+def node_execute_sql(state: GraphState) -> dict:
+    sql_query = state.get("sql_query")
+    if not sql_query:
+        return {"sql_error": "No SQL to execute."}
+    try:
+        with engine.connect() as conn:
+            df = pd.read_sql(text(sql_query), conn)
+            rows = df.to_dict(orient="records")
+            cols = list(df.columns)
+            rc = len(df)
+            return {"result_rows": rows, "columns": cols, "row_count": rc}
+    except Exception as e:
+        return {"sql_error": str(e)}
 
-                                st.write(f"✅ Found {len(result_df)} results")
-                        except Exception as e:
-                            sql_error = str(e)
-                            st.write(f"❌ Query failed: {e}")
-                    else:
-                   
-                        
-                          msg = (
-                                "عذراً، لا يمكن تحويل هذا الطلب إلى استعلام SQL آمن."
-                                if st.session_state.new_language == "العربية"
-                                else "Sorry, I couldn't convert that to a safe SQL query."
-                            )
-                          st.warning(msg)
+def node_summarize_results(state: GraphState) -> dict:
+    user_input = state.get("user_input", "")
+    language = state.get("language", "English")
+    row_count = int(state.get("row_count", 0) or 0)
+    rows = state.get("result_rows", [])[:20]  # sample
 
-                    st.session_state.chat_memory.append({
-                            "role": "assistant",
-                            "content": msg,
-                            "timestamp": get_current_time()
-                        })
+    if row_count == 0:
+        no_results_msg = t("no_results", language)
+        return {"summary": no_results_msg}
 
-                # -----------------------------
-                # Present Results
-                # -----------------------------
-                if result_df is not None and not result_df.empty:
-                    row_count = len(result_df)
-                    sample = result_df.head(20).to_dict(orient="records")
-                    summary_prompt = f"""
+    # Build summary prompt similar to your previous summary prompts
+    sample_text = rows
+    summary_prompt = f"""
 You are a multilingual fraud-prevention analyst for Hajj agencies.
 Your task is to summarize SQL query results clearly and concisely in 
 {'Arabic' if st.session_state.new_language == 'العربية' else 'English'}.
@@ -1106,7 +891,7 @@ Your task is to summarize SQL query results clearly and concisely in
 Context:
 - User question: {user_input}
 - Total rows returned: {row_count}
-- Sample results: {sample}
+- Sample results: {sample_text}
 
 INSTRUCTIONS:
 1. Adapt the tone and structure to the user’s intent:
@@ -1146,54 +931,265 @@ There are 45 authorized agencies in Medina, mostly from Saudi Arabia and Egypt.
 
 Now summarize the query results based on the above rules.
 """
+    try:
+        summ_resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role":"system","content":"You summarize data concisely."},
+                      {"role":"user","content": summary_prompt}],
+            temperature=0.5,
+            max_tokens=250
+        )
+        answer_text = summ_resp.choices[0].message.content.strip()
+    except Exception:
+        answer_text = f"📊 Found {row_count} matching records."
 
-                    try:
-                        summ_resp = client.chat.completions.create(
-                            model="gpt-4o-mini",
-                            messages=[
-                                {"role": "system", "content": "You summarize data concisely."},
-                                {"role": "user", "content": summary_prompt}
-                            ],
-                            temperature=0.5,
-                            max_tokens=200
-                        )
-                        answer_text = summ_resp.choices[0].message.content.strip()
-                    except Exception:
-                        answer_text = (
-                            f"📊 Found {row_count} matching records."
-                            if st.session_state.new_language == "English"
-                            else f"📊 تم العثور على {row_count} نتيجة."
-                        )
+    return {"summary": answer_text}
 
-                    st.markdown(answer_text)
-                    show_result_summary(result_df)
-                    show_download_button(result_df)
-                    show_sql_expander(sql_query, row_count)
+# -----------------------------
+# Build LangGraph graph
+# -----------------------------
+def build_stategraph():
+    builder = StateGraph(GraphState)
 
-                    st.session_state.chat_memory.append({
-                        "role": "assistant",
-                        "content": answer_text,
-                        "dataframe": result_df,
-                        "timestamp": get_current_time()
-                    })
-                    st.session_state.last_result_df = result_df
+    # Add nodes
+    builder.add_node("detect_intent", node_detect_intent)
+    builder.add_node("respond_greeting", node_respond_greeting)
+    builder.add_node("respond_general", node_respond_general)
+    builder.add_node("generate_sql", node_generate_sql)
+    builder.add_node("execute_sql", node_execute_sql)
+    builder.add_node("summarize_results", node_summarize_results)
 
-                elif sql_error:
-                    st.error(f"❌ Query failed: {sql_error}")
-                    st.session_state.chat_memory.append({
-                        "role": "assistant",
-                        "content": f"Query failed: {sql_error}",
-                        "timestamp": get_current_time()
-                    })
-                else:
-                    no_results = (
-                        "لم يتم العثور على نتائج."
-                        if st.session_state.new_language == "العربية"
-                        else "No results found."
-                    )
-                    st.warning(no_results)
-                    st.session_state.chat_memory.append({
-                        "role": "assistant",
-                        "content": no_results,
-                        "timestamp": get_current_time()
-                    })
+    # Edges
+    builder.add_edge(START, "detect_intent")
+
+    # Based on detect_intent.intent return different next nodes.
+    # We use add_conditional_edges - key extractor returns the intent string.
+    def intent_key(state):
+        # state here is the TypedDict; we return the matching mapping key
+        return state.get("intent", "GENERAL_HAJJ")
+
+    builder.add_conditional_edges("detect_intent", intent_key, {
+        "GREETING": "respond_greeting",
+        "GENERAL_HAJJ": "respond_general",
+        "DATABASE": "generate_sql"
+    })
+
+    # Database chain
+    builder.add_edge("generate_sql", "execute_sql")
+    builder.add_edge("execute_sql", "summarize_results")
+    builder.add_edge("summarize_results", END)
+
+    # Other branches terminate
+    builder.add_edge("respond_greeting", END)
+    builder.add_edge("respond_general", END)
+
+    graph = builder.compile()
+    return graph
+
+# Compile graph once and reuse
+GRAPH = build_stategraph()
+
+# -----------------------------
+# Helper UI functions
+# -----------------------------
+def show_result_summary(df: pd.DataFrame) -> None:
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"<div style='display:inline-block;padding:6px;background:#667eea;color:white;border-radius:8px;'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"<div style='display:inline-block;padding:6px;background:#11998e;color:white;border-radius:8px;'>✅ {len(df.columns)} Columns</div>", unsafe_allow_html=True)
+    with col3:
+        if "is_authorized" in df.columns:
+            auth_count = len(df[df["is_authorized"] == "Yes"])
+            st.markdown(f"<div style='display:inline-block;padding:6px;background:#38ef7d;color:white;border-radius:8px;'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
+
+def show_download_button(df: pd.DataFrame) -> None:
+    csv = df.to_csv(index=False).encode("utf-8")
+    st.download_button(label=t("download_csv", st.session_state.new_language), data=csv, file_name=f"hajj_data_{int(datetime.now().timestamp())}.csv", mime="text/csv")
+
+def show_sql_expander(sql_query: str, row_count: int) -> None:
+    with st.expander(t("view_sql", st.session_state.new_language)):
+        st.code(sql_query, language="sql")
+        st.caption(t("executed_caption", st.session_state.new_language, count=row_count))
+
+# -----------------------------
+# Handle user input: invoke graph and present outputs
+# -----------------------------
+if user_input:
+    # Append user message to chat
+    st.session_state.chat_memory.append({
+        "role": "user",
+        "content": user_input,
+        "timestamp": get_current_time()
+    })
+
+    with st.chat_message("user", avatar="👤"):
+        st.markdown(user_input)
+        st.markdown(f"<div style='color: #777; font-size:0.8rem'>🕐 {format_time(get_current_time())}</div>", unsafe_allow_html=True)
+
+    # Prepare initial state and invoke graph
+    init_state: GraphState = {"user_input": user_input, "language": st.session_state.new_language}
+
+    with st.chat_message("assistant", avatar="🕋"):
+        st.spinner("🤔 Analyzing your question...")
+        try:
+            # Invoke the graph (synchronous). This returns the final state dict.
+            final_state = GRAPH.invoke(init_state)
+        except Exception as e:
+            # If LangGraph runtime error
+            err_msg = f"{t('general_error', st.session_state.new_language)} {e}"
+            st.error(err_msg)
+            st.session_state.chat_memory.append({
+                "role": "assistant",
+                "content": err_msg,
+                "timestamp": get_current_time()
+            })
+            final_state = {}
+
+        # Present output based on branch
+        # GREETING
+        if final_state.get("greeting_text"):
+            greeting_text = final_state["greeting_text"]
+            st.markdown(greeting_text)
+            # optional tts button
+            if st.button("🎙️ Listen", key=f"tts_greet_{len(st.session_state.chat_memory)}"):
+                voice_map = {"العربية": "alloy-ar", "English": "alloy"}
+                voice = voice_map.get(st.session_state.new_language, "alloy")
+                audio_bytes = tts_to_bytesio(greeting_text, voice)
+                audio_bytes.seek(0)
+                st.audio(audio_bytes, format="audio/mp3")
+
+            st.session_state.chat_memory.append({
+                "role": "assistant",
+                "content": greeting_text,
+                "timestamp": get_current_time()
+            })
+
+        # GENERAL_HAJJ
+        elif final_state.get("general_answer"):
+            ans = final_state["general_answer"]
+            st.markdown(ans)
+            st.session_state.chat_memory.append({
+                "role": "assistant",
+                "content": ans,
+                "timestamp": get_current_time()
+            })
+
+        # DATABASE path outputs
+        elif final_state.get("summary") or final_state.get("result_rows") is not None:
+            # Show summary
+            summary = final_state.get("summary", "")
+            st.markdown(summary)
+
+            rows = final_state.get("result_rows", [])
+            row_count = final_state.get("row_count", 0)
+            sql_q = final_state.get("sql_query", "")
+
+            # Convert to DataFrame for display/download if rows exist
+            if rows:
+                df = pd.DataFrame(rows)
+                st.dataframe(df, use_container_width=True, height=300)
+                show_result_summary(df)
+                show_download_button(df)
+                if sql_q:
+                    show_sql_expander(sql_q, row_count)
+                st.session_state.chat_memory.append({
+                    "role": "assistant",
+                    "content": summary,
+                    "dataframe": df,
+                    "timestamp": get_current_time()
+                })
+                st.session_state.last_result_df = df
+            else:
+                # No data rows
+                st.warning(summary)
+                st.session_state.chat_memory.append({
+                    "role": "assistant",
+                    "content": summary,
+                    "timestamp": get_current_time()
+                })
+
+        else:
+            # Fallback catch-all
+            fallback = t("general_error", st.session_state.new_language)
+            st.error(fallback)
+            st.session_state.chat_memory.append({
+                "role": "assistant",
+                "content": fallback,
+                "timestamp": get_current_time()
+            })
+
+def fuzzy_normalize(text: str) -> str:
+    """Normalize text for fuzzy matching"""
+    # Remove diacritics and special characters
+    import unicodedata
+    normalized = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
+    # Convert to lowercase and remove extra spaces
+    normalized = ' '.join(normalized.lower().split())
+    return normalized
+def heuristic_sql_fallback(question: str) -> Optional[str]:
+    """Generate SQL query based on simple heuristics when AI fails"""
+    question = question.lower()
+    
+    # Basic patterns
+    if any(word in question for word in ['all', 'show', 'list']):
+        return "SELECT * FROM agencies LIMIT 100"
+        
+    if 'authorized' in question or 'autorized' in question:
+        return "SELECT * FROM agencies WHERE is_authorized = 'Yes' LIMIT 100"
+        
+    if 'saudi' in question or 'ksa' in question:
+        return "SELECT * FROM agencies WHERE LOWER(Country) LIKE '%saudi%' LIMIT 100"
+        
+    if 'email' in question:
+        return "SELECT * FROM agencies WHERE email IS NOT NULL AND email != '' LIMIT 100"
+        
+    return None
+def show_result_summary(df: pd.DataFrame) -> None:
+    """Display summary statistics and columns for results"""
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"<div class='badge badge-info'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"<div class='badge badge-success'>✅ {len(df.columns)} Columns</div>", unsafe_allow_html=True)
+    with col3:
+        if "is_authorized" in df.columns:
+            auth_count = len(df[df["is_authorized"] == "Yes"])
+            st.markdown(f"<div class='badge badge-success'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
+    
+
+def show_download_button(df: pd.DataFrame) -> None:
+    """Display download button for results"""
+    csv = df.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        label=t("download_csv", st.session_state.new_language),
+        data=csv,
+        file_name=f"hajj_data_{int(datetime.now().timestamp())}.csv",
+        mime="text/csv"
+    )
+
+def show_sql_expander(sql_query: str, row_count: int) -> None:
+    """Display SQL query in expandable section"""
+    with st.expander(t("view_sql", st.session_state.new_language)):
+        st.code(sql_query, language="sql")
+        st.caption(t("executed_caption", st.session_state.new_language, count=row_count))
+def build_chat_context(limit: int = 6) -> List[Dict[str, str]]:
+    """Build chat context from recent messages"""
+    context = [{"role": "system", "content": """You are a helpful assistant specializing in Hajj-related information.
+    - Be concise and accurate
+    - Use Arabic when user asks in Arabic
+    - Stick to factual information
+    - Avoid religious rulings or fatwa
+    - Focus on practical information"""}]
+    
+    recent = st.session_state.chat_memory[-limit:] if len(st.session_state.chat_memory) > limit else st.session_state.chat_memory
+    
+    for msg in recent:
+        if "dataframe" in msg:  # Skip messages with data results
+            continue
+        context.append({
+            "role": msg["role"],
+            "content": msg["content"]
+        })
+    
+    return context
