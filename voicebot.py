@@ -5,6 +5,7 @@ from audio_recorder_streamlit import audio_recorder
 from typing import TypedDict, Annotated, Literal
 from langgraph.graph import StateGraph, END
 import operator
+import time
 
 # ---------------------------------------
 # Page Configuration
@@ -24,45 +25,51 @@ st.markdown("""
     .stApp {
         background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
         background-attachment: fixed;
+        overflow: hidden;
     }
     
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* Main Container */
+    /* Main Container - Fixed height, no scroll */
     .main .block-container {
         padding: 2rem 1rem;
         max-width: 1200px;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
 
     /* Header Section */
     .header-container {
         text-align: center;
-        padding: 2rem 0;
-        margin-bottom: 2rem;
+        padding: 1rem 0;
+        margin-bottom: 1rem;
     }
 
     .title {
         color: white;
-        font-size: 3rem;
+        font-size: 2.5rem;
         font-weight: 800;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.3rem;
         text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         letter-spacing: 1px;
     }
 
     .subtitle {
         color: rgba(255, 255, 255, 0.9);
-        font-size: 1.3rem;
-        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+        margin-bottom: 0.3rem;
         font-weight: 500;
     }
 
     .powered-by {
         color: rgba(255, 255, 255, 0.7);
-        font-size: 0.9rem;
-        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        margin-top: 0.3rem;
     }
 
     /* Avatar Section */
@@ -70,8 +77,8 @@ st.markdown("""
         display: flex;
         flex-direction: column;
         align-items: center;
-        margin: 2rem auto;
-        padding: 2rem;
+        margin: 1rem auto;
+        padding: 1.5rem;
         background: rgba(255, 255, 255, 0.05);
         border-radius: 2rem;
         backdrop-filter: blur(20px);
@@ -81,18 +88,18 @@ st.markdown("""
 
     .avatar-container {
         position: relative;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
     }
     
     .avatar {
-        width: 180px;
-        height: 180px;
+        width: 160px;
+        height: 160px;
         background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
         border-radius: 50%;
         display: flex;
         justify-content: center;
         align-items: center;
-        font-size: 90px;
+        font-size: 80px;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
         animation: pulse 2s ease-in-out infinite;
         position: relative;
@@ -107,9 +114,9 @@ st.markdown("""
         animation: ripple 2.5s ease-out infinite;
     }
     
-    .ring-1 { width: 200px; height: 200px; animation-delay: 0s; }
-    .ring-2 { width: 250px; height: 250px; animation-delay: 0.7s; }
-    .ring-3 { width: 300px; height: 300px; animation-delay: 1.4s; }
+    .ring-1 { width: 180px; height: 180px; animation-delay: 0s; }
+    .ring-2 { width: 220px; height: 220px; animation-delay: 0.7s; }
+    .ring-3 { width: 260px; height: 260px; animation-delay: 1.4s; }
     
     .avatar.active {
         animation: pulse-active 0.6s ease-in-out infinite;
@@ -132,21 +139,16 @@ st.markdown("""
         100% { transform: scale(1.6); opacity: 0; }
     }
 
-    /* Recording Section */
-    .recording-section {
-        text-align: center;
-        margin: 2rem 0;
-    }
-
+    /* Status Badge */
     .status-badge {
         display: inline-block;
-        padding: 0.8rem 2rem;
+        padding: 0.7rem 1.8rem;
         background: rgba(255, 255, 255, 0.15);
         border-radius: 2rem;
         color: white;
         font-weight: 600;
-        font-size: 1.1rem;
-        margin-bottom: 1.5rem;
+        font-size: 1rem;
+        margin-bottom: 1rem;
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
@@ -162,123 +164,121 @@ st.markdown("""
         50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.8); }
     }
 
-    /* Custom Record Button */
-    .record-button-container {
-        display: flex;
-        justify-content: center;
-        margin: 2rem 0;
-    }
-
-    .custom-record-btn {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        border: 6px solid rgba(255, 255, 255, 0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 10px 40px rgba(220, 38, 38, 0.4);
-        position: relative;
-    }
-
-    .custom-record-btn:hover {
-        transform: scale(1.05);
-        box-shadow: 0 15px 50px rgba(220, 38, 38, 0.6);
-    }
-
-    .custom-record-btn.recording {
-        animation: recording-pulse 0.8s ease-in-out infinite;
-        background: linear-gradient(135deg, #ff1744 0%, #f50057 100%);
-    }
-
-    @keyframes recording-pulse {
-        0%, 100% { transform: scale(1); box-shadow: 0 10px 40px rgba(220, 38, 38, 0.4); }
-        50% { transform: scale(1.15); box-shadow: 0 20px 60px rgba(255, 23, 68, 0.8); }
-    }
-
-    .record-icon {
-        font-size: 50px;
-        color: white;
-        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-    }
-
     /* Workflow Status */
     .workflow-status {
         background: rgba(255, 255, 255, 0.1);
-        padding: 1rem;
+        padding: 0.8rem;
         border-radius: 1rem;
-        margin: 1.5rem 0;
+        margin: 1rem 0;
         text-align: center;
         color: white;
         font-weight: 500;
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.15);
-        font-size: 0.95rem;
+        font-size: 0.85rem;
     }
 
     .workflow-step {
         display: inline-block;
-        padding: 0.4rem 1rem;
+        padding: 0.3rem 0.8rem;
         background: rgba(126, 34, 206, 0.3);
         border-radius: 1rem;
-        margin: 0 0.3rem;
-        font-size: 0.85rem;
+        margin: 0 0.2rem;
+        font-size: 0.75rem;
     }
 
-    /* Chat Messages */
-    .chat-container {
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 2rem 1rem;
-    }
-
-    .chat-bubble-user {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1.3rem 1.5rem;
-        border-radius: 1.5rem 1.5rem 0.3rem 1.5rem;
-        margin: 1.2rem 0;
-        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
-        animation: slideInRight 0.4s ease-out;
-        max-width: 80%;
-        margin-left: auto;
-    }
-
-    .chat-bubble-bot {
+    /* Toast Notification - Fixed position */
+    .toast-notification {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         background: rgba(255, 255, 255, 0.95);
-        color: #1a1a1a;
-        padding: 1.3rem 1.5rem;
-        border-radius: 1.5rem 1.5rem 1.5rem 0.3rem;
-        margin: 1.2rem 0;
-        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
-        animation: slideInLeft 0.4s ease-out;
-        max-width: 80%;
-        margin-right: auto;
+        padding: 2rem;
+        border-radius: 2rem;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        z-index: 9999;
+        max-width: 600px;
+        width: 90%;
+        animation: toastFadeIn 0.5s ease-out;
     }
 
-    @keyframes slideInRight {
-        from { opacity: 0; transform: translateX(30px); }
-        to { opacity: 1; transform: translateX(0); }
+    .toast-notification.fade-out {
+        animation: toastFadeOut 0.5s ease-out forwards;
     }
 
-    @keyframes slideInLeft {
-        from { opacity: 0; transform: translateX(-30px); }
-        to { opacity: 1; transform: translateX(0); }
+    @keyframes toastFadeIn {
+        from {
+            opacity: 0;
+            transform: translate(-50%, -60%);
+        }
+        to {
+            opacity: 1;
+            transform: translate(-50%, -50%);
+        }
     }
 
-    .message-label {
+    @keyframes toastFadeOut {
+        from {
+            opacity: 1;
+            transform: translate(-50%, -50%);
+        }
+        to {
+            opacity: 0;
+            transform: translate(-50%, -60%);
+        }
+    }
+
+    .toast-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    .toast-icon {
+        font-size: 2.5rem;
+        margin-right: 1rem;
+    }
+
+    .toast-title {
+        font-size: 1.2rem;
         font-weight: 700;
-        font-size: 0.9rem;
-        margin-bottom: 0.5rem;
-        opacity: 0.9;
+        color: #1a1a1a;
     }
 
-    .message-content {
+    .toast-content {
+        color: #374151;
         line-height: 1.6;
         font-size: 1rem;
+    }
+
+    .toast-transcript {
+        background: #f3f4f6;
+        padding: 1rem;
+        border-radius: 1rem;
+        margin: 1rem 0;
+        font-style: italic;
+        color: #4b5563;
+    }
+
+    .toast-response {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 1rem;
+    }
+
+    .toast-intent {
+        display: inline-block;
+        padding: 0.3rem 1rem;
+        background: #7e22ce;
+        color: white;
+        border-radius: 1rem;
+        font-size: 0.85rem;
+        margin: 0.5rem 0;
     }
 
     /* Buttons */
@@ -286,9 +286,9 @@ st.markdown("""
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         border: none;
-        padding: 1rem 2.5rem;
+        padding: 0.8rem 2rem;
         border-radius: 3rem;
-        font-size: 1.1rem;
+        font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
@@ -302,48 +302,38 @@ st.markdown("""
         border-color: rgba(255, 255, 255, 0.3);
     }
 
+    /* Hide scrollbar */
+    ::-webkit-scrollbar {
+        display: none;
+    }
+
     /* Processing indicators */
     .stSpinner > div {
         border-color: rgba(126, 34, 206, 0.3) !important;
         border-top-color: #7e22ce !important;
     }
 
-    /* Success/Error messages */
-    .stSuccess {
-        background: rgba(16, 185, 129, 0.15) !important;
-        color: #10b981 !important;
-        border-radius: 1rem !important;
-        padding: 1rem !important;
-        border: 1px solid rgba(16, 185, 129, 0.3) !important;
+    /* Success/Error messages - as toasts */
+    .stSuccess, .stError, .stInfo {
+        position: fixed !important;
+        top: 20px !important;
+        right: 20px !important;
+        z-index: 9999 !important;
+        max-width: 400px !important;
+        animation: slideInRight 0.3s ease-out !important;
     }
 
-    .stError {
-        background: rgba(239, 68, 68, 0.15) !important;
-        color: #ef4444 !important;
-        border-radius: 1rem !important;
-        padding: 1rem !important;
-        border: 1px solid rgba(239, 68, 68, 0.3) !important;
-    }
-
-    .stInfo {
-        background: rgba(59, 130, 246, 0.15) !important;
-        color: #3b82f6 !important;
-        border-radius: 1rem !important;
-        padding: 1rem !important;
-        border: 1px solid rgba(59, 130, 246, 0.3) !important;
-    }
-
-    /* Hide default audio recorder */
-    .stAudioInput {
-        display: none !important;
+    @keyframes slideInRight {
+        from { transform: translateX(100%); }
+        to { transform: translateX(0); }
     }
 
     /* Responsive */
     @media (max-width: 768px) {
         .title { font-size: 2rem; }
-        .subtitle { font-size: 1rem; }
-        .avatar { width: 140px; height: 140px; font-size: 70px; }
-        .chat-bubble-user, .chat-bubble-bot { max-width: 95%; }
+        .subtitle { font-size: 0.95rem; }
+        .avatar { width: 120px; height: 120px; font-size: 60px; }
+        .toast-notification { width: 95%; padding: 1.5rem; }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -469,9 +459,7 @@ def handle_database_node(state: HajjAssistantState) -> HajjAssistantState:
 3. Confirm physical office location
 4. Read authentic reviews
 
-🔒 **Book only through AUTHORIZED agencies!**
-
-*Connect your database for live verification queries.*"""
+🔒 **Book only through AUTHORIZED agencies!**"""
     
     state["response"] = response
     return state
@@ -575,6 +563,12 @@ if "is_listening" not in st.session_state:
     st.session_state.is_listening = False
 if "graph" not in st.session_state:
     st.session_state.graph = build_hajj_assistant_graph()
+if "show_toast" not in st.session_state:
+    st.session_state.show_toast = False
+if "toast_data" not in st.session_state:
+    st.session_state.toast_data = {}
+if "toast_timestamp" not in st.session_state:
+    st.session_state.toast_timestamp = 0
 
 # ---------------------------------------
 # UI Layout
@@ -634,6 +628,39 @@ with col2:
     )
 
 # ---------------------------------------
+# Toast Notification Display
+# ---------------------------------------
+if st.session_state.show_toast:
+    current_time = time.time()
+    elapsed = current_time - st.session_state.toast_timestamp
+    
+    if elapsed < 10:  # Show for 10 seconds
+        fade_class = "fade-out" if elapsed > 9 else ""
+        toast_data = st.session_state.toast_data
+        
+        st.markdown(f"""
+        <div class="toast-notification {fade_class}">
+            <div class="toast-header">
+                <div class="toast-icon">💬</div>
+                <div>
+                    <div class="toast-title">Conversation</div>
+                    <span class="toast-intent">Intent: {toast_data.get('intent', 'Unknown')}</span>
+                </div>
+            </div>
+            <div class="toast-content">
+                <div class="toast-transcript">
+                    <strong>You said:</strong> {toast_data.get('transcript', '')}
+                </div>
+                <div class="toast-response">
+                    <strong>Assistant:</strong><br>{toast_data.get('response', '')}
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.session_state.show_toast = False
+
+# ---------------------------------------
 # Process Audio
 # ---------------------------------------
 if audio_bytes and audio_bytes != st.session_state.last_audio:
@@ -641,8 +668,6 @@ if audio_bytes and audio_bytes != st.session_state.last_audio:
     st.session_state.is_listening = True
     
     with col2:
-        st.audio(audio_bytes, format="audio/wav")
-        
         with st.spinner("⚙️ Processing through AI workflow..."):
             # Initialize state
             initial_state = {
@@ -670,14 +695,20 @@ if audio_bytes and audio_bytes != st.session_state.last_audio:
             if error:
                 st.error(f"❌ {error}")
             elif transcript and response:
-                st.success(f"✅ Transcribed: *{transcript}*")
-                st.info(f"🎯 Intent: **{intent}**")
-                
                 # Update history
                 st.session_state.messages.append({"role": "user", "content": transcript})
                 st.session_state.messages.append({"role": "assistant", "content": response})
                 
-                # Play audio
+                # Set toast data
+                st.session_state.show_toast = True
+                st.session_state.toast_timestamp = time.time()
+                st.session_state.toast_data = {
+                    "transcript": transcript,
+                    "intent": intent,
+                    "response": response
+                }
+                
+                # Play audio response
                 if response_audio:
                     st.audio(response_audio, format="audio/mp3", autoplay=True)
                 
@@ -686,35 +717,7 @@ if audio_bytes and audio_bytes != st.session_state.last_audio:
 else:
     st.session_state.is_listening = False
 
-# ---------------------------------------
-# Chat History
-# ---------------------------------------
-if st.session_state.messages:
-    st.markdown("---")
-    st.markdown("<h2 style='text-align: center; color: white; margin: 2rem 0;'>💬 Conversation History</h2>", unsafe_allow_html=True)
-    
-    chat_col1, chat_col2, chat_col3 = st.columns([0.5, 2, 0.5])
-    
-    with chat_col2:
-        for msg in st.session_state.messages:
-            if msg["role"] == "user":
-                st.markdown(f"""
-                <div class="chat-bubble-user">
-                    <div class="message-label">👤 You</div>
-                    <div class="message-content">{msg['content']}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div class="chat-bubble-bot">
-                    <div class="message-label">🤖 Assistant</div>
-                    <div class="message-content">{msg['content']}</div>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        # Clear button
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🧹 Clear Conversation", use_container_width=True):
-            st.session_state.messages = []
-            st.session_state.last_audio = None
-            st.rerun()
+# Auto-refresh to hide toast after 10 seconds
+if st.session_state.show_toast:
+    time.sleep(0.1)
+    st.rerun()
