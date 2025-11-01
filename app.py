@@ -1119,22 +1119,22 @@ if user_input:
         st.markdown(f"<div style='color: #777; font-size:0.8rem'>🕐 {format_time(get_current_time())}</div>", unsafe_allow_html=True)
 
     # Prepare initial state and invoke graph
-    init_state: GraphState = {"user_input": user_input, "language": st.session_state.new_language}
+        init_state: GraphState = {"user_input": user_input, "language": st.session_state.new_language}
 
-with st.chat_message("assistant", avatar="🕋"):
-    with st.spinner("🤔 Analyzing your question..."):
-        try:
-            # Invoke the graph (synchronous). This returns the final state dict.
-            final_state = GRAPH.invoke(init_state)
-        except Exception as e:
-            err_msg = f"{t('general_error', st.session_state.new_language)} {e}"
-            st.error(err_msg)
-            st.session_state.chat_memory.append({
-                "role": "assistant",
-                "content": err_msg,
-                "timestamp": get_current_time()
-            })
-            final_state = {}
+    with st.chat_message("assistant", avatar="🕋"):
+        with st.spinner("🤔 Analyzing your question..."):
+            try:
+                # Invoke the graph (synchronous). This returns the final state dict.
+                final_state = GRAPH.invoke(init_state)
+            except Exception as e:
+                err_msg = f"{t('general_error', st.session_state.new_language)} {e}"
+                st.error(err_msg)
+                st.session_state.chat_memory.append({
+                    "role": "assistant",
+                    "content": err_msg,
+                    "timestamp": get_current_time()
+                })
+                final_state = {}
 
         # Present output based on branch
         # GREETING
