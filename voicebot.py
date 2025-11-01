@@ -36,7 +36,7 @@ st.markdown("""
     .main .block-container {
         padding: 2rem 1rem;
         max-width: 1200px;
-        height: 100vh;
+        height: 90vh;
         overflow: hidden;
         display: flex;
         flex-direction: column;
