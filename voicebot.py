@@ -1,8 +1,11 @@
 import streamlit as st
 from openai import OpenAI
 import io
-import base64
 from audio_recorder_streamlit import audio_recorder
+from typing import TypedDict, Annotated, Literal
+from langgraph.graph import StateGraph, END
+from langgraph.prebuilt import ToolNode
+import operator
 
 # ---------------------------------------
 # Page Configuration
@@ -64,28 +67,15 @@ st.markdown("""
     }
 
     @keyframes slideInRight {
-        from {
-            opacity: 0;
-            transform: translateX(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
+        from { opacity: 0; transform: translateX(20px); }
+        to { opacity: 1; transform: translateX(0); }
     }
 
     @keyframes slideInLeft {
-        from {
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
+        from { opacity: 0; transform: translateX(-20px); }
+        to { opacity: 1; transform: translateX(0); }
     }
 
-    /* Recording button container */
     .recorder-container {
         display: flex;
         justify-content: center;
@@ -126,20 +116,6 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
     }
 
-    /* Audio player styling */
-    .stAudio {
-        margin: 1rem auto;
-        max-width: 500px;
-    }
-
-    /* Success/Error messages */
-    .stSuccess, .stError, .stSpinner > div {
-        background: rgba(255, 255, 255, 0.95) !important;
-        border-radius: 1rem !important;
-        padding: 1rem !important;
-    }
-
-    /* Avatar container with animation */
     .avatar-container {
         display: flex;
         justify-content: center;
@@ -148,7 +124,6 @@ st.markdown("""
         position: relative;
     }
     
-    /* Pulsing avatar */
     .avatar {
         width: 150px;
         height: 150px;
@@ -164,7 +139,6 @@ st.markdown("""
         z-index: 2;
     }
     
-    /* Animated rings */
     .ring {
         position: absolute;
         border: 3px solid rgba(255, 255, 255, 0.3);
@@ -172,57 +146,39 @@ st.markdown("""
         animation: ripple 2s ease-out infinite;
     }
     
-    .ring-1 {
-        width: 170px;
-        height: 170px;
-        animation-delay: 0s;
-    }
+    .ring-1 { width: 170px; height: 170px; animation-delay: 0s; }
+    .ring-2 { width: 210px; height: 210px; animation-delay: 0.5s; }
+    .ring-3 { width: 250px; height: 250px; animation-delay: 1s; }
     
-    .ring-2 {
-        width: 210px;
-        height: 210px;
-        animation-delay: 0.5s;
-    }
-    
-    .ring-3 {
-        width: 250px;
-        height: 250px;
-        animation-delay: 1s;
-    }
-    
-    /* Active state for voice input */
     .avatar.active {
         animation: pulse-active 0.5s ease-in-out infinite;
         box-shadow: 0 20px 80px rgba(255, 255, 255, 0.5);
     }
     
     @keyframes pulse {
-        0%, 100% {
-            transform: scale(1);
-        }
-        50% {
-            transform: scale(1.05);
-        }
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
     }
     
     @keyframes pulse-active {
-        0%, 100% {
-            transform: scale(1);
-        }
-        50% {
-            transform: scale(1.15);
-        }
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.15); }
     }
     
     @keyframes ripple {
-        0% {
-            transform: scale(1);
-            opacity: 1;
-        }
-        100% {
-            transform: scale(1.5);
-            opacity: 0;
-        }
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    .graph-status {
+        background: rgba(255, 255, 255, 0.15);
+        padding: 0.8rem;
+        border-radius: 1rem;
+        margin: 1rem auto;
+        text-align: center;
+        color: white;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -241,65 +197,224 @@ def get_openai_client():
 client = get_openai_client()
 
 # ---------------------------------------
-# Transcribe Audio
+# LangGraph State Definition
 # ---------------------------------------
-def transcribe_audio(audio_bytes):
+class HajjAssistantState(TypedDict):
+    """State for the Hajj Assistant workflow"""
+    user_input: str
+    transcript: str
+    intent: str
+    response: str
+    audio_bytes: bytes
+    response_audio: bytes
+    error: str
+    messages_history: Annotated[list, operator.add]
+    is_arabic: bool
+
+# ---------------------------------------
+# Node Functions (Tools)
+# ---------------------------------------
+def transcribe_audio_node(state: HajjAssistantState) -> HajjAssistantState:
+    """Node: Transcribe audio to text using Whisper"""
     try:
-        audio_file = io.BytesIO(audio_bytes)
+        audio_file = io.BytesIO(state["audio_bytes"])
         audio_file.name = "audio.wav"
         transcript = client.audio.transcriptions.create(
             model="whisper-1",
             file=audio_file,
             language="en"
         )
-        return transcript.text
+        state["transcript"] = transcript.text
+        state["user_input"] = transcript.text
+        st.success(f"🗣️ Transcribed: *{transcript.text}*")
     except Exception as e:
-        st.error(f"Transcription error: {str(e)}")
-        return None
+        state["error"] = f"Transcription error: {str(e)}"
+        st.error(state["error"])
+    return state
 
-# ---------------------------------------
-# AI Response (ChatGPT)
-# ---------------------------------------
-def get_ai_response(user_message):
+def detect_intent_node(state: HajjAssistantState) -> HajjAssistantState:
+    """Node: Detect user intent (GREETING, DATABASE, GENERAL_HAJJ)"""
     try:
-        system_prompt = """You are a knowledgeable and friendly Hajj assistant.
-        You help pilgrims with:
-        - Hajj & Umrah rituals and steps
-        - Travel and booking questions
-        - Visa and document requirements
-        - Accommodation and transport
+        intent_prompt = f"""
+You are a fraud-prevention assistant for Hajj pilgrims. Classify this message into ONE of three categories:
+
+1️⃣ GREETING: greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا
+2️⃣ DATABASE: questions about verifying Hajj agencies, authorization, company details, locations
+3️⃣ GENERAL_HAJJ: general Hajj questions (rituals, requirements, documents, safety)
+
+CONTEXT: 415 fake offices closed in 2025, 269,000+ unauthorized pilgrims stopped
+
+Message: {state['user_input']}
+
+Respond with ONLY ONE WORD: GREETING, DATABASE, or GENERAL_HAJJ
+"""
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You classify intents. Respond with one word."},
+                {"role": "user", "content": intent_prompt}
+            ],
+            temperature=0,
+            max_tokens=8
+        )
+        candidate = resp.choices[0].message.content.strip().upper()
+        state["intent"] = candidate if candidate in ("GREETING", "DATABASE", "GENERAL_HAJJ") else "GENERAL_HAJJ"
+        
+        # Detect if Arabic
+        state["is_arabic"] = any("\u0600" <= ch <= "\u06FF" for ch in state['user_input'])
+        
+        st.info(f"🎯 Intent detected: **{state['intent']}**")
+    except Exception as e:
+        state["error"] = f"Intent detection error: {str(e)}"
+        state["intent"] = "GENERAL_HAJJ"
+    return state
+
+def handle_greeting_node(state: HajjAssistantState) -> HajjAssistantState:
+    """Node: Handle greeting intent"""
+    try:
+        greeting_prompt = {
+            "role": "system",
+            "content": f"""You are a friendly Hajj assistant. Generate a warm greeting that:
+            1. Acknowledges the user's greeting
+            2. Expresses willingness to help
+            3. Mentions you can verify Hajj companies and answer questions
+            4. Keep it under 3 sentences with emojis
+            {'5. Respond in Arabic' if state['is_arabic'] else '5. Respond in English'}"""
+        }
+        
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[greeting_prompt, {"role": "user", "content": state['user_input']}],
+            temperature=0.7,
+            max_tokens=150
+        )
+        state["response"] = resp.choices[0].message.content.strip()
+    except Exception:
+        state["response"] = (
+            "السلام عليكم! 🌙 كيف يمكنني مساعدتك؟"
+            if state['is_arabic'] else
+            "Hello! 👋 How can I help you today?"
+        )
+    return state
+
+def handle_database_node(state: HajjAssistantState) -> HajjAssistantState:
+    """Node: Handle database queries about Hajj agencies"""
+    response = f"""🔍 **Agency Verification Mode**
+
+Your question: "{state['user_input']}"
+
+⚠️ **Critical Security Alert:**
+- 415 fake Hajj offices closed in 2025
+- 269,000+ unauthorized pilgrims stopped
+- Fraud prevention is our priority
+
+💡 **How to verify agencies:**
+1. Check official Ministry of Hajj database
+2. Verify authorization status
+3. Confirm physical office location
+4. Read reviews and ratings
+
+🔒 **Always book through AUTHORIZED agencies only!**
+
+*Note: Connect your database to enable live queries. Add SQL generation logic from your original code.*"""
+    
+    state["response"] = response
+    return state
+
+def handle_general_hajj_node(state: HajjAssistantState) -> HajjAssistantState:
+    """Node: Handle general Hajj questions"""
+    try:
+        system_prompt = """You are a knowledgeable Hajj assistant helping pilgrims with:
+        - Hajj & Umrah rituals and procedures
+        - Travel requirements and visa information
         - Health, safety, and cultural etiquette
-        Answer clearly, concisely, and respectfully."""
+        
+        CRITICAL: Always emphasize using AUTHORIZED agencies.
+        Context: 415 fake offices closed in 2025, 269,000+ unauthorized pilgrims stopped.
+        
+        Answer clearly in 2-4 sentences."""
         
         messages = [{"role": "system", "content": system_prompt}]
-        messages.extend(st.session_state.messages)
-        messages.append({"role": "user", "content": user_message})
+        messages.extend(state.get("messages_history", [])[-6:])
+        messages.append({"role": "user", "content": state['user_input']})
         
-        response = client.chat.completions.create(
-            model="gpt-4",
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
             messages=messages,
-            temperature=0.7,
+            temperature=0.6,
             max_tokens=400
         )
-        return response.choices[0].message.content
+        state["response"] = resp.choices[0].message.content.strip()
     except Exception as e:
-        st.error(f"AI response error: {str(e)}")
-        return None
+        state["response"] = f"Sorry, error occurred: {str(e)}"
+    return state
 
-# ---------------------------------------
-# Text-to-Speech
-# ---------------------------------------
-def text_to_speech(text):
+def text_to_speech_node(state: HajjAssistantState) -> HajjAssistantState:
+    """Node: Convert text response to speech"""
     try:
-        response = client.audio.speech.create(
+        resp = client.audio.speech.create(
             model="tts-1",
             voice="alloy",
-            input=text
+            input=state["response"]
         )
-        return response.content
+        state["response_audio"] = resp.content
+        st.success("✅ Audio response generated!")
     except Exception as e:
-        st.error(f"TTS error: {str(e)}")
-        return None
+        state["error"] = f"TTS error: {str(e)}"
+        st.error(state["error"])
+    return state
+
+# ---------------------------------------
+# Router Function
+# ---------------------------------------
+def route_intent(state: HajjAssistantState) -> Literal["greeting", "database", "general_hajj"]:
+    """Route to appropriate handler based on intent"""
+    intent = state.get("intent", "GENERAL_HAJJ")
+    if intent == "GREETING":
+        return "greeting"
+    elif intent == "DATABASE":
+        return "database"
+    else:
+        return "general_hajj"
+
+# ---------------------------------------
+# Build LangGraph Workflow
+# ---------------------------------------
+@st.cache_resource
+def build_hajj_assistant_graph():
+    """Build the LangGraph workflow"""
+    workflow = StateGraph(HajjAssistantState)
+    
+    # Add nodes
+    workflow.add_node("transcribe", transcribe_audio_node)
+    workflow.add_node("detect_intent", detect_intent_node)
+    workflow.add_node("greeting", handle_greeting_node)
+    workflow.add_node("database", handle_database_node)
+    workflow.add_node("general_hajj", handle_general_hajj_node)
+    workflow.add_node("tts", text_to_speech_node)
+    
+    # Define edges
+    workflow.set_entry_point("transcribe")
+    workflow.add_edge("transcribe", "detect_intent")
+    
+    # Conditional routing based on intent
+    workflow.add_conditional_edges(
+        "detect_intent",
+        route_intent,
+        {
+            "greeting": "greeting",
+            "database": "database",
+            "general_hajj": "general_hajj"
+        }
+    )
+    
+    # All paths lead to TTS
+    workflow.add_edge("greeting", "tts")
+    workflow.add_edge("database", "tts")
+    workflow.add_edge("general_hajj", "tts")
+    workflow.add_edge("tts", END)
+    
+    return workflow.compile()
 
 # ---------------------------------------
 # Session State Setup
@@ -310,14 +425,16 @@ if "last_audio" not in st.session_state:
     st.session_state.last_audio = None
 if "is_listening" not in st.session_state:
     st.session_state.is_listening = False
+if "graph" not in st.session_state:
+    st.session_state.graph = build_hajj_assistant_graph()
 
 # ---------------------------------------
 # UI Header
 # ---------------------------------------
 st.markdown('<div class="title">🕋 Hajj Voice Assistant</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Your intelligent voice guide for Hajj & Umrah</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Powered by LangGraph AI Workflow</div>', unsafe_allow_html=True)
 
-# Animated avatar with rings
+# Animated avatar
 avatar_active = "active" if st.session_state.is_listening else ""
 st.markdown(f"""
 <div class="avatar-container">
@@ -328,16 +445,19 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+# Graph status
+st.markdown('<div class="graph-status">🔄 LangGraph: Transcribe → Intent → Route → Response → TTS</div>', unsafe_allow_html=True)
+
 # ---------------------------------------
 # Recording Section
 # ---------------------------------------
-st.markdown('<div class="status-text">🎤 Press and hold the button to record your question</div>', unsafe_allow_html=True)
+st.markdown('<div class="status-text">🎤 Press and hold to record</div>', unsafe_allow_html=True)
 
 st.markdown('<div class="recorder-container">', unsafe_allow_html=True)
 audio_bytes = audio_recorder(
     text="",
-    recording_color="#ff1744",      # Bright red when recording
-    neutral_color="#ef4444",        # Red when idle
+    recording_color="#ff1744",
+    neutral_color="#ef4444",
     icon_name="microphone",
     icon_size="3x",
     pause_threshold=2.0,
@@ -346,34 +466,44 @@ audio_bytes = audio_recorder(
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------
-# Process Audio
+# Process Audio with LangGraph
 # ---------------------------------------
 if audio_bytes and audio_bytes != st.session_state.last_audio:
     st.session_state.last_audio = audio_bytes
     st.session_state.is_listening = True
     
-    # Show audio playback
     st.audio(audio_bytes, format="audio/wav")
     
-    with st.spinner("📝 Transcribing your voice..."):
-        transcript = transcribe_audio(audio_bytes)
-    
-    if transcript:
-        st.success(f"🗣️ You said: *{transcript}*")
-        st.session_state.messages.append({"role": "user", "content": transcript})
+    with st.spinner("⚙️ Processing through LangGraph workflow..."):
+        # Initialize state
+        initial_state = {
+            "audio_bytes": audio_bytes,
+            "user_input": "",
+            "transcript": "",
+            "intent": "",
+            "response": "",
+            "response_audio": b"",
+            "error": "",
+            "messages_history": st.session_state.messages,
+            "is_arabic": False
+        }
         
-        with st.spinner("🧠 Thinking..."):
-            ai_response = get_ai_response(transcript)
+        # Run the graph
+        final_state = st.session_state.graph.invoke(initial_state)
         
-        if ai_response:
-            st.session_state.messages.append({"role": "assistant", "content": ai_response})
+        # Extract results
+        transcript = final_state.get("transcript", "")
+        response = final_state.get("response", "")
+        response_audio = final_state.get("response_audio", b"")
+        
+        if transcript and response:
+            # Update conversation history
+            st.session_state.messages.append({"role": "user", "content": transcript})
+            st.session_state.messages.append({"role": "assistant", "content": response})
             
-            with st.spinner("🔊 Generating speech response..."):
-                audio_response = text_to_speech(ai_response)
-            
-            if audio_response:
-                st.success("✅ Response ready!")
-                st.audio(audio_response, format="audio/mp3", autoplay=True)
+            # Play audio response
+            if response_audio:
+                st.audio(response_audio, format="audio/mp3", autoplay=True)
             
             st.session_state.is_listening = False
             st.rerun()
