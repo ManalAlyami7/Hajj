@@ -1,298 +1,176 @@
 import streamlit as st
-import openai
 from openai import OpenAI
-import numpy as np
+from audio_recorder_streamlit import audio_recorder
 import io
 import base64
-import pyaudio
-import wave
-import time
 
-# ---------------------------------------
-# Page Configuration
-# ---------------------------------------
-st.set_page_config(
-    page_title="Hajj Voice Assistant",
-    page_icon="🕋",
-    layout="centered",
-    initial_sidebar_state="collapsed"
-)
+# ----------------------------
+# Page Setup & Styles
+# ----------------------------
+st.set_page_config(page_title="🕋 Hajj Voice Assistant", page_icon="🕋", layout="centered")
 
-# ---------------------------------------
-# Custom CSS (Gradient Background + Animation)
-# ---------------------------------------
 st.markdown("""
 <style>
-    .stApp {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-        background-attachment: fixed;
-    }
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-
-    .title {
-        text-align: center;
-        color: white;
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    }
-
-    .subtitle {
-        text-align: center;
-        color: rgba(255, 255, 255, 0.9);
-        font-size: 1.2rem;
-        margin-bottom: 2rem;
-    }
-
-    .chat-message {
-        background: rgba(255, 255, 255, 0.95);
-        padding: 1.2rem;
-        border-radius: 1rem;
-        margin: 1rem 0;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    }
-
-    .user-message {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-
-    .assistant-message {
-        background: rgba(255, 255, 255, 0.95);
-        color: #333;
-    }
-
-    .listening-indicator {
-        width: 90px;
-        height: 90px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #ff1744 0%, #d32f2f 100%);
-        border: 4px solid rgba(255, 255, 255, 0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 40px;
-        margin: 2rem auto;
-        box-shadow: 0 10px 40px rgba(211, 47, 47, 0.4);
-        animation: record-pulse 1s ease-in-out infinite;
-    }
-    
-    .listening-indicator.active {
-        animation: record-pulse-active 0.5s ease-in-out infinite;
-        box-shadow: 0 15px 60px rgba(255, 23, 68, 0.8);
-    }
-    
-    @keyframes record-pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-    }
-    
-    @keyframes record-pulse-active {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.15); }
-    }
-
-    .stButton > button {
-        width: 100%;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 1rem 2rem;
-        border-radius: 2rem;
-        font-size: 1.1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    }
-
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-    }
+.stApp {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: #111827;
+    font-family: 'Inter', sans-serif;
+}
+.header {
+    text-align:center;
+    margin-top: 12px;
+    margin-bottom: 8px;
+}
+.title {
+    font-size: 2.3rem;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.subtitle {
+    color: rgba(255,255,255,0.9);
+    margin-bottom: 1rem;
+}
+.recorder-box {
+    display:flex;
+    justify-content:center;
+    margin-bottom: 1rem;
+}
+.chat-container {
+    display:flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+}
+.chat-bubble-user {
+    background: #dc2626;
+    color: white;
+    padding: 12px;
+    border-radius: 12px;
+    margin: 6px 0;
+    max-width: 80%;
+    align-self: flex-end;
+}
+.chat-bubble-assistant {
+    background: rgba(255,255,255,0.9);
+    color: #111827;
+    padding: 12px;
+    border-radius: 12px;
+    margin: 6px 0;
+    max-width: 80%;
+    align-self: flex-start;
+}
+.clear-button {
+    margin-top: 12px;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------------------------------
-# Initialize OpenAI Client
-# ---------------------------------------
+st.markdown('<div class="header"><div class="title">🕋 Hajj Voice Assistant</div><div class="subtitle">Speak to your AI Hajj guide</div></div>', unsafe_allow_html=True)
+
+# ----------------------------
+# OpenAI Client
+# ----------------------------
 @st.cache_resource
-def get_openai_client():
-    api_key = st.secrets.get("key", None)
+def get_client():
+    api_key = st.secrets.get("key") or st.secrets.get("OPENAI_API_KEY")
     if not api_key:
-        st.error("Please add your OPENAI_API_KEY to Streamlit secrets")
+        st.error("⚠️ Please add your OpenAI API key to Streamlit secrets under the key 'key' or 'OPENAI_API_KEY'")
         st.stop()
     return OpenAI(api_key=api_key)
 
-client = get_openai_client()
+client = get_client()
 
-# ---------------------------------------
-# Transcribe Audio
-# ---------------------------------------
-def transcribe_audio(audio_bytes):
+# ----------------------------
+# Helper functions
+# ----------------------------
+def transcribe_audio(audio_bytes: bytes) -> str | None:
     try:
         audio_file = io.BytesIO(audio_bytes)
         audio_file.name = "audio.wav"
-        transcript = client.audio.transcriptions.create(
-            model="whisper-1",
-            file=audio_file,
-            language="en"
-        )
-        return transcript.text
+        result = client.audio.transcriptions.create(model="whisper-1", file=audio_file)
+        return result.text
     except Exception as e:
-        st.error(f"Transcription error: {str(e)}")
+        st.error(f"Transcription error: {e}")
         return None
 
-# ---------------------------------------
-# AI Response (ChatGPT)
-# ---------------------------------------
-def get_ai_response(user_message):
+def ai_reply(messages):
     try:
-        system_prompt = """You are a knowledgeable and friendly Hajj assistant.
-        You help pilgrims with:
-        - Hajj & Umrah rituals and steps
-        - Travel and booking questions
-        - Visa and document requirements
-        - Accommodation and transport
-        - Health, safety, and cultural etiquette
-        Answer clearly, concisely, and respectfully."""
-        
-        messages = [{"role": "system", "content": system_prompt}]
-        messages.extend(st.session_state.messages)
-        messages.append({"role": "user", "content": user_message})
-        
-        response = client.chat.completions.create(
+        completion = client.chat.completions.create(
             model="gpt-4",
             messages=messages,
-            temperature=0.7,
-            max_tokens=400
+            temperature=0.6
         )
-        return response.choices[0].message.content
+        return completion.choices[0].message.content
     except Exception as e:
-        st.error(f"AI response error: {str(e)}")
+        st.error(f"AI error: {e}")
         return None
 
-# ---------------------------------------
-# Text-to-Speech
-# ---------------------------------------
-def text_to_speech(text):
+def speak_text(text: str):
     try:
-        response = client.audio.speech.create(
-            model="tts-1",
-            voice="alloy",
-            input=text
-        )
-        return response.content
+        response = client.audio.speech.create(model="tts-1", voice="alloy", input=text)
+        audio_bytes = response.content if hasattr(response, "content") else None
+        if audio_bytes:
+            b64 = base64.b64encode(audio_bytes).decode()
+            st.markdown(f'<audio controls autoplay><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>', unsafe_allow_html=True)
     except Exception as e:
-        st.error(f"TTS error: {str(e)}")
-        return None
+        st.error(f"TTS error: {e}")
 
-# ---------------------------------------
-# Record Audio with Silence Detection
-# ---------------------------------------
-def record_with_silence_detection(duration_max=60, silence_threshold=-35, silence_duration=2.0, sample_rate=16000):
-    CHUNK = 1024
-    FORMAT = pyaudio.paInt16
-    CHANNELS = 1
-    
-    try:
-        p = pyaudio.PyAudio()
-        stream = p.open(format=FORMAT, channels=CHANNELS, rate=sample_rate, input=True, frames_per_buffer=CHUNK)
-        st.info("🎤 Listening... Speak now (auto-stop on silence)")
-        
-        frames = []
-        silence_chunks = 0
-        silence_chunks_needed = int((silence_duration * sample_rate) / CHUNK)
-        start_time = time.time()
-        
-        while time.time() - start_time < duration_max:
-            data = stream.read(CHUNK, exception_on_overflow=False)
-            frames.append(data)
-            
-            audio_chunk = np.frombuffer(data, dtype=np.int16).astype(np.float32)
-            rms = np.sqrt(np.mean(audio_chunk ** 2))
-            energy_db = 20 * np.log10(rms + 1e-10)
-            
-            if energy_db < silence_threshold:
-                silence_chunks += 1
-            else:
-                silence_chunks = 0
-            
-            if silence_chunks >= silence_chunks_needed:
-                st.success("✅ Stopped (silence detected)")
-                break
-        
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
-        
-        wav_buffer = io.BytesIO()
-        with wave.open(wav_buffer, 'wb') as wav_file:
-            wav_file.setnchannels(CHANNELS)
-            wav_file.setsampwidth(p.get_sample_size(FORMAT))
-            wav_file.setframerate(sample_rate)
-            wav_file.writeframes(b''.join(frames))
-        return wav_buffer.getvalue()
-        
-    except Exception as e:
-        st.error(f"Microphone error: {e}")
-        return None
-
-# ---------------------------------------
-# Session State Setup
-# ---------------------------------------
+# ----------------------------
+# Initialize conversation
+# ----------------------------
 if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "listening" not in st.session_state:
-    st.session_state.listening = False
+    st.session_state.messages = [
+        {"role": "system", "content": "You are a respectful and multilingual Hajj assistant that helps pilgrims with guidance, safety, and information."}
+    ]
 
-# ---------------------------------------
-# UI
-# ---------------------------------------
-st.markdown('<div class="title">🕋 Hajj Voice Assistant</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Your intelligent voice guide for Hajj & Umrah</div>', unsafe_allow_html=True)
+# ----------------------------
+# Red Recording Button
+# ----------------------------
+st.markdown('<div class="recorder-box">', unsafe_allow_html=True)
+audio_bytes = audio_recorder(
+    text="🎙️ Hold to speak",
+    recording_color="#dc2626",   # 🔴 Red
+    neutral_color="#ef4444",     # Slightly lighter red when idle
+    icon_size="3x",
+)
+st.markdown('</div>', unsafe_allow_html=True)
 
-if st.session_state.listening:
-    st.markdown('<div class="listening-indicator active">🎙️</div>', unsafe_allow_html=True)
-    audio_bytes = record_with_silence_detection()
-    
-    if audio_bytes:
-        with st.spinner("📝 Transcribing..."):
-            transcript = transcribe_audio(audio_bytes)
-        if transcript:
-            st.session_state.messages.append({"role": "user", "content": transcript})
-            with st.spinner("🧠 Thinking..."):
-                ai_response = get_ai_response(transcript)
-            if ai_response:
-                st.session_state.messages.append({"role": "assistant", "content": ai_response})
-                with st.spinner("🔊 Speaking..."):
-                    audio_response = text_to_speech(ai_response)
-                if audio_response:
-                    audio_base64 = base64.b64encode(audio_response).decode()
-                    st.markdown(f'<audio autoplay><source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3"></audio>', unsafe_allow_html=True)
-    st.session_state.listening = False
-    st.rerun()
+# ----------------------------
+# Process Audio
+# ----------------------------
+if audio_bytes:
+    st.audio(audio_bytes, format="audio/wav")
+    with st.spinner("📝 Transcribing your voice..."):
+        transcript = transcribe_audio(audio_bytes)
+    if transcript:
+        st.session_state.messages.append({"role": "user", "content": transcript})
+        st.success(f"🗣️ You said: {transcript}")
 
-else:
-    st.markdown('<div class="listening-indicator">🎙️</div>', unsafe_allow_html=True)
-    if st.button("Start Listening", use_container_width=True):
-        st.session_state.listening = True
-        st.rerun()
-
-st.markdown("---")
-if st.session_state.messages:
-    st.markdown("<h3>🗨️ Conversation</h3>", unsafe_allow_html=True)
-    chat_container = st.container()
-    for msg in st.session_state.messages:
-        if msg["role"] == "user":
-            chat_container.markdown(f"<div class='chat-bubble-user'>{msg['content']}</div>", unsafe_allow_html=True)
+        with st.spinner("🤖 Thinking..."):
+            reply = ai_reply(st.session_state.messages)
+        if reply:
+            st.session_state.messages.append({"role": "assistant", "content": reply})
+            speak_text(reply)
         else:
-            chat_container.markdown(f"<div class='chat-bubble-bot'>{msg['content']}</div>", unsafe_allow_html=True)
-            
-if st.session_state.messages:
-    if st.button("🧹 Clear Conversation"):
-        st.session_state.messages = []
-        st.rerun()
+            st.error("No response from assistant.")
+    else:
+        st.error("Could not transcribe audio.")
+
+# ----------------------------
+# Display Chat
+# ----------------------------
+st.markdown("---")
+st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+for msg in st.session_state.messages[1:]:
+    role = msg["role"]
+    bubble = "chat-bubble-user" if role == "user" else "chat-bubble-assistant"
+    st.markdown(f'<div class="{bubble}">{msg["content"]}</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ----------------------------
+# Controls
+# ----------------------------
+if st.button("🧹 Clear Conversation", use_container_width=True):
+    st.session_state.messages = st.session_state.messages[:1]
+    st.experimental_rerun()
