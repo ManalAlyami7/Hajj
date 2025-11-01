@@ -1088,11 +1088,10 @@ if user_input:
             # Convert to DataFrame for display/download if rows exist
             if rows:
                 df = pd.DataFrame(rows)
-                st.dataframe(df, use_container_width=True, height=300)
+                #st.dataframe(df, use_container_width=True, height=300)
                 show_result_summary(df)
-                show_download_button(df)
-                if sql_q:
-                    show_sql_expander(sql_q, row_count)
+                #show_download_button(df)
+            
                 st.session_state.chat_memory.append({
                     "role": "assistant",
                     "content": summary,
