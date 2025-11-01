@@ -884,10 +884,19 @@ def node_generate_sql(state: GraphState) -> dict:
 
     --------------------------------------------
     ✅ EXAMPLES:
+📘 QUERY INTERPRETATION RULES:
+...
+⚙️ For company name searches:
+Always normalize and deduplicate company names.
+Use LOWER(TRIM()) and SELECT DISTINCT to avoid case duplicates.
+
 
     Q: "هل شركة الهدى معتمدة؟"
-    → SELECT * FROM agencies WHERE (hajj_company_ar LIKE '%الهدى%' OR LOWER(hajj_company_en) LIKE '%alhuda%') LIMIT 10;
-
+    → ELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized
+FROM agencies
+WHERE (LOWER(TRIM(hajj_company_en)) LIKE LOWER('%alhuda%')
+   OR LOWER(TRIM(hajj_company_ar)) LIKE LOWER('%الهدى%'))
+LIMIT 50;
     Q: "Authorized agencies in Makkah"
     → SELECT * FROM agencies WHERE is_authorized = 'Yes' AND (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%') LIMIT 100;
 
