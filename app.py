@@ -676,8 +676,14 @@ with st.sidebar:
 # -----------------------------
 
 # Header
-st.markdown(f"<h1>🕋 <span class='main-title'>{t('main_title', st.session_state.new_language)}</span></h1>", unsafe_allow_html=True)
-st.markdown(f"<p class='subtitle'>{t('subtitle', st.session_state.new_language)}</p>", unsafe_allow_html=True)
+st.markdown(f"""
+<div class="header-container{' rtl' if st.session_state.new_language == 'العربية' else ''}">
+    <h1>
+        🕋 <span class="main-title">{t('main_title', st.session_state.new_language)}</span>
+    </h1>
+    <p class="subtitle">{t('subtitle', st.session_state.new_language)}</p>
+</div>
+""", unsafe_allow_html=True)
 
 # Display chat history
 for idx, msg in enumerate(st.session_state.chat_memory):
