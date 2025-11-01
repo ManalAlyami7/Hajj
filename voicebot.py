@@ -138,6 +138,92 @@ st.markdown("""
         border-radius: 1rem !important;
         padding: 1rem !important;
     }
+
+    /* Avatar container with animation */
+    .avatar-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 2rem auto;
+        position: relative;
+    }
+    
+    /* Pulsing avatar */
+    .avatar {
+        width: 150px;
+        height: 150px;
+        background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 80px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: pulse 2s ease-in-out infinite;
+        position: relative;
+        z-index: 2;
+    }
+    
+    /* Animated rings */
+    .ring {
+        position: absolute;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        animation: ripple 2s ease-out infinite;
+    }
+    
+    .ring-1 {
+        width: 170px;
+        height: 170px;
+        animation-delay: 0s;
+    }
+    
+    .ring-2 {
+        width: 210px;
+        height: 210px;
+        animation-delay: 0.5s;
+    }
+    
+    .ring-3 {
+        width: 250px;
+        height: 250px;
+        animation-delay: 1s;
+    }
+    
+    /* Active state for voice input */
+    .avatar.active {
+        animation: pulse-active 0.5s ease-in-out infinite;
+        box-shadow: 0 20px 80px rgba(255, 255, 255, 0.5);
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+    }
+    
+    @keyframes pulse-active {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.15);
+        }
+    }
+    
+    @keyframes ripple {
+        0% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(1.5);
+            opacity: 0;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -222,6 +308,8 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "last_audio" not in st.session_state:
     st.session_state.last_audio = None
+if "is_listening" not in st.session_state:
+    st.session_state.is_listening = False
 
 # ---------------------------------------
 # UI Header
@@ -229,6 +317,7 @@ if "last_audio" not in st.session_state:
 st.markdown('<div class="title">🕋 Hajj Voice Assistant</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Your intelligent voice guide for Hajj & Umrah</div>', unsafe_allow_html=True)
 
+# Animated avatar with rings
 avatar_active = "active" if st.session_state.is_listening else ""
 st.markdown(f"""
 <div class="avatar-container">
@@ -238,7 +327,6 @@ st.markdown(f"""
     <div class="avatar {avatar_active}">🕋</div>
 </div>
 """, unsafe_allow_html=True)
-
 
 # ---------------------------------------
 # Recording Section
@@ -262,6 +350,7 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ---------------------------------------
 if audio_bytes and audio_bytes != st.session_state.last_audio:
     st.session_state.last_audio = audio_bytes
+    st.session_state.is_listening = True
     
     # Show audio playback
     st.audio(audio_bytes, format="audio/wav")
@@ -286,7 +375,10 @@ if audio_bytes and audio_bytes != st.session_state.last_audio:
                 st.success("✅ Response ready!")
                 st.audio(audio_response, format="audio/mp3", autoplay=True)
             
+            st.session_state.is_listening = False
             st.rerun()
+else:
+    st.session_state.is_listening = False
 
 # ---------------------------------------
 # Display Conversation
