@@ -291,10 +291,6 @@ if st.session_state.is_listening:
 else:
     st.markdown('<div class="status">Click the button below to speak</div>', unsafe_allow_html=True)
 
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "system", "content": "You are a respectful and multilingual Hajj assistant that helps pilgrims with guidance, safety, and information."}
-    ]
 
 # ----------------------------
 # Red Recording Button
