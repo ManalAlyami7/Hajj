@@ -296,7 +296,7 @@ st.markdown("""
         animation: fadeInDown 0.6s ease-out;
     }
     
-    .main-title {
+    .main_title {
         font-size: 3rem;
         font-weight: 700;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
