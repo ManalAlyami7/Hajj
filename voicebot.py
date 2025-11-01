@@ -598,9 +598,7 @@ with col2:
             <div class="avatar {avatar_active}">🕋</div>
         </div>
         
-        <div class="status-badge {'listening' if st.session_state.is_listening else ''}">
-            {'🔴 Listening...' if st.session_state.is_listening else '🎙️ Ready to Listen'}
-        </div>
+       
     </div>
     """, unsafe_allow_html=True)
     
