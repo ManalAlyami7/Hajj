@@ -1121,13 +1121,12 @@ if user_input:
     # Prepare initial state and invoke graph
     init_state: GraphState = {"user_input": user_input, "language": st.session_state.new_language}
 
-    with st.chat_message("assistant", avatar="🕋"):
-        st.spinner("🤔 Analyzing your question...")
+with st.chat_message("assistant", avatar="🕋"):
+    with st.spinner("🤔 Analyzing your question..."):
         try:
             # Invoke the graph (synchronous). This returns the final state dict.
             final_state = GRAPH.invoke(init_state)
         except Exception as e:
-            # If LangGraph runtime error
             err_msg = f"{t('general_error', st.session_state.new_language)} {e}"
             st.error(err_msg)
             st.session_state.chat_memory.append({
