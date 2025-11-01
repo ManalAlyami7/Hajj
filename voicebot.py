@@ -229,6 +229,17 @@ if "last_audio" not in st.session_state:
 st.markdown('<div class="title">🕋 Hajj Voice Assistant</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtitle">Your intelligent voice guide for Hajj & Umrah</div>', unsafe_allow_html=True)
 
+avatar_active = "active" if st.session_state.is_listening else ""
+st.markdown(f"""
+<div class="avatar-container">
+    <div class="ring ring-1"></div>
+    <div class="ring ring-2"></div>
+    <div class="ring ring-3"></div>
+    <div class="avatar {avatar_active}">🕋</div>
+</div>
+""", unsafe_allow_html=True)
+
+
 # ---------------------------------------
 # Recording Section
 # ---------------------------------------
