@@ -876,11 +876,11 @@ Return JSON ONLY in this format:
 }}
 """
     try:
-        resp = structured_llm.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role":"system","content":"You classify intents. Respond with one word."},
+        resp = structured_llm.invoke(
+            
+            [{"role":"system","content":"You classify intents. Respond with one word."},
                       {"role":"user","content": intent_prompt}, *build_chat_context()],
-            temperature=0,
+       
             max_tokens=8
         )
 
@@ -929,7 +929,7 @@ def node_respond_general(state: GraphState) -> dict:
         context = [{"role":"system","content":"You are a helpful assistant specialized in Hajj information. Be concise and factual."},
                    {"role":"user","content": user_input}, *build_chat_context()]
         resp = structured_llm.invoke(context, max_tokens=400)
-        answer = resp.choices[0].message.content.strip()
+        answer = resp.answer.strip()
     except Exception as e:
         answer = t("general_error", state.get("language", "English"))
     return {"general_answer": answer}
