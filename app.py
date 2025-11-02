@@ -11,14 +11,10 @@ from typing import Optional, Dict, List
 from deep_translator import GoogleTranslator
 from typing_extensions import TypedDict
 import urllib.parse
-from pydantic import BaseModel, Field
-
 
 
 # LangGraph imports
 from langgraph.graph import StateGraph, START, END
-from langchain_openai import ChatOpenAI
-
 
 import json
 import os
@@ -40,37 +36,10 @@ def save_chat_memory():
 
 if "chat_memory" not in st.session_state:
     st.session_state.chat_memory = load_chat_memory()
-
-llm = ChatOpenAI(
-    model_name="gpt-5-nano",
-    temperature=0,
-    openai_api_key=st.secrets["key"])
-class IntentSchema(BaseModel):
-    intent: str = Field(description="One of: GREETING, DATABASE, GENERAL_HAJJ")
-    confidence: float = Field(description="Confidence score between 0 and 1")
-
-class GreetingSchema(BaseModel):
-    greeting_text: str = Field(description="Friendly greeting to the user in natural language.")
-    tone: str = Field(description="The tone of the greeting, e.g., 'warm', 'formal', 'friendly'.")
-    language: str = Field(description="Language used in the greeting, e.g., 'English' or 'Arabic'.")
-    contains_emoji: bool = Field(description="True if the greeting contains emojis.")
-class GeneralAnswerSchema(BaseModel):
-    answer: str = Field(description="A concise, factual response to the user's general Hajj-related question.")
-    topic: str = Field(description="The detected topic or category, e.g. 'visa', 'documents', 'transport', 'rituals'.")
-    confidence: float = Field(description="Confidence level in understanding the question, from 0 to 1.")
-class SQLResult(BaseModel):
-    sql_query: str = Field(description="The generated SQL SELECT query.")
-    reasoning: str = Field(description="Short reasoning for how the SQL matches the user question.")
-    is_valid: bool = Field(description="True if the SQL is executable, False if the user input was too vague.")
-
-
-class SummarySchema(BaseModel):
-    """Schema for structured summarization output."""
-    summary: str = Field(..., description="Concise summary of the SQL query results.")
-    is_valid: bool = Field(..., description="Whether summarization was successful and consistent with the data.")
-    reasoning: str = Field(..., description="Short explanation or reasoning behind the summary.")
-
-
+if st.button("🎙️ Go to Voice Assistant"):
+    st.switch_page("pages/voicebot.py")
+# -----------------------------
+# TRANSLATIONS DICTIONARY (unchanged)
 # -----------------------------
 TRANSLATIONS = {
     "English": {
@@ -196,42 +165,6 @@ def t(key: str, lang: str = "English", **kwargs) -> str:
     return text
 
     
-# ...existing code...
-def clear_chat_history(keep_language: bool = True):
-    """Clear chat memory (in-memory + persisted file) and reset minimal state."""
-    # preserve language selection if requested
-    lang = st.session_state.get("new_language", "English") if keep_language else None
-
-    # clear keys safely
-    for k in ["chat_memory", "user_input", "selected_question", "auto_submit", "last_result_df"]:
-        st.session_state.pop(k, None)
-
-    # reset overall state but restore language if requested
-    st.session_state.clear()
-    if keep_language and lang:
-        st.session_state.new_language = lang
-    else:
-        st.session_state.new_language = "English"
-
-    # initialize fresh assistant welcome message
-    st.session_state.chat_memory = [{
-        "role": "assistant",
-        "content": t("welcome_msg", st.session_state.new_language),
-        "timestamp": get_current_time()
-    }]
-    st.session_state.last_result_df = None
-
-    # remove persisted chat file if present
-    try:
-        if os.path.exists("chat_history.json"):
-            os.remove("chat_history.json")
-    except Exception:
-        pass
-
-    # persist empty/fresh memory and force rerun
-    save_chat_memory()
-    st.rerun()
-
 
 def get_current_time() -> float:
     """Get current timestamp in Riyadh timezone"""
@@ -756,7 +689,14 @@ with st.sidebar:
     
     # Clear Chat Button
     if st.button(t("clear_chat", st.session_state.new_language), use_container_width=True, type="primary"):
-      clear_chat_history(keep_language=True)
+        st.session_state.chat_memory = [{
+            "role": "assistant",
+            "content": t("welcome_msg", st.session_state.new_language),
+            "timestamp": get_current_time()
+        }]
+        st.session_state.last_result_df = None
+        save_chat_memory()
+        st.rerun()
 
     st.markdown("---")
     
@@ -867,9 +807,6 @@ def node_detect_intent(state: GraphState) -> dict:
     is_arabic = any("\u0600" <= ch <= "\u06FF" for ch in user_input)
     state_update = {"is_vague": is_vague_input(user_input)}
     intent = None
-    structured_llm = llm.with_structured_output(IntentSchema)
-
-
 
     # Build intent prompt (kept consistent with previous prompt)
     intent_prompt = f"""
@@ -891,47 +828,37 @@ CRITICAL CONTEXT:
 - Always emphasize verification and authorization for DATABASE questions
 
 Message: {user_input}
-language: {language}{" (Arabic)" if is_arabic else " (English)"}
-Return structured JSON:
-{{
-  "intent": "GREETING" | "DATABASE" | "GENERAL_HAJJ",
-  "confidence": float between 0 and 1
-}}
+
+Respond with ONLY ONE WORD: GREETING, DATABASE, or GENERAL_HAJJ
 """
-
     try:
-        result = structured_llm.invoke([
-            {"role": "system", "content": "You classify user intent for a Hajj fraud-prevention assistant."},
-            {"role": "user", "content": intent_prompt},
-        ])
-
-        intent = result.intent.upper()
-        confidence = result.confidence
-
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role":"system","content":"You classify intents. Respond with one word."},
+                      {"role":"user","content": intent_prompt}, *build_chat_context()],
+            temperature=0,
+            max_tokens=8
+        )
+        candidate = resp.choices[0].message.content.strip().upper()
+        if candidate in ("GREETING", "DATABASE", "GENERAL_HAJJ"):
+            intent = candidate
     except Exception as e:
-        # Handle structured parsing or token limit errors
-        st.warning(f"⚠️ Intent detection error: {e}")
-
-        # Fallback heuristics
+        # fallback heuristics
         ui = user_input.lower()
-        if any(word in ui for word in ["hi", "hello", "hey", "مرحبا", "السلام"]):
+        if any(g in ui for g in ["hello", "hi", "salam", "السلام"]):
             intent = "GREETING"
-        elif any(word in ui for word in ["agency", "company", "authorized", "معتمد", "مصر", "مكة"]):
+        elif any(k in ui for k in ["company", "agency", "معتمد", "شركات", "agency", "is authorized", "authorized"]):
             intent = "DATABASE"
         else:
             intent = "GENERAL_HAJJ"
 
-        confidence = 0.5  # safe fallback
-
     state_update["intent"] = intent
-    state_update["confidence"] = confidence
     return state_update
-# ...existing code...
+
 def node_respond_greeting(state: GraphState) -> dict:
     user_input = state.get("user_input", "")
     lang = state.get("language", "English")
     is_arabic = lang == "العربية" or any("\u0600" <= ch <= "\u06FF" for ch in user_input)
-    structured_llm = llm.with_structured_output(GreetingSchema)
 
     greeting_prompt = {
         "role": "system",
@@ -942,32 +869,27 @@ def node_respond_greeting(state: GraphState) -> dict:
 4. Keeps response under 3 sentences
 5. Uses emojis appropriately""" + (" Respond in Arabic." if is_arabic else " Respond in English.")
     }
-
     try:
-        # invoke with messages and fallback to greeting translation if schema parsing fails
-        resp = structured_llm.invoke([greeting_prompt, {"role": "user", "content": user_input}, *build_chat_context()], max_tokens=150)
-
-        # GreetingSchema defines 'greeting_text' — prefer that, else try common fallbacks
-        greeting_text = getattr(resp, "greeting_text", None) or getattr(resp, "answer", None) or getattr(resp, "text", None)
-        if not greeting_text:
-            greeting_text = t("greeting", "العربية" if is_arabic else "English")
-
+        greeting_response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[greeting_prompt, {"role":"user","content": user_input}, *build_chat_context()],
+            temperature=0.7,
+            max_tokens=150
+        )
+        greeting_text = greeting_response.choices[0].message.content.strip()
     except Exception:
-        greeting_text = t("greeting", "العربية" if is_arabic else "English")
+        greeting_text = t("greeting", "العربية") if is_arabic else t("greeting", "English")
 
     return {"greeting_text": greeting_text}
-# ...existing code...
 
 def node_respond_general(state: GraphState) -> dict:
     # Use LLM to answer general Hajj questions (non-database)
     user_input = state.get("user_input", "")
-
-    structured_llm = llm.with_structured_output(GeneralAnswerSchema)
     try:
         context = [{"role":"system","content":"You are a helpful assistant specialized in Hajj information. Be concise and factual."},
                    {"role":"user","content": user_input}, *build_chat_context()]
-        resp = structured_llm.invoke(context, max_tokens=400)
-        answer = resp.answer.strip()
+        resp = client.chat.completions.create(model="gpt-4o-mini", messages=context, temperature=0.6, max_tokens=400)
+        answer = resp.choices[0].message.content.strip()
     except Exception as e:
         answer = t("general_error", state.get("language", "English"))
     return {"general_answer": answer}
@@ -976,7 +898,6 @@ def node_generate_sql(state: GraphState) -> dict:
     user_input = state.get("user_input", "")
     language = state.get("language", "English")
     normalized_input = fuzzy_normalize(user_input)
-    structured_llm = llm.with_structured_output(SQLResult)
 
     sql_prompt = f"""
     You are a multilingual SQL fraud-prevention expert protecting Hajj pilgrims.
@@ -1083,36 +1004,26 @@ LIMIT 50;
     """
     raw_sql = None
     try:
-        sql_resp = structured_llm.invoke(
-            [{"role":"system","content":"You output only a SELECT query or NO_SQL."},
-                      {"role":"user","content": sql_prompt}, *build_chat_context()]
+        sql_resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role":"system","content":"You output only a SELECT query or NO_SQL."},
+                      {"role":"user","content": sql_prompt}, *build_chat_context()],
+            temperature=0
         )
-
-       # Directly access parsed fields
-        raw_sql = sql_resp.sql_query.strip()
-        is_valid = sql_resp.is_valid
-        reasoning = sql_resp.reasoning
+        raw_sql = sql_resp.choices[0].message.content.strip()
         sql_query = extract_sql_from_response(raw_sql)
         if sql_query == "NO_SQL":
             sql_query = None
-
-    except Exception as e:
+    except Exception:
         sql_query = None
-        reasoning = f"Error: {e}"
 
-    # Fallback if invalid or empty
-    if not raw_sql or not sql_query or not is_valid:
-        sql_query = heuristic_sql_fallback(user_input)
-        reasoning = reasoning or "Fallback heuristic used due to invalid or vague input."
+    if not raw_sql or not sql_query:
+        heur = heuristic_sql_fallback(user_input)
+        sql_query = heur
 
     sql_query = sanitize_sql(sql_query) if sql_query else None
 
-    return {
-        "sql_query": sql_query,
-        "raw_sql_text": raw_sql if raw_sql else None,
-        "is_valid": is_valid,
-        "reasoning": reasoning
-    }
+    return {"sql_query": sql_query, "raw_sql_text": raw_sql if raw_sql else None}
 
 def node_execute_sql(state: GraphState) -> dict:
     sql_query = state.get("sql_query")
@@ -1140,7 +1051,6 @@ def node_summarize_results(state: GraphState) -> dict:
 
     # Build summary prompt similar to your previous summary prompts
     sample_text = rows
-    structured_llm = llm.with_structured_output(SummarySchema)
     summary_prompt = f"""
 You are a multilingual fraud-prevention analyst for Hajj agencies.
 Your task is to summarize SQL query results clearly and concisely in 
@@ -1190,13 +1100,14 @@ There are 45 authorized agencies in Medina, mostly from Saudi Arabia and Egypt.
 Now summarize the query results based on the above rules.
 """
     try:
-        summ_resp = structured_llm.invoke(
-            [{"role":"system","content":"You summarize data concisely."},
+        summ_resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role":"system","content":"You summarize data concisely."},
                       {"role":"user","content": summary_prompt}, *build_chat_context()],
-          
+            temperature=0.5,
             max_tokens=250
         )
-        answer_text = summ_resp.summary.strip()
+        answer_text = summ_resp.choices[0].message.content.strip()
     except Exception:
         answer_text = f"📊 Found {row_count} matching records."
 
@@ -1207,7 +1118,6 @@ Now summarize the query results based on the above rules.
 # -----------------------------
 def build_stategraph():
     builder = StateGraph(GraphState)
-
 
     # Add nodes
     builder.add_node("detect_intent", node_detect_intent)
@@ -1391,20 +1301,14 @@ if user_input:
             sql_q = final_state.get("sql_query", "")
 
             # Convert to DataFrame for display/download if rows exist
-            # ...existing code...
             if rows:
                 df = pd.DataFrame(rows)
                 show_result_summary(df)
 
-                # Store a JSON-serializable preview (limit to 100 rows) instead of the DataFrame object
-                preview_rows = df.head(100).to_dict(orient="records")
-                preview_meta = {"columns": list(df.columns), "row_count": len(df)}
-
                 st.session_state.chat_memory.append({
                     "role": "assistant",
                     "content": summary,
-                    "dataframe": preview_rows,        # serializable preview
-                    "dataframe_meta": preview_meta,   # helpful metadata
+                    "dataframe": df,
                     "timestamp": get_current_time()
                 })
                 save_chat_memory()
