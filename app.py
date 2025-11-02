@@ -24,7 +24,7 @@ TRANSLATIONS = {
         # (same translations as you had; truncated in this snippet to keep file short)
         "page_title": "Hajj Chatbot",
         "main_title": "Hajj Data Intelligence",
-        "subtitle": "Ask anything about Hajj companies worldwide • AI-powered • Real-time data",
+        "subtitle": "Ask anything about Hajj companies worldwide • AI-powered",
         "assistant_title": "🕋 Hajj Assistant",
         "assistant_subtitle": "Your AI-powered guide",
         "language_title": "🌐 language",
@@ -76,7 +76,7 @@ TRANSLATIONS = {
         # (Arabic translations likewise — keep the same as your original)
         "page_title": "روبوت الحج",
         "main_title": "معلومات بيانات الحج الذكية",
-        "subtitle": "اسأل عن شركات الحج حول العالم • مدعوم بالذكاء الاصطناعي • بيانات فورية",
+        "subtitle": "اسأل عن شركات الحج حول العالم • مدعوم بالذكاء الاصطناعي",
         "assistant_title": "🕋 مساعد الحج",
         "assistant_subtitle": "دليلك الذكي المدعوم بالذكاء الاصطناعي",
         "language_title": "🌐 اللغة",
@@ -683,7 +683,6 @@ with st.sidebar:
         <p>✨ <b>{t('feat_ai', st.session_state.new_language)}</b><br/>{t('feat_ai_desc', st.session_state.new_language)}</p>
         <p>🌍 <b>{t('feat_multilingual', st.session_state.new_language)}</b><br/>{t('feat_multilingual_desc', st.session_state.new_language)}</p>
         <p>📊 <b>{t('feat_viz', st.session_state.new_language)}</b><br/>{t('feat_viz_desc', st.session_state.new_language)}</p>
-        <p>💾 <b>{t('feat_export', st.session_state.new_language)}</b><br/>{t('feat_export_desc', st.session_state.new_language)}</p>
         <p>🔒 <b>{t('feat_secure', st.session_state.new_language)}</b><br/>{t('feat_secure_desc', st.session_state.new_language)}</p>
     </div>
     """, unsafe_allow_html=True)
