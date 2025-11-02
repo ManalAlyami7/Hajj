@@ -1109,25 +1109,17 @@ GRAPH = build_stategraph()
 # Helper UI functions
 # -----------------------------
 def show_result_summary(df: pd.DataFrame) -> None:
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(3)
     with col1:
         st.markdown(f"<div style='display:inline-block;padding:6px;background:#667eea;color:white;border-radius:8px;'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
+    
     with col2:
-        st.markdown(f"<div style='display:inline-block;padding:6px;background:#11998e;color:white;border-radius:8px;'>✅ {len(df.columns)} Columns</div>", unsafe_allow_html=True)
-    with col3:
         if "is_authorized" in df.columns:
             auth_count = len(df[df["is_authorized"] == "Yes"])
             st.markdown(f"<div style='display:inline-block;padding:6px;background:#38ef7d;color:white;border-radius:8px;'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
 
-def show_download_button(df: pd.DataFrame) -> None:
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button(label=t("download_csv", st.session_state.new_language), data=csv, file_name=f"hajj_data_{int(datetime.now().timestamp())}.csv", mime="text/csv")
 
-def show_sql_expander(sql_query: str, row_count: int) -> None:
-    with st.expander(t("view_sql", st.session_state.new_language)):
-        st.code(sql_query, language="sql")
-        st.caption(t("executed_caption", st.session_state.new_language, count=row_count))
-
+ 
 # -----------------------------
 # Handle user input: invoke graph and present outputs
 # -----------------------------
@@ -1222,9 +1214,7 @@ if user_input:
             # Convert to DataFrame for display/download if rows exist
             if rows:
                 df = pd.DataFrame(rows)
-                #st.dataframe(df, use_container_width=True, height=300)
                 show_result_summary(df)
-                #show_download_button(df)
                 
                 st.session_state.chat_memory.append({
                     "role": "assistant",
