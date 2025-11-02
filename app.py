@@ -203,24 +203,49 @@ def fuzzy_normalize(text: str) -> str:
     # Convert to lowercase and remove extra spaces
     normalized = ' '.join(normalized.lower().split())
     return normalized
+
+
 def heuristic_sql_fallback(question: str) -> Optional[str]:
-    """Generate SQL query based on simple heuristics when AI fails"""
-    question = question.lower()
-    
-    # Basic patterns
-    if any(word in question for word in ['all', 'show', 'list']):
-        return "SELECT * FROM agencies LIMIT 100"
-        
-    if 'authorized' in question or 'autorized' in question:
+    q = question.lower().strip()
+
+    # Detect if the user input looks like an agency, hotel, or company name
+    if len(q.split()) <= 6 and not any(w in q for w in ["all", "list", "show", "count", "how many"]):
+        return f"""
+        SELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized
+        FROM agencies
+        WHERE LOWER(hajj_company_en) LIKE '%{q}%'
+           OR LOWER(hajj_company_ar) LIKE '%{q}%'
+           OR LOWER(formatted_address) LIKE '%{q}%'
+           OR LOWER(city) LIKE '%{q}%'
+        LIMIT 50
+        """
+
+    # Common user intents
+    if "authorized" in q or "معتمدة" in q:
         return "SELECT * FROM agencies WHERE is_authorized = 'Yes' LIMIT 100"
-        
-    if 'saudi' in question or 'ksa' in question:
-        return "SELECT * FROM agencies WHERE LOWER(Country) LIKE '%saudi%' LIMIT 100"
-        
-    if 'email' in question:
+
+    if "unauthorized" in q or "غير معتمدة" in q:
+        return "SELECT * FROM agencies WHERE is_authorized = 'No' LIMIT 100"
+
+    if "email" in q:
         return "SELECT * FROM agencies WHERE email IS NOT NULL AND email != '' LIMIT 100"
-        
+
+    if "country" in q or "countries" in q or "دول" in q:
+        if "how many" in q or "كم" in q:
+            return "SELECT COUNT(DISTINCT country) FROM agencies"
+        return "SELECT DISTINCT country FROM agencies LIMIT 100"
+
+    if "city" in q or "cities" in q or "مدن" in q:
+        if "how many" in q or "كم" in q:
+            return "SELECT COUNT(DISTINCT city) FROM agencies"
+        return "SELECT DISTINCT city FROM agencies LIMIT 100"
+
+    if any(word in q for word in ["all", "show", "list", "عرض", "قائمة"]):
+        return "SELECT * FROM agencies LIMIT 100"
+
     return None
+
+
 
 def show_result_summary(df: pd.DataFrame) -> None:
     """Display summary statistics and columns for results"""
@@ -842,9 +867,10 @@ def node_generate_sql(state: GraphState) -> dict:
     - rating_reviews
     - is_authorized ('Yes' or 'No')
 
-    USER QUESTION:
-    {user_input}
+    CURRENT LANGUAGE: {language}
 
+    USER QUESTION (original): {user_input}
+    NORMALIZED VERSION: {normalized_input}
     --------------------------------------------
     🔍 LANGUAGE DETECTION RULES:
     1. Detect if the user's question is in Arabic or English.
