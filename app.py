@@ -843,7 +843,7 @@ def node_detect_intent(state: GraphState) -> dict:
     is_arabic = any("\u0600" <= ch <= "\u06FF" for ch in user_input)
     state_update = {"is_vague": is_vague_input(user_input)}
     intent = None
-    structured_llm = client.with_structured_output(IntentSchema)
+    structured_llm = llm.with_structured_output(IntentSchema)
 
 
 
@@ -899,7 +899,7 @@ def node_respond_greeting(state: GraphState) -> dict:
     user_input = state.get("user_input", "")
     lang = state.get("language", "English")
     is_arabic = lang == "العربية" or any("\u0600" <= ch <= "\u06FF" for ch in user_input)
-    structured_llm = client.with_structured_output(GreetingSchema)
+    structured_llm = llm.with_structured_output(GreetingSchema)
 
     greeting_prompt = {
         "role": "system",
