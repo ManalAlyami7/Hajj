@@ -17,6 +17,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+if st.button("⬅️ Back to Chat", key="back_button"):
+    st.switch_page("app.py")
+
 # ---------------------------------------
 # Enhanced Custom CSS
 # ---------------------------------------
