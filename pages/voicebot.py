@@ -1,11 +1,17 @@
+"""
+Hajj Voice Assistant - Real-time STT & TTS
+Custom audio recorder with live transcription and streaming responses
+"""
+
 import streamlit as st
-from openai import OpenAI
-import io
 from audio_recorder_streamlit import audio_recorder
-from typing import TypedDict, Annotated, Literal
-from langgraph.graph import StateGraph, END
-import operator
 import time
+
+# Import core modules
+from core.voice_processor import VoiceProcessor
+from core.voice_graph import VoiceGraphBuilder
+from ui.voice_interface import VoiceInterface, RealTimeVoiceStyles
+from utils.state import get_current_time
 
 # ---------------------------------------
 # Page Configuration
@@ -17,16 +23,13 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-if st.button("⬅️ Back to Chat", key="back_button"):
-    # Set URL to main page
-    st.markdown(f'<meta http-equiv="refresh" content="0; url=/" />', unsafe_allow_html=True)
 # ---------------------------------------
-# Enhanced Custom CSS
+# Apply Custom CSS
 # ---------------------------------------
 st.markdown("""
 <style>
     .stApp {
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
         background-attachment: fixed;
         overflow: hidden;
     }
@@ -35,681 +38,1358 @@ st.markdown("""
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* Main Container - Fixed height, no scroll */
     .main .block-container {
-        padding: 2rem 1rem;
-        max-width: 1200px;
-        height: 90vh;
+        padding: 1rem;
+        max-width: 1400px;
+        height: 100vh;
         overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
     }
 
     /* Header Section */
-    .header-container {
+    .voice-header {
         text-align: center;
-        padding: 1rem 0;
+        padding: 1.5rem 0;
         margin-bottom: 1rem;
     }
 
-    .title {
+    .voice-title {
         color: white;
-        font-size: 2.5rem;
+        font-size: 2.8rem;
         font-weight: 800;
-        margin-bottom: 0.3rem;
-        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        letter-spacing: 1px;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        letter-spacing: 2px;
+        background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
-    .subtitle {
-        color: rgba(255, 255, 255, 0.9);
+    .voice-subtitle {
+        color: rgba(255, 255, 255, 0.8);
         font-size: 1.1rem;
-        margin-bottom: 0.3rem;
-        font-weight: 500;
+        font-weight: 400;
     }
 
-    .powered-by {
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 0.85rem;
-        margin-top: 0.3rem;
+    /* Main Layout - Split Screen */
+    .voice-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        height: calc(100vh - 200px);
+        padding: 0 2rem;
     }
 
-    /* Avatar Section */
-    .avatar-section {
+    /* Left Panel - Avatar & Recorder */
+    .voice-left {
         display: flex;
         flex-direction: column;
         align-items: center;
-        margin: 1rem auto;
-        padding: 1.5rem;
-        background: rgba(255, 255, 255, 0.05);
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.03);
         border-radius: 2rem;
+        padding: 2rem;
         backdrop-filter: blur(20px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
-    .avatar-container {
+    /* Avatar Container */
+    .voice-avatar-container {
         position: relative;
-        margin-bottom: 1rem;
+        margin-bottom: 2rem;
     }
     
-    .avatar {
-        width: 160px;
-        height: 160px;
-        background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+    .voice-avatar {
+        width: 200px;
+        height: 200px;
+        background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
         border-radius: 50%;
         display: flex;
         justify-content: center;
         align-items: center;
-        font-size: 80px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-        animation: pulse 2s ease-in-out infinite;
+        font-size: 100px;
+        box-shadow: 0 20px 60px rgba(96, 165, 250, 0.4);
+        animation: float 3s ease-in-out infinite;
         position: relative;
         z-index: 2;
-        border: 5px solid rgba(255, 255, 255, 0.3);
+        border: 6px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .voice-avatar.listening {
+        animation: pulse-listening 0.8s ease-in-out infinite;
+        box-shadow: 0 0 80px rgba(96, 165, 250, 0.8);
+    }
+
+    .voice-avatar.speaking {
+        animation: pulse-speaking 0.6s ease-in-out infinite;
+        box-shadow: 0 0 80px rgba(167, 139, 250, 0.8);
     }
     
-    .ring {
+    /* Rings around avatar */
+    .voice-ring {
         position: absolute;
-        border: 3px solid rgba(255, 255, 255, 0.2);
+        border: 3px solid rgba(96, 165, 250, 0.3);
         border-radius: 50%;
-        animation: ripple 2.5s ease-out infinite;
-    }
-    
-    .ring-1 { width: 180px; height: 180px; animation-delay: 0s; }
-    .ring-2 { width: 220px; height: 220px; animation-delay: 0.7s; }
-    .ring-3 { width: 260px; height: 260px; animation-delay: 1.4s; }
-    
-    .avatar.active {
-        animation: pulse-active 0.6s ease-in-out infinite;
-        box-shadow: 0 25px 80px rgba(126, 34, 206, 0.6);
-        border-color: rgba(255, 255, 255, 0.6);
-    }
-    
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.03); }
-    }
-    
-    @keyframes pulse-active {
-        0%, 100% { transform: scale(1); box-shadow: 0 25px 80px rgba(126, 34, 206, 0.6); }
-        50% { transform: scale(1.1); box-shadow: 0 30px 100px rgba(126, 34, 206, 0.9); }
-    }
-    
-    @keyframes ripple {
-        0% { transform: scale(0.95); opacity: 0.8; }
-        100% { transform: scale(1.6); opacity: 0; }
-    }
-
-    /* Status Badge */
-    .status-badge {
-        display: inline-block;
-        padding: 0.7rem 1.8rem;
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 2rem;
-        color: white;
-        font-weight: 600;
-        font-size: 1rem;
-        margin-bottom: 1rem;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    }
-
-    .status-badge.listening {
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        animation: glow 1.5s ease-in-out infinite;
-    }
-
-    @keyframes glow {
-        0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
-        50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.8); }
-    }
-
-    /* Workflow Status */
-    .workflow-status {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 0.8rem;
-        border-radius: 1rem;
-        margin: 1rem 0;
-        text-align: center;
-        color: white;
-        font-weight: 500;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        font-size: 0.85rem;
-    }
-
-    .workflow-step {
-        display: inline-block;
-        padding: 0.3rem 0.8rem;
-        background: rgba(126, 34, 206, 0.3);
-        border-radius: 1rem;
-        margin: 0 0.2rem;
-        font-size: 0.75rem;
-    }
-
-    /* Toast Notification - Fixed position */
-    .toast-notification {
-        position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: rgba(255, 255, 255, 0.95);
+        animation: expand 3s ease-out infinite;
+    }
+    
+    .voice-ring-1 { width: 220px; height: 220px; animation-delay: 0s; }
+    .voice-ring-2 { width: 260px; height: 260px; animation-delay: 1s; }
+    .voice-ring-3 { width: 300px; height: 300px; animation-delay: 2s; }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-15px); }
+    }
+    
+    @keyframes pulse-listening {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    
+    @keyframes pulse-speaking {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.15); }
+    }
+    
+    @keyframes expand {
+        0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.8; }
+        100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+    }
+
+    .record-button-container {
+        margin-top: 2rem;
+    }
+
+    .record-label {
+        margin-top: 1.5rem;
+        color: white;
+        font-size: 1.2rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    /* Right Panel - Live Transcript & Response */
+    .voice-right {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .transcript-container, .response-container {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 1.5rem;
         padding: 2rem;
-        border-radius: 2rem;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        z-index: 9999;
-        max-width: 600px;
-        width: 90%;
-        animation: toastFadeIn 0.5s ease-out;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
     }
 
-    .toast-notification.fade-out {
-        animation: toastFadeOut 0.5s ease-out forwards;
-    }
-
-    @keyframes toastFadeIn {
-        from {
-            opacity: 0;
-            transform: translate(-50%, -60%);
-        }
-        to {
-            opacity: 1;
-            transform: translate(-50%, -50%);
-        }
-    }
-
-    @keyframes toastFadeOut {
-        from {
-            opacity: 1;
-            transform: translate(-50%, -50%);
-        }
-        to {
-            opacity: 0;
-            transform: translate(-50%, -60%);
-        }
-    }
-
-    .toast-header {
+    .panel-header {
         display: flex;
         align-items: center;
-        margin-bottom: 1rem;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
         padding-bottom: 1rem;
-        border-bottom: 2px solid #e5e7eb;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
     }
 
-    .toast-icon {
-        font-size: 2.5rem;
-        margin-right: 1rem;
+    .panel-icon {
+        font-size: 2rem;
     }
 
-    .toast-title {
-        font-size: 1.2rem;
+    .panel-title {
+        font-size: 1.3rem;
         font-weight: 700;
-        color: #1a1a1a;
-    }
-
-    .toast-content {
-        color: #374151;
-        line-height: 1.6;
-        font-size: 1rem;
-    }
-
-    .toast-transcript {
-        background: #f3f4f6;
-        padding: 1rem;
-        border-radius: 1rem;
-        margin: 1rem 0;
-        font-style: italic;
-        color: #4b5563;
-    }
-
-    .toast-response {
-        margin-top: 1rem;
-        padding: 1rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        border-radius: 1rem;
+        margin: 0;
     }
 
-    .toast-intent {
-        display: inline-block;
-        padding: 0.3rem 1rem;
-        background: #7e22ce;
-        color: white;
+    .panel-badge {
+        margin-left: auto;
+        padding: 0.3rem 0.8rem;
         border-radius: 1rem;
-        font-size: 0.85rem;
-        margin: 0.5rem 0;
-    }
-
-    /* Buttons */
-    .stButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 0.8rem 2rem;
-        border-radius: 3rem;
-        font-size: 1rem;
+        font-size: 0.75rem;
         font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        border: 2px solid transparent;
+        background: rgba(96, 165, 250, 0.2);
+        color: #60a5fa;
+        border: 1px solid rgba(96, 165, 250, 0.3);
+    }
+
+    .panel-badge.active {
+        background: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+        border-color: rgba(34, 197, 94, 0.3);
+        animation: badge-pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes badge-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+
+    /* Transcript Text */
+    .transcript-text {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.3rem;
+        line-height: 1.8;
+        min-height: 100px;
+        font-weight: 400;
+    }
+
+    .transcript-text.empty {
+        color: rgba(255, 255, 255, 0.4);
+        font-style: italic;
+    }
+
+    /* Response Content */
+    .response-content {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.2rem;
+        line-height: 1.8;
+        min-height: 100px;
+    }
+
+    .response-content.empty {
+        color: rgba(255, 255, 255, 0.4);
+        font-style: italic;
+    }
+
+    /* Metadata Cards */
+    .metadata-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 1rem;
+        padding: 1rem;
+        margin-top: 1rem;
+        border-left: 4px solid #60a5fa;
+    }
+
+    .metadata-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #60a5fa;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .metadata-list {
+        list-style: none;
+        padding: 0;
+        margin: 0.5rem 0 0 0;
+    }
+
+    .metadata-list li {
+        padding: 0.3rem 0;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .metadata-list li:before {
+        content: "→ ";
+        color: #60a5fa;
+        font-weight: bold;
+        margin-right: 0.5rem;
+    }
+
+    /* Status Indicator */
+    .status-indicator {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 0.75rem 1.5rem;
+        background: rgba(0, 0, 0, 0.8);
+        border-radius: 2rem;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #22c55e;
+        animation: dot-pulse 1.5s ease-in-out infinite;
+    }
+
+    .status-dot.listening {
+        background: #ef4444;
+    }
+
+    .status-dot.speaking {
+        background: #a78bfa;
+    }
+
+    @keyframes dot-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+
+    /* Back Button */
+    .stButton > button {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 2rem !important;
+        padding: 0.6rem 1.5rem !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+        backdrop-filter: blur(10px) !important;
     }
 
     .stButton > button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.6);
-        border-color: rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.2) !important;
+        border-color: rgba(255, 255, 255, 0.4) !important;
+        transform: translateY(-2px);
     }
 
-    /* Hide scrollbar */
+    /* Hide default audio recorder */
+    .stAudio {
+        display: none !important;
+    }
+
+    /* Scrollbar */
     ::-webkit-scrollbar {
-        display: none;
+        width: 8px;
     }
 
-    /* Processing indicators */
-    .stSpinner > div {
-        border-color: rgba(126, 34, 206, 0.3) !important;
-        border-top-color: #7e22ce !important;
+    ::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
     }
 
-    /* Success/Error messages - as toasts */
-    .stSuccess, .stError, .stInfo {
-        position: fixed !important;
-        top: 20px !important;
-        right: 20px !important;
-        z-index: 9999 !important;
-        max-width: 400px !important;
-        animation: slideInRight 0.3s ease-out !important;
+    ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
     }
 
-    @keyframes slideInRight {
-        from { transform: translateX(100%); }
-        to { transform: translateX(0); }
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
     }
 
     /* Responsive */
-    @media (max-width: 768px) {
-        .title { font-size: 2rem; }
-        .subtitle { font-size: 0.95rem; }
-        .avatar { width: 120px; height: 120px; font-size: 60px; }
-        .toast-notification { width: 95%; padding: 1.5rem; }
+    @media (max-width: 1024px) {
+        .voice-container {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+        
+        .voice-left {
+            min-height: 400px;
+        }
+        
+        .voice-title {
+            font-size: 2rem;
+        }
+        
+        .voice-avatar {
+            width: 150px;
+            height: 150px;
+            font-size: 75px;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------
-# Initialize OpenAI Client
+# Back Button
 # ---------------------------------------
-@st.cache_resource
-def get_openai_client():
-    api_key = st.secrets.get("key", None)
-    if not api_key:
-        st.error("⚠️ Please add your OPENAI_API_KEY to Streamlit secrets")
-        st.stop()
-    return OpenAI(api_key=api_key)
-
-client = get_openai_client()
-
-# ---------------------------------------
-# LangGraph State Definition
-# ---------------------------------------
-class HajjAssistantState(TypedDict):
-    """State for the Hajj Assistant workflow"""
-    user_input: str
-    transcript: str
-    intent: str
-    response: str
-    audio_bytes: bytes
-    response_audio: bytes
-    error: str
-    messages_history: Annotated[list, operator.add]
-    is_arabic: bool
-
-# ---------------------------------------
-# Node Functions
-# ---------------------------------------
-def transcribe_audio_node(state: HajjAssistantState) -> HajjAssistantState:
-    """Node: Transcribe audio to text using Whisper"""
+if st.button("⬅️ Back to Chat", key="back_button"):
     try:
-        audio_file = io.BytesIO(state["audio_bytes"])
-        audio_file.name = "audio.wav"
-        transcript = client.audio.transcriptions.create(
-            model="whisper-1",
-            file=audio_file,
-            language="en"
-        )
-        state["transcript"] = transcript.text
-        state["user_input"] = transcript.text
-    except Exception as e:
-        state["error"] = f"Transcription error: {str(e)}"
-    return state
-
-def detect_intent_node(state: HajjAssistantState) -> HajjAssistantState:
-    """Node: Detect user intent"""
-    try:
-        intent_prompt = f"""
-Classify this message into ONE category:
-
-1️⃣ GREETING: greetings like hello, hi, salam, السلام عليكم
-2️⃣ DATABASE: questions about Hajj agencies, authorization, company verification
-3️⃣ GENERAL_HAJJ: general Hajj questions (rituals, requirements, documents)
-
-Message: {state['user_input']}
-
-Respond with ONLY: GREETING, DATABASE, or GENERAL_HAJJ
-"""
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "Classify intents. One word only."},
-                {"role": "user", "content": intent_prompt}
-            ],
-            temperature=0,
-            max_tokens=8
-        )
-        candidate = resp.choices[0].message.content.strip().upper()
-        state["intent"] = candidate if candidate in ("GREETING", "DATABASE", "GENERAL_HAJJ") else "GENERAL_HAJJ"
-        state["is_arabic"] = any("\u0600" <= ch <= "\u06FF" for ch in state['user_input'])
-    except Exception as e:
-        state["error"] = f"Intent detection error: {str(e)}"
-        state["intent"] = "GENERAL_HAJJ"
-    return state
-
-def handle_greeting_node(state: HajjAssistantState) -> HajjAssistantState:
-    """Node: Handle greetings"""
-    try:
-        greeting_prompt = f"""Generate a warm greeting (2-3 sentences with emojis):
-        1. Acknowledge the greeting
-        2. Offer help with Hajj agencies and questions
-        {'3. Respond in Arabic' if state['is_arabic'] else '3. Respond in English'}"""
-        
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": greeting_prompt},
-                {"role": "user", "content": state['user_input']}
-            ],
-            temperature=0.7,
-            max_tokens=150
-        )
-        state["response"] = resp.choices[0].message.content.strip()
+        st.switch_page("app.py")
     except Exception:
-        state["response"] = (
-            "السلام عليكم! 🌙 كيف يمكنني مساعدتك اليوم؟"
-            if state['is_arabic'] else
-            "Hello! 👋 How can I assist you today?"
-        )
-    return state
-
-def handle_database_node(state: HajjAssistantState) -> HajjAssistantState:
-    """Node: Handle database queries"""
-    response = f"""🔍 **Agency Verification System**
-
-**Your Question:** {state['user_input']}
-
-⚠️ **Critical Alert:**
-• 415 fake Hajj offices closed in 2025
-• 269,000+ unauthorized pilgrims stopped
-• Always verify before booking!
-
-✅ **Verification Steps:**
-1. Check Ministry of Hajj official database
-2. Verify authorization status
-3. Confirm physical office location
-4. Read authentic reviews
-
-🔒 **Book only through AUTHORIZED agencies!**"""
-    
-    state["response"] = response
-    return state
-
-def handle_general_hajj_node(state: HajjAssistantState) -> HajjAssistantState:
-    """Node: Handle general Hajj questions"""
-    try:
-        system_prompt = """You are a knowledgeable Hajj assistant. Help with:
-        - Hajj & Umrah rituals
-        - Travel requirements
-        - Health & safety guidelines
-        
-        CRITICAL: Always emphasize using AUTHORIZED agencies.
-        Context: 415 fake offices closed, 269,000+ unauthorized pilgrims stopped in 2025.
-        
-        Answer in 2-4 clear sentences."""
-        
-        messages = [{"role": "system", "content": system_prompt}]
-        messages.extend(state.get("messages_history", [])[-6:])
-        messages.append({"role": "user", "content": state['user_input']})
-        
-        resp = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            temperature=0.6,
-            max_tokens=400
-        )
-        state["response"] = resp.choices[0].message.content.strip()
-    except Exception as e:
-        state["response"] = f"Sorry, an error occurred: {str(e)}"
-    return state
-
-def text_to_speech_node(state: HajjAssistantState) -> HajjAssistantState:
-    """Node: Convert text to speech"""
-    try:
-        resp = client.audio.speech.create(
-            model="tts-1",
-            voice="alloy",
-            input=state["response"]
-        )
-        state["response_audio"] = resp.content
-    except Exception as e:
-        state["error"] = f"TTS error: {str(e)}"
-    return state
+        st.markdown('<meta http-equiv="refresh" content="0; url=/" />', unsafe_allow_html=True)
 
 # ---------------------------------------
-# Router Function
-# ---------------------------------------
-def route_intent(state: HajjAssistantState) -> Literal["greeting", "database", "general_hajj"]:
-    """Route based on intent"""
-    intent = state.get("intent", "GENERAL_HAJJ")
-    return intent.lower() if intent in ("GREETING", "DATABASE") else "general_hajj"
-
-# ---------------------------------------
-# Build LangGraph
+# Initialize Components
 # ---------------------------------------
 @st.cache_resource
-def build_hajj_assistant_graph():
-    """Build the workflow graph"""
-    workflow = StateGraph(HajjAssistantState)
-    
-    # Add nodes
-    workflow.add_node("transcribe", transcribe_audio_node)
-    workflow.add_node("detect_intent", detect_intent_node)
-    workflow.add_node("greeting", handle_greeting_node)
-    workflow.add_node("database", handle_database_node)
-    workflow.add_node("general_hajj", handle_general_hajj_node)
-    workflow.add_node("tts", text_to_speech_node)
-    
-    # Define edges
-    workflow.set_entry_point("transcribe")
-    workflow.add_edge("transcribe", "detect_intent")
-    
-    # Conditional routing
-    workflow.add_conditional_edges(
-        "detect_intent",
-        route_intent,
-        {
-            "greeting": "greeting",
-            "database": "database",
-            "general_hajj": "general_hajj"
-        }
-    )
-    
-    # All paths to TTS
-    workflow.add_edge("greeting", "tts")
-    workflow.add_edge("database", "tts")
-    workflow.add_edge("general_hajj", "tts")
-    workflow.add_edge("tts", END)
-    
-    return workflow.compile()
+def initialize_voice_system():
+    """Initialize voice processor and graph"""
+    processor = VoiceProcessor()
+    graph_builder = VoiceGraphBuilder(processor)
+    graph = graph_builder.build()
+    return processor, graph
+
+voice_processor, voice_graph = initialize_voice_system()
 
 # ---------------------------------------
-# Session State
+# Session State Initialization
 # ---------------------------------------
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+if "voice_messages" not in st.session_state:
+    st.session_state.voice_messages = []
+
 if "last_audio" not in st.session_state:
     st.session_state.last_audio = None
-if "is_listening" not in st.session_state:
-    st.session_state.is_listening = False
-if "graph" not in st.session_state:
-    st.session_state.graph = build_hajj_assistant_graph()
-if "show_toast" not in st.session_state:
-    st.session_state.show_toast = False
-if "toast_data" not in st.session_state:
-    st.session_state.toast_data = {}
-if "toast_timestamp" not in st.session_state:
-    st.session_state.toast_timestamp = 0
+
+if "is_recording" not in st.session_state:
+    st.session_state.is_recording = False
+
+if "is_processing" not in st.session_state:
+    st.session_state.is_processing = False
+
+if "is_speaking" not in st.session_state:
+    st.session_state.is_speaking = False
+
+if "current_transcript" not in st.session_state:
+    st.session_state.current_transcript = ""
+
+if "current_response" not in st.session_state:
+    st.session_state.current_response = ""
+
+if "current_metadata" not in st.session_state:
+    st.session_state.current_metadata = {}
+
+if "status" not in st.session_state:
+    st.session_state.status = "Ready"
 
 # ---------------------------------------
-# UI Layout
-# ---------------------------------------
-
 # Header
+# ---------------------------------------
 st.markdown("""
-<div class="header-container">
-    <div class="title">🕋 Hajj Voice Assistant</div>
-    <div class="subtitle">Intelligent AI Guide for Hajj & Umrah Pilgrimage</div>
-    <div class="powered-by">⚡ Powered by LangGraph & OpenAI</div>
+<div class="voice-header">
+    <div class="voice-title">🕋 Hajj Voice Assistant</div>
+    <div class="voice-subtitle">Real-time Speech Recognition & AI Responses</div>
 </div>
 """, unsafe_allow_html=True)
 
-# Main container with 3 columns
-col1, col2, col3 = st.columns([1, 2, 1])
+# ---------------------------------------
+# Status Indicator (Using VoiceInterface)
+# ---------------------------------------
+VoiceInterface.render_status_indicator(
+    st.session_state.status,
+    st.session_state.is_recording,
+    st.session_state.is_speaking
+)
 
-with col2:
-    # Avatar section
-    avatar_active = "active" if st.session_state.is_listening else ""
-    st.markdown(f"""
-    <div class="avatar-section">
-        <div class="avatar-container">
-            <div class="ring ring-1"></div>
-            <div class="ring ring-2"></div>
-            <div class="ring ring-3"></div>
-            <div class="avatar {avatar_active}">🕋</div>
-        </div>
-        
-       
-    </div>
-    """, unsafe_allow_html=True)
+# ---------------------------------------
+# Main Layout - Split Screen
+# ---------------------------------------
+st.markdown('<div class="voice-container">', unsafe_allow_html=True)
+
+# Left Panel - Avatar & Recorder (Using VoiceInterface)
+col_left, col_right = st.columns(2)
+
+with col_left:
+    VoiceInterface.render_avatar(
+        is_recording=st.session_state.is_recording,
+        is_speaking=st.session_state.is_speaking
+    )
     
-    
-    
-    # Recording button
+    # Hidden audio recorder
     audio_bytes = audio_recorder(
-        text="Hold to Record",
-        recording_color="#ff1744",
-        neutral_color="#ef4444",
+        text="",
+        recording_color="#ef4444",
+        neutral_color="#3b82f6",
         icon_name="microphone",
-        icon_size="4x",
+        icon_size="2x",
         pause_threshold=2.0,
         sample_rate=16000,
-        key="audio_recorder"
+        key="voice_recorder"
     )
 
-# ---------------------------------------
-# Toast Notification Display
-# ---------------------------------------
-if st.session_state.show_toast:
-    current_time = time.time()
-    elapsed = current_time - st.session_state.toast_timestamp
+# Right Panel - Transcript & Response (Using VoiceInterface)
+with col_right:
+    st.markdown('<div class="voice-right">', unsafe_allow_html=True)
     
-    if elapsed < 10:  # Show for 10 seconds
-        fade_class = "fade-out" if elapsed > 9 else ""
-        toast_data = st.session_state.toast_data
-        
-        st.markdown(f"""
-        <div class="toast-notification {fade_class}">
-            <div class="toast-header">
-                <div class="toast-icon">💬</div>
-                <div>
-                    <div class="toast-title">Conversation</div>
-                    <span class="toast-intent">Intent: {toast_data.get('intent', 'Unknown')}</span>
-                </div>
-            </div>
-            <div class="toast-content">
-                <div class="toast-transcript">
-                    <strong>You said:</strong> {toast_data.get('transcript', '')}
-                </div>
-                <div class="toast-response">
-                    <strong>Assistant:</strong><br>{toast_data.get('response', '')}
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.session_state.show_toast = False
+    # Live Transcript
+    VoiceInterface.render_live_transcript(
+        transcript=st.session_state.current_transcript,
+        is_active=st.session_state.is_recording or st.session_state.is_processing
+    )
+    
+    # Live Response
+    VoiceInterface.render_live_response(
+        response=st.session_state.current_response,
+        metadata=st.session_state.current_metadata,
+        is_speaking=st.session_state.is_speaking
+    )
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------
-# Process Audio
+# Process Audio Input (Real-time)
 # ---------------------------------------
 if audio_bytes and audio_bytes != st.session_state.last_audio:
     st.session_state.last_audio = audio_bytes
-    st.session_state.is_listening = True
+    st.session_state.is_recording = False
+    st.session_state.is_processing = True
+    st.session_state.status = "Processing..."
     
-    with col2:
-        with st.spinner("⚙️ Processing through AI workflow..."):
-            # Initialize state
-            initial_state = {
-                "audio_bytes": audio_bytes,
-                "user_input": "",
-                "transcript": "",
-                "intent": "",
-                "response": "",
-                "response_audio": b"",
-                "error": "",
-                "messages_history": st.session_state.messages,
-                "is_arabic": False
-            }
+    # Initialize state
+    initial_state = {
+        "audio_bytes": audio_bytes,
+        "transcript": "",
+        "detected_language": "en",
+        "transcription_confidence": 0.0,
+        "user_input": "",
+        "intent": "",
+        "intent_confidence": 0.0,
+        "intent_reasoning": "",
+        "is_arabic": False,
+        "urgency": "low",
+        "response": "",
+        "response_tone": "warm",
+        "key_points": [],
+        "suggested_actions": [],
+        "includes_warning": False,
+        "verification_steps": [],
+        "official_sources": [],
+        "response_audio": b"",
+        "error": "",
+        "messages_history": st.session_state.voice_messages
+    }
+    
+    try:
+        # Run the graph
+        final_state = voice_graph.invoke(initial_state)
+        
+        # Extract results
+        transcript = final_state.get("transcript", "")
+        response = final_state.get("response", "")
+        response_audio = final_state.get("response_audio", b"")
+        error = final_state.get("error", "")
+        
+        # Extract metadata
+        metadata = {
+            "intent": final_state.get("intent", ""),
+            "confidence": final_state.get("intent_confidence", 0.0),
+            "tone": final_state.get("response_tone", "warm"),
+            "urgency": final_state.get("urgency", "low"),
+            "key_points": final_state.get("key_points", []),
+            "suggested_actions": final_state.get("suggested_actions", []),
+            "verification_steps": final_state.get("verification_steps", []),
+            "official_sources": final_state.get("official_sources", [])
+        }
+        
+        if error:
+            st.session_state.status = "Error"
+            st.session_state.current_transcript = f"❌ {error}"
+            st.session_state.is_processing = False
             
-            # Run the graph
-            final_state = st.session_state.graph.invoke(initial_state)
+        elif transcript and response:
+            # Update transcript
+            st.session_state.current_transcript = transcript
+            st.session_state.status = "Speaking..."
             
-            # Extract results
-            transcript = final_state.get("transcript", "")
-            intent = final_state.get("intent", "")
-            response = final_state.get("response", "")
-            response_audio = final_state.get("response_audio", b"")
-            error = final_state.get("error", "")
+            # Update response
+            st.session_state.current_response = response
+            st.session_state.current_metadata = metadata
             
-            if error:
-                st.error(f"❌ {error}")
-            elif transcript and response:
-                # Update history
-                st.session_state.messages.append({"role": "user", "content": transcript})
-                st.session_state.messages.append({"role": "assistant", "content": response})
+            # Update message history
+            st.session_state.voice_messages.append({
+                "role": "user",
+                "content": transcript
+            })
+            st.session_state.voice_messages.append({
+                "role": "assistant",
+                "content": response
+            })
+            
+            # Play audio response
+            st.session_state.is_processing = False
+            st.session_state.is_speaking = True
+            
+            if response_audio:
+                # Audio container (hidden but autoplay)
+                st.audio(response_audio, format="audio/mp3", autoplay=True)
                 
-                # Set toast data
-                st.session_state.show_toast = True
-                st.session_state.toast_timestamp = time.time()
-                st.session_state.toast_data = {
-                    "transcript": transcript,
-                    "intent": intent,
-                    "response": response
-                }
+                # Estimate speaking time (rough: 150 words per minute)
+                words = len(response.split())
+                speak_time = (words / 150) * 60  # seconds
+                time.sleep(min(speak_time, 10))  # Max 10 seconds
                 
-                # Play audio response
-                if response_audio:
-                    st.audio(response_audio, format="audio/mp3", autoplay=True)
-                
-                st.session_state.is_listening = False
-                st.rerun()
-else:
-    st.session_state.is_listening = False
+            st.session_state.is_speaking = False
+            st.session_state.status = "Ready"
+            
+        st.rerun()
+        
+    except Exception as e:
+        st.session_state.status = "Error"
+        st.session_state.current_transcript = f"❌ Error: {str(e)}"
+        st.session_state.is_processing = False
+        st.rerun()
 
-# Auto-refresh to hide toast after 10 seconds
-if st.session_state.show_toast:
-    time.sleep(0.1)
-    st.rerun()
+# Update recording status
+elif audio_bytes:
+    if not st.session_state.is_recording and not st.session_state.is_processing:
+        st.session_state.is_recording = True
+        st.session_state.status = "Listening..."
+        st.rerun()
+else:
+    if st.session_state.is_recording:
+        st.session_state.is_recording = False
+        st.session_state.status = "Ready"
+        st.rerun()
+
+
+# ---------------------------------------
+# Page Configuration
+# ---------------------------------------
+st.set_page_config(
+    page_title="Hajj Voice Assistant",
+    page_icon="🕋",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# ---------------------------------------
+# Enhanced Custom CSS with Custom Recorder
+# ---------------------------------------
+st.markdown("""
+<style>
+    .stApp {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        background-attachment: fixed;
+        overflow: hidden;
+    }
+    
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+
+    .main .block-container {
+        padding: 1rem;
+        max-width: 1400px;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    /* Header Section */
+    .voice-header {
+        text-align: center;
+        padding: 1.5rem 0;
+        margin-bottom: 1rem;
+    }
+
+    .voice-title {
+        color: white;
+        font-size: 2.8rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        letter-spacing: 2px;
+        background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .voice-subtitle {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1.1rem;
+        font-weight: 400;
+    }
+
+    /* Main Layout - Split Screen */
+    .voice-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        height: calc(100vh - 200px);
+        padding: 0 2rem;
+    }
+
+    /* Left Panel - Avatar & Recorder */
+    .voice-left {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 2rem;
+        padding: 2rem;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Avatar Container */
+    .voice-avatar-container {
+        position: relative;
+        margin-bottom: 2rem;
+    }
+    
+    .voice-avatar {
+        width: 200px;
+        height: 200px;
+        background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 100px;
+        box-shadow: 0 20px 60px rgba(96, 165, 250, 0.4);
+        animation: float 3s ease-in-out infinite;
+        position: relative;
+        z-index: 2;
+        border: 6px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .voice-avatar.listening {
+        animation: pulse-listening 0.8s ease-in-out infinite;
+        box-shadow: 0 0 80px rgba(96, 165, 250, 0.8);
+    }
+
+    .voice-avatar.speaking {
+        animation: pulse-speaking 0.6s ease-in-out infinite;
+        box-shadow: 0 0 80px rgba(167, 139, 250, 0.8);
+    }
+    
+    /* Rings around avatar */
+    .voice-ring {
+        position: absolute;
+        border: 3px solid rgba(96, 165, 250, 0.3);
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        animation: expand 3s ease-out infinite;
+    }
+    
+    .voice-ring-1 { width: 220px; height: 220px; animation-delay: 0s; }
+    .voice-ring-2 { width: 260px; height: 260px; animation-delay: 1s; }
+    .voice-ring-3 { width: 300px; height: 300px; animation-delay: 2s; }
+    
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-15px); }
+    }
+    
+    @keyframes pulse-listening {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    
+    @keyframes pulse-speaking {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.15); }
+    }
+    
+    @keyframes expand {
+        0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.8; }
+        100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+    }
+
+    /* Custom Record Button */
+    .record-button-container {
+        margin-top: 2rem;
+    }
+
+    .record-button {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        border: none;
+        cursor: pointer;
+        position: relative;
+        box-shadow: 0 10px 40px rgba(239, 68, 68, 0.4);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .record-button:hover {
+        transform: scale(1.1);
+        box-shadow: 0 15px 60px rgba(239, 68, 68, 0.6);
+    }
+
+    .record-button.recording {
+        animation: record-pulse 1s ease-in-out infinite;
+        background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+    }
+
+    @keyframes record-pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        50% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+    }
+
+    .record-icon {
+        width: 50px;
+        height: 50px;
+        background: white;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+
+    .record-button.recording .record-icon {
+        border-radius: 8px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .record-label {
+        margin-top: 1.5rem;
+        color: white;
+        font-size: 1.2rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    /* Right Panel - Live Transcript & Response */
+    .voice-right {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .transcript-container, .response-container {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 1.5rem;
+        padding: 2rem;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
+    }
+
+    .panel-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .panel-icon {
+        font-size: 2rem;
+    }
+
+    .panel-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: white;
+        margin: 0;
+    }
+
+    .panel-badge {
+        margin-left: auto;
+        padding: 0.3rem 0.8rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: rgba(96, 165, 250, 0.2);
+        color: #60a5fa;
+        border: 1px solid rgba(96, 165, 250, 0.3);
+    }
+
+    .panel-badge.active {
+        background: rgba(34, 197, 94, 0.2);
+        color: #22c55e;
+        border-color: rgba(34, 197, 94, 0.3);
+        animation: badge-pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes badge-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+
+    /* Transcript Text */
+    .transcript-text {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.3rem;
+        line-height: 1.8;
+        min-height: 100px;
+        font-weight: 400;
+    }
+
+    .transcript-text.empty {
+        color: rgba(255, 255, 255, 0.4);
+        font-style: italic;
+    }
+
+    /* Response Content */
+    .response-content {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1.2rem;
+        line-height: 1.8;
+        min-height: 100px;
+    }
+
+    .response-content.empty {
+        color: rgba(255, 255, 255, 0.4);
+        font-style: italic;
+    }
+
+    /* Metadata Cards */
+    .metadata-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 1rem;
+        padding: 1rem;
+        margin-top: 1rem;
+        border-left: 4px solid #60a5fa;
+    }
+
+    .metadata-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #60a5fa;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .metadata-content {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+    .metadata-list {
+        list-style: none;
+        padding: 0;
+        margin: 0.5rem 0 0 0;
+    }
+
+    .metadata-list li {
+        padding: 0.3rem 0;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .metadata-list li:before {
+        content: "→ ";
+        color: #60a5fa;
+        font-weight: bold;
+        margin-right: 0.5rem;
+    }
+
+    /* Status Indicator */
+    .status-indicator {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 0.75rem 1.5rem;
+        background: rgba(0, 0, 0, 0.8);
+        border-radius: 2rem;
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #22c55e;
+        animation: dot-pulse 1.5s ease-in-out infinite;
+    }
+
+    .status-dot.listening {
+        background: #ef4444;
+    }
+
+    .status-dot.speaking {
+        background: #a78bfa;
+    }
+
+    @keyframes dot-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+
+    /* Back Button */
+    .stButton > button {
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 2rem !important;
+        padding: 0.6rem 1.5rem !important;
+        font-weight: 600 !important;
+        transition: all 0.3s ease !important;
+        backdrop-filter: blur(10px) !important;
+    }
+
+    .stButton > button:hover {
+        background: rgba(255, 255, 255, 0.2) !important;
+        border-color: rgba(255, 255, 255, 0.4) !important;
+        transform: translateY(-2px);
+    }
+
+    /* Hide default audio recorder */
+    .stAudio {
+        display: none !important;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .voice-container {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+        
+        .voice-left {
+            min-height: 400px;
+        }
+        
+        .voice-title {
+            font-size: 2rem;
+        }
+        
+        .voice-avatar {
+            width: 150px;
+            height: 150px;
+            font-size: 75px;
+        }
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------------------------------
+# Back Button
+# ---------------------------------------
+if st.button("⬅️ Back to Chat", key="back_button"):
+    try:
+        st.switch_page("app.py")
+    except Exception:
+        st.markdown('<meta http-equiv="refresh" content="0; url=/" />', unsafe_allow_html=True)
+
+# ---------------------------------------
+# Initialize Components
+# ---------------------------------------
+@st.cache_resource
+def initialize_voice_system():
+    """Initialize voice processor and graph"""
+    processor = VoiceProcessor()
+    graph_builder = VoiceGraphBuilder(processor)
+    graph = graph_builder.build()
+    return processor, graph
+
+voice_processor, voice_graph = initialize_voice_system()
+
+# ---------------------------------------
+# Session State Initialization
+# ---------------------------------------
+if "voice_messages" not in st.session_state:
+    st.session_state.voice_messages = []
+
+if "last_audio" not in st.session_state:
+    st.session_state.last_audio = None
+
+if "is_recording" not in st.session_state:
+    st.session_state.is_recording = False
+
+if "is_processing" not in st.session_state:
+    st.session_state.is_processing = False
+
+if "is_speaking" not in st.session_state:
+    st.session_state.is_speaking = False
+
+if "current_transcript" not in st.session_state:
+    st.session_state.current_transcript = ""
+
+if "current_response" not in st.session_state:
+    st.session_state.current_response = ""
+
+if "current_metadata" not in st.session_state:
+    st.session_state.current_metadata = {}
+
+if "status" not in st.session_state:
+    st.session_state.status = "Ready"
+
+# ---------------------------------------
+# Header
+# ---------------------------------------
+st.markdown("""
+<div class="voice-header">
+    <div class="voice-title">🕋 Hajj Voice Assistant</div>
+    <div class="voice-subtitle">Real-time Speech Recognition & AI Responses</div>
+</div>
+""", unsafe_allow_html=True)
+
+# ---------------------------------------
+# Status Indicator
+# ---------------------------------------
+status_dot_class = ""
+if st.session_state.is_recording:
+    status_dot_class = "listening"
+elif st.session_state.is_speaking:
+    status_dot_class = "speaking"
+
+st.markdown(f"""
+<div class="status-indicator">
+    <div class="status-dot {status_dot_class}"></div>
+    <span>{st.session_state.status}</span>
+</div>
+""", unsafe_allow_html=True)
+
+# ---------------------------------------
+# Main Layout - Split Screen
+# ---------------------------------------
+st.markdown('<div class="voice-container">', unsafe_allow_html=True)
+
+# Left Panel - Avatar & Recorder
+col_left, col_right = st.columns(2)
+
+with col_left:
+    # Avatar state
+    avatar_class = ""
+    if st.session_state.is_recording:
+        avatar_class = "listening"
+    elif st.session_state.is_speaking:
+        avatar_class = "speaking"
+    
+    st.markdown(f"""
+    <div class="voice-left">
+        <div class="voice-avatar-container">
+            <div class="voice-ring voice-ring-1"></div>
+            <div class="voice-ring voice-ring-2"></div>
+            <div class="voice-ring voice-ring-3"></div>
+            <div class="voice-avatar {avatar_class}">🕋</div>
+        </div>
+        
+        <div class="record-button-container">
+            <div class="record-label">
+                {'🔴 Recording...' if st.session_state.is_recording else '🎤 Press to Speak'}
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Hidden audio recorder
+    audio_bytes = audio_recorder(
+        text="",
+        recording_color="#ef4444",
+        neutral_color="#3b82f6",
+        icon_name="microphone",
+        icon_size="2x",
+        pause_threshold=2.0,
+        sample_rate=16000,
+        key="voice_recorder"
+    )
+
+# Right Panel - Transcript & Response
+with col_right:
+    # Transcript Panel
+    transcript_badge_class = "active" if st.session_state.is_recording or st.session_state.is_processing else ""
+    transcript_text = st.session_state.current_transcript if st.session_state.current_transcript else "Speak now..."
+    transcript_class = "empty" if not st.session_state.current_transcript else ""
+    
+    st.markdown(f"""
+    <div class="transcript-container">
+        <div class="panel-header">
+            <div class="panel-icon">🎤</div>
+            <h3 class="panel-title">Live Transcript</h3>
+            <div class="panel-badge {transcript_badge_class}">
+                {'●' if transcript_badge_class else '○'} {'Listening' if st.session_state.is_recording else 'Transcribing' if st.session_state.is_processing else 'Ready'}
+            </div>
+        </div>
+        <div class="transcript-text {transcript_class}">{transcript_text}</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Response Panel
+    response_badge_class = "active" if st.session_state.is_speaking else ""
+    response_text = st.session_state.current_response if st.session_state.current_response else "Response will appear here..."
+    response_class = "empty" if not st.session_state.current_response else ""
+    
+    # Build metadata HTML
+    metadata_html = ""
+    if st.session_state.current_metadata:
+        meta = st.session_state.current_metadata
+        
+        # Key Points
+        if meta.get("key_points"):
+            points_html = "".join([f"<li>{point}</li>" for point in meta["key_points"]])
+            metadata_html += f"""
+            <div class="metadata-card">
+                <div class="metadata-title">💡 Key Points</div>
+                <ul class="metadata-list">{points_html}</ul>
+            </div>
+            """
+        
+        # Suggested Actions
+        if meta.get("suggested_actions"):
+            actions_html = "".join([f"<li>{action}</li>" for action in meta["suggested_actions"]])
+            metadata_html += f"""
+            <div class="metadata-card" style="border-left-color: #a78bfa;">
+                <div class="metadata-title" style="color: #a78bfa;">✅ Suggested Actions</div>
+                <ul class="metadata-list">{actions_html}</ul>
+            </div>
+            """
+        
+        # Verification Steps
+        if meta.get("verification_steps"):
+            steps_html = "".join([f"<li>{step}</li>" for step in meta["verification_steps"]])
+            metadata_html += f"""
+            <div class="metadata-card" style="border-left-color: #ef4444;">
+                <div class="metadata-title" style="color: #ef4444;">⚠️ Verification Steps</div>
+                <ul class="metadata-list">{steps_html}</ul>
+            </div>
+            """
+    
+    st.markdown(f"""
+    <div class="response-container">
+        <div class="panel-header">
+            <div class="panel-icon">🤖</div>
+            <h3 class="panel-title">AI Response</h3>
+            <div class="panel-badge {response_badge_class}">
+                {'●' if response_badge_class else '○'} {'Speaking' if st.session_state.is_speaking else 'Ready'}
+            </div>
+        </div>
+        <div class="response-content {response_class}">{response_text}</div>
+        {metadata_html}
+    </div>
+    """, unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------------------------------------
+# Process Audio Input (Real-time)
+# ---------------------------------------
+if audio_bytes and audio_bytes != st.session_state.last_audio:
+    st.session_state.last_audio = audio_bytes
+    st.session_state.is_recording = False
+    st.session_state.is_processing = True
+    st.session_state.status = "Processing..."
+    
+    # Initialize state
+    initial_state = {
+        "audio_bytes": audio_bytes,
+        "transcript": "",
+        "detected_language": "en",
+        "transcription_confidence": 0.0,
+        "user_input": "",
+        "intent": "",
+        "intent_confidence": 0.0,
+        "intent_reasoning": "",
+        "is_arabic": False,
+        "urgency": "low",
+        "response": "",
+        "response_tone": "warm",
+        "key_points": [],
+        "suggested_actions": [],
+        "includes_warning": False,
+        "verification_steps": [],
+        "official_sources": [],
+        "response_audio": b"",
+        "error": "",
+        "messages_history": st.session_state.voice_messages
+    }
+    
+    try:
+        # Run the graph
+        final_state = voice_graph.invoke(initial_state)
+        
+        # Extract results
+        transcript = final_state.get("transcript", "")
+        response = final_state.get("response", "")
+        response_audio = final_state.get("response_audio", b"")
+        error = final_state.get("error", "")
+        
+        # Extract metadata
+        metadata = {
+            "intent": final_state.get("intent", ""),
+            "confidence": final_state.get("intent_confidence", 0.0),
+            "tone": final_state.get("response_tone", "warm"),
+            "urgency": final_state.get("urgency", "low"),
+            "key_points": final_state.get("key_points", []),
+            "suggested_actions": final_state.get("suggested_actions", []),
+            "verification_steps": final_state.get("verification_steps", []),
+            "official_sources": final_state.get("official_sources", [])
+        }
+        
+        if error:
+            st.session_state.status = "Error"
+            st.session_state.current_transcript = f"❌ {error}"
+            st.session_state.is_processing = False
+            
+        elif transcript and response:
+            # Update transcript
+            st.session_state.current_transcript = transcript
+            st.session_state.status = "Speaking..."
+            
+            # Update response
+            st.session_state.current_response = response
+            st.session_state.current_metadata = metadata
+            
+            # Update message history
+            st.session_state.voice_messages.append({
+                "role": "user",
+                "content": transcript
+            })
+            st.session_state.voice_messages.append({
+                "role": "assistant",
+                "content": response
+            })
+            
+            # Play audio response
+            st.session_state.is_processing = False
+            st.session_state.is_speaking = True
+            
+            if response_audio:
+                # Audio container (hidden but autoplay)
+                st.audio(response_audio, format="audio/mp3", autoplay=True)
+                
+                # Estimate speaking time (rough: 150 words per minute)
+                words = len(response.split())
+                speak_time = (words / 150) * 60  # seconds
+                time.sleep(min(speak_time, 10))  # Max 10 seconds
+                
+            st.session_state.is_speaking = False
+            st.session_state.status = "Ready"
+            
+        st.rerun()
+        
+    except Exception as e:
+        st.session_state.status = "Error"
+        st.session_state.current_transcript = f"❌ Error: {str(e)}"
+        st.session_state.is_processing = False
+        st.rerun()
+
+# Update recording status
+elif audio_bytes:
+    if not st.session_state.is_recording and not st.session_state.is_processing:
+        st.session_state.is_recording = True
+        st.session_state.status = "Listening..."
+        st.rerun()
+else:
+    if st.session_state.is_recording:
+        st.session_state.is_recording = False
+        st.session_state.status = "Ready"
+        st.rerun()
