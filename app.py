@@ -1100,14 +1100,6 @@ GRAPH = build_stategraph()
 # Helper UI functions
 # -----------------------------
 def show_result_summary(df: pd.DataFrame) -> None:
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(f"<div style='display:inline-block;padding:6px;background:#667eea;color:white;border-radius:8px;'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
-    
-    with col2:
-        if "is_authorized" in df.columns:
-            auth_count = len(df[df["is_authorized"] == "Yes"])
-            st.markdown(f"<div style='display:inline-block;padding:6px;background:#38ef7d;color:white;border-radius:8px;'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
     for _, row in df.iterrows():
         name = row.get("hajj_company_en", "Unknown Agency")
         addr = row.get("formatted_address", "")
@@ -1119,6 +1111,15 @@ def show_result_summary(df: pd.DataFrame) -> None:
             st.markdown(f"**{name}**<br>📍 [{addr}]({maps_url})", unsafe_allow_html=True)
         else:
             st.markdown(f"**{name}**<br>📍 Address not available")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown(f"<div style='display:inline-block;padding:6px;background:#667eea;color:white;border-radius:8px;'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
+    
+    with col2:
+        if "is_authorized" in df.columns:
+            auth_count = len(df[df["is_authorized"] == "Yes"])
+            st.markdown(f"<div style='display:inline-block;padding:6px;background:#38ef7d;color:white;border-radius:8px;'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
+    
 
 
 
