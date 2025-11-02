@@ -1305,10 +1305,15 @@ if user_input:
                 df = pd.DataFrame(rows)
                 show_result_summary(df)
 
+                # Store a JSON-serializable preview (limit to 100 rows) instead of the DataFrame object
+                preview_rows = df.head(100).to_dict(orient="records")
+                preview_meta = {"columns": list(df.columns), "row_count": len(df)}
+
                 st.session_state.chat_memory.append({
                     "role": "assistant",
                     "content": summary,
-                    "dataframe": df,
+                    "dataframe": preview_rows,        # serializable preview
+                    "dataframe_meta": preview_meta,   # helpful metadata
                     "timestamp": get_current_time()
                 })
                 save_chat_memory()
