@@ -868,30 +868,39 @@ CRITICAL CONTEXT:
 
 Message: {user_input}
 language: {language}{" (Arabic)" if is_arabic else " (English)"}
-
-Return JSON ONLY in this format:
+Return structured JSON:
 {{
   "intent": "GREETING" | "DATABASE" | "GENERAL_HAJJ",
-  "confidence": float (0.0–1.0)
+  "confidence": float between 0 and 1
 }}
 """
-    try:
-        resp = structured_llm.invoke(
-            
-            [{"role":"system","content":"You classify intents. Respond with one word."},
-                      {"role":"user","content": intent_prompt}, *build_chat_context()],
-       
-            max_tokens=8
-        )
 
-        intent = resp.intent.upper()
-        confidence = float(resp.confidence)
+    try:
+        result = structured_llm.invoke([
+            {"role": "system", "content": "You classify user intent for a Hajj fraud-prevention assistant."},
+            {"role": "user", "content": intent_prompt},
+        ])
+
+        intent = result.intent.upper()
+        confidence = result.confidence
+
     except Exception as e:
-        # fallback heuristics
+        # Handle structured parsing or token limit errors
         st.warning(f"⚠️ Intent detection error: {e}")
-       
+
+        # Fallback heuristics
+        ui = user_input.lower()
+        if any(word in ui for word in ["hi", "hello", "hey", "مرحبا", "السلام"]):
+            intent = "GREETING"
+        elif any(word in ui for word in ["agency", "company", "authorized", "معتمد", "مصر", "مكة"]):
+            intent = "DATABASE"
+        else:
+            intent = "GENERAL_HAJJ"
+
+        confidence = 0.5  # safe fallback
+
     state_update["intent"] = intent
-    state_update["confidence"] = confidence  # Placeholder for confidence
+    state_update["confidence"] = confidence
     return state_update
 
 def node_respond_greeting(state: GraphState) -> dict:
