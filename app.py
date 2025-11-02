@@ -247,20 +247,6 @@ def heuristic_sql_fallback(question: str) -> Optional[str]:
 
 
 
-def show_result_summary(df: pd.DataFrame) -> None:
-    """Display summary statistics and columns for results"""
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown(f"<div class='badge badge-info'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"<div class='badge badge-success'>✅ {len(df.columns)} Columns</div>", unsafe_allow_html=True)
-    with col3:
-        if "is_authorized" in df.columns:
-            auth_count = len(df[df["is_authorized"] == "Yes"])
-            st.markdown(f"<div class='badge badge-success'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
-    
-
-
 
 
 def build_chat_context(limit: int = 6) -> List[Dict[str, str]]:
@@ -1120,6 +1106,19 @@ def show_result_summary(df: pd.DataFrame) -> None:
         if "is_authorized" in df.columns:
             auth_count = len(df[df["is_authorized"] == "Yes"])
             st.markdown(f"<div style='display:inline-block;padding:6px;background:#38ef7d;color:white;border-radius:8px;'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
+    st.subheader("🏨 Agency Locations")
+    for _, row in df.iterrows():
+        name = row.get("hajj_company_en", "Unknown Agency")
+        addr = row.get("formatted_address", "")
+        auth = row.get("is_authorized", "Unknown")
+
+        # Create clickable Google Maps link
+        if addr:
+            maps_url = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(addr)}"
+            st.markdown(f"**{name}** — {auth}<br>📍 [{addr}]({maps_url})", unsafe_allow_html=True)
+        else:
+            st.markdown(f"**{name}** — {auth}<br>📍 Address not available")
+
 
 
  
