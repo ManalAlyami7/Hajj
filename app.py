@@ -36,7 +36,8 @@ def save_chat_memory():
 
 if "chat_memory" not in st.session_state:
     st.session_state.chat_memory = load_chat_memory()
-
+if st.button("🎙️ Go to Voice Assistant"):
+    st.switch_page("pages/voicebot.py")
 # -----------------------------
 # TRANSLATIONS DICTIONARY (unchanged)
 # -----------------------------
