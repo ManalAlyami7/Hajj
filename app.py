@@ -1117,19 +1117,6 @@ def show_result_summary(df: pd.DataFrame) -> None:
             auth_count = len(df[df["is_authorized"] == "Yes"])
             st.markdown(f"<div style='display:inline-block;padding:6px;background:#38ef7d;color:white;border-radius:8px;'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
 
-    st.subheader("🏨 Agency Locations")
-    for _, row in df.iterrows():
-        name = row.get("hajj_company_en", "Unknown Agency")
-        addr = row.get("formatted_address", "")
-        auth = row.get("is_authorized", "Unknown")
-
-        # Create clickable Google Maps link
-        if addr:
-            maps_url = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(addr)}"
-            st.markdown(f"**{name}** — {auth}<br>📍 [{addr}]({maps_url})", unsafe_allow_html=True)
-        else:
-            st.markdown(f"**{name}** — {auth}<br>📍 Address not available")
-
 
 
 
