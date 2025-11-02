@@ -16,6 +16,27 @@ import urllib.parse
 # LangGraph imports
 from langgraph.graph import StateGraph, START, END
 
+import json
+import os
+
+def load_chat_memory():
+    """Load chat history from file if it exists."""
+    if os.path.exists("chat_history.json"):
+        with open("chat_history.json", "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                return []
+    return []
+
+def save_chat_memory():
+    """Save chat history to file."""
+    with open("chat_history.json", "w", encoding="utf-8") as f:
+        json.dump(st.session_state.chat_memory, f, ensure_ascii=False, indent=2)
+
+if "chat_memory" not in st.session_state:
+    st.session_state.chat_memory = load_chat_memory()
+
 # -----------------------------
 # TRANSLATIONS DICTIONARY (unchanged)
 # -----------------------------
@@ -673,6 +694,7 @@ with st.sidebar:
             "timestamp": get_current_time()
         }]
         st.session_state.last_result_df = None
+        save_chat_memory()
         st.rerun()
 
     st.markdown("---")
@@ -1172,6 +1194,8 @@ if user_input:
         "content": user_input,
         "timestamp": get_current_time()
     })
+    save_chat_memory()
+
 
     with st.chat_message("user", avatar="👤"):
         st.markdown(user_input)
@@ -1198,6 +1222,8 @@ if user_input:
                     "content": err_msg,
                     "timestamp": get_current_time()
                 })
+                save_chat_memory()
+
                 final_state = {}
 
         # -----------------------------
@@ -1231,6 +1257,8 @@ if user_input:
                 "content": greeting_text,
                 "timestamp": get_current_time()
             })
+            save_chat_memory()
+
 
         # -----------------------------
         # GENERAL_HAJJ section
@@ -1243,6 +1271,8 @@ if user_input:
                 "content": ans,
                 "timestamp": get_current_time()
             })
+            save_chat_memory()
+
 
         # -----------------------------
         # DATABASE path outputs
@@ -1275,6 +1305,8 @@ if user_input:
                     "dataframe": df,
                     "timestamp": get_current_time()
                 })
+                save_chat_memory()
+
                 st.session_state.last_result_df = df
             else:
                 # No data rows
@@ -1284,6 +1316,7 @@ if user_input:
                     "content": summary,
                     "timestamp": get_current_time()
                 })
+                save_chat_memory()
 
         # -----------------------------
         # Fallback
@@ -1296,3 +1329,4 @@ if user_input:
                 "content": fallback,
                 "timestamp": get_current_time()
             })
+            save_chat_memory()
