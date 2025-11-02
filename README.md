@@ -1,4 +1,4 @@
-# 🕋 Hajj Data Chatbot & Voice Assistant
+# 🕋 Smart Hajj Chatbot & Voice Assistant
 
 An **AI-powered multilingual platform** combining a **data chatbot** and a **voice assistant** to help pilgrims verify and explore Hajj agency data — in both **Arabic** and **English**.
 
@@ -8,12 +8,10 @@ An **AI-powered multilingual platform** combining a **data chatbot** and a **voi
 
 ### 💬 Chatbot (`app.py`)
 - 🧠 **AI Query Engine** – Converts natural language into optimized SQL.  
+- 🌐 **Multilingual Recognition** – Supports Arabic and English text.  
 - 🕋 **Smart Verification** – Detects verification requests and asks for more details if needed.  
-- 📊 **Interactive Results** – Displays data in tables and summaries.  
-- 💾 **Downloadable Data** – Export query results as CSV.  
-- 🔍 **Transparent Queries** – Shows generated SQL for each question.  
 - 📈 **Database Insights** – Provides live analytics and statistics.  
-- 🗺️ **Google Maps Integration (Optional)** – Shows agency locations.  
+- 🗺️ **Google Maps Integration** – Shows agency locations.  
 
 ### 🎙️ Voice Assistant (`voicebot.py`)
 - 🗣️ **Voice Interaction** – Speak to the bot instead of typing.  
@@ -90,7 +88,7 @@ The SQLite database must contain a table named **`agencies`** with these columns
 
 ---
 
-## 🗺️ Google Maps Integration (Optional)
+## 🗺️ Google Maps Integration
 
 If `formatted_address` exists and you add your Google Maps API key,  
 the app can:
