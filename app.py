@@ -926,7 +926,7 @@ Return structured JSON:
     state_update["intent"] = intent
     state_update["confidence"] = confidence
     return state_update
-
+# ...existing code...
 def node_respond_greeting(state: GraphState) -> dict:
     user_input = state.get("user_input", "")
     lang = state.get("language", "English")
@@ -942,16 +942,21 @@ def node_respond_greeting(state: GraphState) -> dict:
 4. Keeps response under 3 sentences
 5. Uses emojis appropriately""" + (" Respond in Arabic." if is_arabic else " Respond in English.")
     }
+
     try:
-        greeting_response = structured_llm.invoke(
-            [greeting_prompt, {"role":"user","content": user_input}, *build_chat_context()],
-            max_tokens=150
-        )
-        greeting_text = greeting_response.answer.strip()
+        # invoke with messages and fallback to greeting translation if schema parsing fails
+        resp = structured_llm.invoke([greeting_prompt, {"role": "user", "content": user_input}, *build_chat_context()], max_tokens=150)
+
+        # GreetingSchema defines 'greeting_text' — prefer that, else try common fallbacks
+        greeting_text = getattr(resp, "greeting_text", None) or getattr(resp, "answer", None) or getattr(resp, "text", None)
+        if not greeting_text:
+            greeting_text = t("greeting", "العربية" if is_arabic else "English")
+
     except Exception:
-        greeting_text = t("greeting", "العربية") if is_arabic else t("greeting", "English")
+        greeting_text = t("greeting", "العربية" if is_arabic else "English")
 
     return {"greeting_text": greeting_text}
+# ...existing code...
 
 def node_respond_general(state: GraphState) -> dict:
     # Use LLM to answer general Hajj questions (non-database)
