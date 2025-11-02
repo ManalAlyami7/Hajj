@@ -1100,17 +1100,17 @@ GRAPH = build_stategraph()
 # Helper UI functions
 # -----------------------------
 def show_result_summary(df: pd.DataFrame) -> None:
-    for _, row in df.iterrows():
-        name = row.get("hajj_company_en", "Unknown Agency")
-        addr = row.get("formatted_address", "")
-        auth = row.get("is_authorized", "Unknown")
+    #for _, row in df.iterrows():
+       # name = row.get("hajj_company_en", "Unknown Agency")
+       # addr = row.get("formatted_address", "")
+       # auth = row.get("is_authorized", "Unknown")
 
         # Create clickable Google Maps link
-        if addr:
-            maps_url = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(addr)}"
-            st.markdown(f"**{name}**<br>📍 [{addr}]({maps_url})", unsafe_allow_html=True)
-        else:
-            st.markdown(f"**{name}**<br>📍 Address not available")
+        #if addr:
+           #maps_url = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(addr)}"
+          #  st.markdown(f"**{name}**<br>📍 [{addr}]({maps_url})", unsafe_allow_html=True)
+       # else:
+           # st.markdown(f"**{name}**<br>📍 Address not available")
     col1, col2 = st.columns(2)
     with col1:
         st.markdown(f"<div style='display:inline-block;padding:6px;background:#667eea;color:white;border-radius:8px;'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
