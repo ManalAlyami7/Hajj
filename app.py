@@ -229,7 +229,7 @@ def tts_to_bytesio(text, voice="alloy"):
     try:
         if "openai_client" not in st.session_state or st.session_state.openai_client is None:
             if "key" in st.secrets:
-                st.session_state.openai_client = ChatOpenAI(api_key=st.secrets["key"])
+                st.session_state.openai_client = OpenAI(api_key=st.secrets["key"])
             else:
                 st.error("❌ OpenAI API key missing")
                 return None
