@@ -48,8 +48,6 @@ TRANSLATIONS = {
         "feat_multilingual_desc": "Arabic & English support",
         "feat_viz": "Data Visualization",
         "feat_viz_desc": "Interactive tables",
-        "feat_export": "Export Results",
-        "feat_export_desc": "Download as CSV",
         "feat_secure": "Secure",
         "feat_secure_desc": "SQL injection protection",
         "welcome_msg": "Welcome! 👋\n\nI'm your Hajj Data Assistant. Ask me anything about Hajj companies, locations, or authorization status!",
@@ -62,10 +60,7 @@ TRANSLATIONS = {
         "sql_generated": "✅ SQL query generated",
         "query_failed": "❌ Query failed",
         "results_badge": "📊 {count} Results",
-        "columns_badge": "✅ {count} Columns",
         "authorized_badge": "🔒 {count} Authorized",
-        "download_csv": "📥 Download Results (CSV)",
-        "view_sql": "🔍 View SQL Query",
         "executed_caption": "Executed in database • {count} rows returned",
         "greeting": "Hello! 👋\n\nI'm doing great, thank you! I'm here to help you find information about Hajj companies. What would you like to know?",
         "no_results": "No results found. Try rephrasing the question or broadening the search.",
@@ -106,7 +101,6 @@ TRANSLATIONS = {
         "feat_viz": "تصور البيانات",
         "feat_viz_desc": "جداول تفاعلية",
         "feat_export": "تصدير النتائج",
-        "feat_export_desc": "تحميل بصيغة CSV",
         "feat_secure": "آمن",
         "feat_secure_desc": "حماية من هجمات SQL",
         "welcome_msg": "السلام عليكم ورحمة الله وبركاته! 🌙\n\nأهلاً بك في مساعد معلومات الحج الذكي. كيف يمكنني مساعدتك اليوم؟",
@@ -119,9 +113,7 @@ TRANSLATIONS = {
         "sql_generated": "✅ تم إنشاء استعلام SQL",
         "query_failed": "❌ فشل الاستعلام",
         "results_badge": "📊 {count} نتيجة",
-        "columns_badge": "✅ {count} عمود",
         "authorized_badge": "🔒 {count} معتمدة",
-        "download_csv": "📥 تحميل النتائج (CSV)",
         "view_sql": "🔍 عرض استعلام SQL",
         "executed_caption": "تم التنفيذ في قاعدة البيانات • {count} صف تم إرجاعه",
         "greeting": "وعليكم السلام ورحمة الله وبركاته! 🌙\n\nالحمد لله، أنا بخير! أنا هنا لمساعدتك في العثور على معلومات شركات الحج. كيف يمكنني مساعدتك؟",
@@ -243,21 +235,9 @@ def show_result_summary(df: pd.DataFrame) -> None:
             st.markdown(f"<div class='badge badge-success'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
     
 
-def show_download_button(df: pd.DataFrame) -> None:
-    """Display download button for results"""
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label=t("download_csv", st.session_state.new_language),
-        data=csv,
-        file_name=f"hajj_data_{int(datetime.now().timestamp())}.csv",
-        mime="text/csv"
-    )
 
-def show_sql_expander(sql_query: str, row_count: int) -> None:
-    """Display SQL query in expandable section"""
-    with st.expander(t("view_sql", st.session_state.new_language)):
-        st.code(sql_query, language="sql")
-        st.caption(t("executed_caption", st.session_state.new_language, count=row_count))
+
+
 def build_chat_context(limit: int = 6) -> List[Dict[str, str]]:
     """Build chat context from recent messages"""
     context = [{"role": "system", "content": """You are a helpful assistant specializing in Hajj-related information.
@@ -718,10 +698,7 @@ for idx, msg in enumerate(st.session_state.chat_memory):
         st.markdown(msg.get("content", ""))
         if msg.get("timestamp"):
             st.markdown(f"<div style='color: #777; font-size:0.8rem'>🕐 {format_time(msg['timestamp'])}</div>", unsafe_allow_html=True)
-        if "dataframe" in msg and msg["dataframe"] is not None:
-            st.dataframe(msg["dataframe"], use_container_width=True, height=300)
-            csv = msg["dataframe"].to_csv(index=False).encode("utf-8")
-            st.download_button(label="📥 CSV", data=csv, file_name=f"hajj_data_{int(msg['timestamp'])}.csv", mime="text/csv", key=f"dl_{idx}")
+    
 
 placeholder_text = "اكتب سؤالك هنا... 💬" if st.session_state.new_language == "العربية" else "Ask your question here... 💬"
 user_input = st.session_state.selected_question or st.chat_input(placeholder_text)
