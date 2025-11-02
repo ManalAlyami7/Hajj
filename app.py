@@ -1197,11 +1197,14 @@ if user_input:
         elif final_state.get("general_answer"):
             ans = final_state["general_answer"]
             st.markdown(ans)
-            st.session_state.chat_memory.append({
-                "role": "assistant",
-                "content": ans,
-                "timestamp": get_current_time()
-            })
+                        # 🔊 تشغيل الصوت + زر السبيكر
+            voice = "alloy-ar" if st.session_state.new_language == "العربية" else "alloy"
+            audio_bytes = tts_to_bytesio(ans, voice)
+            if audio_bytes:
+                st.audio(audio_bytes, format="audio/mp3")
+            if st.button("🎙️ Listen again", key=f"tts_general_{len(st.session_state.chat_memory)}"):
+                if audio_bytes:
+                    st.audio(audio_bytes, format="audio/mp3")
 
         # -----------------------------
         # DATABASE path outputs
