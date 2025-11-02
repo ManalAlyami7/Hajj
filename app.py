@@ -272,8 +272,8 @@ def build_chat_context(limit: int = 6) -> List[Dict[str, str]]:
 # Page Configuration
 # -----------------------------
 st.set_page_config(
-    page_title="🕋 Hajj Chatbot",
-    # page_icon="🕋",
+    page_title="Hajj Chatbot",
+    page_icon="🕋",
     layout="wide",
     initial_sidebar_state="expanded"
 )
