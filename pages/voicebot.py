@@ -25,6 +25,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+st.markdown(RealTimeVoiceStyles.get_styles(), unsafe_allow_html=True)
+
 # ---------------------------------------
 # Apply Custom CSS
 # ---------------------------------------

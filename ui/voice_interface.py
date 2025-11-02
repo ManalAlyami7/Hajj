@@ -170,10 +170,6 @@ class RealTimeVoiceStyles:
         """Return complete CSS for real-time voice interface"""
         return """
 <style>
-    /* Styles are now embedded in main voicebot.py for better integration */
-</style>
-"""
-<style>
     .stApp {
         background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
         background-attachment: fixed;
