@@ -295,4 +295,8 @@ def main():
     chat_ui.render()
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     main()
+=======
+    main()
+>>>>>>> dc06003 (j)
