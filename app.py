@@ -883,10 +883,9 @@ Return JSON ONLY in this format:
             temperature=0,
             max_tokens=8
         )
-        candidate = resp.choices[0].message.content.strip().upper()
-        if candidate in ("GREETING", "DATABASE", "GENERAL_HAJJ"):
-             intent = resp.intent.upper()
-             confidence = float(resp.confidence)
+
+        intent = resp.intent.upper()
+        confidence = float(resp.confidence)
     except Exception as e:
         # fallback heuristics
         st.warning(f"⚠️ Intent detection error: {e}")
