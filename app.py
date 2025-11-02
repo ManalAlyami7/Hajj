@@ -134,6 +134,13 @@ TRANSLATIONS = {
     }
 }
 
+if "openai_client" not in st.session_state:
+    try:
+        st.session_state.openai_client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    except:
+        st.session_state.openai_client = None
+
+
 def t(key: str, lang: str = "English", **kwargs) -> str:
     """Get translation for key in specified new_language with optional formatting"""
     text = TRANSLATIONS.get(lang, TRANSLATIONS["English"]).get(key, key)
@@ -167,17 +174,110 @@ def tts_to_bytesio(text, voice="alloy"):
     """
     Returns BytesIO of TTS audio ready for st.audio
     """
-    audio_bytes = io.BytesIO()
-    with openai.audio.speech.with_streaming_response.create(
-        model="gpt-4o-mini-tts",
-        voice=voice,
-        input=text
-    ) as response:
-        response.stream_to_file(audio_bytes)
+    try:
+        if "openai_client" not in st.session_state or st.session_state.openai_client is None:
+            if "key" in st.secrets:
+                st.session_state.openai_client = OpenAI(api_key=st.secrets["key"])
+            else:
+                st.error("❌ OpenAI API key missing")
+                return None
+        
+        client = st.session_state.openai_client
 
-    # VERY IMPORTANT: seek back to start
-    audio_bytes.seek(0)
-    return audio_bytes
+        # Force voice to supported value
+        if voice not in ["nova", "shimmer", "echo", "onyx", "fable", "alloy", "ash", "sage", "coral"]:
+            voice = "alloy"
+
+        response = client.audio.speech.create(
+            model="tts-1",
+            voice=voice,
+            input=text,
+            response_format="mp3"
+        )
+        
+        audio_bytes = io.BytesIO(response.content)
+        audio_bytes.seek(0)
+        return audio_bytes
+        
+    except Exception as e:
+        st.error(f"❌ TTS Error: {e}")
+        return None
+
+def fuzzy_normalize(text: str) -> str:
+    """Normalize text for fuzzy matching"""
+    # Remove diacritics and special characters
+    import unicodedata
+    normalized = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
+    # Convert to lowercase and remove extra spaces
+    normalized = ' '.join(normalized.lower().split())
+    return normalized
+def heuristic_sql_fallback(question: str) -> Optional[str]:
+    """Generate SQL query based on simple heuristics when AI fails"""
+    question = question.lower()
+    
+    # Basic patterns
+    if any(word in question for word in ['all', 'show', 'list']):
+        return "SELECT * FROM agencies LIMIT 100"
+        
+    if 'authorized' in question or 'autorized' in question:
+        return "SELECT * FROM agencies WHERE is_authorized = 'Yes' LIMIT 100"
+        
+    if 'saudi' in question or 'ksa' in question:
+        return "SELECT * FROM agencies WHERE LOWER(Country) LIKE '%saudi%' LIMIT 100"
+        
+    if 'email' in question:
+        return "SELECT * FROM agencies WHERE email IS NOT NULL AND email != '' LIMIT 100"
+        
+    return None
+
+def show_result_summary(df: pd.DataFrame) -> None:
+    """Display summary statistics and columns for results"""
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown(f"<div class='badge badge-info'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
+    with col2:
+        st.markdown(f"<div class='badge badge-success'>✅ {len(df.columns)} Columns</div>", unsafe_allow_html=True)
+    with col3:
+        if "is_authorized" in df.columns:
+            auth_count = len(df[df["is_authorized"] == "Yes"])
+            st.markdown(f"<div class='badge badge-success'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
+    
+
+def show_download_button(df: pd.DataFrame) -> None:
+    """Display download button for results"""
+    csv = df.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        label=t("download_csv", st.session_state.new_language),
+        data=csv,
+        file_name=f"hajj_data_{int(datetime.now().timestamp())}.csv",
+        mime="text/csv"
+    )
+
+def show_sql_expander(sql_query: str, row_count: int) -> None:
+    """Display SQL query in expandable section"""
+    with st.expander(t("view_sql", st.session_state.new_language)):
+        st.code(sql_query, language="sql")
+        st.caption(t("executed_caption", st.session_state.new_language, count=row_count))
+def build_chat_context(limit: int = 6) -> List[Dict[str, str]]:
+    """Build chat context from recent messages"""
+    context = [{"role": "system", "content": """You are a helpful assistant specializing in Hajj-related information.
+    - Be concise and accurate
+    - Use Arabic when user asks in Arabic
+    - Stick to factual information
+    - Avoid religious rulings or fatwa
+    - Focus on practical information"""}]
+    
+    recent = st.session_state.chat_memory[-limit:] if len(st.session_state.chat_memory) > limit else st.session_state.chat_memory
+    
+    for msg in recent:
+        if "dataframe" in msg:  # Skip messages with data results
+            continue
+        context.append({
+            "role": msg["role"],
+            "content": msg["content"]
+        })
+    
+    return context
 # -----------------------------
 # Page Configuration
 # -----------------------------
@@ -478,6 +578,7 @@ client = get_openai_client()
 
 @st.cache_data(ttl=300)
 
+
 def get_db_stats():
     """Fetch database statistics with normalization for multilingual names"""
     try:
@@ -600,8 +701,14 @@ with st.sidebar:
 # -----------------------------
 
 # Header
-st.markdown(f"<h1>🕋 {t('main_title', st.session_state.new_language)}</h1>", unsafe_allow_html=True)
-st.markdown(f"<p>{t('subtitle', st.session_state.new_language)}</p>", unsafe_allow_html=True)
+st.markdown(f"""
+<div class="header-container{' rtl' if st.session_state.new_language == 'العربية' else ''}">
+    <h1>
+        🕋 <span class="main-title">{t('main_title', st.session_state.new_language)}</span>
+    </h1>
+    <p class="subtitle">{t('subtitle', st.session_state.new_language)}</p>
+</div>
+""", unsafe_allow_html=True)
 
 # Display chat history
 for idx, msg in enumerate(st.session_state.chat_memory):
@@ -809,10 +916,19 @@ def node_generate_sql(state: GraphState) -> dict:
 
     --------------------------------------------
     ✅ EXAMPLES:
+📘 QUERY INTERPRETATION RULES:
+...
+⚙️ For company name searches:
+Always normalize and deduplicate company names.
+Use LOWER(TRIM()) and SELECT DISTINCT to avoid case duplicates.
+
 
     Q: "هل شركة الهدى معتمدة؟"
-    → SELECT * FROM agencies WHERE (hajj_company_ar LIKE '%الهدى%' OR LOWER(hajj_company_en) LIKE '%alhuda%') LIMIT 10;
-
+    → ELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized
+FROM agencies
+WHERE (LOWER(TRIM(hajj_company_en)) LIKE LOWER('%alhuda%')
+   OR LOWER(TRIM(hajj_company_ar)) LIKE LOWER('%الهدى%'))
+LIMIT 50;
     Q: "Authorized agencies in Makkah"
     → SELECT * FROM agencies WHERE is_authorized = 'Yes' AND (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%') LIMIT 100;
 
@@ -993,25 +1109,17 @@ GRAPH = build_stategraph()
 # Helper UI functions
 # -----------------------------
 def show_result_summary(df: pd.DataFrame) -> None:
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
         st.markdown(f"<div style='display:inline-block;padding:6px;background:#667eea;color:white;border-radius:8px;'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
+    
     with col2:
-        st.markdown(f"<div style='display:inline-block;padding:6px;background:#11998e;color:white;border-radius:8px;'>✅ {len(df.columns)} Columns</div>", unsafe_allow_html=True)
-    with col3:
         if "is_authorized" in df.columns:
             auth_count = len(df[df["is_authorized"] == "Yes"])
             st.markdown(f"<div style='display:inline-block;padding:6px;background:#38ef7d;color:white;border-radius:8px;'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
 
-def show_download_button(df: pd.DataFrame) -> None:
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button(label=t("download_csv", st.session_state.new_language), data=csv, file_name=f"hajj_data_{int(datetime.now().timestamp())}.csv", mime="text/csv")
 
-def show_sql_expander(sql_query: str, row_count: int) -> None:
-    with st.expander(t("view_sql", st.session_state.new_language)):
-        st.code(sql_query, language="sql")
-        st.caption(t("executed_caption", st.session_state.new_language, count=row_count))
-
+ 
 # -----------------------------
 # Handle user input: invoke graph and present outputs
 # -----------------------------
@@ -1045,30 +1153,57 @@ if user_input:
                 "timestamp": get_current_time()
             })
             final_state = {}
-
         # Present output based on branch
         # GREETING
+        # -----------------------------
+        # GREETING RESPONSE
+        # -----------------------------
+       # -----------------------------
+        # GREETING section
+        # -----------------------------
         if final_state.get("greeting_text"):
             greeting_text = final_state["greeting_text"]
+
+            # Display the greeting text
             st.markdown(greeting_text)
-            # optional tts button
-            if st.button("🎙️ Listen", key=f"tts_greet_{len(st.session_state.chat_memory)}"):
-                voice_map = {"العربية": "alloy-ar", "English": "alloy"}
-                voice = voice_map.get(st.session_state.new_language, "alloy")
-                audio_bytes = tts_to_bytesio(greeting_text, voice)
-                audio_bytes.seek(0)
+
+            # Determine voice based on language
+            voice = "alloy-ar" if st.session_state.new_language == "العربية" else "alloy"
+
+            # Generate TTS audio
+            audio_bytes = tts_to_bytesio(greeting_text, voice)
+
+            # Play audio automatically if generated
+            if audio_bytes:
                 st.audio(audio_bytes, format="audio/mp3")
 
+            # Optional button to replay the audio
+            if st.button("🎙️ Listen again", key=f"tts_greet_{len(st.session_state.chat_memory)}"):
+                if audio_bytes:
+                    st.audio(audio_bytes, format="audio/mp3")
+
+            # Save message in chat memory
             st.session_state.chat_memory.append({
                 "role": "assistant",
                 "content": greeting_text,
                 "timestamp": get_current_time()
             })
 
+
+
         # GENERAL_HAJJ
         elif final_state.get("general_answer"):
             ans = final_state["general_answer"]
             st.markdown(ans)
+                        # 🔊 تشغيل الصوت + زر السبيكر
+            voice = "alloy-ar" if st.session_state.new_language == "العربية" else "alloy"
+            audio_bytes = tts_to_bytesio(ans, voice)
+            if audio_bytes:
+                st.audio(audio_bytes, format="audio/mp3")
+            if st.button("🎙️ Listen again", key=f"tts_general_{len(st.session_state.chat_memory)}"):
+                if audio_bytes:
+                    st.audio(audio_bytes, format="audio/mp3")
+
             st.session_state.chat_memory.append({
                 "role": "assistant",
                 "content": ans,
@@ -1080,6 +1215,14 @@ if user_input:
             # Show summary
             summary = final_state.get("summary", "")
             st.markdown(summary)
+                        # 🔊 تشغيل الصوت + زر السبيكر للملخص
+            voice = "alloy-ar" if st.session_state.new_language == "العربية" else "alloy"
+            audio_bytes = tts_to_bytesio(summary, voice)
+            if audio_bytes:
+                st.audio(audio_bytes, format="audio/mp3")
+            if st.button("🎙️ Listen again", key=f"tts_summary_{len(st.session_state.chat_memory)}"):
+                if audio_bytes:
+                    st.audio(audio_bytes, format="audio/mp3")
 
             rows = final_state.get("result_rows", [])
             row_count = final_state.get("row_count", 0)
@@ -1088,11 +1231,8 @@ if user_input:
             # Convert to DataFrame for display/download if rows exist
             if rows:
                 df = pd.DataFrame(rows)
-                st.dataframe(df, use_container_width=True, height=300)
                 show_result_summary(df)
-                show_download_button(df)
-                if sql_q:
-                    show_sql_expander(sql_q, row_count)
+                
                 st.session_state.chat_memory.append({
                     "role": "assistant",
                     "content": summary,
@@ -1119,77 +1259,4 @@ if user_input:
                 "timestamp": get_current_time()
             })
 
-def fuzzy_normalize(text: str) -> str:
-    """Normalize text for fuzzy matching"""
-    # Remove diacritics and special characters
-    import unicodedata
-    normalized = unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII')
-    # Convert to lowercase and remove extra spaces
-    normalized = ' '.join(normalized.lower().split())
-    return normalized
-def heuristic_sql_fallback(question: str) -> Optional[str]:
-    """Generate SQL query based on simple heuristics when AI fails"""
-    question = question.lower()
-    
-    # Basic patterns
-    if any(word in question for word in ['all', 'show', 'list']):
-        return "SELECT * FROM agencies LIMIT 100"
-        
-    if 'authorized' in question or 'autorized' in question:
-        return "SELECT * FROM agencies WHERE is_authorized = 'Yes' LIMIT 100"
-        
-    if 'saudi' in question or 'ksa' in question:
-        return "SELECT * FROM agencies WHERE LOWER(Country) LIKE '%saudi%' LIMIT 100"
-        
-    if 'email' in question:
-        return "SELECT * FROM agencies WHERE email IS NOT NULL AND email != '' LIMIT 100"
-        
-    return None
-def show_result_summary(df: pd.DataFrame) -> None:
-    """Display summary statistics and columns for results"""
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown(f"<div class='badge badge-info'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"<div class='badge badge-success'>✅ {len(df.columns)} Columns</div>", unsafe_allow_html=True)
-    with col3:
-        if "is_authorized" in df.columns:
-            auth_count = len(df[df["is_authorized"] == "Yes"])
-            st.markdown(f"<div class='badge badge-success'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
-    
-
-def show_download_button(df: pd.DataFrame) -> None:
-    """Display download button for results"""
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label=t("download_csv", st.session_state.new_language),
-        data=csv,
-        file_name=f"hajj_data_{int(datetime.now().timestamp())}.csv",
-        mime="text/csv"
-    )
-
-def show_sql_expander(sql_query: str, row_count: int) -> None:
-    """Display SQL query in expandable section"""
-    with st.expander(t("view_sql", st.session_state.new_language)):
-        st.code(sql_query, language="sql")
-        st.caption(t("executed_caption", st.session_state.new_language, count=row_count))
-def build_chat_context(limit: int = 6) -> List[Dict[str, str]]:
-    """Build chat context from recent messages"""
-    context = [{"role": "system", "content": """You are a helpful assistant specializing in Hajj-related information.
-    - Be concise and accurate
-    - Use Arabic when user asks in Arabic
-    - Stick to factual information
-    - Avoid religious rulings or fatwa
-    - Focus on practical information"""}]
-    
-    recent = st.session_state.chat_memory[-limit:] if len(st.session_state.chat_memory) > limit else st.session_state.chat_memory
-    
-    for msg in recent:
-        if "dataframe" in msg:  # Skip messages with data results
-            continue
-        context.append({
-            "role": msg["role"],
-            "content": msg["content"]
-        })
-    
-    return context
+            
