@@ -134,6 +134,13 @@ TRANSLATIONS = {
     }
 }
 
+if "openai_client" not in st.session_state:
+    try:
+        st.session_state.openai_client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    except:
+        st.session_state.openai_client = None
+
+
 def t(key: str, lang: str = "English", **kwargs) -> str:
     """Get translation for key in specified new_language with optional formatting"""
     text = TRANSLATIONS.get(lang, TRANSLATIONS["English"]).get(key, key)
@@ -167,17 +174,34 @@ def tts_to_bytesio(text, voice="alloy"):
     """
     Returns BytesIO of TTS audio ready for st.audio
     """
-    audio_bytes = io.BytesIO()
-    with openai.audio.speech.with_streaming_response.create(
-        model="gpt-4o-mini-tts",
-        voice=voice,
-        input=text
-    ) as response:
-        response.stream_to_file(audio_bytes)
+    try:
+        if "openai_client" not in st.session_state or st.session_state.openai_client is None:
+            if "key" in st.secrets:
+                st.session_state.openai_client = OpenAI(api_key=st.secrets["key"])
+            else:
+                st.error("❌ OpenAI API key missing")
+                return None
+        
+        client = st.session_state.openai_client
 
-    # VERY IMPORTANT: seek back to start
-    audio_bytes.seek(0)
-    return audio_bytes
+        # Force voice to supported value
+        if voice not in ["nova", "shimmer", "echo", "onyx", "fable", "alloy", "ash", "sage", "coral"]:
+            voice = "alloy"
+
+        response = client.audio.speech.create(
+            model="tts-1",
+            voice=voice,
+            input=text,
+            response_format="mp3"
+        )
+        
+        audio_bytes = io.BytesIO(response.content)
+        audio_bytes.seek(0)
+        return audio_bytes
+        
+    except Exception as e:
+        st.error(f"❌ TTS Error: {e}")
+        return None
 
 def fuzzy_normalize(text: str) -> str:
     """Normalize text for fuzzy matching"""
@@ -205,6 +229,7 @@ def heuristic_sql_fallback(question: str) -> Optional[str]:
         return "SELECT * FROM agencies WHERE email IS NOT NULL AND email != '' LIMIT 100"
         
     return None
+
 def show_result_summary(df: pd.DataFrame) -> None:
     """Display summary statistics and columns for results"""
     col1, col2, col3 = st.columns(3)
@@ -258,7 +283,7 @@ def build_chat_context(limit: int = 6) -> List[Dict[str, str]]:
 # -----------------------------
 st.set_page_config(
     page_title="🕋 Hajj Chatbot",
-    page_icon="🕋",
+    # page_icon="🕋",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -1119,41 +1144,60 @@ if user_input:
         st.markdown(f"<div style='color: #777; font-size:0.8rem'>🕐 {format_time(get_current_time())}</div>", unsafe_allow_html=True)
 
     # Prepare initial state and invoke graph
-        init_state: GraphState = {"user_input": user_input, "language": st.session_state.new_language}
+    init_state: GraphState = {"user_input": user_input, "language": st.session_state.new_language}
 
     with st.chat_message("assistant", avatar="🕋"):
-        with st.spinner("🤔 Analyzing your question..."):
-            try:
-                # Invoke the graph (synchronous). This returns the final state dict.
-                final_state = GRAPH.invoke(init_state)
-            except Exception as e:
-                err_msg = f"{t('general_error', st.session_state.new_language)} {e}"
-                st.error(err_msg)
-                st.session_state.chat_memory.append({
-                    "role": "assistant",
-                    "content": err_msg,
-                    "timestamp": get_current_time()
-                })
-                final_state = {}
-
+        st.spinner("🤔 Analyzing your question...")
+        try:
+            # Invoke the graph (synchronous). This returns the final state dict.
+            final_state = GRAPH.invoke(init_state)
+        except Exception as e:
+            # If LangGraph runtime error
+            err_msg = f"{t('general_error', st.session_state.new_language)} {e}"
+            st.error(err_msg)
+            st.session_state.chat_memory.append({
+                "role": "assistant",
+                "content": err_msg,
+                "timestamp": get_current_time()
+            })
+            final_state = {}
         # Present output based on branch
         # GREETING
+        # -----------------------------
+        # GREETING RESPONSE
+        # -----------------------------
+       # -----------------------------
+        # GREETING section
+        # -----------------------------
         if final_state.get("greeting_text"):
             greeting_text = final_state["greeting_text"]
+
+            # Display the greeting text
             st.markdown(greeting_text)
-            # optional tts button
-            if st.button("🎙️ Listen", key=f"tts_greet_{len(st.session_state.chat_memory)}"):
-                voice_map = {"العربية": "alloy-ar", "English": "alloy"}
-                voice = voice_map.get(st.session_state.new_language, "alloy")
-                audio_bytes = tts_to_bytesio(greeting_text, voice)
-                audio_bytes.seek(0)
+
+            # Determine voice based on language
+            voice = "alloy-ar" if st.session_state.new_language == "العربية" else "alloy"
+
+            # Generate TTS audio
+            audio_bytes = tts_to_bytesio(greeting_text, voice)
+
+            # Play audio automatically if generated
+            if audio_bytes:
                 st.audio(audio_bytes, format="audio/mp3")
 
+            # Optional button to replay the audio
+            if st.button("🎙️ Listen again", key=f"tts_greet_{len(st.session_state.chat_memory)}"):
+                if audio_bytes:
+                    st.audio(audio_bytes, format="audio/mp3")
+
+            # Save message in chat memory
             st.session_state.chat_memory.append({
                 "role": "assistant",
                 "content": greeting_text,
                 "timestamp": get_current_time()
             })
+
+
 
         # GENERAL_HAJJ
         elif final_state.get("general_answer"):
@@ -1178,10 +1222,11 @@ if user_input:
             # Convert to DataFrame for display/download if rows exist
             if rows:
                 df = pd.DataFrame(rows)
-                #st.dataframe(df, use_container_width=True, height=300)
+                st.dataframe(df, use_container_width=True, height=300)
                 show_result_summary(df)
-                #show_download_button(df)
-            
+                show_download_button(df)
+                if sql_q:
+                    show_sql_expander(sql_q, row_count)
                 st.session_state.chat_memory.append({
                     "role": "assistant",
                     "content": summary,
@@ -1208,3 +1253,4 @@ if user_input:
                 "timestamp": get_current_time()
             })
 
+            
