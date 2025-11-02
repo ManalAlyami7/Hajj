@@ -1109,7 +1109,7 @@ GRAPH = build_stategraph()
 # Helper UI functions
 # -----------------------------
 def show_result_summary(df: pd.DataFrame) -> None:
-    col1, col2 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
         st.markdown(f"<div style='display:inline-block;padding:6px;background:#667eea;color:white;border-radius:8px;'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
     
