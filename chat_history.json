@@ -1,0 +1,506 @@
+[
+  {
+    "role": "assistant",
+    "content": "Welcome! 👋\n\nI'm your Hajj Data Assistant. Ask me anything about Hajj companies, locations, or authorization status!",
+    "timestamp": 1762118874.363108
+  },
+  {
+    "role": "user",
+    "content": "ho",
+    "timestamp": 1762119539.165565
+  },
+  {
+    "role": "assistant",
+    "content": "Hello there! 😊 I'm here to assist you with any questions you have about Hajj. If you need help verifying a Hajj company, just let me know!",
+    "timestamp": 1762119550.990972
+  },
+  {
+    "role": "user",
+    "content": "ok",
+    "timestamp": 1762119766.381095
+  },
+  {
+    "role": "assistant",
+    "content": "Hello! 😊 I'm here to help you with anything you need regarding Hajj. If you have questions about Hajj company verification, feel free to ask!",
+    "timestamp": 1762119770.272061
+  },
+  {
+    "role": "user",
+    "content": "i want to find agency named royal city",
+    "timestamp": 1762119875.241295
+  },
+  {
+    "role": "assistant",
+    "content": "The query returned one agency named 'Royal City Travel', which is listed under the name 'Royal city Travel'.",
+    "timestamp": 1762119886.24779,
+    "result_data": {
+      "rows": [
+        {
+          "hajj_company_en": "Royal City Travel - Royal city Travel"
+        }
+      ],
+      "columns": [
+        "hajj_company_en"
+      ],
+      "total_rows": 1,
+      "key_insights": [
+        "There is only one agency found with the name 'Royal City Travel'.",
+        "The agency's name appears to be consistently branded, indicating a strong identity.",
+        "No information on authorization status or geographic distribution was provided in the results."
+      ],
+      "authorized_count": null,
+      "top_locations": [
+        "Not specified"
+      ]
+    }
+  },
+  {
+    "role": "user",
+    "content": "hi",
+    "timestamp": 1762119953.609538
+  },
+  {
+    "role": "assistant",
+    "content": "Hello! 😊 I'm here to help you with your Hajj inquiries. If you're looking for the agency named Royal City, I can assist you with that!",
+    "timestamp": 1762119956.858585
+  },
+  {
+    "role": "user",
+    "content": "yes ",
+    "timestamp": 1762119993.04722
+  },
+  {
+    "role": "assistant",
+    "content": "Hello! 😊 I'm here to help you with your Hajj inquiries. If you're looking for the agency named Royal City, I can assist you with that!",
+    "timestamp": 1762119997.170915
+  },
+  {
+    "role": "user",
+    "content": "yes assist me",
+    "timestamp": 1762120012.778815
+  },
+  {
+    "role": "assistant",
+    "content": "Hello! 😊 I'm here to help you with your Hajj questions. If you need assistance with Hajj company verification, just let me know!",
+    "timestamp": 1762120016.167193
+  },
+  {
+    "role": "user",
+    "content": "ok",
+    "timestamp": 1762120022.580952
+  },
+  {
+    "role": "assistant",
+    "content": "Hello! 😊 I'm here to help you with your Hajj inquiries. If you need assistance with Hajj company verification, just let me know!",
+    "timestamp": 1762120026.053385
+  },
+  {
+    "role": "user",
+    "content": "Royal City Travel",
+    "timestamp": 1762120030.307537
+  },
+  {
+    "role": "assistant",
+    "content": "The query results indicate that there is one Hajj agency named Royal City Travel located in Cairo, Egypt. It has a contact number but lacks an email address. The agency has a positive rating of 4.2 based on 14 reviews, suggesting a decent level of customer satisfaction.",
+    "timestamp": 1762120037.516235,
+    "result_data": {
+      "rows": [
+        {
+          "hajj_company_en": "Royal City Travel - Royal city Travel",
+          "formatted_address": "Building No. 7495, شارع المقطم، الأباجية، المقطم، محافظة القاهرة 11571, Egypt",
+          "city": "محافظة القاهرة",
+          "country": "Egypt",
+          "email": null,
+          "contact_info": "+20 10 05002367",
+          "rating_reviews": "4.2 (14 reviews)"
+        }
+      ],
+      "columns": [
+        "hajj_company_en",
+        "formatted_address",
+        "city",
+        "country",
+        "email",
+        "contact_info",
+        "rating_reviews"
+      ],
+      "total_rows": 1,
+      "key_insights": [
+        "Royal City Travel is located in Cairo, Egypt.",
+        "The agency has a contact number but no email address provided, which may affect communication.",
+        "It has a customer rating of 4.2 from 14 reviews, indicating positive feedback from clients."
+      ],
+      "authorized_count": null,
+      "top_locations": [
+        "Cairo, Egypt"
+      ]
+    }
+  },
+  {
+    "role": "user",
+    "content": "ليش ما تفهم",
+    "timestamp": 1762120156.0897
+  },
+  {
+    "role": "assistant",
+    "content": "The query returned information about a Hajj agency named 'Royal City Travel' located in Cairo, Egypt. The agency has a decent rating of 4.2 based on 14 reviews. However, there is no email provided for contact, only a phone number.",
+    "timestamp": 1762120164.394833,
+    "result_data": {
+      "rows": [
+        {
+          "hajj_company_en": "Royal City Travel - Royal city Travel",
+          "formatted_address": "Building No. 7495, شارع المقطم، الأباجية، المقطم، محافظة القاهرة 11571, Egypt",
+          "city": "محافظة القاهرة",
+          "country": "Egypt",
+          "email": null,
+          "contact_info": "+20 10 05002367",
+          "rating_reviews": "4.2 (14 reviews)"
+        }
+      ],
+      "columns": [
+        "hajj_company_en",
+        "formatted_address",
+        "city",
+        "country",
+        "email",
+        "contact_info",
+        "rating_reviews"
+      ],
+      "total_rows": 1,
+      "key_insights": [
+        "The agency is rated 4.2 out of 5 based on 14 reviews, indicating a generally positive reputation.",
+        "Contact information is available via phone, but there is no email address listed, which may hinder communication.",
+        "The agency is located in Cairo, Egypt, which is a significant location for Hajj services."
+      ],
+      "authorized_count": null,
+      "top_locations": [
+        "Cairo, Egypt"
+      ]
+    }
+  },
+  {
+    "role": "user",
+    "content": "what is the hajj",
+    "timestamp": 1762120268.45579
+  },
+  {
+    "role": "assistant",
+    "content": "Hajj is an annual Islamic pilgrimage to the holy city of Mecca in Saudi Arabia, which is a mandatory religious duty for Muslims who are physically and financially able to perform it at least once in their lifetime. It occurs during the Islamic month of Dhu al-Hijjah and includes a series of specific rituals performed over several days. \n\nKey aspects of Hajj include:\n\n1. **Timing**: It takes place from the 8th to the 12th day of Dhu al-Hijjah.\n2. **Rituals**: Major rituals include the Tawaf (circling the Kaaba), standing at Arafat, and the stoning of the devil at Mina.\n3. **Significance**: It represents unity, humility, and the submission of Muslims to Allah.\n4. **Preparation**: Pilgrims should prepare by obtaining necessary travel documents, vaccinations, and understanding the rituals involved.\n\nIf you have more specific questions or need practical tips regarding Hajj, feel free to ask!",
+    "timestamp": 1762120275.284109
+  },
+  {
+    "role": "user",
+    "content": "what i just asked",
+    "timestamp": 1762120364.053667
+  },
+  {
+    "role": "assistant",
+    "content": "It seems there may have been a misunderstanding. Could you please clarify your question or provide more details? I'm here to help!",
+    "timestamp": 1762120367.013424
+  },
+  {
+    "role": "user",
+    "content": "my name is manl",
+    "timestamp": 1762120393.905802
+  },
+  {
+    "role": "assistant",
+    "content": "Hello Manl! 😊 It's great to meet you! I'm here to help with any questions you have, including Hajj company verification. How can I assist you today?",
+    "timestamp": 1762120396.921622
+  },
+  {
+    "role": "user",
+    "content": "what is my name",
+    "timestamp": 1762120404.336777
+  },
+  {
+    "role": "assistant",
+    "content": "Hello Manl! 😊 It's wonderful to see you! I'm here to help with any questions you may have, especially about Hajj company verification.",
+    "timestamp": 1762120408.554322
+  },
+  {
+    "role": "user",
+    "content": "my name ",
+    "timestamp": 1762120417.857942
+  },
+  {
+    "role": "assistant",
+    "content": "Hello again! 😊 It's nice to see you! If you need assistance with anything, including Hajj company verification, I'm here to help!",
+    "timestamp": 1762120421.293274
+  },
+  {
+    "role": "user",
+    "content": "royal city",
+    "timestamp": 1762120528.36426
+  },
+  {
+    "role": "assistant",
+    "content": "The query results indicate that there is one Hajj agency named 'Royal City Travel' which operates under the name 'Royal city Travel'.",
+    "timestamp": 1762120538.403657,
+    "result_data": {
+      "rows": [
+        {
+          "hajj_company_en": "Royal City Travel - Royal city Travel"
+        }
+      ],
+      "columns": [
+        "hajj_company_en"
+      ],
+      "total_rows": 1,
+      "key_insights": [
+        "There is only one agency listed under the name 'Royal City Travel'.",
+        "The agency appears to be authorized, as no unauthorized status was mentioned.",
+        "The data quality seems adequate with no missing information reported."
+      ],
+      "authorized_count": 1,
+      "top_locations": [
+        "Royal City"
+      ]
+    }
+  },
+  {
+    "role": "user",
+    "content": "royal city",
+    "timestamp": 1762120651.151061
+  },
+  {
+    "role": "assistant",
+    "content": "The query results indicate that there is one Hajj agency named 'Royal City Travel' associated with the term 'Royal City'.",
+    "timestamp": 1762120658.216383,
+    "result_data": {
+      "rows": [
+        {
+          "hajj_company_en": "Royal City Travel - Royal city Travel"
+        }
+      ],
+      "columns": [
+        "hajj_company_en"
+      ],
+      "total_rows": 1,
+      "key_insights": [
+        "There is only one agency found in the query results, indicating limited options under this name.",
+        "The agency is named 'Royal City Travel', suggesting a focus on travel services for Hajj pilgrims.",
+        "The data quality appears high, with no missing information regarding the agency's name."
+      ],
+      "authorized_count": null,
+      "top_locations": [
+        "Royal City"
+      ]
+    }
+  },
+  {
+    "role": "user",
+    "content": "royal city\n\n",
+    "timestamp": 1762120718.153978
+  },
+  {
+    "role": "assistant",
+    "content": "The query returned information about a single Hajj agency named 'Royal City Travel' located in Cairo, Egypt. The agency has a decent customer rating of 4.2 based on 14 reviews, indicating a positive reputation among clients. However, there is no email provided for contact, which may affect customer communication.",
+    "timestamp": 1762120727.165878,
+    "result_data": {
+      "rows": [
+        {
+          "hajj_company_en": "Royal City Travel - Royal city Travel",
+          "formatted_address": "Building No. 7495, شارع المقطم، الأباجية، المقطم، محافظة القاهرة 11571, Egypt",
+          "city": "محافظة القاهرة",
+          "country": "Egypt",
+          "email": null,
+          "contact_info": "+20 10 05002367",
+          "rating_reviews": "4.2 (14 reviews)"
+        }
+      ],
+      "columns": [
+        "hajj_company_en",
+        "formatted_address",
+        "city",
+        "country",
+        "email",
+        "contact_info",
+        "rating_reviews"
+      ],
+      "total_rows": 1,
+      "key_insights": [
+        "The agency 'Royal City Travel' has a rating of 4.2 from 14 reviews, suggesting customer satisfaction.",
+        "Contact information is available, but the absence of an email may hinder direct communication.",
+        "The agency is located in Cairo, Egypt, indicating a concentration of Hajj services in urban areas."
+      ],
+      "authorized_count": null,
+      "top_locations": [
+        "Cairo, Egypt"
+      ]
+    }
+  },
+  {
+    "role": "user",
+    "content": "what is the contact information for the agency",
+    "timestamp": 1762120745.303697
+  },
+  {
+    "role": "assistant",
+    "content": "The query returned contact information for the agency, with one valid phone number provided. There are no additional details or multiple entries to analyze further.",
+    "timestamp": 1762120784.680799,
+    "result_data": {
+      "rows": [
+        {
+          "contact_info": "+20 10 05002367"
+        }
+      ],
+      "columns": [
+        "contact_info"
+      ],
+      "total_rows": 1,
+      "key_insights": [
+        "The agency's contact number is +20 10 05002367.",
+        "Only one entry was found, indicating limited data availability.",
+        "No email address or additional contact methods were provided, which may affect communication options."
+      ],
+      "authorized_count": null,
+      "top_locations": [
+        "Egypt"
+      ]
+    }
+  },
+  {
+    "role": "user",
+    "content": "give me the phone number",
+    "timestamp": 1762120799.997466
+  },
+  {
+    "role": "assistant",
+    "content": "The query returned one result containing the contact phone number of a Hajj agency, which is '+20 10 05002367'.",
+    "timestamp": 1762120808.547148,
+    "result_data": {
+      "rows": [
+        {
+          "contact_info": "+20 10 05002367"
+        }
+      ],
+      "columns": [
+        "contact_info"
+      ],
+      "total_rows": 1,
+      "key_insights": [
+        "There is one contact number available for the agency.",
+        "The phone number follows the Egyptian dialing code, indicating the agency is based in Egypt.",
+        "No email or additional contact information was provided, which may affect communication quality."
+      ],
+      "authorized_count": null,
+      "top_locations": [
+        "Egypt"
+      ]
+    }
+  },
+  {
+    "role": "user",
+    "content": "hi",
+    "timestamp": 1762121190.148204
+  },
+  {
+    "role": "assistant",
+    "content": "Hello! 😊 I'm here to help you with any questions you have about Hajj. If you need assistance with Hajj company verification, just let me know!",
+    "timestamp": 1762121194.617876
+  },
+  {
+    "role": "user",
+    "content": "what do you provide",
+    "timestamp": 1762121209.410528
+  },
+  {
+    "role": "assistant",
+    "content": "I provide practical information and guidance related to Hajj, including:\n\n1. **Travel Tips** - How to prepare for your journey.\n2. **Packing Lists** - Essential items to bring.\n3. **Hajj Rituals** - Overview of the rituals and their significance.\n4. **Health and Safety** - Tips for staying healthy during Hajj.\n5. **Logistics** - Information about accommodations, transportation, and facilities in Mecca and Medina.\n6. **Important Contacts** - General information on how to reach local authorities or services.\n\nFeel free to ask about any specific topic!",
+    "timestamp": 1762121214.074698
+  },
+  {
+    "role": "user",
+    "content": "what else",
+    "timestamp": 1762121232.620322
+  },
+  {
+    "role": "assistant",
+    "content": "Hello! 😊 I'm here to help you with any questions you have about Hajj. If you need assistance with Hajj company verification, just let me know!",
+    "timestamp": 1762121236.370177
+  },
+  {
+    "role": "user",
+    "content": "royal city",
+    "timestamp": 1762121250.038058
+  },
+  {
+    "role": "assistant",
+    "content": "Error processing request: st.session_state has no attribute \"new_language\". Did you forget to initialize it? More info: https://docs.streamlit.io/develop/concepts/architecture/session-state#initialization",
+    "timestamp": 1762121255.752128
+  },
+  {
+    "role": "user",
+    "content": "royal city\n\n",
+    "timestamp": 1762121336.968313
+  },
+  {
+    "role": "assistant",
+    "content": "No results found. Try rephrasing your question or broadening the search.",
+    "timestamp": 1762121341.499312
+  },
+  {
+    "role": "user",
+    "content": "hi ",
+    "timestamp": 1762121350.570076
+  },
+  {
+    "role": "assistant",
+    "content": "Hello! 😊 I'm here to assist you with any questions you have about Hajj. If you need help with Hajj company verification, feel free to ask!",
+    "timestamp": 1762121354.127063
+  },
+  {
+    "role": "user",
+    "content": "royal city agency",
+    "timestamp": 1762121361.168824
+  },
+  {
+    "role": "assistant",
+    "content": "Error processing request: st.session_state has no attribute \"new_language\". Did you forget to initialize it? More info: https://docs.streamlit.io/develop/concepts/architecture/session-state#initialization",
+    "timestamp": 1762121366.67784
+  },
+  {
+    "role": "user",
+    "content": "royal city agency",
+    "timestamp": 1762121399.679568
+  },
+  {
+    "role": "assistant",
+    "content": "There is 1 agency found related to \"Royal City Agency\":",
+    "timestamp": 1762121407.502473,
+    "result_data": {
+      "rows": [
+        {
+          "hajj_company_en": "Royal City Travel - Royal city Travel",
+          "hajj_company_ar": "رويال سيتى للسياحه ",
+          "formatted_address": "Building No. 7495, شارع المقطم، الأباجية، المقطم، محافظة القاهرة 11571, Egypt",
+          "city": "محافظة القاهرة",
+          "country": "Egypt",
+          "email": null,
+          "contact_info": "+20 10 05002367",
+          "rating_reviews": "4.2 (14 reviews)",
+          "is_authorized": "Yes"
+        }
+      ],
+      "columns": [
+        "hajj_company_en",
+        "hajj_company_ar",
+        "formatted_address",
+        "city",
+        "country",
+        "email",
+        "contact_info",
+        "rating_reviews",
+        "is_authorized"
+      ],
+      "total_rows": 1,
+      "key_insights": [
+        "1 agency found",
+        "Agency is authorized"
+      ],
+      "authorized_count": 1,
+      "top_locations": []
+    }
+  }
+]
