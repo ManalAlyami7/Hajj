@@ -18,7 +18,7 @@ TRANSLATIONS = {
         # Header
         "page_title": "Hajj Chatbot",
         "main_title": "Hajj Data Intelligence",
-        "subtitle": "Ask anything about Hajj companies worldwide • AI-powered • Real-time data",
+        "subtitle": "Ask anything about Hajj companies worldwide • AI-powered",
         
         # Sidebar
         "assistant_title": "🕋 Hajj Assistant",
@@ -89,7 +89,7 @@ TRANSLATIONS = {
         # Header
         "page_title": "روبوت الحج",
         "main_title": "معلومات بيانات الحج الذكية",
-        "subtitle": "اسأل عن شركات الحج حول العالم • مدعوم بالذكاء الاصطناعي • بيانات فورية",
+        "subtitle": "اسأل عن شركات الحج حول العالم • مدعوم بالذكاء الاصطناعية",
         
         # Sidebar
         "assistant_title": "🕋 مساعد الحج",

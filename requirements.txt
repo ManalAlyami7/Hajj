@@ -7,3 +7,5 @@ deep_translator
 audio_recorder_streamlit
 numpy
 langgraph
+langchain_openai
+pydantic

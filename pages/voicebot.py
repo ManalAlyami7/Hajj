@@ -18,8 +18,8 @@ st.set_page_config(
 )
 
 if st.button("⬅️ Back to Chat", key="back_button"):
-    st.switch_page("app.py")
-
+    # Set URL to main page
+    st.markdown(f'<meta http-equiv="refresh" content="0; url=/" />', unsafe_allow_html=True)
 # ---------------------------------------
 # Enhanced Custom CSS
 # ---------------------------------------
