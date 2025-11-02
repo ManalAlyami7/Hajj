@@ -659,8 +659,9 @@ with st.sidebar:
     ]
     
     for i, (display_key, question_key) in enumerate(example_questions):
-        if st.button(t(display_key, st.session_state.new_language), key=f"example_{i}", use_container_width=True):
-            st.session_state.selected_question = t(question_key, st.session_state.new_language)
+     if st.button(t(display_key, st.session_state.new_language), key=f"example_{i}", use_container_width=True):
+        st.session_state.selected_question = t(question_key, st.session_state.new_language)
+
 
     st.markdown("---")
     
@@ -690,7 +691,9 @@ with st.sidebar:
 
 # -----------------------------
 
-# Header
+# -----------------------------------------------
+# 🕋 Header
+# -----------------------------------------------
 st.markdown(f"""
 <div class="header-container{' rtl' if st.session_state.new_language == 'العربية' else ''}">
     <h1>
@@ -700,19 +703,57 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Display chat history
+
+# -----------------------------------------------
+# 💬 Chat History Display
+# -----------------------------------------------
 for idx, msg in enumerate(st.session_state.chat_memory):
     role = msg.get("role", "assistant")
     avatar = "🕋" if role == "assistant" else "👤"
     with st.chat_message(role, avatar=avatar):
         st.markdown(msg.get("content", ""))
         if msg.get("timestamp"):
-            st.markdown(f"<div style='color: #777; font-size:0.8rem'>🕐 {format_time(msg['timestamp'])}</div>", unsafe_allow_html=True)
-    
+            st.markdown(
+                f"<div style='color: #777; font-size:0.8rem'>🕐 {format_time(msg['timestamp'])}</div>",
+                unsafe_allow_html=True
+            )
 
-placeholder_text = "اكتب سؤالك هنا... 💬" if st.session_state.new_language == "العربية" else "Ask your question here... 💬"
-user_input = st.session_state.selected_question or st.chat_input(placeholder_text)
-st.session_state.selected_question = None
+# -----------------------------------------------
+# 💬 Chat Input + Auto-Send Example Questions
+# -----------------------------------------------
+placeholder_text = (
+    "اكتب سؤالك هنا... 💬" if st.session_state.new_language == "العربية"
+    else "Ask your question here... 💬"
+)
+
+# Initialize state variables
+if "user_input" not in st.session_state:
+    st.session_state.user_input = ""
+if "selected_question" not in st.session_state:
+    st.session_state.selected_question = ""
+if "auto_submit" not in st.session_state:
+    st.session_state.auto_submit = False
+
+# Handle normal user typing
+user_input = st.chat_input(placeholder_text)
+
+# If user typed something, store it
+if user_input:
+    st.session_state.user_input = user_input
+
+# If user clicked an example — trigger auto-send
+if st.session_state.selected_question:
+    st.session_state.user_input = st.session_state.selected_question
+    st.session_state.auto_submit = True
+    st.session_state.selected_question = None  # reset after use
+
+# Send automatically if triggered by example
+if st.session_state.auto_submit and st.session_state.user_input:
+    user_input = st.session_state.user_input
+    st.session_state.auto_submit = False  # reset after sending
+else:
+    # Normal case — wait for user to press Enter
+    user_input = st.session_state.user_input or user_input
 
 # -----------------------------
 # LangGraph State schema
