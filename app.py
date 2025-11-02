@@ -10,6 +10,8 @@ import re
 from typing import Optional, Dict, List
 from deep_translator import GoogleTranslator
 from typing_extensions import TypedDict
+import urllib.parse
+
 
 # LangGraph imports
 from langgraph.graph import StateGraph, START, END
