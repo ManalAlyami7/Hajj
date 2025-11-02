@@ -1,59 +1,119 @@
-# 🕋 Hajj Data Chatbot
+# 🕋 Hajj Data Chatbot & Voice Assistant
 
-An enhanced multilingual chatbot for exploring Hajj company data with natural language queries.
+An **AI-powered multilingual platform** combining a **data chatbot** and a **voice assistant** to help pilgrims verify and explore Hajj agency data — in both **Arabic** and **English**.
 
-## Features
+---
 
-- 🌍 **Multilingual Support**: Seamlessly handles Arabic and English queries
-- 🎨 **Modern UI**: Beautiful, responsive design with custom styling
-- 📊 **Data Visualization**: Interactive tables and statistics
-- 💾 **Export Functionality**: Download query results as CSV
-- 🔍 **Transparent Queries**: View the generated SQL for each query
-- 💡 **Example Questions**: Quick-start templates in both languages
-- 📈 **Database Statistics**: Real-time insights about your data
+## 🌍 Features
 
-## Setup
+### 💬 Chatbot (`app.py`)
+- 🧠 **AI Query Engine** – Converts natural language into optimized SQL.  
+- 🕋 **Smart Verification** – Detects verification requests and asks for more details if needed.  
+- 📊 **Interactive Results** – Displays data in tables and summaries.  
+- 💾 **Downloadable Data** – Export query results as CSV.  
+- 🔍 **Transparent Queries** – Shows generated SQL for each question.  
+- 📈 **Database Insights** – Provides live analytics and statistics.  
+- 🗺️ **Google Maps Integration (Optional)** – Shows agency locations.  
 
-1. Install dependencies:
-\`\`\`bash
-pip install -r requirements.txt
-\`\`\`
+### 🎙️ Voice Assistant (`voicebot.py`)
+- 🗣️ **Voice Interaction** – Speak to the bot instead of typing.  
+- 🌐 **Multilingual Recognition** – Supports Arabic and English speech.  
+- 🔊 **Text-to-Speech Responses** – The assistant replies using natural AI-generated voice.  
+- 🤖 **Smart Context Handling** – Analyzes user voice queries and provides matching responses.  
+- 🕋 **Fraud Prevention Focus** – Can verify agency legitimacy by name or location.  
+- ⚡ **Streamlit Interface** – Clean, responsive voice interface with a record button and audio playback.
 
-2. Create a `.streamlit/secrets.toml` file with your OpenAI API key:
-\`\`\`toml
-key = "your-openai-api-key"
-\`\`\`
+---
 
-3. Ensure your `hajj_companies.db` SQLite database is in the same directory
+## ⚙️ Setup
 
-4. Run the app:
-\`\`\`bash
-streamlit run app.py
-\`\`\`
+1. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-## Database Schema
+2. **Add your API keys**
+   Create a `.streamlit/secrets.toml` file:
+   ```toml
+   OPENAI_API_KEY = "your-openai-api-key"
+   GOOGLE_MAPS_API_KEY = "your-google-maps-api-key"  # optional
+   ```
 
-The app expects a table named `agencies` with the following columns:
-- `hajj_company_ar`: Arabic company name
-- `hajj_company_en`: English company name
-- `city`: City location
-- `country`: Country location
-- `email`: Contact email
-- `is_authorized`: Authorization status (1 or 0)
+3. **Add your database**
+   Make sure `hajj_companies.db` is in the same directory.
 
-## Usage
+4. **Run the chatbot**
+   ```bash
+   streamlit run app.py
+   ```
 
-Simply type your question in natural language (Arabic or English) and the chatbot will:
-1. Convert your question to SQL
-2. Query the database
-3. Present results in a natural, conversational format
-4. Display data in an interactive table
-5. Allow you to download results
+5. **Run the voice bot**
+   ```bash
+   streamlit run voicebot.py
+   ```
 
-## Example Questions
+---
 
-- "Show me all authorized Hajj companies"
-- "List companies in Saudi Arabia"
-- "How many agencies are in each country?"
-- "أظهر لي الشركات المعتمدة"
-- "ما هي الشركات في مكة؟"
+## 🗄️ Database Schema
+
+The SQLite database must contain a table named **`agencies`** with these columns:
+
+| Column | Description |
+|--------|--------------|
+| `hajj_company_ar` | Arabic company name |
+| `hajj_company_en` | English company name |
+| `formatted_address` | Full address (used for Maps) |
+| `city` | City name |
+| `country` | Country |
+| `email` | Contact email |
+| `contact_Info` | Additional contact details |
+| `rating_reviews` | Reviews or ratings |
+| `is_authorized` | 'Yes' or 'No' |
+
+---
+
+## 🧠 Example Interactions
+
+### 💬 Text Chatbot
+| Query | Bot Response |
+|--------|---------------|
+| “Show all authorized agencies in Makkah” | Displays a table of authorized agencies. |
+| “List companies in Egypt” | Shows all Egyptian agencies. |
+| “I want to verify an agency” | 🕋 “Please provide the agency name or any details to help me verify it.” |
+
+### 🎙️ Voice Bot
+| Spoken Command | Voice Response |
+|----------------|----------------|
+| “Check if Royal City Travel is authorized” | “Royal City Travel is authorized and located in Cairo, Egypt.” |
+| “أرني الشركات في مكة” | “يوجد 52 شركة معتمدة في مكة المكرمة.” |
+| “تحقق من وكالة جابال عمر جميرا” | “وكالة جابال عمر جميرا معتمدة وتقع في مكة المكرمة.” |
+
+---
+
+## 🗺️ Google Maps Integration (Optional)
+
+If `formatted_address` exists and you add your Google Maps API key,  
+the app can:
+- Display clickable Google Maps links for agencies  
+- Plot agency locations directly on an interactive map  
+
+---
+
+## 📦 Project Structure
+
+```
+├── app.py                    # Main chatbot (text-based)
+├── voicebot.py              # Voice-enabled assistant
+├── hajj_companies.db         # SQLite database
+├── requirements.txt          # Dependencies
+├── .streamlit/
+│   └── secrets.toml          # API keys
+└── README.md                 # Documentation
+```
+
+---
+
+## 📜 License
+
+This project is open for educational and research purposes.  
+Developed with ❤️ to protect pilgrims from fraud and enhance trust in authorized Hajj services.
