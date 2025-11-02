@@ -1184,7 +1184,12 @@ def show_result_summary(df: pd.DataFrame) -> None:
 
 
 
- 
+
+
+# Mic button to go to Voice Assistant
+if st.button("🎙️ Voice Assistant"):
+    st.switch_page("voicebot")  # name of the voice bot page file without .py
+
 # -----------------------------
 # Handle user input: invoke graph and present outputs
 # -----------------------------
