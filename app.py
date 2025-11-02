@@ -40,11 +40,6 @@ def save_chat_memory():
 
 if "chat_memory" not in st.session_state:
     st.session_state.chat_memory = load_chat_memory()
-if st.button("🎙️ Go to Voice Assistant"):
-        # Set URL to main page
-    st.markdown(f'<meta http-equiv="refresh" content="0; url=/" />', unsafe_allow_html=True)
-# -----------------------------
-# TRANSLATIONS DICTIONARY (unchanged)
 
 llm = ChatOpenAI(
     model_name="gpt-5-nano",
@@ -201,6 +196,42 @@ def t(key: str, lang: str = "English", **kwargs) -> str:
     return text
 
     
+# ...existing code...
+def clear_chat_history(keep_language: bool = True):
+    """Clear chat memory (in-memory + persisted file) and reset minimal state."""
+    # preserve language selection if requested
+    lang = st.session_state.get("new_language", "English") if keep_language else None
+
+    # clear keys safely
+    for k in ["chat_memory", "user_input", "selected_question", "auto_submit", "last_result_df"]:
+        st.session_state.pop(k, None)
+
+    # reset overall state but restore language if requested
+    st.session_state.clear()
+    if keep_language and lang:
+        st.session_state.new_language = lang
+    else:
+        st.session_state.new_language = "English"
+
+    # initialize fresh assistant welcome message
+    st.session_state.chat_memory = [{
+        "role": "assistant",
+        "content": t("welcome_msg", st.session_state.new_language),
+        "timestamp": get_current_time()
+    }]
+    st.session_state.last_result_df = None
+
+    # remove persisted chat file if present
+    try:
+        if os.path.exists("chat_history.json"):
+            os.remove("chat_history.json")
+    except Exception:
+        pass
+
+    # persist empty/fresh memory and force rerun
+    save_chat_memory()
+    st.rerun()
+
 
 def get_current_time() -> float:
     """Get current timestamp in Riyadh timezone"""
@@ -725,14 +756,7 @@ with st.sidebar:
     
     # Clear Chat Button
     if st.button(t("clear_chat", st.session_state.new_language), use_container_width=True, type="primary"):
-        st.session_state.chat_memory = [{
-            "role": "assistant",
-            "content": t("welcome_msg", st.session_state.new_language),
-            "timestamp": get_current_time()
-        }]
-        st.session_state.last_result_df = None
-        save_chat_memory()
-        st.rerun()
+      clear_chat_history(keep_language=True)
 
     st.markdown("---")
     
@@ -1381,7 +1405,6 @@ if user_input:
                 save_chat_memory()
 
                 st.session_state.last_result_df = df
-# ...existing code...
             else:
                 # No data rows
                 st.warning(summary)
