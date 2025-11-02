@@ -1099,7 +1099,7 @@ def show_result_summary(df: pd.DataFrame) -> None:
  
 # -----------------------------
 # Handle user input: invoke graph and present outputs
-#
+# -----------------------------
 if user_input:
     # Append user message to chat
     st.session_state.chat_memory.append({
@@ -1118,10 +1118,9 @@ if user_input:
     # Prepare initial state and invoke graph
     init_state: GraphState = {"user_input": user_input, "language": st.session_state.new_language}
 
-    # Assistant message container
     with st.chat_message("assistant", avatar="🕋"):
-        # Show a spinner while the graph processes input
-        with st.spinner("🤔 Analyzing your question..."):
+        # ✅ use spinner as context manager
+        with st.spinner(f"{t('thinking', st.session_state.new_language)}..."):
             try:
                 # Invoke the graph (synchronous). This returns the final state dict.
                 final_state = GRAPH.invoke(init_state)
@@ -1136,22 +1135,29 @@ if user_input:
                 })
                 final_state = {}
 
-        # ---------- Present output based on branch ----------
-        # GREETING
+        # -----------------------------
+        # GREETING section
+        # -----------------------------
         if final_state.get("greeting_text"):
             greeting_text = final_state["greeting_text"]
+
+            # Display the greeting text
             st.markdown(greeting_text)
 
-            # Do NOT generate TTS automatically — generate lazily on button click to avoid blocking/errors
-            if st.button("🎙️ Listen", key=f"tts_greet_{len(st.session_state.chat_memory)}"):
-                # Choose voice
-                voice = "alloy-ar" if st.session_state.new_language == "العربية" else "alloy"
-                try:
-                    audio_bytes = tts_to_bytesio(greeting_text, voice)
-                    audio_bytes.seek(0)
+            # Determine voice based on language
+            voice = "alloy-ar" if st.session_state.new_language == "العربية" else "alloy"
+
+            # Generate TTS audio
+            audio_bytes = tts_to_bytesio(greeting_text, voice)
+
+            # Play audio automatically if generated
+            if audio_bytes:
+                st.audio(audio_bytes, format="audio/mp3")
+
+            # Optional button to replay the audio
+            if st.button("🎙️ Listen again", key=f"tts_greet_{len(st.session_state.chat_memory)}"):
+                if audio_bytes:
                     st.audio(audio_bytes, format="audio/mp3")
-                except Exception as e:
-                    st.error("⚠️ TTS failed: " + str(e))
 
             # Save message in chat memory
             st.session_state.chat_memory.append({
@@ -1160,7 +1166,9 @@ if user_input:
                 "timestamp": get_current_time()
             })
 
-        # GENERAL_HAJJ
+        # -----------------------------
+        # GENERAL_HAJJ section
+        # -----------------------------
         elif final_state.get("general_answer"):
             ans = final_state["general_answer"]
             st.markdown(ans)
@@ -1170,38 +1178,32 @@ if user_input:
                 "timestamp": get_current_time()
             })
 
+        # -----------------------------
         # DATABASE path outputs
-        elif final_state.get("summary") or (final_state.get("result_rows") is not None):
-            # Show summary (could be message or warning if no rows)
+        # -----------------------------
+        elif final_state.get("summary") or final_state.get("result_rows") is not None:
+            # Show summary
             summary = final_state.get("summary", "")
+            st.markdown(summary)
+
             rows = final_state.get("result_rows", [])
             row_count = final_state.get("row_count", 0)
             sql_q = final_state.get("sql_query", "")
 
+            # Convert to DataFrame for display/download if rows exist
             if rows:
-                # Safe DataFrame creation and display
-                try:
-                    df = pd.DataFrame(rows)
-                    show_result_summary(df)
-                    # Optionally show the dataframe (uncomment if needed)
-                    # st.dataframe(df, use_container_width=True, height=300)
+                df = pd.DataFrame(rows)
+                show_result_summary(df)
 
-                    st.session_state.chat_memory.append({
-                        "role": "assistant",
-                        "content": summary,
-                        "dataframe": df,
-                        "timestamp": get_current_time()
-                    })
-                    st.session_state.last_result_df = df
-                except Exception as e:
-                    st.error("⚠️ Error displaying results: " + str(e))
-                    st.session_state.chat_memory.append({
-                        "role": "assistant",
-                        "content": summary,
-                        "timestamp": get_current_time()
-                    })
+                st.session_state.chat_memory.append({
+                    "role": "assistant",
+                    "content": summary,
+                    "dataframe": df,
+                    "timestamp": get_current_time()
+                })
+                st.session_state.last_result_df = df
             else:
-                # No data rows — show warning and store
+                # No data rows
                 st.warning(summary)
                 st.session_state.chat_memory.append({
                     "role": "assistant",
@@ -1209,8 +1211,10 @@ if user_input:
                     "timestamp": get_current_time()
                 })
 
+        # -----------------------------
+        # Fallback
+        # -----------------------------
         else:
-            # Fallback catch-all
             fallback = t("general_error", st.session_state.new_language)
             st.error(fallback)
             st.session_state.chat_memory.append({
