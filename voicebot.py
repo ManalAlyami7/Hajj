@@ -2,10 +2,12 @@
 Hajj Voice Assistant - Real-time STT & TTS
 Custom audio recorder with live transcription and streaming responses
 """
-
+import sys
+import os
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
 import time
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import core modules
 from core.voice_processor import VoiceProcessor
