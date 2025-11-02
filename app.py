@@ -812,7 +812,7 @@ Respond with ONLY ONE WORD: GREETING, DATABASE, or GENERAL_HAJJ
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role":"system","content":"You classify intents. Respond with one word."},
-                      {"role":"user","content": intent_prompt}],
+                      {"role":"user","content": intent_prompt}, *build_chat_context()],
             temperature=0,
             max_tokens=8
         )
@@ -849,7 +849,7 @@ def node_respond_greeting(state: GraphState) -> dict:
     try:
         greeting_response = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[greeting_prompt, {"role":"user","content": user_input}],
+            messages=[greeting_prompt, {"role":"user","content": user_input}, *build_chat_context()],
             temperature=0.7,
             max_tokens=150
         )
@@ -864,7 +864,7 @@ def node_respond_general(state: GraphState) -> dict:
     user_input = state.get("user_input", "")
     try:
         context = [{"role":"system","content":"You are a helpful assistant specialized in Hajj information. Be concise and factual."},
-                   {"role":"user","content": user_input}]
+                   {"role":"user","content": user_input}, *build_chat_context()]
         resp = client.chat.completions.create(model="gpt-4o-mini", messages=context, temperature=0.6, max_tokens=400)
         answer = resp.choices[0].message.content.strip()
     except Exception as e:
@@ -984,7 +984,7 @@ LIMIT 50;
         sql_resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role":"system","content":"You output only a SELECT query or NO_SQL."},
-                      {"role":"user","content": sql_prompt}],
+                      {"role":"user","content": sql_prompt}, *build_chat_context()],
             temperature=0
         )
         raw_sql = sql_resp.choices[0].message.content.strip()
@@ -1080,7 +1080,7 @@ Now summarize the query results based on the above rules.
         summ_resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role":"system","content":"You summarize data concisely."},
-                      {"role":"user","content": summary_prompt}],
+                      {"role":"user","content": summary_prompt}, *build_chat_context()],
             temperature=0.5,
             max_tokens=250
         )
