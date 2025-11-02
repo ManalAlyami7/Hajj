@@ -206,30 +206,6 @@ def fuzzy_normalize(text: str) -> str:
     normalized = ' '.join(normalized.lower().split())
     return normalized
 
-<<<<<<< HEAD
-=======
-def heuristic_sql_fallback(question: str) -> Optional[str]:
-    """Generate SQL query based on simple heuristics when AI fails"""
-    question = question.lower()
-    
-    # Basic patterns
-    if any(word in question for word in ['all', 'show', 'list']):
-        return "SELECT * FROM agencies LIMIT 100"
-        
-    if 'authorized' in question or 'autorized' in question:
-        return "SELECT * FROM agencies WHERE is_authorized = 'Yes' LIMIT 100"
-        
-    if 'saudi' in question or 'ksa' in question:
-        return "SELECT * FROM agencies WHERE LOWER(Country) LIKE '%saudi%' LIMIT 100"
-        
-    if 'email' in question:
-        return "SELECT * FROM agencies WHERE email IS NOT NULL AND email != '' LIMIT 100"
-        
-    return None
-
-
-
->>>>>>> 07505e1201f9b9971553a550da408bba1c564268
 
 def heuristic_sql_fallback(question: str) -> Optional[str]:
     q = question.lower().strip()
@@ -272,44 +248,6 @@ def heuristic_sql_fallback(question: str) -> Optional[str]:
     return None
 
 
-
-<<<<<<< HEAD
-
-
-=======
-def show_result_summary(df: pd.DataFrame) -> None:
-    """Display summary statistics and columns for results"""
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown(f"<div class='badge badge-info'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"<div class='badge badge-success'>✅ {len(df.columns)} Columns</div>", unsafe_allow_html=True)
-    with col3:
-        if "is_authorized" in df.columns:
-            auth_count = len(df[df["is_authorized"] == "Yes"])
-            st.markdown(f"<div class='badge badge-success'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
-    
-
-
-def show_download_button(df: pd.DataFrame) -> None:
-    """Display download button for results"""
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label=t("download_csv", st.session_state.new_language),
-        data=csv,
-        file_name=f"hajj_data_{int(datetime.now().timestamp())}.csv",
-        mime="text/csv"
-    )
-
-
-
-def show_sql_expander(sql_query: str, row_count: int) -> None:
-    """Display SQL query in expandable section"""
-    with st.expander(t("view_sql", st.session_state.new_language)):
-        st.code(sql_query, language="sql")
-        st.caption(t("executed_caption", st.session_state.new_language, count=row_count))
-
->>>>>>> 07505e1201f9b9971553a550da408bba1c564268
 def build_chat_context(limit: int = 6) -> List[Dict[str, str]]:
     """Build chat context from recent messages"""
     context = [{"role": "system", "content": """You are a helpful assistant specializing in Hajj-related information.
@@ -1178,9 +1116,6 @@ def show_result_summary(df: pd.DataFrame) -> None:
         if "is_authorized" in df.columns:
             auth_count = len(df[df["is_authorized"] == "Yes"])
             st.markdown(f"<div style='display:inline-block;padding:6px;background:#38ef7d;color:white;border-radius:8px;'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
-<<<<<<< HEAD
-    
-=======
 
     st.subheader("🏨 Agency Locations")
     for _, row in df.iterrows():
@@ -1195,7 +1130,6 @@ def show_result_summary(df: pd.DataFrame) -> None:
         else:
             st.markdown(f"**{name}** — {auth}<br>📍 Address not available")
 
->>>>>>> 07505e1201f9b9971553a550da408bba1c564268
 
 
 
@@ -1222,31 +1156,6 @@ if user_input:
     init_state: GraphState = {"user_input": user_input, "language": st.session_state.new_language}
 
     with st.chat_message("assistant", avatar="🕋"):
-<<<<<<< HEAD
-=======
-
-        st.spinner("🤔 Analyzing your question...")
-        try:
-            # Invoke the graph (synchronous). This returns the final state dict.
-            final_state = GRAPH.invoke(init_state)
-        except Exception as e:
-            # If LangGraph runtime error
-            err_msg = f"{t('general_error', st.session_state.new_language)} {e}"
-            st.error(err_msg)
-            st.session_state.chat_memory.append({
-                "role": "assistant",
-                "content": err_msg,
-                "timestamp": get_current_time()
-            })
-            final_state = {}
-        # Present output based on branch
-        # GREETING
-        # -----------------------------
-        # GREETING RESPONSE
-        # -----------------------------
-       # -----------------------------
-
->>>>>>> 07505e1201f9b9971553a550da408bba1c564268
         # ✅ use spinner as context manager
         with st.spinner(f"{t('thinking', st.session_state.new_language)}..."):
             try:
@@ -1295,28 +1204,12 @@ if user_input:
                 "timestamp": get_current_time()
             })
 
-<<<<<<< HEAD
         # -----------------------------
         # GENERAL_HAJJ section
         # -----------------------------
         elif final_state.get("general_answer"):
             ans = final_state["general_answer"]
             st.markdown(ans)
-=======
-
-        elif final_state.get("general_answer"):
-            ans = final_state["general_answer"]
-            st.markdown(ans)
-                        # 🔊 تشغيل الصوت + زر السبيكر
-            voice = "alloy-ar" if st.session_state.new_language == "العربية" else "alloy"
-            audio_bytes = tts_to_bytesio(ans, voice)
-            if audio_bytes:
-                st.audio(audio_bytes, format="audio/mp3")
-            if st.button("🎙️ Listen again", key=f"tts_general_{len(st.session_state.chat_memory)}"):
-                if audio_bytes:
-                    st.audio(audio_bytes, format="audio/mp3")
-
->>>>>>> 07505e1201f9b9971553a550da408bba1c564268
             st.session_state.chat_memory.append({
                 "role": "assistant",
                 "content": ans,
@@ -1330,8 +1223,6 @@ if user_input:
             # Show summary
             summary = final_state.get("summary", "")
             st.markdown(summary)
-<<<<<<< HEAD
-=======
                         # 🔊 تشغيل الصوت + زر السبيكر للملخص
             voice = "alloy-ar" if st.session_state.new_language == "العربية" else "alloy"
             audio_bytes = tts_to_bytesio(summary, voice)
@@ -1340,7 +1231,6 @@ if user_input:
             if st.button("🎙️ Listen again", key=f"tts_summary_{len(st.session_state.chat_memory)}"):
                 if audio_bytes:
                     st.audio(audio_bytes, format="audio/mp3")
->>>>>>> 07505e1201f9b9971553a550da408bba1c564268
 
             rows = final_state.get("result_rows", [])
             row_count = final_state.get("row_count", 0)
