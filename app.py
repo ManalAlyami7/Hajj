@@ -269,6 +269,7 @@ def heuristic_sql_fallback(question: str) -> Optional[str]:
     return None
 
 
+
 def show_result_summary(df: pd.DataFrame) -> None:
     """Display summary statistics and columns for results"""
     col1, col2, col3 = st.columns(3)
@@ -292,6 +293,7 @@ def show_download_button(df: pd.DataFrame) -> None:
         file_name=f"hajj_data_{int(datetime.now().timestamp())}.csv",
         mime="text/csv"
     )
+
 
 
 def show_sql_expander(sql_query: str, row_count: int) -> None:
@@ -1149,6 +1151,17 @@ GRAPH = build_stategraph()
 # Helper UI functions
 # -----------------------------
 def show_result_summary(df: pd.DataFrame) -> None:
+    #for _, row in df.iterrows():
+       # name = row.get("hajj_company_en", "Unknown Agency")
+       # addr = row.get("formatted_address", "")
+       # auth = row.get("is_authorized", "Unknown")
+
+        # Create clickable Google Maps link
+        #if addr:
+           #maps_url = f"https://www.google.com/maps/search/?api=1&query={urllib.parse.quote(addr)}"
+          #  st.markdown(f"**{name}**<br>📍 [{addr}]({maps_url})", unsafe_allow_html=True)
+       # else:
+           # st.markdown(f"**{name}**<br>📍 Address not available")
     col1, col2 = st.columns(2)
     with col1:
         st.markdown(f"<div style='display:inline-block;padding:6px;background:#667eea;color:white;border-radius:8px;'>📊 {len(df)} Results</div>", unsafe_allow_html=True)
@@ -1157,6 +1170,7 @@ def show_result_summary(df: pd.DataFrame) -> None:
         if "is_authorized" in df.columns:
             auth_count = len(df[df["is_authorized"] == "Yes"])
             st.markdown(f"<div style='display:inline-block;padding:6px;background:#38ef7d;color:white;border-radius:8px;'>🔒 {auth_count} Authorized</div>", unsafe_allow_html=True)
+
     st.subheader("🏨 Agency Locations")
     for _, row in df.iterrows():
         name = row.get("hajj_company_en", "Unknown Agency")
@@ -1169,6 +1183,7 @@ def show_result_summary(df: pd.DataFrame) -> None:
             st.markdown(f"**{name}** — {auth}<br>📍 [{addr}]({maps_url})", unsafe_allow_html=True)
         else:
             st.markdown(f"**{name}** — {auth}<br>📍 Address not available")
+
 
 
 
