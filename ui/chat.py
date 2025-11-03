@@ -236,6 +236,7 @@ class ChatInterface:
        
             if st.button("🔊 Listen to Summary"):
                self._create_voice_player(summary, autoplay=True)
+            self._add_message("assistant", summary)
         else:
             st.warning(summary)
             self._add_message("assistant", summary)
