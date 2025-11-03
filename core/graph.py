@@ -39,6 +39,7 @@ class GraphState(TypedDict):
     top_locations: Optional[List[str]]
     greeting_text: Optional[str]
     general_answer: Optional[str]
+    needs_info: Optional[str]  # Add this field
 
 
 # -----------------------------
@@ -61,6 +62,7 @@ class ChatGraph:
         builder.add_node("detect_intent", self._node_detect_intent)
         builder.add_node("respond_greeting", self._node_respond_greeting)
         builder.add_node("respond_general", self._node_respond_general)
+        builder.add_node("ask_for_more_info", self._node_ask_for_more_info)  # Placeholder for future implementation
         builder.add_node("generate_sql", self._node_generate_sql)
         builder.add_node("execute_sql", self._node_execute_sql)
         builder.add_node("summarize_results", self._node_summarize_results)
@@ -75,7 +77,8 @@ class ChatGraph:
             {
                 "GREETING": "respond_greeting",
                 "GENERAL_HAJJ": "respond_general",
-                "DATABASE": "generate_sql"
+                "DATABASE": "generate_sql",
+                "NEEDS_INFO": "ask_for_more_info"  # Placeholder for future node
             }
         )
         
@@ -87,6 +90,7 @@ class ChatGraph:
         # Other branches terminate
         builder.add_edge("respond_greeting", END)
         builder.add_edge("respond_general", END)
+        builder.add_edge("ask_for_more_info", END)
         
         return builder.compile()
     
@@ -122,7 +126,19 @@ class ChatGraph:
             state["language"]
         )
         return {"greeting_text": greeting}
-    
+    def _node_ask_for_more_info(self, state: GraphState) -> dict:
+        """Generate response asking for more specific information"""
+        answer = self.llm.ask_for_more_info(
+            state["user_input"],
+            state["language"]
+        )
+        return {
+            "needs_info": answer,
+            "summary": None,
+            "result_rows": [],
+            "row_count": 0
+        }
+        
     def _node_respond_general(self, state: GraphState) -> dict:
         """Generate general Hajj answer"""
         answer = self.llm.generate_general_answer(
