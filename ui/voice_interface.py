@@ -165,7 +165,6 @@ class RealTimeVoiceStyles:
     
 
 
-    @staticmethod
     def get_styles() -> str:
         """Return complete CSS for real-time voice interface"""
         return """
