@@ -193,6 +193,8 @@ class ChatInterface:
         """Route response based on type"""
         if state.get("greeting_text"):
             self._respond(state["greeting_text"])
+        elif state.get("ask_for_info"):
+            self._respond(state["ask_for_info"])
         elif state.get("general_answer"):
             self._respond(state["general_answer"])
         elif state.get("summary") or state.get("result_rows"):
@@ -281,46 +283,14 @@ class ChatInterface:
         rows = result_data.get("rows", [])
         if not rows:
             st.info("No results found.")
+    
             return
-
-        # Display each result as a card
-        for row in rows:
-            company_name = row.get("company_name", "Unknown Company")
-            city = row.get("city", "N/A")
-            country = row.get("country", "N/A")
-            email = row.get("email", "N/A")
-            contact = row.get("contact_info", "N/A")
-            rating = row.get("rating", "N/A")
-            reviews = row.get("reviews_count", "N/A")
-            location = row.get("location", "N/A")
-            is_auth = row.get("is_authorized", "Unknown")
-
-            auth_badge = "✅ Authorized" if is_auth.lower() in ["yes", "authorized", "true"] else "❌ Not Authorized"
-
-            st.markdown(f"""
-            <div style="
-                border-radius:12px;
-                padding:14px;
-                margin:10px 0;
-                background:rgba(255,255,255,0.05);
-                border:1px solid rgba(255,255,255,0.15);
-            ">
-                <h4 style="margin-bottom:6px;">🕋 {company_name}</h4>
-                <p>📍 <b>City:</b> {city}, {country}</p>
-                <p>📧 <b>Email:</b> {email}</p>
-                <p>📞 <b>Contact:</b> {contact}</p>
-                <p>⭐ <b>Rating:</b> {rating} ({reviews} reviews)</p>
-                <p>🌐 <b>Location:</b> {location}</p>
-                <p>{auth_badge}</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-
+        
         # ---------- Results Title ----------
         st.markdown("### 🕋 Authorized Hajj Agencies")
 
         # ---------- Agency Cards ----------
-        for _, row in df.iterrows():
+        for row in rows:
             name_en = row.get("hajj_company_en", "") or "N/A"
             name_ar = row.get("hajj_company_ar", "") or ""
             address = row.get("formatted_address", "")
