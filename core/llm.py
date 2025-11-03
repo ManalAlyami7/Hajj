@@ -581,6 +581,11 @@ LIMIT 50;
         
         prompt = f"""You are a helpful Hajj verification assistant.
     The user's question: "{user_input}" needs more details to provide accurate information.
+    Examples of vague questions:
+    - "I want to verify an agency" (which agency?)
+    - "Tell me about Hajj companies" (what specifically?)
+    - "Is this authorized?" (which company?)
+    - "Check this company" (need company name)
 
     Ask for specific details in a friendly way. Focus on:
     1. Agency name (if verifying a company)
@@ -599,6 +604,7 @@ LIMIT 50;
                     {"role": "system", "content": prompt},
                     {"role": "user", "content": user_input}
                 ],
+                response_format=NEEDSInfoResponse,
                 temperature=0.7,
                 max_tokens=150
             )
