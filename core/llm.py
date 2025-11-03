@@ -93,6 +93,20 @@ class NEEDSInfoResponse(BaseModel):
     ask_for_info: str = Field(
         description="The message asking user for more specific information"
     )
+    suggestions: List[str] = Field(
+        default_factory=list,
+        description="List of example queries the user could try"
+    )
+    missing_info: List[str] = Field(
+        default_factory=list,
+        description="List of specific information pieces needed"
+    )
+    sample_query: str = Field(
+        description="An example of a well-formed query"
+    )
+    user_lang: Literal["English", "العربية"] = Field(
+        description="Language to respond in"
+    )
 
 
 class LLMManager:
@@ -575,45 +589,43 @@ LIMIT 50;
         
         return None
     
-    def ask_for_more_info(self, user_input: str, language: str) -> str:
-        """Generate prompt asking user for more specific information"""
-        is_arabic = language == "العربية"
+def ask_for_more_info(self, user_input: str, language: str) -> Dict:
+    """Generate structured response asking user for more specific information"""
+    is_arabic = language == "العربية"
+    
+    try:
+        response = self.client.beta.chat.completions.parse(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You help users provide more specific Hajj agency queries."},
+                {"role": "user", "content": user_input}
+            ],
+            response_format=NEEDSInfoResponse,
+            temperature=0.7
+        )
         
-        prompt = f"""You are a helpful Hajj verification assistant.
-    The user's question: "{user_input}" needs more details to provide accurate information.
-    Examples of vague questions:
-    - "I want to verify an agency" (which agency?)
-    - "Tell me about Hajj companies" (what specifically?)
-    - "Is this authorized?" (which company?)
-    - "Check this company" (need company name)
-
-    Ask for specific details in a friendly way. Focus on:
-    1. Agency name (if verifying a company)
-    2. Location (city/country)
-    3. What specifically they want to know
-
-    Use {language} for the response.
-    Keep it brief but friendly.
-    Add a simple example of a more specific question.
-    """
-        
-        try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": prompt},
-                    {"role": "user", "content": user_input}
-                ],
-                response_format=NEEDSInfoResponse,
-                temperature=0.7,
-                max_tokens=150
-            )
-            return response.choices[0].message.content.strip()
+        info_data = response.choices[0].message.parsed
+        return {
+            "needs_info": info_data.ask_for_info,
+            "suggestions": info_data.suggestions,
+            "missing_info": info_data.missing_info,
+            "sample_query": info_data.sample_query
+        }
             
-        except Exception as e:
-            logger.error(f"More info prompt generation failed: {e}")
-            # Fallback responses
-            if is_arabic:
-                return "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ مثل اسم الوكالة أو موقعها؟ 🤔"
-            else:
-                return "Could you provide more details? For example, the agency name or location? 🤔"
+    except Exception as e:
+        logger.error(f"More info prompt generation failed: {e}")
+        # Fallback with minimal structured response
+        if is_arabic:
+            return {
+                "needs_info": "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔",
+                "suggestions": ["هل شركة الهدى للحج معتمدة؟", "أريد التحقق من وكالات الحج في مكة"],
+                "missing_info": ["اسم الوكالة", "الموقع"],
+                "sample_query": "هل شركة الهدى للحج معتمدة؟"
+            }
+        else:
+            return {
+                "needs_info": "Could you provide more details? 🤔",
+                "suggestions": ["Is Al Huda Hajj Agency authorized?", "Show me authorized agencies in Makkah"],
+                "missing_info": ["agency name", "location"],
+                "sample_query": "Is Al Huda Hajj Agency authorized?"
+            }

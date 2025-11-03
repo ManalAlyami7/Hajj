@@ -62,7 +62,7 @@ class ChatGraph:
         builder.add_node("detect_intent", self._node_detect_intent)
         builder.add_node("respond_greeting", self._node_respond_greeting)
         builder.add_node("respond_general", self._node_respond_general)
-        builder.add_node("ask_for_more_info", self._node_ask_for_more_info)  # Placeholder for future implementation
+        builder.add_node("needs_info", self._node_ask_for_more_info)  # Placeholder for future implementation
         builder.add_node("generate_sql", self._node_generate_sql)
         builder.add_node("execute_sql", self._node_execute_sql)
         builder.add_node("summarize_results", self._node_summarize_results)
@@ -78,7 +78,7 @@ class ChatGraph:
                 "GREETING": "respond_greeting",
                 "GENERAL_HAJJ": "respond_general",
                 "DATABASE": "generate_sql",
-                "NEEDS_INFO": "ask_for_more_info"  # Placeholder for future node
+                "NEEDS_INFO": "needs_info"  # Placeholder for future node
             }
         )
         
@@ -127,18 +127,21 @@ class ChatGraph:
         )
         return {"greeting_text": greeting}
     def _node_ask_for_more_info(self, state: GraphState) -> dict:
-        """Generate response asking for more specific information"""
-        answer = self.llm.ask_for_more_info(
+        """Handle cases where more information is needed"""
+        response = self.llm.ask_for_more_info(
             state["user_input"],
             state["language"]
         )
-        return {
-            "needs_info": answer,
-            "summary": None,
-            "result_rows": [],
-            "row_count": 0
-        }
         
+        # Ensure we return all expected fields
+        return {
+            "needs_info": response.get("needs_info"),
+            "suggestions": response.get("suggestions", []),
+            "missing_info": response.get("missing_info", []),
+            "sample_query": response.get("sample_query"),
+            "summary": None,
+            "result_rows": []
+        }
     def _node_respond_general(self, state: GraphState) -> dict:
         """Generate general Hajj answer"""
         answer = self.llm.generate_general_answer(
