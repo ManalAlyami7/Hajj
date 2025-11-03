@@ -229,7 +229,7 @@ class LLMManager:
 
 4. Keep response under 3 sentences
 5. Use emojis appropriately
-6. Use Arabic if language = "العربية", else English.""" 
+6. Use Arabic when user use Arabic in their writing or want you to speak in Arabic, else English.""" 
 
         
         try:
