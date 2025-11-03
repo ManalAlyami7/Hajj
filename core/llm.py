@@ -226,8 +226,11 @@ class LLMManager:
 1. Acknowledges the user's greeting
 2. Expresses willingness to help
 3. Mentions you can help with Hajj company verification
+
 4. Keep response under 3 sentences
-5. Use emojis appropriately""" + (" Respond in Arabic." if is_arabic else " Respond in English.")
+5. Use emojis appropriately
+6. Use Arabic if user language is Arabic, else English.""" 
+
         
         try:
             response = self.client.beta.chat.completions.parse(

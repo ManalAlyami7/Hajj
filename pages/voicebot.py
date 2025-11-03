@@ -209,6 +209,8 @@ with col_left:
       </div>
     </div>
     """, unsafe_allow_html=True)
+    audio_value = st.audio_input("Click to start recording", key="audio_input")
+    
 
     audio_bytes = audio_recorder(
         text="",
