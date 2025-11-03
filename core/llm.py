@@ -90,7 +90,7 @@ class GreetingResponse(BaseModel):
     )
 class NEEDSInfoResponse(BaseModel):
     """Structured output for needs info responses"""
-    ask_for_info: str = Field(
+    needs_info: str = Field(
         description="The message asking user for more specific information"
     )
     suggestions: List[str] = Field(
@@ -589,43 +589,43 @@ LIMIT 50;
         
         return None
     
-def ask_for_more_info(self, user_input: str, language: str) -> Dict:
-    """Generate structured response asking user for more specific information"""
-    is_arabic = language == "العربية"
-    
-    try:
-        response = self.client.beta.chat.completions.parse(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You help users provide more specific Hajj agency queries."},
-                {"role": "user", "content": user_input}
-            ],
-            response_format=NEEDSInfoResponse,
-            temperature=0.7
-        )
+    def ask_for_more_info(self, user_input: str, language: str) -> Dict:
+        """Generate structured response asking user for more specific information"""
+        is_arabic = language == "العربية"
         
-        info_data = response.choices[0].message.parsed
-        return {
-            "needs_info": info_data.ask_for_info,
-            "suggestions": info_data.suggestions,
-            "missing_info": info_data.missing_info,
-            "sample_query": info_data.sample_query
-        }
+        try:
+            response = self.client.beta.chat.completions.parse(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You help users provide more specific Hajj agency queries."},
+                    {"role": "user", "content": user_input}
+                ],
+                response_format=NEEDSInfoResponse,
+                temperature=0.7
+            )
             
-    except Exception as e:
-        logger.error(f"More info prompt generation failed: {e}")
-        # Fallback with minimal structured response
-        if is_arabic:
+            info_data = response.choices[0].message.parsed
             return {
-                "needs_info": "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔",
-                "suggestions": ["هل شركة الهدى للحج معتمدة؟", "أريد التحقق من وكالات الحج في مكة"],
-                "missing_info": ["اسم الوكالة", "الموقع"],
-                "sample_query": "هل شركة الهدى للحج معتمدة؟"
+                "needs_info": info_data.needs_info,
+                "suggestions": info_data.suggestions,
+                "missing_info": info_data.missing_info,
+                "sample_query": info_data.sample_query
             }
-        else:
-            return {
-                "needs_info": "Could you provide more details? 🤔",
-                "suggestions": ["Is Al Huda Hajj Agency authorized?", "Show me authorized agencies in Makkah"],
-                "missing_info": ["agency name", "location"],
-                "sample_query": "Is Al Huda Hajj Agency authorized?"
-            }
+                
+        except Exception as e:
+            logger.error(f"More info prompt generation failed: {e}")
+            # Fallback with minimal structured response
+            if is_arabic:
+                return {
+                    "needs_info": "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔",
+                    "suggestions": ["هل شركة الهدى للحج معتمدة؟", "أريد التحقق من وكالات الحج في مكة"],
+                    "missing_info": ["اسم الوكالة", "الموقع"],
+                    "sample_query": "هل شركة الهدى للحج معتمدة؟"
+                }
+            else:
+                return {
+                    "needs_info": "Could you provide more details? 🤔",
+                    "suggestions": ["Is Al Huda Hajj Agency authorized?", "Show me authorized agencies in Makkah"],
+                    "missing_info": ["agency name", "location"],
+                    "sample_query": "Is Al Huda Hajj Agency authorized?"
+                }
