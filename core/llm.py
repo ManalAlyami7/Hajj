@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 class IntentClassification(BaseModel):
     """Structured output for intent detection"""
-    intent: Literal["GREETING", "DATABASE", "GENERAL_HAJJ"] = Field(
+    intent: Literal["GREETING", "DATABASE", "GENERAL_HAJJ", "NEEDS_INFO"] = Field(
         description="The classified intent of the user's message"
     )
     confidence: float = Field(
@@ -88,6 +88,11 @@ class GreetingResponse(BaseModel):
     includes_offer_to_help: bool = Field(
         description="Whether the greeting includes an offer to help"
     )
+class NEEDSInfoResponse(BaseModel):
+    """Structured output for needs info responses"""
+    ask_for_info: str = Field(
+        description="The message asking user for more specific information"
+    )
 
 
 class LLMManager:
@@ -138,28 +143,34 @@ class LLMManager:
         Returns: Dict with intent, confidence, and reasoning
         """
         intent_prompt = f"""
-You are a fraud-prevention assistant for Hajj pilgrims. Classify this message into ONE of three categories:
+        You are a fraud-prevention assistant for Hajj pilgrims. Classify this message into ONE of four categories:
 
-1️⃣ GREETING: greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا. 
-   - No specific agency information is provided.
-   - User just wants to chat or start conversation.
+        1️⃣ GREETING: greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا. 
+        - No specific agency information is provided.
+        - User just wants to chat or start conversation.
 
-2️⃣ DATABASE: questions about verifying specific Hajj agencies, checking authorization, company details, locations, contacts, etc.
-   - User mentions agency names, locations, or asks for authorized agencies.
+        2️⃣ DATABASE: questions about verifying specific Hajj agencies, checking authorization, company details, locations, contacts, etc.
+        - User mentions agency names, locations, or asks for authorized agencies.
 
-3️⃣ GENERAL_HAJJ: general Hajj-related questions (rituals, requirements, documents, safety, procedures).
+        3️⃣ GENERAL_HAJJ: general Hajj-related questions (rituals, requirements, documents, safety, procedures).
 
-CRITICAL CONTEXT:
-- 415 fake Hajj offices closed in 2025
-- 269,000+ unauthorized pilgrims stopped
-- Mission: prevent fraud, protect pilgrims
-- Always emphasize verification and authorization for DATABASE questions
+        4️⃣ NEEDS_INFO: message is too vague or lacks details needed to provide accurate information, such as:
+        - "I want to verify an agency" (which agency?)
+        - "Tell me about Hajj companies" (what specifically?)
+        - "Is this authorized?" (which company?)
+        - "Check this company" (need company name)
 
-Message: {user_input}
+        CRITICAL CONTEXT:
+        - 415 fake Hajj offices closed in 2025
+        - 269,000+ unauthorized pilgrims stopped
+        - Mission: prevent fraud, protect pilgrims
+        - For DATABASE questions, we need specific agency names or clear location criteria
+        - Mark as NEEDS_INFO if user should provide more details
 
+        Message: {user_input}
 
-Classify the intent, provide confidence score, and explain your reasoning.
-"""
+        Classify the intent, provide confidence score, and explain your reasoning.
+        """
         
         try:
             response = self.client.beta.chat.completions.parse(
@@ -194,7 +205,11 @@ Classify the intent, provide confidence score, and explain your reasoning.
         if any(g in ui for g in ["hello", "hi", "salam", "السلام", "مرحبا"]):
             intent = "GREETING"
         elif any(k in ui for k in ["company", "agency", "معتمد", "شركات", "authorized", "وكالة"]):
-            intent = "DATABASE"
+            # Check if query is too vague
+            if len(ui.split()) < 4 and not any(specific in ui for specific in ["royal", "alhuda", "مكة", "جدة", "riyadh"]):
+                intent = "NEEDS_INFO"
+            else:
+                intent = "DATABASE"
         else:
             intent = "GENERAL_HAJJ"
         
@@ -203,7 +218,7 @@ Classify the intent, provide confidence score, and explain your reasoning.
             "confidence": 0.7,
             "reasoning": "Determined by keyword matching (fallback)"
         }
-    
+        
     def generate_greeting(self, user_input: str, language: str) -> str:
         """Generate natural greeting response with structured output"""
         is_arabic = language == "العربية"
@@ -559,3 +574,40 @@ LIMIT 50;
             return "NO_SQL"
         
         return None
+    
+    def ask_for_more_info(self, user_input: str, language: str) -> str:
+        """Generate prompt asking user for more specific information"""
+        is_arabic = language == "العربية"
+        
+        prompt = f"""You are a helpful Hajj verification assistant.
+    The user's question: "{user_input}" needs more details to provide accurate information.
+
+    Ask for specific details in a friendly way. Focus on:
+    1. Agency name (if verifying a company)
+    2. Location (city/country)
+    3. What specifically they want to know
+
+    Use {language} for the response.
+    Keep it brief but friendly.
+    Add a simple example of a more specific question.
+    """
+        
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": user_input}
+                ],
+                temperature=0.7,
+                max_tokens=150
+            )
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            logger.error(f"More info prompt generation failed: {e}")
+            # Fallback responses
+            if is_arabic:
+                return "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ مثل اسم الوكالة أو موقعها؟ 🤔"
+            else:
+                return "Could you provide more details? For example, the agency name or location? 🤔"
