@@ -317,7 +317,8 @@ if audio_bytes and not st.session_state.is_processing and audio_bytes != st.sess
     st.session_state.status = "Processing..."
 
     try:
-        final_state = voice_graph.invoke(build_initial_state(audio_bytes))
+        audio_data = audio_bytes.read()
+        final_state = voice_graph.invoke(build_initial_state(audio_data))
         transcript = final_state.get("transcript", "")
         response = final_state.get("response", "")
         response_audio = final_state.get("response_audio", b"")
