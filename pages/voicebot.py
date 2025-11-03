@@ -233,33 +233,42 @@ with col_right:
     clean_transcript = re.sub(r"<.*?>", "", transcript)
 
     # Metadata HTML
-    meta_html = ""
+    # --- Metadata Rendering (fixed) ---
+    meta_html_parts = []
     meta = st.session_state.current_metadata
+
     if meta:
+        # Key Points
         if meta.get("key_points"):
-            items = "".join(f"<li>{p}</li>" for p in meta["key_points"])
-            meta_html += f"""
+            key_points_html = "".join(f"<li>{re.escape(p)}</li>" for p in meta["key_points"])
+            meta_html_parts.append(f"""
             <div class="metadata-card">
-              <div class="metadata-title">💡 Key Points</div>
-              <ul class="metadata-list">{items}</ul>
+                <div class="metadata-title">💡 Key Points</div>
+                <ul class="metadata-list">{key_points_html}</ul>
             </div>
-            """
+            """)
+
+        # Suggested Actions
         if meta.get("suggested_actions"):
-            items = "".join(f"<li>{a}</li>" for a in meta["suggested_actions"])
-            meta_html += f"""
+            suggested_html = "".join(f"<li>{re.escape(a)}</li>" for a in meta["suggested_actions"])
+            meta_html_parts.append(f"""
             <div class="metadata-card" style="border-left-color:#a78bfa;">
-              <div class="metadata-title" style="color:#a78bfa;">✅ Suggested Actions</div>
-              <ul class="metadata-list">{items}</ul>
+                <div class="metadata-title" style="color:#a78bfa;">✅ Suggested Actions</div>
+                <ul class="metadata-list">{suggested_html}</ul>
             </div>
-            """
+            """)
+
+        # Verification Steps
         if meta.get("verification_steps"):
-            items = "".join(f"<li>{s}</li>" for s in meta["verification_steps"])
-            meta_html += f"""
+            verify_html = "".join(f"<li>{re.escape(s)}</li>" for s in meta["verification_steps"])
+            meta_html_parts.append(f"""
             <div class="metadata-card" style="border-left-color:#ef4444;">
-              <div class="metadata-title" style="color:#ef4444;">⚠️ Verification Steps</div>
-              <ul class="metadata-list">{items}</ul>
+                <div class="metadata-title" style="color:#ef4444;">⚠️ Verification Steps</div>
+                <ul class="metadata-list">{verify_html}</ul>
             </div>
-            """
+            """)
+
+    meta_html = "".join(meta_html_parts)
 
     # Build full panel HTML
     panel_html = f"""
