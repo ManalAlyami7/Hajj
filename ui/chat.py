@@ -238,7 +238,9 @@ class ChatInterface:
 
 
     def _display_results(self, result_data: dict):
-        """Render stored results in chat history (simple text list, no tables/cards)"""
+        """Render stored results in chat history (simple text list, smaller, styled text)"""
+        
+
         rows = result_data.get("rows", [])
         key_insights = result_data.get("key_insights", [])
         authorized_count = result_data.get("authorized_count")
@@ -249,26 +251,27 @@ class ChatInterface:
             st.warning("No results found.")
             return
 
-        # ✅ Display summary text and voice option
+        # ✅ Summary text + voice option
         if summary:
             st.info(summary)
             if st.button("🔊 Listen to Summary", key=f"summary_{uuid.uuid4()}"):
                 self._create_voice_player(summary, autoplay=True)
 
-        # ✅ Display key insights if any
+        # ✅ Key insights
         if key_insights:
-            st.markdown("### 🔍 Key Insights")
+            st.markdown("<h4 style='margin-top: 10px;'>🔍 Key Insights</h4>", unsafe_allow_html=True)
             for i, insight in enumerate(key_insights, start=1):
-                st.markdown(f"- {insight}")
+                st.markdown(f"<p style='font-size:14px; margin:0;'>• {insight}</p>", unsafe_allow_html=True)
 
-        # ✅ Authorized count & locations
+        # ✅ Authorized count & top locations
         if authorized_count is not None:
-            st.markdown(f"**Authorized Agencies:** {authorized_count}")
+            st.markdown(f"<p style='font-size:13px; color:#4ADE80;'>✅ Authorized Agencies: {authorized_count}</p>", unsafe_allow_html=True)
         if top_locations:
-            st.markdown(f"**Top Locations:** {', '.join(top_locations)}")
+            st.markdown(f"<p style='font-size:13px;'>📍 Top Locations: {', '.join(top_locations)}</p>", unsafe_allow_html=True)
 
-        # ✅ Display each agency as plain text (no table)
-        st.markdown("### 🏢 Agencies Found")
+        # ✅ Agencies list (smaller, clean text)
+        st.markdown("<h4 style='margin-top: 15px;'>🏢 Agencies Found</h4>", unsafe_allow_html=True)
+
         for i, row in enumerate(rows, start=1):
             name_en = row.get("hajj_company_en", "N/A")
             name_ar = row.get("hajj_company_ar", "")
@@ -280,15 +283,16 @@ class ChatInterface:
             authorized = row.get("is_authorized", "N/A")
 
             st.markdown(f"""
-    **{i}. {name_en}**  
-    {name_ar}  
-    📍 *{city}, {country}*  
-    📧 {email}  
-    📞 {contact}  
-    ⭐ {rating}  
-    🔒 Authorized: {authorized}  
-    ---
-    """)
+    <div style='font-size:14px; line-height:1.5; margin-bottom:10px; padding:8px 10px; border-left: 3px solid #3B82F6; background-color: #0f172a0d; border-radius:8px;'>
+    <b style='font-size:15px; color:#2563EB;'>{i}. {name_en}</b><br>
+    <span style='color:#64748B;'>{name_ar}</span><br>
+    📍 <i>{city}, {country}</i><br>
+    📧 <span style='color:#0369A1;'>{email}</span><br>
+    📞 {contact}<br>
+    ⭐ {rating}<br>
+    🔒 <b style='color:{"#22C55E" if authorized == "Yes" else "#EF4444"};'>{authorized}</b>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 
