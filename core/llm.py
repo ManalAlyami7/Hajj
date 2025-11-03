@@ -548,13 +548,29 @@ LIMIT 50;
     def ask_for_more_info(self, user_input: str, language: str) -> Dict:
         """Generate structured response asking user for more specific information"""
         is_arabic = language == "العربية"
-        
+        prompt = f"""You are a helpful Hajj verification assistant.
+    The user's question: "{user_input}" needs more details to provide accurate information.
+    Examples of vague questions:
+    - "I want to verify an agency" (which agency?)
+    - "Tell me about Hajj companies" (what specifically?)
+    - "Is this authorized?" (which company?)
+    - "Check this company" (need company name)
+
+    Ask for specific details in a friendly way. Focus on:
+    1. Agency name (if verifying a company)
+    2. Location (city/country)
+    3. What specifically they want to know
+
+    Use Arabic if user input is Arabic, otherwise English.
+    Keep it brief but friendly.
+    Add a simple example of a more specific question.
+    """
         try:
             response = self.client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You help users provide more specific Hajj agency queries."},
-                    {"role": "user", "content": user_input}
+                    {"role": "user", "content": prompt}
                 ],
                 response_format=NEEDSInfoResponse,
                 temperature=0.7
