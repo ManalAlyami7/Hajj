@@ -39,8 +39,11 @@ class GraphState(TypedDict):
     top_locations: Optional[List[str]]
     greeting_text: Optional[str]
     general_answer: Optional[str]
-    needs_info: Optional[str]  # Add this field
-
+    needs_info: Optional[str]
+    suggestions: Optional[List[str]]
+    missing_info: Optional[List[str]]
+    sample_query: Optional[str]
+    
 
 # -----------------------------
 # Chat Graph
@@ -284,7 +287,11 @@ class ChatGraph:
             "authorized_count": None,
             "top_locations": None,
             "greeting_text": None,
-            "general_answer": None
+            "general_answer": None,
+            "needs_info": None,
+            "suggestions": None,
+            "missing_info": None,
+            "sample_query": None
         }
         
         try:

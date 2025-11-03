@@ -193,9 +193,8 @@ class ChatInterface:
         """Route response based on type"""
         if state.get("greeting_text"):
             self._respond(state["greeting_text"])
-        elif state.get("ask_for_info"):
-            # New: Handle NEEDS_INFO responses with suggestions
-            self._handle_needs_info(state["ask_for_info"])
+        elif state.get("needs_info"):
+            self._handle_needs_info(state["needs_info"])
         elif state.get("general_answer"):
             self._respond(state["general_answer"])
         elif state.get("summary") or state.get("result_rows"):
@@ -209,20 +208,9 @@ class ChatInterface:
         """Display helpful response when more information is needed"""
         lang = st.session_state.get("language", "English")
         
-        # Show friendly message with suggestions
         st.markdown(info_request)
-        
-        # Add suggestion buttons
-        st.markdown("### " + t("try_these", lang))
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("🔍 " + t("show_all_authorized", lang)):
-                self._add_message("user", t("list_authorized_query", lang))
-        with col2:
-            if st.button("🌍 " + t("search_by_location", lang)):
-                self._add_message("user", t("location_search_example", lang))
-        
+        if st.button("🔊 Listen",):
+            self._create_voice_player(info_request, autoplay=True)
         # Add the info request to chat history
         self._add_message("assistant", info_request)
 
