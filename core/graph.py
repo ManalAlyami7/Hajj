@@ -90,7 +90,7 @@ class ChatGraph:
         # Other branches terminate
         builder.add_edge("respond_greeting", END)
         builder.add_edge("respond_general", END)
-        builder.add_edge("ask_for_more_info", END)
+        builder.add_edge("needs_info", END)
         
         return builder.compile()
     
