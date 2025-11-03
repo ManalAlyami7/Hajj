@@ -234,7 +234,6 @@ class ChatGraph:
         
         return {
             "summary": summary_result["summary"],
-            "user_question": summary_result['user_question']
         }
     
     # -----------------------------
