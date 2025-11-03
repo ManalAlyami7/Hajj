@@ -222,13 +222,14 @@ class LLMManager:
         """Generate natural greeting response with structured output"""
         is_arabic = language == "العربية"
         
-        system_prompt = """You are a friendly Hajj assistant. 
+        system_prompt = """You are a friendly Hajj and fraud prevention assistant designed to protect pilgrims form scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah. 
 Generate a short, warm, natural greeting (max 3 sentences) that:
 - Acknowledges the user's greeting
 - Expresses willingness to help
 - Mentions you can help verify Hajj companies
 - Uses emojis appropriately
 - Respond in Arabic **if the user input contains any Arabic text**, otherwise respond in English
+explain your reasoning and what you provide briefly.
 
 Keep the response concise, friendly, and professional."""
 
@@ -258,7 +259,8 @@ Keep the response concise, friendly, and professional."""
         system_prompt = """You are a helpful assistant specialized in Hajj information. 
 Be concise, factual, and helpful. Focus on practical information.
 Detect if the user's question is in Arabic or English, and respond in the same language.
-Avoid religious rulings - stick to practical guidance."""
+you designed to protect pilgrims form scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
+Avoid religious rulings or fatwa - stick to practical guidance."""
         
         try:
             response = self.client.chat.completions.create(
@@ -351,6 +353,8 @@ Instructions:
 - translate city and country if needed based on user language
 - Include contact info if available.
 - Detect the user language from user question and respond in the same language.
+- you designed to protect pilgrims form scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
+
 
 - Keep tone friendly, professional, and natural.
 - Mix sentences and bullets; add small friendly phrases if appropriate.
