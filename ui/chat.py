@@ -289,13 +289,7 @@ class ChatInterface:
             </div>
             """, unsafe_allow_html=True)
 
-        # ---------- Optional voice summary ----------
-        if st.button("🔊 Listen to Summary Again"):
-            summary_text = (
-                f"{total_rows} agencies found. {authorized_count} authorized. "
-                f"Top locations include {', '.join(top_locations[:3]) if top_locations else 'various cities'}."
-            )
-            self._create_voice_player(summary_text, autoplay=True)
+
 
 
 
