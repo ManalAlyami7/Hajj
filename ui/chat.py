@@ -225,35 +225,75 @@ class ChatInterface:
             st.warning(summary)
             self._add_message("assistant", summary)
 
-    def _display_results(self, result_data: dict):
-        """Display agency search results in a structured, card-style layout"""
-        rows = result_data.get("rows", [])
-        authorized_count = result_data.get("authorized_count", 0)
-        top_locations = result_data.get("top_locations", [])
-        total_rows = result_data.get("total_rows", len(rows))
+    # def _display_results(self, result_data: dict):
+    #     """Display agency search results in a structured, card-style layout"""
+    #     rows = result_data.get("rows", [])
+    #     authorized_count = result_data.get("authorized_count", 0)
+    #     top_locations = result_data.get("top_locations", [])
+    #     total_rows = result_data.get("total_rows", len(rows))
 
+    #     if not rows:
+    #         st.info("No agencies found.")
+    #         return
+
+    #     df = pd.DataFrame(rows)
+
+    #     # ---------- Summary Badges ----------
+    #     st.markdown("<hr>", unsafe_allow_html=True)
+    #     col1, col2, col3 = st.columns(3)
+    #     with col1:
+    #         st.markdown(
+    #             f"<div style='padding:6px 10px;background:#4f46e5;color:white;border-radius:8px;display:inline-block;'>📋 Results: {total_rows}</div>",
+    #             unsafe_allow_html=True)
+    #     with col2:
+    #         st.markdown(
+    #             f"<div style='padding:6px 10px;background:#10b981;color:white;border-radius:8px;display:inline-block;'>✅ Authorized: {authorized_count}</div>",
+    #             unsafe_allow_html=True)
+    #     if top_locations:
+    #         with col3:
+    #             st.markdown(
+    #                 f"<div style='padding:6px 10px;background:#6366f1;color:white;border-radius:8px;display:inline-block;'>📍 Top: {', '.join(top_locations[:3])}</div>",
+    #                 unsafe_allow_html=True)
+
+    def _display_results(self, result_data: dict):
+        """Render stored results in chat history"""
+        rows = result_data.get("rows", [])
         if not rows:
-            st.info("No agencies found.")
+            st.info("No results found.")
             return
 
-        df = pd.DataFrame(rows)
+        # Display each result as a card
+        for row in rows:
+            company_name = row.get("company_name", "Unknown Company")
+            city = row.get("city", "N/A")
+            country = row.get("country", "N/A")
+            email = row.get("email", "N/A")
+            contact = row.get("contact_info", "N/A")
+            rating = row.get("rating", "N/A")
+            reviews = row.get("reviews_count", "N/A")
+            location = row.get("location", "N/A")
+            is_auth = row.get("is_authorized", "Unknown")
 
-        # ---------- Summary Badges ----------
-        st.markdown("<hr>", unsafe_allow_html=True)
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.markdown(
-                f"<div style='padding:6px 10px;background:#4f46e5;color:white;border-radius:8px;display:inline-block;'>📋 Results: {total_rows}</div>",
-                unsafe_allow_html=True)
-        with col2:
-            st.markdown(
-                f"<div style='padding:6px 10px;background:#10b981;color:white;border-radius:8px;display:inline-block;'>✅ Authorized: {authorized_count}</div>",
-                unsafe_allow_html=True)
-        if top_locations:
-            with col3:
-                st.markdown(
-                    f"<div style='padding:6px 10px;background:#6366f1;color:white;border-radius:8px;display:inline-block;'>📍 Top: {', '.join(top_locations[:3])}</div>",
-                    unsafe_allow_html=True)
+            auth_badge = "✅ Authorized" if is_auth.lower() in ["yes", "authorized", "true"] else "❌ Not Authorized"
+
+            st.markdown(f"""
+            <div style="
+                border-radius:12px;
+                padding:14px;
+                margin:10px 0;
+                background:rgba(255,255,255,0.05);
+                border:1px solid rgba(255,255,255,0.15);
+            ">
+                <h4 style="margin-bottom:6px;">🕋 {company_name}</h4>
+                <p>📍 <b>City:</b> {city}, {country}</p>
+                <p>📧 <b>Email:</b> {email}</p>
+                <p>📞 <b>Contact:</b> {contact}</p>
+                <p>⭐ <b>Rating:</b> {rating} ({reviews} reviews)</p>
+                <p>🌐 <b>Location:</b> {location}</p>
+                <p>{auth_badge}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
 
         # ---------- Results Title ----------
         st.markdown("### 🕋 Authorized Hajj Agencies")
