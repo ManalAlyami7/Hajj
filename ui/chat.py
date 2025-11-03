@@ -31,8 +31,8 @@ class ChatInterface:
         """Render chat interface"""
         self._display_chat_history()
         self._handle_user_input()
-        if self._show_quick_actions():
-            self._display_quick_actions()
+        #if self._show_quick_actions():
+            #self._display_quick_actions()
 
     # -------------------
     # Quick Actions
