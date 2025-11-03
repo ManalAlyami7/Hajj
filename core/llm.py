@@ -11,7 +11,7 @@ import re
 from typing import Optional, List, Dict, Literal
 from pydantic import BaseModel, Field
 import logging
-
+import json
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -341,6 +341,7 @@ Avoid religious rulings - stick to practical guidance."""
             }
 
         
+        data_preview = json.dumps(sample_rows[:50], ensure_ascii=False)
 
         summary_prompt = f"""
 You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
@@ -348,57 +349,22 @@ You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
 Your task:
 → Summarize SQL query results clearly and naturally, with a warm, conversational tone that feels friendly and professional.
 
-Context:
-- User question: {user_input}
-- Total rows returned: {row_count}
-- Language: {language}
-- Use Arabic if user language is العربية, otherwise English.
+User question: {user_input}
+Language: {language}
+Data: {data_preview}
 
-INSTRUCTIONS:
-1. Start with a short, friendly intro if applicable like “Sure, here’s what I found!” or “أكيد! هذا ما وجدته لك 👇”.
-2. Summarize the main results:
-   - If the query lists *agencies*, use bullet points (✅ Authorized / ❌ Not Authorized).
-   - If the query counts *countries, cities, or agencies*, give a clear numeric summary.
-   - If it’s location-based, mention key cities or regions.
-3. Always include **authorization status** and **location** for agencies.
-4. If contact details (email, phone, website) exist in the data, include them naturally from the results.
-5. End with a friendly or reassuring closing line, for example:
-   - “Go ahead, this agency looks legitimate.”  
-   - “You can contact them confidently.”  
-   - “Let me know if you’d like me to verify another one.”
-6. Maintain a consistent, polite tone in the selected language.
-7. Do NOT invent or guess any data — only summarize what’s actually in the database results.
-8. Keep responses concise and easy to read.
-
----
-
-### 🔹 English (verification example)
-✅ Royal City Travel — Cairo, Egypt — Authorized  
-This agency is verified and officially recognized. Go ahead — it’s safe to proceed!
-
-### 🔹 Arabic (authorization example)
-وكالة **المدينة المتميزة للحج** — جدة، السعودية — ✅ معتمدة  
-يمكنك الاعتماد عليها بثقة. هل ترغب أن أتحقق من وكالة أخرى؟
-
----
-
-### Example outputs
-
-**English Example:**
-Sure, here’s what I found!  
-Abdullah Ali Abdullah Bin Mahfouz & Partners Company is authorized to serve domestic pilgrims in Saudi Arabia.  
-You can contact them at +966 55 123 4567 or info@mahfouzgroup.com.  
-Go ahead — this agency looks legitimate and ready to assist you.
-
-**Arabic Example:**
-أكيد! هذا ما وجدته لك 👇  
-شركة عبدالله علي عبدالله بن محفوظ وشركاه مصرح لها بخدمة الحجاج داخل المملكة.  
-يمكنك التواصل معهم على الرقم +966551234567 أو عبر البريد info@mahfouz.com.  
-تفضل، وكالة موثوقة يمكنك الاعتماد عليها.
-
----
-
-Now summarize the query results following these instructions.
+Instructions:
+- Summarize each agency with name, city, country, authorization status.
+- Include contact info if available.
+- Keep tone friendly, professional, and natural.
+- Mix sentences and bullets; add small friendly phrases if appropriate.
+- Use Arabic if language = "العربية", else English.
+- Do NOT invent any data.
+Feel free to:
+- Mix sentences and bullet points
+- Add small friendly phrases like “You can contact them confidently.”
+- Vary sentence structure per agency
+- Keep summary concise and readable
 """
 
 

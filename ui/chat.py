@@ -252,6 +252,7 @@ class ChatInterface:
                 "authorized_count": authorized_count,
                 "top_locations": top_locations
             }
+            self._display_results(result_data)
             self._add_message("assistant", summary, result_data=result_data)
         else:
             st.warning(summary)
@@ -329,6 +330,7 @@ class ChatInterface:
                 <br><b>Status:</b> {status_icon}
             </div>
             """, unsafe_allow_html=True)
+            save_chat_memory()
 
 
     # -------------------
