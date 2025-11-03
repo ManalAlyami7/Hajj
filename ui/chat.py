@@ -242,7 +242,7 @@ class ChatInterface:
              self._create_voice_player(summary, autoplay=True)
         if rows:
             df = pd.DataFrame(rows)
-            self._display_results_summary(df)
+            #self._display_results_summary(df)
             st.session_state.last_result_df = df
             result_data = {
                 "rows": df.head(100).to_dict(orient="records"),
@@ -257,7 +257,7 @@ class ChatInterface:
             st.warning(summary)
             self._add_message("assistant", summary)
 
-    # def _display_results(self, result_data: dict):
+    # def _display_results_summary(self, result_data: dict):
     #     """Display agency search results in a structured, card-style layout"""
     #     rows = result_data.get("rows", [])
     #     authorized_count = result_data.get("authorized_count", 0)
