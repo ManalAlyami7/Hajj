@@ -146,6 +146,7 @@ class LLMManager:
 
         1️⃣ GREETING: greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا. 
         - No specific agency information is provided.
+        - if user asks about your capabilities or services.
         - User just wants to chat or start conversation.
 
         2️⃣ DATABASE: questions about verifying specific Hajj agencies, checking authorization, company details, locations, contacts, etc.
