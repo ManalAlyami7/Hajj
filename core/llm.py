@@ -3,6 +3,7 @@ LLM Manager Module
 Handles OpenAI API interactions for chat and TTS with structured outputs
 """
 
+import random
 import streamlit as st
 from openai import OpenAI
 import io
