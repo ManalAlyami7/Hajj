@@ -161,8 +161,10 @@ class ChatInterface:
                         )
                 
                 # Display result data if present
-                if msg.get("result_data"):
-                    self._display_results(msg["result_data"])
+                
+                #if msg.get("result_data"):
+                   
+                   # self._display_results(msg["result_data"])
 
     # -------------------
     # User Input Handling
@@ -227,33 +229,13 @@ class ChatInterface:
     def _handle_database_results(self, state: dict):
         """Display structured DB results"""
         summary = state.get("summary", "")
-        rows = state.get("result_rows", [])
-        key_insights = state.get("key_insights", [])
-        authorized_count = state.get("authorized_count")
-        top_locations = state.get("top_locations", [])
-        sql_explanation = state.get("sql_explanation")
 
 
         if summary:
             st.markdown(summary)
        
-        if summary and st.button("🔊 Listen to Summary"):
-
-             self._create_voice_player(summary, autoplay=True)
-        if rows:
-            df = pd.DataFrame(rows)
-            #self._display_results_summary(df)
-            st.session_state.last_result_df = df
-            result_data = {
-                "rows": df.head(100).to_dict(orient="records"),
-                "columns": list(df.columns),
-                "total_rows": len(df),
-                "key_insights": key_insights,
-                "authorized_count": authorized_count,
-                "top_locations": top_locations
-            }
-            self._display_results(result_data)
-            self._add_message("assistant", summary, result_data=result_data)
+            if st.button("🔊 Listen to Summary"):
+               self._create_voice_player(summary, autoplay=True)
         else:
             st.warning(summary)
             self._add_message("assistant", summary)
