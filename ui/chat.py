@@ -276,63 +276,13 @@ class ChatInterface:
     #                 unsafe_allow_html=True)
 
     def _display_results(self, result_data: dict):
-<<<<<<< HEAD
         """Render stored results in chat history (simple text list, smaller, styled text)"""
-=======
         """Render stored results in chat history"""
->>>>>>> ad98509727bfc3c0e45f1e3e355391f962c98f0a
         rows = result_data.get("rows", [])
         if not rows:
             st.info("No results found.")
             return
 
-<<<<<<< HEAD
-        # ✅ Summary text + voice option
-        if summary:
-            st.info(summary)
-            
-        # ✅ Key insights
-        if key_insights:
-            st.markdown("<h4 style='margin-top: 10px;'>🔍 Key Insights</h4>", unsafe_allow_html=True)
-            for i, insight in enumerate(key_insights, start=1):
-                st.markdown(f"<p style='font-size:14px; margin:0;'>• {insight}</p>", unsafe_allow_html=True)
-
-        # ✅ Authorized count & top locations
-        if authorized_count is not None:
-            st.markdown(f"<p style='font-size:13px; color:#4ADE80;'>✅ Authorized Agencies: {authorized_count}</p>", unsafe_allow_html=True)
-        if top_locations:
-            st.markdown(f"<p style='font-size:13px;'>📍 Top Locations: {', '.join(top_locations)}</p>", unsafe_allow_html=True)
-
-        # ✅ Agencies list (smaller, clean text)
-        st.markdown("<h4 style='margin-top: 15px;'>🏢 Agencies Found</h4>", unsafe_allow_html=True)
-
-        for i, row in enumerate(rows, start=1):
-            name_en = row.get("hajj_company_en", "N/A")
-            name_ar = row.get("hajj_company_ar", "")
-            city = row.get("city", "N/A")
-            country = row.get("country", "N/A")
-            email = row.get("email", "N/A")
-            contact = row.get("contact_Info", "N/A")
-            rating = row.get("rating_reviews", "N/A")
-            authorized = row.get("is_authorized", "N/A")
-            final_summary += f"{name_en}, located in {city}, {country}. Contact: {contact}. Email: {email}. Rating: {rating}. Authorization status: {authorized}."
-
-
-            st.markdown(f"""
-    <div style='font-size:14px; line-height:1.5; margin-bottom:10px; padding:8px 10px; border-left: 3px solid #3B82F6; background-color: #0f172a0d; border-radius:8px;'>
-    <b style='font-size:15px; color:#2563EB;'>{i}. {name_en}</b><br>
-    <span style='color:#64748B;'>{name_ar}</span><br>
-    📍 <i>{city}, {country}</i><br>
-    📧 <span style='color:#0369A1;'>{email}</span><br>
-    📞 {contact}<br>
-    ⭐ {rating}<br>
-    🔒 <b style='color:{"#22C55E" if authorized == "Yes" else "#EF4444"};'>{authorized}</b>
-    </div>
-    """, unsafe_allow_html=True)
-            if st.button("🔊 Listen to Summary", key=f"summary_{uuid.uuid4()}"):
-                self._create_voice_player(final_summary, autoplay=True)
-                
-=======
         # Display each result as a card
         for row in rows:
             company_name = row.get("company_name", "Unknown Company")
@@ -400,12 +350,6 @@ class ChatInterface:
             </div>
             """, unsafe_allow_html=True)
 
-
-
-
->>>>>>> ad98509727bfc3c0e45f1e3e355391f962c98f0a
-
-    
 
     # -------------------
     # TTS
