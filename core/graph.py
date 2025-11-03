@@ -34,9 +34,6 @@ class GraphState(TypedDict):
     columns: Optional[List[str]]
     row_count: Optional[int]
     summary: Optional[str]
-    key_insights: Optional[List[str]]
-    authorized_count: Optional[int]
-    top_locations: Optional[List[str]]
     greeting_text: Optional[str]
     general_answer: Optional[str]
     needs_info: Optional[str]
@@ -237,9 +234,7 @@ class ChatGraph:
         
         return {
             "summary": summary_result["summary"],
-            "key_insights": summary_result["key_insights"],
-            "authorized_count": summary_result["authorized_count"],
-            "top_locations": summary_result["top_locations"]
+            "user_question": summary_result['user_question']
         }
     
     # -----------------------------
@@ -283,9 +278,6 @@ class ChatGraph:
             "columns": None,
             "row_count": None,
             "summary": None,
-            "key_insights": None,
-            "authorized_count": None,
-            "top_locations": None,
             "greeting_text": None,
             "general_answer": None,
             "needs_info": None,
