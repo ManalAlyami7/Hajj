@@ -60,22 +60,7 @@ class QuerySummary(BaseModel):
     summary: str = Field(
         description="Natural language summary of the query results"
     )
-    key_insights: List[str] = Field(
-        default_factory=list,
-        description="Key insights or highlights from the data"
-    )
-    total_results: int = Field(
-        description="Total number of results found"
-    )
-    authorized_count: Optional[int] = Field(
-        None,
-        description="Number of authorized agencies (if applicable)"
-    )
-    top_locations: List[str] = Field(
-        default_factory=list,
-        description="Top cities or countries mentioned"
-    )
-
+  
 
 class GreetingResponse(BaseModel):
     """Structured output for greeting responses"""
@@ -334,10 +319,6 @@ Avoid religious rulings - stick to practical guidance."""
         if row_count == 0:
             return {
                 "summary": "No results found. Try rephrasing your question or broadening the search." if language == "English" else "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال.",
-                "key_insights": [],
-                "total_results": 0,
-                "authorized_count": None,
-                "top_locations": []
             }
 
         
@@ -354,6 +335,12 @@ Language: {language}
 Data: {data_preview}
 
 Instructions:
+- use setences like "Here are the results I found for you:" or "Based on the data, here's what I found:"
+- be concise and clear
+- Highlight number of matching records
+- Provide actionable advice if relevant
+- Use emojis sparingly to enhance friendliness
+- use a mix of sentences and bullet points
 - Summarize each agency with name, city, country, authorization status.
 - Include contact info if available.
 - Keep tone friendly, professional, and natural.
@@ -383,24 +370,15 @@ Feel free to:
 
             final_summary = f"{summary_data.summary}"
 
-            logger.info(f"Summary generated with {len(summary_data.key_insights)} insights")
 
             return {
                 "summary": final_summary,
-                "key_insights": summary_data.key_insights,
-                "total_results": summary_data.total_results,
-                "authorized_count": summary_data.authorized_count,
-                "top_locations": summary_data.top_locations
             }
 
         except Exception as e:
             logger.error(f"Structured summary generation failed: {e}")
             return {
                 "summary": f"📊 Found {row_count} matching records.",
-                "key_insights": [],
-                "total_results": row_count,
-                "authorized_count": None,
-                "top_locations": []
             }
 
     def text_to_speech(self, text: str, language: str) -> Optional[io.BytesIO]:
