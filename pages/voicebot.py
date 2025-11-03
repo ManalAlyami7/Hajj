@@ -165,7 +165,7 @@ for k, v in defaults.items():
 # ---------------------------
 st.markdown("""
 <div class="voice-header">
-  <div class="voice-title">🕋 Hajj Voice Assistant</div>
+  <div>🕋<span class="voice-title"> Hajj Voice Assistant</span></div>
   <div class="voice-subtitle">Real-time Speech Recognition & AI Responses</div>
 </div>
 """, unsafe_allow_html=True)
