@@ -225,75 +225,74 @@ class ChatInterface:
             st.warning(summary)
             self._add_message("assistant", summary)
 
+    def _display_results_summary(self, df: pd.DataFrame):
+        """Show metrics badges for results"""
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"<div style='display:inline-block;padding:6px;background:#667eea;color:white;border-radius:8px;'>📊 {t('results_badge', st.session_state.language, count=len(df))}</div>", unsafe_allow_html=True)
+        if "is_authorized" in df.columns:
+            auth_count = len(df[df["is_authorized"] == "Yes"])
+            with col2:
+                st.markdown(f"<div style='display:inline-block;padding:6px;background:#38ef7d;color:white;border-radius:8px;'>🔒 {t('authorized_badge', st.session_state.language, count=auth_count)}</div>", unsafe_allow_html=True)
+
+
+
     def _display_results(self, result_data: dict):
-        """Display agency search results in a structured, card-style layout"""
+        """Render stored results in chat history (simple text list, no tables/cards)"""
         rows = result_data.get("rows", [])
-        authorized_count = result_data.get("authorized_count", 0)
+        key_insights = result_data.get("key_insights", [])
+        authorized_count = result_data.get("authorized_count")
         top_locations = result_data.get("top_locations", [])
-        total_rows = result_data.get("total_rows", len(rows))
+        summary = result_data.get("summary", "")
 
         if not rows:
-            st.info("No agencies found.")
+            st.warning("No results found.")
             return
 
-        df = pd.DataFrame(rows)
+        # ✅ Display summary text and voice option
+        if summary:
+            st.info(summary)
+            if st.button("🔊 Listen to Summary", key=f"summary_{uuid.uuid4()}"):
+                self._create_voice_player(summary, autoplay=True)
 
-        # ---------- Summary Badges ----------
-        st.markdown("<hr>", unsafe_allow_html=True)
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.markdown(
-                f"<div style='padding:6px 10px;background:#4f46e5;color:white;border-radius:8px;display:inline-block;'>📋 Results: {total_rows}</div>",
-                unsafe_allow_html=True)
-        with col2:
-            st.markdown(
-                f"<div style='padding:6px 10px;background:#10b981;color:white;border-radius:8px;display:inline-block;'>✅ Authorized: {authorized_count}</div>",
-                unsafe_allow_html=True)
+        # ✅ Display key insights if any
+        if key_insights:
+            st.markdown("### 🔍 Key Insights")
+            for i, insight in enumerate(key_insights, start=1):
+                st.markdown(f"- {insight}")
+
+        # ✅ Authorized count & locations
+        if authorized_count is not None:
+            st.markdown(f"**Authorized Agencies:** {authorized_count}")
         if top_locations:
-            with col3:
-                st.markdown(
-                    f"<div style='padding:6px 10px;background:#6366f1;color:white;border-radius:8px;display:inline-block;'>📍 Top: {', '.join(top_locations[:3])}</div>",
-                    unsafe_allow_html=True)
+            st.markdown(f"**Top Locations:** {', '.join(top_locations)}")
 
-        # ---------- Results Title ----------
-        st.markdown("### 🕋 Authorized Hajj Agencies")
-
-        # ---------- Agency Cards ----------
-        for _, row in df.iterrows():
-            name_en = row.get("hajj_company_en", "") or "N/A"
-            name_ar = row.get("hajj_company_ar", "") or ""
-            address = row.get("formatted_address", "")
-            city = row.get("city", "")
-            country = row.get("country", "")
-            email = row.get("email", "")
-            phone = row.get("contact_Info", "")
-            rating = row.get("rating_reviews", "")
-            authorized = row.get("is_authorized", "")
-
-            # Status icon
-            status_icon = "✅ Authorized" if authorized.lower() == "yes" else "❌ Not Authorized"
-            bg_color = "rgba(16,185,129,0.1)" if authorized.lower() == "yes" else "rgba(239,68,68,0.1)"
-            border_color = "#10b981" if authorized.lower() == "yes" else "#ef4444"
+        # ✅ Display each agency as plain text (no table)
+        st.markdown("### 🏢 Agencies Found")
+        for i, row in enumerate(rows, start=1):
+            name_en = row.get("hajj_company_en", "N/A")
+            name_ar = row.get("hajj_company_ar", "")
+            city = row.get("city", "N/A")
+            country = row.get("country", "N/A")
+            email = row.get("email", "N/A")
+            contact = row.get("contact_Info", "N/A")
+            rating = row.get("rating_reviews", "N/A")
+            authorized = row.get("is_authorized", "N/A")
 
             st.markdown(f"""
-            <div style='padding:14px;margin:10px 0;border-radius:10px;
-                        background:{bg_color};border:1.5px solid {border_color};'>
-                <strong>🏢 {name_en}</strong>  
-                {f"<br><span style='color:#555;font-size:0.95rem;'>({name_ar})</span>" if name_ar else ""}<br><br>
-                📍 <b>Address:</b> {address or "N/A"}  
-                <br>🏙️ <b>City:</b> {city or "N/A"} | 🌍 <b>Country:</b> {country or "N/A"}  
-                <br>☎️ <b>Phone:</b> {phone or "N/A"}  
-                <br>📧 <b>Email:</b> {email or "N/A"}  
-                <br>⭐ <b>Rating & Reviews:</b> {rating or "N/A"}  
-                <br><b>Status:</b> {status_icon}
-            </div>
-            """, unsafe_allow_html=True)
+    **{i}. {name_en}**  
+    {name_ar}  
+    📍 *{city}, {country}*  
+    📧 {email}  
+    📞 {contact}  
+    ⭐ {rating}  
+    🔒 Authorized: {authorized}  
+    ---
+    """)
 
 
 
 
-
-    
 
     # -------------------
     # TTS
