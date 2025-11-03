@@ -347,6 +347,8 @@ Instructions:
 - Mix sentences and bullets; add small friendly phrases if appropriate.
 - Use Arabic if language = "العربية", else English.
 - Do NOT invent any data.
+- if rows count more than 1, list the names and important details of up to 10 agencies
+
 Feel free to:
 - Mix sentences and bullet points
 - Add small friendly phrases like “You can contact them confidently.”
@@ -369,6 +371,7 @@ Feel free to:
             summary_data = response.choices[0].message.parsed
 
             final_summary = f"{summary_data.summary}"
+            logger.info("Summary generated successfully.")
 
 
             return {
