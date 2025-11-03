@@ -11,6 +11,7 @@ import base64
 from utils.translations import t
 from utils.state import save_chat_memory
 from utils.validators import validate_user_input
+import uuid
 
 
 class ChatInterface:
@@ -129,18 +130,37 @@ class ChatInterface:
     # Chat History Display
     # -------------------
     def _display_chat_history(self):
-        """Display all messages in chat memory"""
+        """Display all messages in chat history"""
         for idx, msg in enumerate(st.session_state.chat_memory):
             role = msg.get("role", "assistant")
             avatar = "🕋" if role == "assistant" else "👤"
+            
             with st.chat_message(role, avatar=avatar):
+                # Message content
                 st.markdown(msg.get("content", ""), unsafe_allow_html=True)
-                if msg.get("timestamp"):
-                    st.markdown(f"<div style='color: #777; font-size:0.8rem'>🕐 {self._format_time(msg['timestamp'])}</div>", unsafe_allow_html=True)
+                
+                # Timestamp and TTS button side by side
                 if role == "assistant":
-                    tts_btn_key = f"tts_btn_{idx}"
-                    if st.button("🔊 Listen", key=tts_btn_key):
-                        self._create_voice_player(msg.get("content", "")[:4000], autoplay=True)
+                    col1, col2 = st.columns([0.7, 0.3])
+                    with col1:
+                        if msg.get("timestamp"):
+                            st.markdown(
+                                f"<div style='color: #777; font-size:0.8rem; margin-top:4px'>🕐 {self._format_time(msg['timestamp'])}</div>",
+                                unsafe_allow_html=True
+                            )
+                    with col2:
+                        tts_btn_key = f"tts_btn_{idx}"
+                        if st.button("🔊", key=tts_btn_key, help="Listen to message"):
+                            self._create_voice_player(msg.get("content", "")[:4000], autoplay=True)
+                else:
+                    # For user messages, just show timestamp
+                    if msg.get("timestamp"):
+                        st.markdown(
+                            f"<div style='color: #777; font-size:0.8rem; margin-top:4px'>🕐 {self._format_time(msg['timestamp'])}</div>",
+                            unsafe_allow_html=True
+                        )
+                
+                # Display result data if present
                 if msg.get("result_data"):
                     self._display_results(msg["result_data"])
 
@@ -239,8 +259,6 @@ class ChatInterface:
 
     def _display_results(self, result_data: dict):
         """Render stored results in chat history (simple text list, smaller, styled text)"""
-        
-
         rows = result_data.get("rows", [])
         key_insights = result_data.get("key_insights", [])
         authorized_count = result_data.get("authorized_count")
@@ -254,9 +272,7 @@ class ChatInterface:
         # ✅ Summary text + voice option
         if summary:
             st.info(summary)
-            if st.button("🔊 Listen to Summary", key=f"summary_{uuid.uuid4()}"):
-                self._create_voice_player(summary, autoplay=True)
-
+            
         # ✅ Key insights
         if key_insights:
             st.markdown("<h4 style='margin-top: 10px;'>🔍 Key Insights</h4>", unsafe_allow_html=True)
@@ -281,6 +297,8 @@ class ChatInterface:
             contact = row.get("contact_Info", "N/A")
             rating = row.get("rating_reviews", "N/A")
             authorized = row.get("is_authorized", "N/A")
+            final_summary += f"{name_en}, located in {city}, {country}. Contact: {contact}. Email: {email}. Rating: {rating}. Authorization status: {authorized}."
+
 
             st.markdown(f"""
     <div style='font-size:14px; line-height:1.5; margin-bottom:10px; padding:8px 10px; border-left: 3px solid #3B82F6; background-color: #0f172a0d; border-radius:8px;'>
@@ -293,10 +311,9 @@ class ChatInterface:
     🔒 <b style='color:{"#22C55E" if authorized == "Yes" else "#EF4444"};'>{authorized}</b>
     </div>
     """, unsafe_allow_html=True)
-
-
-
-
+            if st.button("🔊 Listen to Summary", key=f"summary_{uuid.uuid4()}"):
+                self._create_voice_player(final_summary, autoplay=True)
+                
 
     # -------------------
     # TTS
