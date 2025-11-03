@@ -257,6 +257,7 @@ Keep the response concise, friendly, and professional."""
         """Generate answer for general Hajj questions"""
         system_prompt = """You are a helpful assistant specialized in Hajj information. 
 Be concise, factual, and helpful. Focus on practical information.
+Detect if the user's question is in Arabic or English, and respond in the same language.
 Avoid religious rulings - stick to practical guidance."""
         
         try:
@@ -339,6 +340,7 @@ Language: {language}
 Data: {data_preview}
 
 Instructions:
+- Acknowledge the user's question
 - use setences like "Here are the results I found for you:" or "Based on the data, here's what I found:"
 - be concise and clear
 - Highlight number of matching records
@@ -348,6 +350,7 @@ Instructions:
 - Summarize each agency with name, city, country, authorization status.
 - translate city and country if needed based on user language
 - Include contact info if available.
+- Detect the user language from the input and respond in the same language.
 
 - Keep tone friendly, professional, and natural.
 - Mix sentences and bullets; add small friendly phrases if appropriate.
