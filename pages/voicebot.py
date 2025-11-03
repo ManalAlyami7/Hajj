@@ -209,19 +209,11 @@ with col_left:
       </div>
     </div>
     """, unsafe_allow_html=True)
-    audio_value = st.audio_input("Click to start recording", key="audio_input")
-    
 
-    audio_bytes = audio_recorder(
-        text="",
-        recording_color="#ef4444",
-        neutral_color="#3b82f6",
-        icon_name="microphone",
-        icon_size="2x",
-        pause_threshold=2.0,
-        sample_rate=16000,
-        key="voice_recorder",
-    )
+    audio_bytes = st.audio_input("Click to start recording", key="audio_input")
+
+
+    
 
 # Right: Transcript + Response
 with col_right:
@@ -317,7 +309,8 @@ def build_initial_state(audio_bytes):
         "messages_history": st.session_state.voice_messages,
     }
 
-if audio_bytes and audio_bytes != st.session_state.last_audio:
+
+if audio_bytes and not st.session_state.is_processing and audio_bytes != st.session_state.last_audio:
     st.session_state.last_audio = audio_bytes
     st.session_state.is_recording = False
     st.session_state.is_processing = True
@@ -343,7 +336,6 @@ if audio_bytes and audio_bytes != st.session_state.last_audio:
             }
             st.session_state.voice_messages.append({"role": "user", "content": transcript})
             st.session_state.voice_messages.append({"role": "assistant", "content": response})
-            st.session_state.is_processing = False
             st.session_state.is_speaking = True
             st.session_state.status = "Speaking..."
             if response_audio:
@@ -352,6 +344,7 @@ if audio_bytes and audio_bytes != st.session_state.last_audio:
             st.session_state.is_speaking = False
             st.session_state.status = "Ready"
 
+        st.session_state.is_processing = False
         st.rerun()
 
     except Exception as e:
@@ -360,11 +353,11 @@ if audio_bytes and audio_bytes != st.session_state.last_audio:
         st.session_state.is_processing = False
         st.rerun()
 
-elif audio_bytes:
-    if not st.session_state.is_recording and not st.session_state.is_processing:
-        st.session_state.is_recording = True
-        st.session_state.status = "Listening..."
-        st.rerun()
+elif audio_bytes and not st.session_state.is_processing:
+    # Only mark as listening if not already processing
+    st.session_state.is_recording = True
+    st.session_state.status = "Listening..."
+    st.rerun()
 else:
     if st.session_state.is_recording:
         st.session_state.is_recording = False
