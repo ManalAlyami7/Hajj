@@ -342,7 +342,9 @@ Instructions:
 - Use emojis sparingly to enhance friendliness
 - use a mix of sentences and bullet points
 - Summarize each agency with name, city, country, authorization status.
+- translate city and country if needed based on user language
 - Include contact info if available.
+
 - Keep tone friendly, professional, and natural.
 - Mix sentences and bullets; add small friendly phrases if appropriate.
 - Use Arabic if language = "العربية", else English.
@@ -435,6 +437,8 @@ Feel free to:
     1. Detect if the user's question is in Arabic or English.
     2. Respond with SQL query **only**, no text.
     3. Keep text fragments (LIKE clauses) in both Arabic and English for robustness.
+    4. translate city and country, etc if needed based on user language
+
     --------------------------------------------
 
     🚨 CRITICAL DATABASE CONTEXT:
