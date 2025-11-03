@@ -349,7 +349,7 @@ Instructions:
 - Mix sentences and bullets; add small friendly phrases if appropriate.
 - Use Arabic if language = "العربية", else English.
 - Do NOT invent any data.
-- if rows count more than 1, list the names and important details of up to 10 agencies
+- if rows count more than 1, list the names and important details of up to 10 agencies, use numbers or bullets. and emojies if appropriate.
 
 Feel free to:
 - Mix sentences and bullet points
