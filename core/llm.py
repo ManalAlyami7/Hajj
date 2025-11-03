@@ -229,7 +229,7 @@ class LLMManager:
 
 4. Keep response under 3 sentences
 5. Use emojis appropriately
-6. Use Arabic if user language is Arabic, else English.""" 
+6. Use Arabic if language = "العربية", else English.""" 
 
         
         try:
@@ -350,7 +350,8 @@ Instructions:
 
 - Keep tone friendly, professional, and natural.
 - Mix sentences and bullets; add small friendly phrases if appropriate.
-- Use Arabic if language = "العربية", else English.
+- Respond with user language (Arabic, English or Urdu).
+
 - Do NOT invent any data.
 - if rows count more than 1, list the names and important details of up to 10 agencies, use numbers or bullets. and emojies if appropriate.
 
