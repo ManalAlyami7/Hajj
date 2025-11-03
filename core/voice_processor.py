@@ -50,7 +50,7 @@ class VoiceProcessor:
             
             # Transcribe with verbose output for language detection
             transcript = self.client.audio.transcriptions.create(
-                model="whisper-1",
+                model="gpt-4o-mini-transcribe",
                 file=audio_file,
                 response_format="verbose_json"
             )
@@ -377,7 +377,7 @@ Voice guidelines:
         
         try:
             response = self.client.audio.speech.create(
-                model="tts-1",
+                model="gpt-4o-mini-tts",
                 voice=voice,
                 input=text
             )
