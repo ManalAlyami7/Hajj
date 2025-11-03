@@ -335,8 +335,9 @@ Avoid religious rulings - stick to practical guidance."""
     - “Go ahead, this agency looks legitimate.”  
     - “You can contact them confidently.”  
     - “Let me know if you’d like me to verify another one.”
-    4. Keep summary short (1–3 sentences or 3–5 bullets).
     5. Maintain a consistent, polite tone in the selected language.
+    6. Always focus on **authorization status** and **location** of agencies.
+    7. Do NOT fake any data — only summarize what’s in the results.
 
     Examples:
 
@@ -347,8 +348,8 @@ Avoid religious rulings - stick to practical guidance."""
     🔹 **Arabic (authorization example):**
     وكالة **المدينة المتميزة للحج** — جدة، السعودية — ✅ معتمدة  
     يمكنك الاعتماد عليها بثقة، هل ترغب أن أتحقق من وكالة أخرى؟
-    If the agency’s contact info (email, phone, or website) is in the data, include it naturally at the end like:
-“📞 You can reach them at +966 55 123 4567 or info@agency.com.”
+    If the agency’s contact info (email, phone, or website) is in the data, include it naturally from the database rows.
+
 
 When summarizing:
 - Keep it concise and structured.
