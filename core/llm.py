@@ -298,8 +298,8 @@ Avoid religious rulings - stick to practical guidance."""
     
     def generate_summary(self, user_input: str, language: str, row_count: int, sample_rows: List[Dict]) -> Dict:
         """
-        Generate natural language summary of query results with structured output
-        Returns: Dict with summary, key_insights, counts, locations
+        Generate natural, friendly, and structured summary of query results.
+        Adds assistant-like sentences and recommendations based on intent.
         """
         if row_count == 0:
             return {
@@ -309,89 +309,99 @@ Avoid religious rulings - stick to practical guidance."""
                 "authorized_count": None,
                 "top_locations": []
             }
-        
-        
+
+        # Friendly tone library
+        friendly_phrases_en = [
+            "Sure! Here's what I found for you 👇",
+            "Got it — let's check this out 💡",
+            "Here’s what the data shows, hope it helps! ✨",
+            "Absolutely, I can help with that 😊",
+            "Go ahead — this looks like a great option 👍"
+        ]
+        friendly_phrases_ar = [
+            "أكيد! هذا ما وجدته لك 👇",
+            "تمام، خلينا نشوف النتائج 💡",
+            "إليك ما يظهر في البيانات ✨",
+            "أكيد أقدر أساعدك 😊",
+            "تفضل، يبدو خيار ممتاز 👍"
+        ]
+
+        # Pick random friendly tone
+        friendly_intro = random.choice(friendly_phrases_ar if language == "العربية" else friendly_phrases_en)
+
         summary_prompt = f"""
-You are a multilingual fraud-prevention analyst for Hajj agencies.
-Your task is to summarize SQL query results clearly and concisely in 
+    You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
 
-Context:
-- User question: {user_input}
-- Total rows returned: {row_count}
-- Arabic if user language is العربية, else English
+    Your task:
+    → Summarize SQL query results clearly, and add a friendly assistant-style tone that makes responses engaging and conversational.
 
-INSTRUCTIONS:
-1. Adapt the tone and structure to the user’s intent:
-   - If the query lists *agencies*, summarize as bullet points with ✅/❌ authorization indicators.
-   - If the query counts *countries, cities, or agencies*, give a numeric summary.
-   - If it’s a location-based query (e.g., Makkah, Egypt), mention key countries or cities.
-2. Keep it concise — 1–3 sentences or short bullets.
-3. Avoid restating the full query. Focus on insights.
-4. Use language consistent with the user’s input.
-5. When possible, highlight:
-   - How many are authorized vs unauthorized
-   - Notable countries or cities
-   - Example agency names
+    Context:
+    - User question: {user_input}
+    - Total rows returned: {row_count}
+    - Language: {language}
+    - Use Arabic if user language is العربية, otherwise English.
 
-OUTPUT STYLE:
-- For agency results → numbered or bulleted list (up to 10)
-- For counts → one clear sentence
-- For locations → short analytical summary
-- For emails or contacts → mention availability and samples 
-- summarize based on what the user asked and highlight key insights
+    INSTRUCTIONS:
+    1. Start with a friendly, natural intro like “Sure, here’s what I found!” or “أكيد! هذا ما وجدته لك”.
+    2. Then summarize results:
+    - If the query lists *agencies*, use bullet points (✅ Authorized / ❌ Not Authorized).
+    - If the query counts *countries, cities, or agencies*, give numeric insight.
+    - If location-related, highlight top cities or regions.
+    3. Add a **helpful or reassuring closing sentence**, e.g.:
+    - “Go ahead, this agency looks legitimate.”  
+    - “You can contact them confidently.”  
+    - “Let me know if you’d like me to verify another one.”
+    4. Keep summary short (1–3 sentences or 3–5 bullets).
+    5. Maintain a consistent, polite tone in the selected language.
 
-Examples:
+    Examples:
 
-🔹 **English (agencies example):**
-✅ 10 agencies found related to “Al-Rahma”:
-1. AL RAHMA HAJJ & UMRA TRAVEL AGENCY — Cairo, Egypt — ✅ Authorized  
-2. Al Salam & Al Rahma Co. — Makkah, Saudi Arabia — ✅ Authorized  
-3. Dar Al Rahma — Jeddah, Saudi Arabia — ❌ Not Authorized  
-→ 7 of 10 agencies are authorized.
+    🔹 **English (verification example):**
+    ✅ Royal City Travel — Cairo, Egypt — Authorized  
+    This agency is verified and officially recognized. Go ahead, it’s safe to proceed!
 
-🔹 **Arabic (count example):**
-تم العثور على **45 وكالة معتمدة** في المدينة المنورة.  
-تعمل معظم الوكالات من **السعودية** و **مصر**، مع تقييمات عالية للخدمة.
+    🔹 **Arabic (authorization example):**
+    وكالة **المدينة المتميزة للحج** — جدة، السعودية — ✅ معتمدة  
+    يمكنك الاعتماد عليها بثقة، هل ترغب أن أتحقق من وكالة أخرى؟
 
-🔹 **English (count example):**
-There are 45 authorized agencies in Medina, mostly from Saudi Arabia and Egypt.
+    Now summarize the query results following these rules.
+    """
 
-Now summarize the query results based on the above rules.
-"""
-        
         try:
             response = self.client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You summarize Hajj agency data concisely with structured insights."},
+                    {"role": "system", "content": "You are a helpful assistant summarizing Hajj agency data in a friendly and structured way."},
                     {"role": "user", "content": summary_prompt}
                 ],
                 response_format=QuerySummary,
-                temperature=0.5
+                temperature=0.6
             )
-            
+
             summary_data = response.choices[0].message.parsed
-            
+
+            final_summary = f"{friendly_intro}\n\n{summary_data.summary}"
+
             logger.info(f"Summary generated with {len(summary_data.key_insights)} insights")
-            
+
             return {
-                "summary": summary_data.summary,
+                "summary": final_summary,
                 "key_insights": summary_data.key_insights,
                 "total_results": summary_data.total_results,
                 "authorized_count": summary_data.authorized_count,
                 "top_locations": summary_data.top_locations
             }
-            
+
         except Exception as e:
             logger.error(f"Structured summary generation failed: {e}")
             return {
-                "summary": f"📊 Found {row_count} matching records.",
+                "summary": f"{friendly_intro}\n\n📊 Found {row_count} matching records.",
                 "key_insights": [],
                 "total_results": row_count,
                 "authorized_count": None,
                 "top_locations": []
             }
-    
+
     def text_to_speech(self, text: str, language: str) -> Optional[io.BytesIO]:
         """
         Convert text to speech using OpenAI TTS
