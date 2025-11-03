@@ -161,312 +161,119 @@ class VoiceInterface:
         </div>
         """, unsafe_allow_html=True)
 
-
 class RealTimeVoiceStyles:
     """CSS styles for real-time voice interface"""
     
     @staticmethod
+    def get_base_styles() -> str:
+        return """
+        .stApp {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
+            background-attachment: fixed;
+            overflow: hidden;
+        }
+        
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header {visibility: hidden;}
+        
+        .main .block-container {
+            padding: 2rem 1rem;
+            max-width: 1200px;
+            height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        """
+
+    @staticmethod
+    def get_avatar_styles() -> str:
+        return """
+        .voice-avatar-container {
+            position: relative;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .voice-avatar {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 60px;
+            position: relative;
+            z-index: 2;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .voice-avatar.listening {
+            border-color: #ef4444;
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+        }
+        
+        .voice-avatar.speaking {
+            border-color: #3b82f6;
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+        }
+        """
+
+    @staticmethod
+    def get_panel_styles() -> str:
+        return """
+        .transcript-container, .response-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .panel-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .panel-icon {
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
+        }
+        
+        .panel-title {
+            color: white;
+            margin: 0;
+            flex-grow: 1;
+        }
+        
+        .panel-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.8rem;
+            color: white;
+        }
+        
+        .panel-badge.active {
+            background: #ef4444;
+        }
+        """
+
+    @staticmethod
     def get_styles() -> str:
         """Return complete CSS for real-time voice interface"""
-        return """
-<style>
-    .stApp {
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
-        background-attachment: fixed;
-        overflow: hidden;
-    }
-    
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-
-    .main .block-container {
-        padding: 2rem 1rem;
-        max-width: 1200px;
-        height: 90vh;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-
-    .header-container {
-        text-align: center;
-        padding: 1rem 0;
-        margin-bottom: 1rem;
-    }
-
-    .title {
-        color: white;
-        font-size: 2.5rem;
-        font-weight: 800;
-        margin-bottom: 0.3rem;
-        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        letter-spacing: 1px;
-    }
-
-    .subtitle {
-        color: rgba(255, 255, 255, 0.9);
-        font-size: 1.1rem;
-        margin-bottom: 0.3rem;
-        font-weight: 500;
-    }
-
-    .powered-by {
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 0.85rem;
-        margin-top: 0.3rem;
-    }
-
-    .avatar-section {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin: 1rem auto;
-        padding: 1.5rem;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 2rem;
-        backdrop-filter: blur(20px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .avatar-container {
-        position: relative;
-        margin-bottom: 1rem;
-    }
-    
-    .avatar {
-        width: 160px;
-        height: 160px;
-        background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
-        border-radius: 50%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 80px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-        animation: pulse 2s ease-in-out infinite;
-        position: relative;
-        z-index: 2;
-        border: 5px solid rgba(255, 255, 255, 0.3);
-    }
-    
-    .ring {
-        position: absolute;
-        border: 3px solid rgba(255, 255, 255, 0.2);
-        border-radius: 50%;
-        animation: ripple 2.5s ease-out infinite;
-    }
-    
-    .ring-1 { width: 180px; height: 180px; animation-delay: 0s; }
-    .ring-2 { width: 220px; height: 220px; animation-delay: 0.7s; }
-    .ring-3 { width: 260px; height: 260px; animation-delay: 1.4s; }
-    
-    .avatar.active {
-        animation: pulse-active 0.6s ease-in-out infinite;
-        box-shadow: 0 25px 80px rgba(126, 34, 206, 0.6);
-        border-color: rgba(255, 255, 255, 0.6);
-    }
-    
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.03); }
-    }
-    
-    @keyframes pulse-active {
-        0%, 100% { transform: scale(1); box-shadow: 0 25px 80px rgba(126, 34, 206, 0.6); }
-        50% { transform: scale(1.1); box-shadow: 0 30px 100px rgba(126, 34, 206, 0.9); }
-    }
-    
-    @keyframes ripple {
-        0% { transform: scale(0.95); opacity: 0.8; }
-        100% { transform: scale(1.6); opacity: 0; }
-    }
-
-    .status-badge {
-        display: inline-block;
-        padding: 0.7rem 1.8rem;
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 2rem;
-        color: white;
-        font-weight: 600;
-        font-size: 1rem;
-        margin-bottom: 1rem;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    }
-
-    .status-badge.listening {
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        animation: glow 1.5s ease-in-out infinite;
-    }
-
-    @keyframes glow {
-        0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
-        50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.8); }
-    }
-
-    .toast-notification {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(255, 255, 255, 0.95);
-        padding: 2rem;
-        border-radius: 2rem;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        z-index: 9999;
-        max-width: 700px;
-        width: 90%;
-        animation: toastFadeIn 0.5s ease-out;
-    }
-
-    .toast-notification.fade-out {
-        animation: toastFadeOut 0.5s ease-out forwards;
-    }
-
-    @keyframes toastFadeIn {
-        from { opacity: 0; transform: translate(-50%, -60%); }
-        to { opacity: 1; transform: translate(-50%, -50%); }
-    }
-
-    @keyframes toastFadeOut {
-        from { opacity: 1; transform: translate(-50%, -50%); }
-        to { opacity: 0; transform: translate(-50%, -60%); }
-    }
-
-    .toast-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 1rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid #e5e7eb;
-    }
-
-    .toast-icon {
-        font-size: 2.5rem;
-        margin-right: 1rem;
-    }
-
-    .toast-title {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: #1a1a1a;
-    }
-
-    .toast-metadata {
-        display: flex;
-        gap: 0.5rem;
-        margin-top: 0.5rem;
-        flex-wrap: wrap;
-    }
-
-    .toast-badge {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
-        border-radius: 1rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-
-    .toast-badge.intent { background: #7e22ce; color: white; }
-    .toast-badge.confidence { background: #10b981; color: white; }
-    .toast-badge.tone { background: #3b82f6; color: white; }
-    .toast-badge.urgency { background: #f59e0b; color: white; }
-    .toast-badge.urgency.high { background: #ef4444; color: white; }
-
-    .toast-content {
-        color: #374151;
-        line-height: 1.6;
-        font-size: 1rem;
-    }
-
-    .toast-transcript {
-        background: #f3f4f6;
-        padding: 1rem;
-        border-radius: 1rem;
-        margin: 1rem 0;
-        font-style: italic;
-        color: #4b5563;
-    }
-
-    .toast-response {
-        margin-top: 1rem;
-        padding: 1rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 1rem;
-    }
-
-    .toast-key-points {
-        background: #fef3c7;
-        padding: 1rem;
-        border-radius: 1rem;
-        margin-top: 1rem;
-        border-left: 4px solid #f59e0b;
-    }
-
-    .toast-key-points h4 {
-        margin: 0 0 0.5rem 0;
-        color: #92400e;
-        font-size: 0.9rem;
-    }
-
-    .toast-key-points ul {
-        margin: 0;
-        padding-left: 1.5rem;
-        color: #78350f;
-    }
-
-    .toast-actions {
-        background: #dbeafe;
-        padding: 1rem;
-        border-radius: 1rem;
-        margin-top: 1rem;
-        border-left: 4px solid #3b82f6;
-    }
-
-    .toast-actions h4 {
-        margin: 0 0 0.5rem 0;
-        color: #1e40af;
-        font-size: 0.9rem;
-    }
-
-    .toast-actions ul {
-        margin: 0;
-        padding-left: 1.5rem;
-        color: #1e3a8a;
-    }
-
-    .stButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 0.8rem 2rem;
-        border-radius: 3rem;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        border: 2px solid transparent;
-    }
-
-    .stButton > button:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.6);
-        border-color: rgba(255, 255, 255, 0.3);
-    }
-
-    ::-webkit-scrollbar { display: none; }
-
-    @media (max-width: 768px) {
-        .title { font-size: 2rem; }
-        .subtitle { font-size: 0.95rem; }
-        .avatar { width: 120px; height: 120px; font-size: 60px; }
-        .toast-notification { width: 95%; padding: 1.5rem; }
-    }
-</style>
-"""
+        return f"""
+        <style>
+        {RealTimeVoiceStyles.get_base_styles()}
+        {RealTimeVoiceStyles.get_avatar_styles()}
+        {RealTimeVoiceStyles.get_panel_styles()}
+        </style>
+        """
