@@ -340,7 +340,7 @@ Language: {language}
 Data: {data_preview}
 
 Instructions:
-- Acknowledge the user's question
+- Always Acknowledge the user's question
 - use setences like "Here are the results I found for you:" or "Based on the data, here's what I found:"
 - be concise and clear
 - Highlight number of matching records
@@ -350,11 +350,10 @@ Instructions:
 - Summarize each agency with name, city, country, authorization status.
 - translate city and country if needed based on user language
 - Include contact info if available.
-- Detect the user language from the input and respond in the same language.
+- Detect the user language from user question and respond in the same language.
 
 - Keep tone friendly, professional, and natural.
 - Mix sentences and bullets; add small friendly phrases if appropriate.
-- Respond with user language (Arabic, English or Urdu).
 
 - Do NOT invent any data.
 - if rows count more than 1, list the names and important details of up to 10 agencies, use numbers or bullets. and emojies if appropriate.
