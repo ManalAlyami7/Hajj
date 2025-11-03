@@ -434,12 +434,11 @@ Feel free to:
     - rating_reviews
     - is_authorized ('Yes' or 'No')
 
-    CURRENT LANGUAGE: {language}
 
 
     --------------------------------------------
     🔍 LANGUAGE DETECTION RULES:
-    1. Detect if the user's question is in Arabic or English.
+    1. Detect if the user's question is in Arabic or English. And respond in the same language.
     2. Respond with SQL query **only**, no text.
     3. Keep text fragments (LIKE clauses) in both Arabic and English for robustness.
     4. translate city and country, etc if needed based on user language
