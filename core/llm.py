@@ -222,14 +222,15 @@ class LLMManager:
         """Generate natural greeting response with structured output"""
         is_arabic = language == "العربية"
         
-        system_prompt = """You are a friendly Hajj assistant. Generate a warm, natural greeting that:
-1. Acknowledges the user's greeting
-2. Expresses willingness to help
-3. Mentions you can help with Hajj company verification
+        system_prompt = """You are a friendly Hajj assistant. 
+Generate a short, warm, natural greeting (max 3 sentences) that:
+- Acknowledges the user's greeting
+- Expresses willingness to help
+- Mentions you can help verify Hajj companies
+- Uses emojis appropriately
+- Respond in Arabic **if the user input contains any Arabic text**, otherwise respond in English
 
-4. Keep response under 3 sentences
-5. Use emojis appropriately
-6. Use Arabic when user use Arabic in their writing or want you to speak in Arabic, else English.""" 
+Keep the response concise, friendly, and professional."""
 
         
         try:
