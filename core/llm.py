@@ -311,24 +311,7 @@ Avoid religious rulings - stick to practical guidance."""
                 "top_locations": []
             }
 
-        # Friendly tone library
-        friendly_phrases_en = [
-            "Sure! Here's what I found for you 👇",
-            "Got it — let's check this out 💡",
-            "Here’s what the data shows, hope it helps! ✨",
-            "Absolutely, I can help with that 😊",
-            "Go ahead — this looks like a great option 👍"
-        ]
-        friendly_phrases_ar = [
-            "أكيد! هذا ما وجدته لك 👇",
-            "تمام، خلينا نشوف النتائج 💡",
-            "إليك ما يظهر في البيانات ✨",
-            "أكيد أقدر أساعدك 😊",
-            "تفضل، يبدو خيار ممتاز 👍"
-        ]
-
-        # Pick random friendly tone
-        friendly_intro = random.choice(friendly_phrases_ar if language == "العربية" else friendly_phrases_en)
+        
 
         summary_prompt = f"""
     You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
@@ -364,6 +347,32 @@ Avoid religious rulings - stick to practical guidance."""
     🔹 **Arabic (authorization example):**
     وكالة **المدينة المتميزة للحج** — جدة، السعودية — ✅ معتمدة  
     يمكنك الاعتماد عليها بثقة، هل ترغب أن أتحقق من وكالة أخرى؟
+    If the agency’s contact info (email, phone, or website) is in the data, include it naturally at the end like:
+“📞 You can reach them at +966 55 123 4567 or info@agency.com.”
+
+When summarizing:
+- Keep it concise and structured.
+- Use ✅ or ❌ for authorization.
+- Mention the country/city.
+- For Arabic responses, stay polite and professional but friendly (e.g. "أكيد! هذا ما وجدته لك 👇", "تفضل، يبدو خيار موثوق 👍").
+
+Example outputs:
+
+🔹 **English Example:**
+Sure, here’s what I found!  
+Abdullah Ali Abdullah Bin Mahfouz & Partners Company is authorized to serve domestic pilgrims in Saudi Arabia.  
+You can contact them at +966 55 123 4567 or info@mahfouzgroup.com.  
+Go ahead — this agency looks legitimate and ready to assist you.
+
+🔹 **Arabic Example:**
+أكيد! هذا ما وجدته لك 👇  
+شركة عبدالله علي عبدالله بن محفوظ وشركاه مصرح لها بخدمة الحجاج داخل المملكة.  
+يمكنك التواصل معهم على الرقم +966551234567 أو عبر البريد info@mahfouz.com.  
+تفضل، وكالة موثوقة يمكنك الاعتماد عليها.
+
+
+    
+
 
     Now summarize the query results following these rules.
     """
@@ -381,7 +390,7 @@ Avoid religious rulings - stick to practical guidance."""
 
             summary_data = response.choices[0].message.parsed
 
-            final_summary = f"{friendly_intro}\n\n{summary_data.summary}"
+            final_summary = f"{summary_data.summary}"
 
             logger.info(f"Summary generated with {len(summary_data.key_insights)} insights")
 
