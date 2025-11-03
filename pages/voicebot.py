@@ -291,7 +291,7 @@ with col_right:
         </div>
       </div>
       <div class="response-content">{clean_response}</div>
-      {meta_html}
+    
     </div>
     """
     st.markdown(panel_html, unsafe_allow_html=True)
