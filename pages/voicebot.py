@@ -1,9 +1,9 @@
 # voicebot.py
 """
-Hajj Voice Assistant (Cleaned + Fixed)
-- Fixed HTML showing as code blocks
-- Preserved visual design and structure
-- Removed redundant duplication
+Hajj Voice Assistant - PRODUCTION READY
+- Fixed audio processing flow
+- Fixed state management
+- Robust error handling
 """
 
 import time
@@ -12,12 +12,11 @@ import streamlit as st
 import sys
 from pathlib import Path
 
-# Ensure project root is on sys.path so local packages (core, ui, utils) are importable
-ROOT = Path(__file__).resolve().parents[1]  # c:\Users\manal\Hajj
+# Ensure project root is on sys.path
+ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-# Now safe to import project modules
 from core.voice_processor import VoiceProcessor
 from core.voice_graph import VoiceGraphBuilder
 
@@ -218,9 +217,6 @@ with col_left:
 
     audio_bytes = st.audio_input("Click to start recording", key="audio_input")
 
-
-    
-
 # Right: Transcript + Response
 with col_right:
     transcript_badge = "active" if st.session_state.is_recording or st.session_state.is_processing else ""
@@ -233,7 +229,6 @@ with col_right:
     clean_transcript = re.sub(r"<.*?>", "", transcript)
 
     # Metadata HTML
-    # --- Metadata Rendering (fixed) ---
     meta_html_parts = []
     meta = st.session_state.current_metadata
 
@@ -291,7 +286,7 @@ with col_right:
         </div>
       </div>
       <div class="response-content">{clean_response}</div>
-    
+      {meta_html}
     </div>
     """
     st.markdown(panel_html, unsafe_allow_html=True)
@@ -302,71 +297,102 @@ st.markdown("</div>", unsafe_allow_html=True)
 # Process Audio
 # ---------------------------
 def build_initial_state(audio_bytes):
+    """Build initial state for voice graph with all required fields"""
     return {
         "audio_bytes": audio_bytes,
         "transcript": "",
+        "detected_language": "en",
+        "transcription_confidence": 0.0,
+        "user_input": "",
+        "intent": "",
+        "intent_confidence": 0.0,
+        "intent_reasoning": "",
+        "is_arabic": False,
+        "urgency": "low",
         "response": "",
-        "response_audio": b"",
-        "error": "",
+        "response_tone": "",
         "key_points": [],
         "suggested_actions": [],
+        "includes_warning": False,
         "verification_steps": [],
         "official_sources": [],
+        "response_audio": b"",
+        "error": "",
         "messages_history": st.session_state.voice_messages,
     }
-if audio_bytes and not st.session_state.is_processing and audio_bytes != st.session_state.last_audio:
-    st.session_state.last_audio = audio_bytes
-    st.session_state.is_recording = False
-    st.session_state.is_processing = True
-    st.session_state.status = "Processing..."
 
-    try:
-        # Safely read audio bytes
-        audio_data = audio_bytes.read() if hasattr(audio_bytes, "read") else audio_bytes
+# Process audio when new recording is available
+if audio_bytes:
+    # Check if this is a new recording
+    if audio_bytes != st.session_state.last_audio and not st.session_state.is_processing:
+        st.session_state.last_audio = audio_bytes
+        st.session_state.is_recording = False
+        st.session_state.is_processing = True
+        st.session_state.status = "Processing..."
+        
+        # Force UI update
+        st.rerun()
 
-        # Invoke the voice graph
-        final_state = voice_graph.invoke(build_initial_state(audio_data))
+    # Process the audio
+    if st.session_state.is_processing and audio_bytes == st.session_state.last_audio:
+        try:
+            # Safely read audio bytes
+            audio_data = audio_bytes.read() if hasattr(audio_bytes, "read") else audio_bytes
+            
+            if not audio_data:
+                raise ValueError("Empty audio data received")
 
-        # Extract results
-        transcript = final_state.get("transcript", "")
-        response = final_state.get("response", "")
-        response_audio = final_state.get("response_audio", b"")
-        error = final_state.get("error", "")
+            # Invoke the voice graph
+            final_state = voice_graph.invoke(build_initial_state(audio_data))
 
-        if error:
-            st.session_state.current_transcript = f"❌ {error}"
+            # Extract results
+            transcript = final_state.get("transcript", "")
+            response = final_state.get("response", "")
+            response_audio = final_state.get("response_audio", b"")
+            error = final_state.get("error", "")
+
+            if error:
+                st.session_state.current_transcript = f"❌ {error}"
+                st.session_state.current_response = "Please try again."
+                st.session_state.status = "Error"
+            elif not transcript:
+                st.session_state.current_transcript = "❌ No speech detected"
+                st.session_state.current_response = "Please speak clearly and try again."
+                st.session_state.status = "Ready"
+            else:
+                st.session_state.current_transcript = transcript
+                st.session_state.current_response = response
+                st.session_state.current_metadata = {
+                    "key_points": final_state.get("key_points", []),
+                    "suggested_actions": final_state.get("suggested_actions", []),
+                    "verification_steps": final_state.get("verification_steps", []),
+                }
+
+                # Add to conversation history
+                if transcript and response:
+                    st.session_state.voice_messages.append({"role": "user", "content": transcript})
+                    st.session_state.voice_messages.append({"role": "assistant", "content": response})
+
+                # Play response audio if available
+                if response_audio:
+                    st.session_state.is_speaking = True
+                    st.audio(response_audio, format="audio/mp3", autoplay=True)
+                    st.session_state.is_speaking = False
+
+                st.session_state.status = "Ready"
+
+        except Exception as e:
+            st.session_state.current_transcript = f"❌ Error: {str(e)}"
+            st.session_state.current_response = "An error occurred. Please try again."
             st.session_state.status = "Error"
-        else:
-            st.session_state.current_transcript = transcript
-            st.session_state.current_response = response
-            st.session_state.current_metadata = {
-                "key_points": final_state.get("key_points", []),
-                "suggested_actions": final_state.get("suggested_actions", []),
-                "verification_steps": final_state.get("verification_steps", []),
-            }
+            st.error(f"Processing error: {e}")
 
-            st.session_state.voice_messages.append({"role": "user", "content": transcript})
-            st.session_state.voice_messages.append({"role": "assistant", "content": response})
-
-            # Play response audio if available
-            if response_audio:
-                st.audio(response_audio, format="audio/mp3", autoplay=True)
-
-            st.session_state.status = "Ready"
-
-    except Exception as e:
-        st.session_state.current_transcript = f"❌ Error: {e}"
-        st.session_state.status = "Error"
-
-    finally:
-        st.session_state.is_processing = False
-
-elif audio_bytes and not st.session_state.is_processing:
-    # Only mark as listening if not already processing
-    st.session_state.is_recording = True
-    st.session_state.status = "Listening..."
+        finally:
+            st.session_state.is_processing = False
+            st.rerun()
 
 else:
+    # No audio input - reset recording state
     if st.session_state.is_recording:
         st.session_state.is_recording = False
         st.session_state.status = "Ready"
