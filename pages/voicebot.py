@@ -11,6 +11,11 @@ import re
 import streamlit as st
 import sys
 from pathlib import Path
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 # Ensure project root is on sys.path
 ROOT = Path(__file__).resolve().parents[1]
@@ -337,6 +342,8 @@ if audio_bytes:
     if st.session_state.is_processing and audio_bytes == st.session_state.last_audio:
         try:
             # Safely read audio bytes
+            logger.info("Starting audio processing")
+            logger.info(f"Audio bytes type: {type(audio_bytes)}")
             audio_data = audio_bytes.read() if hasattr(audio_bytes, "read") else audio_bytes
             
             if not audio_data:
