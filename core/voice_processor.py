@@ -27,7 +27,7 @@ class VoiceProcessor:
     @st.cache_resource
     def _get_client(_self):
         """Get cached OpenAI client"""
-        api_key = st.secrets.get("OPENAI_API_KEY") or st.secrets.get("key")
+        api_key = st.secrets.get('key')
         if not api_key:
             logger.error("OpenAI API key not found")
             st.error("⚠️ Please add your OPENAI_API_KEY to Streamlit secrets")

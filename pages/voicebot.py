@@ -138,6 +138,14 @@ st.markdown("""
   .voice-container{grid-template-columns:1fr;gap:1rem;}
   .voice-avatar{width:140px;height:140px;font-size:70px;}
 }
+audio {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        width: 0 !important;
+        overflow: hidden !important;
+}
+   
 </style>
 """, unsafe_allow_html=True)
 
@@ -151,6 +159,11 @@ def initialize_voice_system():
     return processor, graph_builder.build()
 
 voice_processor, voice_graph = initialize_voice_system()
+import hashlib
+
+def _hash_bytes(b: bytes) -> str:
+    return hashlib.sha256(b).hexdigest()
+
 
 # ---------------------------
 # Session State
@@ -328,77 +341,98 @@ def build_initial_state(audio_bytes):
         "error": "",
         "messages_history": st.session_state.voice_messages,
     }
-
+# ---------------------------
+# Process Audio (improved)
+# ---------------------------
 if audio_bytes:
-    # Detect new recording
-    if audio_bytes != st.session_state.last_audio and not st.session_state.is_processing:
-        st.session_state.last_audio = audio_bytes
-        st.session_state.is_recording = False
-        st.session_state.is_processing = True
-        st.session_state.status = "Processing..."
-        st.rerun()  # Update UI
+    # Read raw bytes safely (UploadedFile has .read())
+    try:
+        audio_data = audio_bytes.read() if hasattr(audio_bytes, "read") else audio_bytes
+    except Exception as e:
+        logger.error(f"Failed to read audio_bytes: {e}")
+        audio_data = b""
 
-    # Process audio only once per recording
-    if st.session_state.is_processing and audio_bytes == st.session_state.last_audio:
-        try:
-            logger.info("Starting audio processing")
-            audio_data = audio_bytes.read() if hasattr(audio_bytes, "read") else audio_bytes
+    if not audio_data:
+        # Nothing to process
+        if st.session_state.is_recording:
+            st.session_state.is_recording = False
+            st.session_state.status = "Ready"
+    else:
+        # compute content hash for reliable change detection
+        audio_hash = _hash_bytes(audio_data)
 
-            if not audio_data:
-                raise ValueError("Empty audio data received")
+        # init last_audio_hash if missing
+        if "last_audio_hash" not in st.session_state:
+            st.session_state.last_audio_hash = None
 
-            # Invoke voice graph
-            final_state = voice_graph.invoke(build_initial_state(audio_data))
+        # New recording detection
+        if audio_hash != st.session_state.last_audio_hash and not st.session_state.is_processing:
+            st.session_state.last_audio_hash = audio_hash
+            st.session_state.is_recording = False
+            st.session_state.is_processing = True
+            st.session_state.status = "Processing..."
+            # No immediate st.rerun() — let the app continue rendering
 
-            # Extract results safely
-            transcript = final_state.get("transcript", "")
-            response = final_state.get("response", "")
-            response_audio = final_state.get("response_audio", b"")
-            error = final_state.get("error", "")
+        # Only process when our processing flag is set and the hash matches
+        if st.session_state.is_processing and audio_hash == st.session_state.last_audio_hash:
+            try:
+                logger.info("Starting audio processing (hash match)")
+                # Invoke voice graph
+                final_state = voice_graph.invoke(build_initial_state(audio_data))
 
-            if error:
-                st.session_state.current_transcript = f"❌ {error}"
-                st.session_state.current_response = "Please try again."
+                # Extract results safely
+                transcript = final_state.get("transcript", "")
+                response = final_state.get("response", "")
+                response_audio = final_state.get("response_audio", b"")
+                error = final_state.get("error", "")
+
+                if error:
+                    st.session_state.current_transcript = f"❌ {error}"
+                    st.session_state.current_response = "Please try again."
+                    st.session_state.status = "Error"
+                elif not transcript:
+                    st.session_state.current_transcript = "❌ No speech detected"
+                    st.session_state.current_response = "Please speak clearly and try again."
+                    st.session_state.status = "Ready"
+                else:
+                    st.session_state.current_transcript = transcript
+                    st.session_state.current_response = response
+                    st.session_state.current_metadata = {
+                        "key_points": final_state.get("key_points", []),
+                        "suggested_actions": final_state.get("suggested_actions", []),
+                        "verification_steps": final_state.get("verification_steps", []),
+                    }
+
+                    # Update conversation history
+                    if transcript:
+                        st.session_state.voice_messages.append({"role": "user", "content": transcript})
+                    if response:
+                        st.session_state.voice_messages.append({"role": "assistant", "content": response})
+
+                    # Play TTS if available
+                    if response_audio:
+                        st.session_state.is_speaking = True
+                        with st.container():
+                          st.markdown("<div style='display:none'>", unsafe_allow_html=True)
+                          st.audio(response_audio, format="audio/mp3", autoplay=True)
+                          st.markdown("</div>", unsafe_allow_html=True)
+                        st.session_state.is_speaking = False
+
+                    st.session_state.status = "Ready"
+
+            except Exception as e:
+                st.session_state.current_transcript = f"❌ Error: {str(e)}"
+                st.session_state.current_response = "An error occurred. Please try again."
                 st.session_state.status = "Error"
-            elif not transcript:
-                st.session_state.current_transcript = "❌ No speech detected"
-                st.session_state.current_response = "Please speak clearly and try again."
-                st.session_state.status = "Ready"
-            else:
-                st.session_state.current_transcript = transcript
-                st.session_state.current_response = response
-                st.session_state.current_metadata = {
-                    "key_points": final_state.get("key_points", []),
-                    "suggested_actions": final_state.get("suggested_actions", []),
-                    "verification_steps": final_state.get("verification_steps", []),
-                }
+                logger.error(f"Audio processing error: {e}", exc_info=True)
 
-                # Update conversation history
-                if transcript:
-                    st.session_state.voice_messages.append({"role": "user", "content": transcript})
-                if response:
-                    st.session_state.voice_messages.append({"role": "assistant", "content": response})
-
-                # Play TTS if available
-                if response_audio:
-                    st.session_state.is_speaking = True
-                    st.audio(response_audio, format="audio/mp3", autoplay=True)
-                    st.session_state.is_speaking = False
-
-                st.session_state.status = "Ready"
-
-        except Exception as e:
-            st.session_state.current_transcript = f"❌ Error: {str(e)}"
-            st.session_state.current_response = "An error occurred. Please try again."
-            st.session_state.status = "Error"
-            logger.error(f"Audio processing error: {e}")
-
-        finally:
-            st.session_state.is_processing = False
-            st.rerun()
+            finally:
+                st.session_state.is_processing = False
+                # Optionally UI update: only rerun if you need immediate re-render
+                # st.rerun()
 
 else:
-    # Reset recording state if no audio
+    # No audio input - reset recording state
     if st.session_state.is_recording:
         st.session_state.is_recording = False
         st.session_state.status = "Ready"
