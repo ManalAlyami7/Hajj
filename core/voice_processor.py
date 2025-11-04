@@ -6,9 +6,8 @@ Handles audio transcription, intent detection, and response generation for voice
 import streamlit as st
 from openai import OpenAI
 import io
-from typing import Dict, Optional, Literal
+from typing import Dict, Optional
 import logging
-from pydantic import BaseModel, Field
 from core.voice_models import (
     VoiceIntentClassification,
     VoiceResponse,
@@ -16,20 +15,6 @@ from core.voice_models import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-class TranscriptionResult(BaseModel):
-    """Structured output for audio transcription"""
-    text: str = Field(description="The transcribed text from audio")
-    language: Literal["en", "ar", "ur", "id", "tr"] = Field(
-        default="en",
-        description="Detected language of the audio"
-    )
-    confidence: float = Field(
-        ge=0.0, le=1.0,
-        default=1.0,
-        description="Confidence score of transcription"
-    )
 
 
 class VoiceProcessor:
@@ -81,7 +66,7 @@ class VoiceProcessor:
             transcript = self.client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_file,
-                response_format="json"  # safer, returns JSON-compatible object
+                response_format="json"
             )
 
             text = self._normalize_transcription(transcript)
@@ -408,6 +393,7 @@ Voice guidelines:
         Returns:
             Audio bytes or None if failed
         """
+        # Validate input
         if not text or not text.strip():
             logger.warning("Empty text provided to TTS")
             return None
