@@ -38,13 +38,14 @@ class VoiceProcessor:
         """Return a plain transcript string from various SDK return types."""
         try:
             # dict-like
-            if hasattr(transcription, "get"):
-                return transcription.get("text") or transcription.get("transcript") or str(transcription)
-            # object with attribute .text
-            if hasattr(transcription, "text"):
-                return transcription.text or str(transcription)
-            # fallback to string
-            return str(transcription)
+            return transcription.text
+            # if hasattr(transcription, "get"):
+            #     return transcription.get("text") or transcription.get("transcript") or str(transcription)
+            # # object with attribute .text
+            # if hasattr(transcription, "text"):
+            #     return transcription.text or str(transcription)
+            # # fallback to string
+            # return str(transcription)
         except Exception:
             return ""
     
