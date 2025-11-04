@@ -171,17 +171,28 @@ class ChatInterface:
     # -------------------
     def _handle_user_input(self):
         lang = st.session_state.get("language", "English")
-        user_input = st.session_state.pop("selected_question", None) or st.chat_input(t("input_placeholder", lang))
+        
+        # Use get instead of pop to preserve input for chat_input
+        user_input = st.session_state.get("selected_question") or st.chat_input(t("input_placeholder", lang))
         if not user_input:
             return
+        
         valid, err = validate_user_input(user_input)
         if not valid:
             st.error(f"❌ {err}")
             return
+        
         self._add_message("user", user_input)
         with st.chat_message("user", avatar="👤"):
             st.markdown(user_input)
-            st.markdown(f"<div style='color: #777; font-size:0.8rem'>🕐 {self._format_time(self._get_current_time())}</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div style='color: #777; font-size:0.8rem'>🕐 {self._format_time(self._get_current_time())}</div>",
+                unsafe_allow_html=True
+            )
+        
+        # Clear selected_question after sending
+        st.session_state.selected_question = ""
+        
         # Process through graph
         with st.chat_message("assistant", avatar="🕋"):
             with st.spinner(t("thinking", lang)):
