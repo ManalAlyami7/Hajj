@@ -34,36 +34,46 @@ class VoiceProcessor:
             st.stop()
         return OpenAI(api_key=api_key)
     
+    def _normalize_transcription(self, transcription) -> str:
+        """Return a plain transcript string from various SDK return types."""
+        try:
+            # dict-like
+            if hasattr(transcription, "get"):
+                return transcription.get("text") or transcription.get("transcript") or str(transcription)
+            # object with attribute .text
+            if hasattr(transcription, "text"):
+                return transcription.text or str(transcription)
+            # fallback to string
+            return str(transcription)
+        except Exception:
+            return ""
+
     def transcribe_audio(self, audio_bytes: bytes) -> Dict:
         """
         Transcribe audio to text with language detection
-        
-        Args:
-            audio_bytes: Raw audio data
-        
-        Returns:
-            Dict with text, language, confidence
+        Returns a normalized dict (always dict => safe .get usage).
         """
         try:
             audio_file = io.BytesIO(audio_bytes)
             audio_file.name = "audio.wav"
-            
+
             transcript = self.client.audio.transcriptions.create(
-                model="whisper-1",  # Changed from gpt-4o-mini-transcribe
+                model="whisper-1",
                 file=audio_file,
-                response_format="verbose_json"  # Changed to get more details
+                response_format="json"  # safer, returns JSON-compatible object
             )
 
-            # Access response attributes directly
+            text = self._normalize_transcription(transcript)
+
             result = {
-                "text": transcript.text or "",
-                "language": getattr(transcript, 'language', 'en'),
+                "text": text,
+                "language": getattr(transcript, "language", "en") or "en",
                 "confidence": 1.0
             }
-            
+
             logger.info(f"Transcribed: '{result['text']}' (lang: {result['language']})")
             return result
-            
+
         except Exception as e:
             logger.error(f"Transcription failed: {e}")
             return {
@@ -72,8 +82,7 @@ class VoiceProcessor:
                 "confidence": 0.0,
                 "error": str(e)
             }
-
-    
+# ...existing code...
     def detect_voice_intent(self, user_input: str, language: str = "en") -> Dict:
         """
         Detect intent with urgency level for voice interactions
