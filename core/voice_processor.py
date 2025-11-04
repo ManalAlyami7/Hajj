@@ -11,7 +11,8 @@ import logging
 from core.voice_models import (
     VoiceIntentClassification,
     VoiceResponse,
-    DatabaseVoiceResponse
+    DatabaseVoiceResponse,
+    TranscriptionResult
 )
 
 logger = logging.getLogger(__name__)
@@ -66,16 +67,15 @@ class VoiceProcessor:
             transcript = self.client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_file,
-                response_format="json"
+                response_format="json", 
             )
 
             text = self._normalize_transcription(transcript)
-
-            result = {
-                "text": text,
-                "language": getattr(transcript, "language", "en") or "en",
-                "confidence": 1.0
-            }
+            result = TranscriptionResult(
+                text=text,
+                language=getattr(transcript, "language", "en") or "en",
+                confidence=1.0
+            ).dict()
 
             logger.info(f"Transcribed: '{result['text']}' (lang: {result['language']})")
             return result
