@@ -1,13 +1,14 @@
 """
-Voice Processor Module
+Voice Processor Module - PRODUCTION READY
 Handles audio transcription, intent detection, and response generation for voice
 """
 
 import streamlit as st
 from openai import OpenAI
 import io
-from typing import Dict, Optional
+from typing import Dict, Optional, Literal
 import logging
+from pydantic import BaseModel, Field
 from core.voice_models import (
     VoiceIntentClassification,
     VoiceResponse,
@@ -15,6 +16,20 @@ from core.voice_models import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class TranscriptionResult(BaseModel):
+    """Structured output for audio transcription"""
+    text: str = Field(description="The transcribed text from audio")
+    language: Literal["en", "ar", "ur", "id", "tr"] = Field(
+        default="en",
+        description="Detected language of the audio"
+    )
+    confidence: float = Field(
+        ge=0.0, le=1.0,
+        default=1.0,
+        description="Confidence score of transcription"
+    )
 
 
 class VoiceProcessor:
@@ -35,62 +50,62 @@ class VoiceProcessor:
         return OpenAI(api_key=api_key)
     
     def _normalize_transcription(self, transcription) -> str:
-            """Return a plain transcript string from various SDK return types."""
-            try:
-                # dict-like
-                if hasattr(transcription, "get"):
-                    return transcription.get("text") or transcription.get("transcript") or str(transcription)
-                # object with attribute .text
-                if hasattr(transcription, "text"):
-                    return transcription.text or str(transcription)
-                # fallback to string
-                return str(transcription)
-            except Exception:
-                return ""
-        
+        """Return a plain transcript string from various SDK return types."""
+        try:
+            # dict-like
+            if hasattr(transcription, "get"):
+                return transcription.get("text") or transcription.get("transcript") or str(transcription)
+            # object with attribute .text
+            if hasattr(transcription, "text"):
+                return transcription.text or str(transcription)
+            # fallback to string
+            return str(transcription)
+        except Exception:
+            return ""
+    
     def transcribe_audio(self, audio_bytes: bytes) -> Dict:
-            """
-            Transcribe audio to text with language detection
-            Returns a normalized dict (always dict => safe .get usage).
-            
-            Args:
-                audio_bytes: Raw audio data
-            
-            Returns:
-                Dict with text, language, confidence
-            """
-            try:
-                audio_file = io.BytesIO(audio_bytes)
-                audio_file.name = "audio.wav"
-
-                transcript = self.client.audio.transcriptions.create(
-                    model="whisper-1",
-                    file=audio_file,
-                    response_format="json"  # safer, returns JSON-compatible object
-                )
-
-                text = self._normalize_transcription(transcript)
-
-                result = {
-                    "text": text,
-                    "language": getattr(transcript, "language", "en") or "en",
-                    "confidence": 1.0
-                }
-
-                logger.info(f"Transcribed: '{result['text']}' (lang: {result['language']})")
-                return result
-
-            except Exception as e:
-                logger.error(f"Transcription failed: {e}")
-                import traceback
-                logger.error(traceback.format_exc())
-                return {
-                    "text": "",
-                    "language": "en",
-                    "confidence": 0.0,
-                    "error": str(e)
-                }
+        """
+        Transcribe audio to text with language detection
+        Returns a normalized dict (always dict => safe .get usage).
         
+        Args:
+            audio_bytes: Raw audio data
+        
+        Returns:
+            Dict with text, language, confidence
+        """
+        try:
+            audio_file = io.BytesIO(audio_bytes)
+            audio_file.name = "audio.wav"
+
+            transcript = self.client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file,
+                response_format="json"  # safer, returns JSON-compatible object
+            )
+
+            text = self._normalize_transcription(transcript)
+
+            result = {
+                "text": text,
+                "language": getattr(transcript, "language", "en") or "en",
+                "confidence": 1.0
+            }
+
+            logger.info(f"Transcribed: '{result['text']}' (lang: {result['language']})")
+            return result
+
+        except Exception as e:
+            logger.error(f"Transcription failed: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return {
+                "text": "",
+                "language": "en",
+                "confidence": 0.0,
+                "error": str(e)
+            }
+    
     def detect_voice_intent(self, user_input: str, language: str = "en") -> Dict:
         """
         Detect intent with urgency level for voice interactions
@@ -102,6 +117,17 @@ class VoiceProcessor:
         Returns:
             Dict with intent, confidence, reasoning, urgency
         """
+        # CRITICAL: Validate input before processing
+        if not user_input or not user_input.strip():
+            logger.warning("Empty user_input provided to detect_voice_intent")
+            return {
+                "intent": "GENERAL_HAJJ",
+                "confidence": 0.0,
+                "reasoning": "Empty input",
+                "is_arabic": False,
+                "urgency": "low"
+            }
+        
         intent_prompt = f"""
 Classify this voice message into ONE category with confidence and urgency:
 
@@ -382,6 +408,10 @@ Voice guidelines:
         Returns:
             Audio bytes or None if failed
         """
+        if not text or not text.strip():
+            logger.warning("Empty text provided to TTS")
+            return None
+        
         # Voice mapping
         voice_map = {
             "ar": "onyx",  # Better for Arabic
