@@ -2,7 +2,7 @@
 """
 Hajj Voice Assistant - PRODUCTION READY
 - Fixed audio processing flow with audio_recorder
-- Fixed state management
+- UI updates BEFORE TTS playback
 - Robust error handling
 """
 
@@ -146,7 +146,6 @@ audio {
   width: 0 !important;
   overflow: hidden !important;
 }
-/* Audio Recorder Styling */
 .audio-recorder-container {
   display: flex;
   justify-content: center;
@@ -205,6 +204,7 @@ defaults = {
     "is_recording": False,
     "is_processing": False,
     "is_speaking": False,
+    "pending_audio": None,  # Store audio to play after UI update
     "current_transcript": "",
     "current_response": "",
     "current_metadata": {},
@@ -353,6 +353,22 @@ with col_right:
 st.markdown("</div>", unsafe_allow_html=True)
 
 # ---------------------------
+# Play Pending Audio (AFTER UI is rendered)
+# ---------------------------
+if st.session_state.pending_audio:
+    logger.info("Playing pending audio response...")
+    
+    # Play audio
+    st.markdown("<div style='display:none'>", unsafe_allow_html=True)
+    st.audio(st.session_state.pending_audio, format="audio/mp3", autoplay=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Clear pending audio
+    st.session_state.pending_audio = None
+    st.session_state.is_speaking = False
+    st.session_state.status = "Ready"
+
+# ---------------------------
 # Process Audio with audio_recorder
 # ---------------------------
 if audio_bytes:
@@ -386,17 +402,19 @@ if audio_bytes:
                 st.session_state.current_transcript = f"❌ {error}"
                 st.session_state.current_response = "Please try again."
                 st.session_state.status = "Error"
+                st.session_state.pending_audio = None
                 
             elif not transcript:
                 logger.warning("No speech detected")
                 st.session_state.current_transcript = "❌ No speech detected"
                 st.session_state.current_response = "Please speak clearly and try again."
                 st.session_state.status = "Ready"
+                st.session_state.pending_audio = None
                 
             else:
                 logger.info(f"Success - Transcript: {transcript[:50]}...")
                 
-                # Update UI state
+                # Update UI state FIRST
                 st.session_state.current_transcript = transcript
                 st.session_state.current_response = response
                 st.session_state.current_metadata = {
@@ -417,32 +435,26 @@ if audio_bytes:
                         "content": response
                     })
                 
-                # Play TTS audio if available
+                # Store audio to play AFTER UI updates
                 if response_audio and len(response_audio) > 0:
-                    logger.info("Playing TTS audio...")
+                    logger.info("Storing audio for playback after UI update...")
+                    st.session_state.pending_audio = response_audio
                     st.session_state.is_speaking = True
                     st.session_state.status = "Speaking..."
-                    
-                    # Hidden audio player with autoplay
-                    st.markdown("<div style='display:none'>", unsafe_allow_html=True)
-                    st.audio(response_audio, format="audio/mp3", autoplay=True)
-                    st.markdown("</div>", unsafe_allow_html=True)
-                    
-                    # Reset speaking state after short delay
-                    time.sleep(1)
-                    st.session_state.is_speaking = False
-                
-                st.session_state.status = "Ready"
+                else:
+                    st.session_state.pending_audio = None
+                    st.session_state.status = "Ready"
         
         except Exception as e:
             logger.error(f"Audio processing error: {e}", exc_info=True)
             st.session_state.current_transcript = f"❌ Error: {str(e)}"
             st.session_state.current_response = "An error occurred. Please try again."
             st.session_state.status = "Error"
+            st.session_state.pending_audio = None
         
         finally:
             st.session_state.is_processing = False
-            # Force UI update
+            # Force UI update - audio will play on next render
             st.rerun()
 
 else:
