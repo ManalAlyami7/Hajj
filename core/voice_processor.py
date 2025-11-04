@@ -54,9 +54,10 @@ class VoiceProcessor:
                 response_format="json"
             )
 
+            # Fix: Access attributes directly, not with .get()
             result = {
-                "text": transcript.get("text", ""),
-                "language": transcript.get("language", "en"),
+                "text": transcript.text if hasattr(transcript, 'text') else "",
+                "language": transcript.language if hasattr(transcript, 'language') else "en",
                 "confidence": 1.0
             }
             
