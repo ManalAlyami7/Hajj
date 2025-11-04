@@ -11,8 +11,7 @@ import logging
 from core.voice_models import (
     VoiceIntentClassification,
     VoiceResponse,
-    DatabaseVoiceResponse,
-    TranscriptionResult
+    DatabaseVoiceResponse
 )
 
 logger = logging.getLogger(__name__)
@@ -54,6 +53,10 @@ class VoiceProcessor:
         Transcribe audio to text with language detection
         Returns a normalized dict (always dict => safe .get usage).
         
+        Whisper API Response Formats:
+        - "json": Returns object with .text attribute only
+        - "verbose_json": Returns object with .text, .language, .duration, etc.
+        
         Args:
             audio_bytes: Raw audio data
         
@@ -64,20 +67,29 @@ class VoiceProcessor:
             audio_file = io.BytesIO(audio_bytes)
             audio_file.name = "audio.wav"
 
+            # Use verbose_json to get language detection
             transcript = self.client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_file,
-                response_format="json", 
+                response_format="verbose_json"  # Provides language detection
             )
 
+            # Extract text using normalization
             text = self._normalize_transcription(transcript)
-            result = TranscriptionResult(
-                text=text,
-                language=getattr(transcript, "language", "en") or "en",
-                confidence=1.0
-            ).dict()
+            
+            # Extract language if available (verbose_json provides this)
+            language = getattr(transcript, "language", None)
+            if not language:
+                # Fallback: detect from text if it contains Arabic characters
+                language = "ar" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "en"
 
-            logger.info(f"Transcribed: '{result['text']}' (lang: {result['language']})")
+            result = {
+                "text": text,
+                "language": language,
+                "confidence": 1.0  # Whisper doesn't provide confidence scores
+            }
+
+            logger.info(f"Transcribed: '{result['text'][:50]}...' (lang: {result['language']})")
             return result
 
         except Exception as e:

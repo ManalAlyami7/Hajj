@@ -4,20 +4,26 @@ Pydantic models specific to voice assistant functionality
 """
 
 from pydantic import BaseModel, Field
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 
 class TranscriptionResult(BaseModel):
-    """Structured output for audio transcription"""
-    text: str = Field(description="The transcribed text from audio")
-    language: Literal["en", "ar", "ur", "id", "tr"] = Field(
+    """
+    Structured output for audio transcription
+    NOTE: This is for internal use only. Whisper API returns a simple object with .text attribute.
+    We normalize it in VoiceProcessor._normalize_transcription() before using this model.
+    """
+    text: str = Field(
+        description="The transcribed text from audio"
+    )
+    language: Optional[str] = Field(
         default="en",
-        description="Detected language of the audio"
+        description="Detected language (only available with verbose_json format)"
     )
     confidence: float = Field(
         ge=0.0, le=1.0,
         default=1.0,
-        description="Confidence score of transcription"
+        description="Confidence score (Whisper doesn't provide this, so we default to 1.0)"
     )
 
 
