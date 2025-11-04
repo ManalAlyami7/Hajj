@@ -1,5 +1,5 @@
 """
-Voice Graph Module
+Voice Graph Module - FIXED
 LangGraph workflow for voice assistant interactions
 """
 
@@ -77,6 +77,9 @@ class VoiceGraphBuilder:
             
             if "error" in result:
                 state["error"] = result["error"]
+                # CRITICAL: Set user_input even on error to prevent downstream crashes
+                state["user_input"] = ""
+                state["transcript"] = ""
             else:
                 state["transcript"] = result["text"]
                 state["user_input"] = result["text"]
@@ -87,12 +90,23 @@ class VoiceGraphBuilder:
             error_msg = f"Transcription node error: {str(e)}"
             logger.error(error_msg)
             state["error"] = error_msg
+            state["user_input"] = ""  # Prevent KeyError
+            state["transcript"] = ""
         
         return state
     
     def detect_intent_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Detect user intent with urgency"""
         try:
+            # Check if user_input exists and is not empty
+            if not state.get("user_input"):
+                state["intent"] = "GENERAL_HAJJ"
+                state["intent_confidence"] = 0.0
+                state["intent_reasoning"] = "No input provided"
+                state["is_arabic"] = False
+                state["urgency"] = "low"
+                return state
+            
             result = self.processor.detect_voice_intent(
                 state["user_input"],
                 state.get("detected_language", "en")
@@ -109,6 +123,9 @@ class VoiceGraphBuilder:
             logger.error(error_msg)
             state["error"] = error_msg
             state["intent"] = "GENERAL_HAJJ"
+            state["intent_confidence"] = 0.0
+            state["is_arabic"] = False
+            state["urgency"] = "low"
         
         return state
     
@@ -196,19 +213,19 @@ class VoiceGraphBuilder:
         """Node: Convert response to speech"""
         try:
             audio_bytes = self.processor.text_to_speech(
-                state["response"],
+                state.get("response", ""),
                 state.get("detected_language", "en")
             )
             
             if audio_bytes:
                 state["response_audio"] = audio_bytes
             else:
-                state["error"] = "TTS generation failed"
+                logger.warning("TTS generation returned no audio")
                 
         except Exception as e:
             error_msg = f"TTS node error: {str(e)}"
             logger.error(error_msg)
-            state["error"] = error_msg
+            # Don't set error here, allow response to display even without audio
         
         return state
     
