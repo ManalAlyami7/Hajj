@@ -288,6 +288,7 @@ class ChatInterface:
                 raise RuntimeError("No audio returned")
             audio_bytes = audio_io.getvalue() if hasattr(audio_io, "getvalue") else bytes(audio_io)
             b64 = base64.b64encode(audio_bytes).decode("ascii")
+<<<<<<< HEAD
 
             html = f"""
             <audio id="audio_{idx}" src="data:audio/mp3;base64,{b64}"></audio>
@@ -302,6 +303,9 @@ class ChatInterface:
             """
             components.html(html, height=50)
             
+=======
+            st.markdown(f'<div style="display:none"><audio {"autoplay" if autoplay else ""} src="data:audio/mp3;base64,{b64}"></audio></div>', unsafe_allow_html=True)
+>>>>>>> e4625e9 (Save local changes before pull)
         except Exception as e:
             st.error(f"❌ TTS failed: {str(e)}")
 
