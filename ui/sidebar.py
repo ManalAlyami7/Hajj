@@ -121,9 +121,14 @@ class SidebarInterface:
                 key=f"example_{i}",
                 use_container_width=True
             ):
+                # Store the example in session state
                 st.session_state.selected_question = t(question_key, lang)
+                
+                # Optionally trigger auto-submit
+                st.session_state.submit_example = True
+                
                 st.rerun()
-    
+`
     def _render_clear_button(self):
         """Render clear chat button"""
         lang = st.session_state.language
