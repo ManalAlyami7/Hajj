@@ -9,10 +9,20 @@ Hajj Voice Assistant (Cleaned + Fixed)
 import time
 import re
 import streamlit as st
+# ...existing code...
+import sys
+from pathlib import Path
 
-# Core imports (must exist in your project)
+# Ensure project root is on sys.path so local packages (core, ui, utils) are importable
+ROOT = Path(__file__).resolve().parents[1]  # c:\Users\manal\Hajj
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+# Now safe to import project modules
 from core.voice_processor import VoiceProcessor
 from core.voice_graph import VoiceGraphBuilder
+# ...existing code...
+
 
 # ---------------------------
 # Streamlit Config
