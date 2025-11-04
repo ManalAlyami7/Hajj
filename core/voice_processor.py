@@ -13,6 +13,7 @@ from core.voice_models import (
     VoiceResponse,
     DatabaseVoiceResponse
 )
+from core.database import DatabaseManager  # ADD THIS IMPORT
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class VoiceProcessor:
     def __init__(self):
         """Initialize Voice Processor with OpenAI client"""
         self.client = self._get_client()
+        self.db = DatabaseManager() # INITIALIZE DATABASE MANAGER
     
     @st.cache_resource
     def _get_client(_self):
@@ -132,6 +134,7 @@ Classify this voice message into ONE category with confidence and urgency:
 1️⃣ GREETING: greetings like hello, hi, salam, السلام عليكم, مرحبا
 2️⃣ DATABASE: questions about Hajj agencies, authorization, company verification
 3️⃣ GENERAL_HAJJ: general Hajj questions (rituals, requirements, documents)
+
 
 Message: {user_input}
 
@@ -255,31 +258,38 @@ Also provide:
     
     def generate_database_response(self, user_input: str, is_arabic: bool = False) -> Dict:
         """
-        Generate database/verification response for voice
+        Generate database/verification response for voice WITH REAL DATA
         
         Args:
             user_input: User's query about agencies
             is_arabic: Whether to respond in Arabic
         
         Returns:
-            Dict with response, verification steps, warning, sources
+            Dict with response, verification steps, warning, sources, and actual data
         """
-        system_prompt = f"""You are a fraud-prevention voice assistant for Hajj pilgrims.
-
-CRITICAL CONTEXT:
-- 415 fake Hajj offices closed in 2025
-- 269,000+ unauthorized pilgrims stopped
-- URGENT: User needs immediate verification guidance
-
-Generate a voice response that:
-1. Acknowledges their query
-2. Provides clear verification steps (3-4 steps)
-3. Issues strong warning about fake agencies
-4. Lists official sources
-5. Keep it BRIEF for voice but COMPREHENSIVE
-{'6. Respond in Arabic' if is_arabic else '6. Respond in English'}
-
-User query: {user_input}"""
+        
+        # STEP 1: Try to get actual database results
+        actual_data = None
+        sql_query = None
+        
+        try:
+            # Generate SQL query using AI
+            sql_query = self._generate_sql_for_voice(user_input, is_arabic)
+            
+            if sql_query:
+                logger.info(f"Generated SQL: {sql_query}")
+                df, error = self.db.execute_query(sql_query)
+                
+                if df is not None and not df.empty:
+                    actual_data = df
+                    logger.info(f"Found {len(df)} results from database")
+                elif error:
+                    logger.warning(f"SQL execution error: {error}")
+        except Exception as e:
+            logger.error(f"Database query failed: {e}")
+        
+        # STEP 2: Generate voice response with context from actual data
+        system_prompt = self._build_database_prompt(user_input, is_arabic, actual_data)
         
         try:
             response = self.client.beta.chat.completions.parse(
@@ -294,23 +304,155 @@ User query: {user_input}"""
             
             db_data = response.choices[0].message.parsed
             
-            return {
+            result = {
                 "response": db_data.response,
                 "verification_steps": db_data.verification_steps,
                 "warning_message": db_data.warning_message,
                 "official_sources": db_data.official_sources,
-                "tone": db_data.tone
+                "tone": db_data.tone,
+                "actual_data": actual_data,  # Include actual DataFrame
+                "sql_query": sql_query
             }
+            
+            return result
             
         except Exception as e:
             logger.error(f"Database voice response failed: {e}")
-            return self._fallback_database_response(is_arabic)
+            return self._fallback_database_response(is_arabic, actual_data)
     
-    def _fallback_database_response(self, is_arabic: bool) -> Dict:
-        """Fallback database response"""
+    def _generate_sql_for_voice(self, user_input: str, is_arabic: bool) -> Optional[str]:
+        """
+        Generate SQL query from voice input using AI
+        """
+        sql_generation_prompt = f"""Generate SQL query for this voice request about Hajj agencies.
+
+Database table 'agencies' columns:
+- hajj_company_ar (Arabic name)
+- hajj_company_en (English name)
+- city
+- country
+- email
+- contact_Info
+- formatted_address
+- rating_reviews
+- is_authorized ('Yes' or 'No')
+
+LOCATION HANDLING:
+- Use LIKE with % for fuzzy matching
+- Include Arabic AND English variations
+- Example for Mecca: (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%')
+
+User voice input: {user_input}
+
+Rules:
+1. ONLY return SELECT queries
+2. Use is_authorized = 'Yes' when user asks about verified/authorized agencies
+3. Use LOWER() for case-insensitive English text
+4. Limit to 50 results unless specified
+5. Return ONLY the SQL query, no explanation
+
+If cannot generate safe SQL, return: NO_SQL"""
+
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a SQL expert. Generate only SELECT queries."},
+                    {"role": "user", "content": sql_generation_prompt}
+                ],
+                temperature=0
+            )
+            
+            sql = response.choices[0].message.content.strip()
+            
+            # Clean SQL (remove markdown formatting if present)
+            if sql.startswith("```"):
+                sql = sql.split("```")[1]
+                if sql.startswith("sql"):
+                    sql = sql[3:]
+            sql = sql.strip().rstrip(';')
+            
+            if sql == "NO_SQL" or not sql.upper().startswith("SELECT"):
+                return None
+            
+            # Validate with database manager
+            return self.db.sanitize_sql(sql)
+            
+        except Exception as e:
+            logger.error(f"SQL generation failed: {e}")
+            return None
+    
+    def _build_database_prompt(self, user_input: str, is_arabic: bool, actual_data) -> str:
+        """Build system prompt with actual data context"""
+        
+        data_context = ""
+        if actual_data is not None and not actual_data.empty:
+            # Summarize actual results
+            total = len(actual_data)
+            authorized = len(actual_data[actual_data['is_authorized'] == 'Yes']) if 'is_authorized' in actual_data.columns else 0
+            
+            # Get sample records
+            sample = actual_data.head(5).to_dict('records')
+            
+            data_context = f"""
+ACTUAL DATABASE RESULTS FOUND:
+- Total agencies found: {total}
+- Authorized agencies: {authorized}
+- Sample records: {sample}
+
+IMPORTANT: Reference these ACTUAL results in your response!
+"""
+        else:
+            data_context = """
+NO RESULTS FOUND in database for this query.
+User may need to:
+1. Rephrase their question
+2. Try different city/country names
+3. Check spelling
+"""
+        
+        base_prompt = f"""You are a fraud-prevention voice assistant for Hajj pilgrims.
+
+CRITICAL CONTEXT:
+- 415 fake Hajj offices closed in 2025
+- 269,000+ unauthorized pilgrims stopped
+- URGENT: User needs immediate verification guidance
+
+{data_context}
+
+Generate a voice response that:
+1. {'References the ACTUAL agencies found' if actual_data is not None and not actual_data.empty else 'Explains no results were found'}
+2. Provides clear verification steps (3-4 steps)
+3. Issues strong warning about fake agencies
+4. Lists official sources
+5. Keep it BRIEF for voice but COMPREHENSIVE
+{'6. Respond in Arabic' if is_arabic else '6. Respond in English'}
+
+User query: {user_input}"""
+        
+        return base_prompt
+    
+    def _fallback_database_response(self, is_arabic: bool, actual_data=None) -> Dict:
+        """Enhanced fallback with actual data if available"""
+        
+        # If we have data, include it in fallback
+        if actual_data is not None and not actual_data.empty:
+            count = len(actual_data)
+            auth_count = len(actual_data[actual_data['is_authorized'] == 'Yes']) if 'is_authorized' in actual_data.columns else 0
+            
+            if is_arabic:
+                response = f"وجدت {count} وكالة، منها {auth_count} معتمدة. تحقق من الترخيص قبل الحجز!"
+            else:
+                response = f"Found {count} agencies, {auth_count} are authorized. Verify authorization before booking!"
+        else:
+            if is_arabic:
+                response = "تحذير هام! تم إغلاق 415 مكتب حج مزيف. تحقق من ترخيص الوكالة قبل الحجز."
+            else:
+                response = "⚠️ CRITICAL: 415 fake Hajj offices were closed. Always verify agency authorization before booking!"
+        
         if is_arabic:
             return {
-                "response": "تحذير هام! تم إغلاق 415 مكتب حج مزيف. تحقق من ترخيص الوكالة قبل الحجز.",
+                "response": response,
                 "verification_steps": [
                     "تحقق من قاعدة بيانات وزارة الحج",
                     "تأكد من موقع المكتب الفعلي",
@@ -318,11 +460,13 @@ User query: {user_input}"""
                 ],
                 "warning_message": "احجز فقط من خلال الوكالات المعتمدة!",
                 "official_sources": ["وزارة الحج والعمرة"],
-                "tone": "urgent"
+                "tone": "urgent",
+                "actual_data": actual_data,
+                "sql_query": None
             }
         else:
             return {
-                "response": "⚠️ CRITICAL: 415 fake Hajj offices were closed. Always verify agency authorization before booking!",
+                "response": response,
                 "verification_steps": [
                     "Check Ministry of Hajj official database",
                     "Verify physical office location",
@@ -331,9 +475,10 @@ User query: {user_input}"""
                 ],
                 "warning_message": "Book ONLY through AUTHORIZED agencies!",
                 "official_sources": ["Ministry of Hajj and Umrah"],
-                "tone": "urgent"
+                "tone": "urgent",
+                "actual_data": actual_data,
+                "sql_query": None
             }
-    
     def generate_general_response(self, user_input: str, is_arabic: bool = False, context: list = None) -> Dict:
         """
         Generate general Hajj information response for voice
