@@ -219,7 +219,6 @@ class VoiceGraphBuilder:
             
             if audio_bytes:
                 state["response_audio"] = audio_bytes
-                st.audio(audio_bytes, format="audio/wav", start_time=0, autoplay=True)
 
             else:
                 logger.warning("TTS generation returned no audio")
