@@ -142,7 +142,7 @@ class LLMManager:
         Returns: Dict with intent, confidence, and reasoning
         """
         intent_prompt = f"""
-        You are a fraud-prevention assistant for Hajj pilgrims. Classify this message into ONE of four categories:
+        You are a fraud-prevention assistant for Hajj pilgrims. you need to understand user and use the context in addition to the message, Classify this message into ONE of four categories:
 
         1️⃣ GREETING: greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا. 
         - No specific agency information is provided.

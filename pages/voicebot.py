@@ -9,7 +9,6 @@ Hajj Voice Assistant (Cleaned + Fixed)
 import time
 import re
 import streamlit as st
-from audio_recorder_streamlit import audio_recorder
 
 # Core imports (must exist in your project)
 from core.voice_processor import VoiceProcessor
