@@ -128,7 +128,7 @@ class SidebarInterface:
                 st.session_state.submit_example = True
                 
                 st.rerun()
-`
+
     def _render_clear_button(self):
         """Render clear chat button"""
         lang = st.session_state.language
