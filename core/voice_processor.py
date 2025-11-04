@@ -48,17 +48,16 @@ class VoiceProcessor:
             audio_file = io.BytesIO(audio_bytes)
             audio_file.name = "audio.wav"
             
-            # Transcribe with verbose output for language detection
             transcript = self.client.audio.transcriptions.create(
                 model="gpt-4o-mini-transcribe",
                 file=audio_file,
-                response_format="verbose_json"
+                response_format="json"
             )
-            
+
             result = {
-                "text": transcript.text,
-                "language": getattr(transcript, 'language', 'en'),
-                "confidence": 1.0  # Whisper doesn't provide confidence
+                "text": transcript.get("text", ""),
+                "language": transcript.get("language", "en"),
+                "confidence": 1.0
             }
             
             logger.info(f"Transcribed: '{result['text']}' (lang: {result['language']})")
@@ -72,6 +71,7 @@ class VoiceProcessor:
                 "confidence": 0.0,
                 "error": str(e)
             }
+
     
     def detect_voice_intent(self, user_input: str, language: str = "en") -> Dict:
         """

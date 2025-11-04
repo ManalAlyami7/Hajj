@@ -314,8 +314,6 @@ def build_initial_state(audio_bytes):
         "official_sources": [],
         "messages_history": st.session_state.voice_messages,
     }
-
-
 if audio_bytes and not st.session_state.is_processing and audio_bytes != st.session_state.last_audio:
     st.session_state.last_audio = audio_bytes
     st.session_state.is_recording = False
@@ -323,8 +321,13 @@ if audio_bytes and not st.session_state.is_processing and audio_bytes != st.sess
     st.session_state.status = "Processing..."
 
     try:
-        audio_data = audio_bytes.read()
+        # Safely read audio bytes
+        audio_data = audio_bytes.read() if hasattr(audio_bytes, "read") else audio_bytes
+
+        # Invoke the voice graph
         final_state = voice_graph.invoke(build_initial_state(audio_data))
+
+        # Extract results
         transcript = final_state.get("transcript", "")
         response = final_state.get("response", "")
         response_audio = final_state.get("response_audio", b"")
@@ -341,32 +344,29 @@ if audio_bytes and not st.session_state.is_processing and audio_bytes != st.sess
                 "suggested_actions": final_state.get("suggested_actions", []),
                 "verification_steps": final_state.get("verification_steps", []),
             }
+
             st.session_state.voice_messages.append({"role": "user", "content": transcript})
             st.session_state.voice_messages.append({"role": "assistant", "content": response})
-            st.session_state.is_speaking = True
-            st.session_state.status = "Speaking..."
+
+            # Play response audio if available
             if response_audio:
                 st.audio(response_audio, format="audio/mp3", autoplay=True)
-                time.sleep(2)
-            st.session_state.is_speaking = False
-            st.session_state.status = "Ready"
 
-        st.session_state.is_processing = False
-        st.rerun()
+            st.session_state.status = "Ready"
 
     except Exception as e:
         st.session_state.current_transcript = f"❌ Error: {e}"
         st.session_state.status = "Error"
+
+    finally:
         st.session_state.is_processing = False
-        st.rerun()
 
 elif audio_bytes and not st.session_state.is_processing:
     # Only mark as listening if not already processing
     st.session_state.is_recording = True
     st.session_state.status = "Listening..."
-    st.rerun()
+
 else:
     if st.session_state.is_recording:
         st.session_state.is_recording = False
         st.session_state.status = "Ready"
-        st.rerun()
