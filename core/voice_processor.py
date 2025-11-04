@@ -49,15 +49,15 @@ class VoiceProcessor:
             audio_file.name = "audio.wav"
             
             transcript = self.client.audio.transcriptions.create(
-                model="gpt-4o-mini-transcribe",
+                model="whisper-1",  # Changed from gpt-4o-mini-transcribe
                 file=audio_file,
-                response_format="json"
+                response_format="verbose_json"  # Changed to get more details
             )
 
-            # Fix: Access attributes directly, not with .get()
+            # Access response attributes directly
             result = {
-                "text": transcript.text if hasattr(transcript, 'text') else "",
-                "language": transcript.language if hasattr(transcript, 'language') else "en",
+                "text": transcript.text or "",
+                "language": getattr(transcript, 'language', 'en'),
                 "confidence": 1.0
             }
             
