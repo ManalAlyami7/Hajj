@@ -153,6 +153,10 @@ class LLMManager:
         - User mentions agency names, locations, or asks for authorized agencies.
         - Focus on database-related queries.
         - count of agencies, list of countries/cities with agencies, is X authorized, details about Y agency, etc.
+        - asking for an agency's address, email, phone, location, or contact info
+        - checking if an agency is authorized or not
+        - asking about Hajj offices in a specific city or country
+        - mentioning or asking about a company name (like "Royal City", "Al-Safa", etc.)
 
         3️⃣ GENERAL_HAJJ: general Hajj-related questions (rituals, requirements, documents, safety, procedures).
 
