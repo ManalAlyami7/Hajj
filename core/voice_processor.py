@@ -35,54 +35,62 @@ class VoiceProcessor:
         return OpenAI(api_key=api_key)
     
     def _normalize_transcription(self, transcription) -> str:
-        """Return a plain transcript string from various SDK return types."""
-        try:
-            # dict-like
-            if hasattr(transcription, "get"):
-                return transcription.get("text") or transcription.get("transcript") or str(transcription)
-            # object with attribute .text
-            if hasattr(transcription, "text"):
-                return transcription.text or str(transcription)
-            # fallback to string
-            return str(transcription)
-        except Exception:
-            return ""
-
+            """Return a plain transcript string from various SDK return types."""
+            try:
+                # dict-like
+                if hasattr(transcription, "get"):
+                    return transcription.get("text") or transcription.get("transcript") or str(transcription)
+                # object with attribute .text
+                if hasattr(transcription, "text"):
+                    return transcription.text or str(transcription)
+                # fallback to string
+                return str(transcription)
+            except Exception:
+                return ""
+        
     def transcribe_audio(self, audio_bytes: bytes) -> Dict:
-        """
-        Transcribe audio to text with language detection
-        Returns a normalized dict (always dict => safe .get usage).
-        """
-        try:
-            audio_file = io.BytesIO(audio_bytes)
-            audio_file.name = "audio.wav"
+            """
+            Transcribe audio to text with language detection
+            Returns a normalized dict (always dict => safe .get usage).
+            
+            Args:
+                audio_bytes: Raw audio data
+            
+            Returns:
+                Dict with text, language, confidence
+            """
+            try:
+                audio_file = io.BytesIO(audio_bytes)
+                audio_file.name = "audio.wav"
 
-            transcript = self.client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file,
-                response_format="json"  # safer, returns JSON-compatible object
-            )
+                transcript = self.client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                    response_format="json"  # safer, returns JSON-compatible object
+                )
 
-            text = self._normalize_transcription(transcript)
+                text = self._normalize_transcription(transcript)
 
-            result = {
-                "text": text,
-                "language": getattr(transcript, "language", "en") or "en",
-                "confidence": 1.0
-            }
+                result = {
+                    "text": text,
+                    "language": getattr(transcript, "language", "en") or "en",
+                    "confidence": 1.0
+                }
 
-            logger.info(f"Transcribed: '{result['text']}' (lang: {result['language']})")
-            return result
+                logger.info(f"Transcribed: '{result['text']}' (lang: {result['language']})")
+                return result
 
-        except Exception as e:
-            logger.error(f"Transcription failed: {e}")
-            return {
-                "text": "",
-                "language": "en",
-                "confidence": 0.0,
-                "error": str(e)
-            }
-# ...existing code...
+            except Exception as e:
+                logger.error(f"Transcription failed: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                return {
+                    "text": "",
+                    "language": "en",
+                    "confidence": 0.0,
+                    "error": str(e)
+                }
+        
     def detect_voice_intent(self, user_input: str, language: str = "en") -> Dict:
         """
         Detect intent with urgency level for voice interactions
@@ -387,7 +395,7 @@ Voice guidelines:
         
         try:
             response = self.client.audio.speech.create(
-                model="gpt-4o-mini-tts",
+                model="tts-1",
                 voice=voice,
                 input=text
             )
