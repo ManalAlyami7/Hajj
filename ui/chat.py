@@ -151,6 +151,7 @@ class ChatInterface:
                     with col2:
                         tts_btn_key = f"tts_btn_{idx}"
                         if st.button("🔊", key=tts_btn_key, help="Listen to message"):
+                            # self._create_voice_player(msg.get("content", "")[:4000], autoplay=True)
                             self._create_voice_player(msg.get("content", "")[:4000], autoplay=True)
                 else:
                     # For user messages, just show timestamp
@@ -227,7 +228,9 @@ class ChatInterface:
         
         st.markdown(info_request)
         if st.button("🔊 Listen",):
-            self._create_voice_player(info_request, autoplay=True)
+            # self._create_voice_player(info_request, autoplay=True)
+            self._create_voice_player(info_request, idx=f"needs_{uuid.uuid4()}", autoplay=False)
+
         # Add the info request to chat history
         self._add_message("assistant", info_request)
 
@@ -250,7 +253,9 @@ class ChatInterface:
             st.markdown(summary)
        
             if st.button("🔊 Listen to Summary"):
-               self._create_voice_player(summary, autoplay=True)
+            #    self._create_voice_player(summary, autoplay=True)
+                self._create_voice_player(summary, idx=f"db_{uuid.uuid4()}", autoplay=False)
+
             self._add_message("assistant", summary)
         else:
             st.warning(summary)
@@ -334,16 +339,42 @@ class ChatInterface:
     # -------------------
     # TTS
     # -------------------
-    def _create_voice_player(self, text: str, autoplay: bool = False):
-        """Render hidden audio player for TTS"""
+    # def _create_voice_player(self, text: str, autoplay: bool = False):
+    #     """Render hidden audio player for TTS"""
+    #     try:
+    #         audio_io = self.llm.text_to_speech(text, st.session_state.get("language", "English"))
+    #         if audio_io is None: raise RuntimeError("No audio returned")
+    #         audio_bytes = audio_io.getvalue() if hasattr(audio_io, "getvalue") else bytes(audio_io)
+    #         b64 = base64.b64encode(audio_bytes).decode("ascii")
+    #         st.markdown(f'<div style="display:none"><audio {"autoplay" if autoplay else ""} src="data:audio/mp3;base64,{b64}"></audio></div>', unsafe_allow_html=True)
+    #     except Exception as e:
+    #         st.error(f"❌ TTS failed: {str(e)}")
+    # -------------------
+    # TTS
+    # -------------------
+    def _create_voice_player(self, text: str, idx: str = None, autoplay: bool = False):
+        """Render audio player with Play/Resume, Replay, Stop buttons"""
+        if idx is None:
+            idx = str(uuid.uuid4())  # unique ID if not provided
+        
         try:
             audio_io = self.llm.text_to_speech(text, st.session_state.get("language", "English"))
-            if audio_io is None: raise RuntimeError("No audio returned")
+            if audio_io is None:
+                raise RuntimeError("No audio returned")
             audio_bytes = audio_io.getvalue() if hasattr(audio_io, "getvalue") else bytes(audio_io)
             b64 = base64.b64encode(audio_bytes).decode("ascii")
-            st.markdown(f'<div style="display:none"><audio {"autoplay" if autoplay else ""} src="data:audio/mp3;base64,{b64}"></audio></div>', unsafe_allow_html=True)
+            
+            st.markdown(f"""
+            <audio id="audio_{idx}" src="data:audio/mp3;base64,{b64}"></audio>
+            <div style="margin:5px 0;">
+                <button onclick="document.getElementById('audio_{idx}').play()">🔊 Play/Resume</button>
+                <button onclick="var a=document.getElementById('audio_{idx}'); a.currentTime=0; a.play();">🔄 Replay</button>
+                <button onclick="document.getElementById('audio_{idx}').pause()">⏹️ Stop</button>
+            </div>
+            """, unsafe_allow_html=True)
         except Exception as e:
             st.error(f"❌ TTS failed: {str(e)}")
+
 
     # -------------------
     # Chat Memory Helpers
