@@ -155,7 +155,7 @@ Provide structured classification.
 """
         
         try:
-            response = self.client.chat.completions.parse(
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You classify voice intents with urgency assessment."},
@@ -228,7 +228,7 @@ Also provide:
 - Suggested actions user can take"""
         
         try:
-            response = self.client.chat.completions.parse(
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -238,7 +238,7 @@ Also provide:
                 temperature=0.7
             )
             
-            voice_data = response.choices[0].message.parsed
+            voice_data = response['choices'][0]['message']['content']
             
             return {
                 "response": voice_data.response,
@@ -294,7 +294,7 @@ Also provide:
         system_prompt = self._build_database_prompt(user_input, is_arabic, actual_data)
         
         try:
-            response = self.client.chat.completions.parse(
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -517,7 +517,7 @@ Voice guidelines:
             
             messages.append({"role": "user", "content": user_input})
             
-            response = self.client.completions.parse(
+            response = self.client.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 response_format=VoiceResponse,
