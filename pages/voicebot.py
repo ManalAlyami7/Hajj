@@ -580,4 +580,4 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
     finally:
         st.session_state.is_processing = False
         st.session_state.pending_audio_bytes = None
-        st.rerun()
+        #st.rerun()
