@@ -104,7 +104,7 @@ class SidebarInterface:
             st.markdown(html_card, unsafe_allow_html=True)
     
     def _render_examples(self):
-        """Render example questions"""
+        """Render example questions - FIXED VERSION"""
         lang = st.session_state.language
         st.markdown(f"<h3>{t('examples_title', lang)}</h3>", unsafe_allow_html=True)
         
@@ -121,12 +121,19 @@ class SidebarInterface:
                 key=f"example_{i}",
                 use_container_width=True
             ):
-                # Store the example in session state
-                st.session_state.selected_question = t(question_key, lang)
+                # Add user message to chat memory
+                question_text = t(question_key, lang)
+                st.session_state.chat_memory.append({
+                    "role": "user",
+                    "content": question_text,
+                    "timestamp": self._get_current_time()
+                })
                 
-                # Optionally trigger auto-submit
-                st.session_state.submit_example = True
+                # Set flag to process this message
+                st.session_state.pending_example = True
                 
+                # Save and rerun
+                save_chat_memory()
                 st.rerun()
 
     def _render_clear_button(self):
@@ -144,17 +151,12 @@ class SidebarInterface:
                 "timestamp": self._get_current_time()
             }]
             st.session_state.last_result_df = None
+            st.session_state.pending_example = False
             save_chat_memory()
             st.rerun()
     
-
-    # ...existing code...
-   # ...existing code...
     def _render_features(self):
-        """
-        Render features section in Streamlit.
-        `t` is the translation function: t(key, lang)
-        """
+        """Render features section in Streamlit"""
         lang = st.session_state.get("language", "English")
         st.markdown(f"<h3>{t('features_title', lang)}</h3>", unsafe_allow_html=True)
 
@@ -165,7 +167,6 @@ class SidebarInterface:
             ("feat_secure", "feat_secure_desc", "🔒")
         ]
 
-        # Build HTML without leading indentation so Markdown doesn't treat it as a code block
         features_html = ""
         for icon_key, desc_key, emoji in features:
             features_html += (
@@ -180,8 +181,6 @@ class SidebarInterface:
             f'<div style="color: rgba(255,255,255,0.9); font-size: 0.9rem; line-height: 1.8;">{features_html}</div>',
             unsafe_allow_html=True
         )
-# ...existing code...
-# ...existing code...
     
     @staticmethod
     def _get_current_time() -> float:

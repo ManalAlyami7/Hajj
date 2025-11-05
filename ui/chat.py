@@ -12,7 +12,7 @@ from utils.translations import t
 from utils.state import save_chat_memory
 from utils.validators import validate_user_input
 import uuid
-import streamlit.components.v1 as components  # << هذا السطر مهم
+import streamlit.components.v1 as components
 
 class ChatInterface:
     """Manages chat interface and message display"""
@@ -30,83 +30,32 @@ class ChatInterface:
     def render(self):
         """Render chat interface"""
         self._display_chat_history()
+        
+        # Handle pending example from sidebar
+        if st.session_state.get("pending_example", True):
+            st.session_state.pending_example = True
+            self._process_pending_example()
+        
+        # Always show input (CRITICAL!)
         self._handle_user_input()
-        #if self._show_quick_actions():
-            #self._display_quick_actions()
 
     # -------------------
-    # Quick Actions
+    # Process Pending Example
     # -------------------
-    def _show_quick_actions(self) -> bool:
-        chat = st.session_state.chat_memory
-        lang = st.session_state.get("language", "English")
-        if len(chat) == 1:
-            first = chat[0]
-            return first.get("role") == "assistant" and first.get("content") == t("welcome_msg", lang)
-        return False
-
-    def _display_quick_actions(self):
-        """Display quick action buttons at the start of chat (styled for all themes)"""
-        lang = st.session_state.get("language", "English")
-        st.markdown(
-            f"<h3 style='margin-bottom:8px;color:rgba(255,255,255,0.9);'>{t('quick_actions', lang)}</h3>",
-            unsafe_allow_html=True
-        )
-
-        theme_base = st.get_option("theme.base", "dark")
-        try:
-            theme_base = st.get_option("theme.base")
-            if not theme_base:
-                theme_base = "dark"
-        except Exception:
-            theme_base = "dark"
-
-        st.markdown(f"""
-        <style>
-        .quick-actions-row {{ display:flex; gap:12px; margin:12px 0; flex-wrap:wrap; }}
-        .quick-action {{ display:inline-block; width:100% !important; }}
-        .quick-action .icon {{ margin-right:8px; font-size:1.05rem; vertical-align:middle; }}
-        .quick-action .label {{ vertical-align:middle; }}
-        .stButton>button {{
-            width:100% !important;
-            padding:12px 16px !important;
-            border-radius:10px !important;
-            font-weight:700 !important;
-            cursor:pointer !important;
-            border:none !important;
-        }}
-        {" .stButton>button { background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%); color:#fff; box-shadow:0 6px 18px rgba(124,58,237,0.18); }"
-        if theme_base == "dark"
-        else " .stButton>button { background: linear-gradient(90deg, #eef2ff 0%, #e9d5ff 100%); color:#111827; box-shadow:0 4px 10px rgba(17,24,39,0.06); }"}
-        .stButton>button:hover {{ transform: translateY(-2px); }}
-        </style>
-        """, unsafe_allow_html=True)
-
-        col1, col2 = st.columns(2)
-        actions = [
-            ("🔍", t("find_authorized", lang), "find_authorized", "user", t("show_authorized", lang)),
-            ("📊", t("show_stats", lang), "show_stats", "user", t("hajj_statistics", lang)),
-            ("🌍", t("find_by_country", lang), "find_by_country", "user", t("country_search", lang)),
-            ("❓", t("general_help", lang), "general_help", "user", t("help_message", lang)),
-        ]
-
-        with col1:
-            st.markdown("<div class='quick-actions-row'>", unsafe_allow_html=True)
-            for icon, label, key, role, content in actions[:2]:
-                st.markdown("<div class='quick-action'>", unsafe_allow_html=True)
-                if st.button(f"{icon}  {label}", key=f"qa_{key}", use_container_width=True):
-                    self._add_message(role, content)
-                st.markdown("</div>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        with col2:
-            st.markdown("<div class='quick-actions-row'>", unsafe_allow_html=True)
-            for icon, label, key, role, content in actions[2:]:
-                st.markdown("<div class='quick-action'>", unsafe_allow_html=True)
-                if st.button(f"{icon}  {label}", key=f"qa_{key}", use_container_width=True):
-                    self._add_message(role, content)
-                st.markdown("</div>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+    def _process_pending_example(self):
+        """Process example question clicked from sidebar"""
+        # Get last message (should be user message)
+        if st.session_state.chat_memory and st.session_state.chat_memory[-1]["role"] == "user":
+            user_input = st.session_state.chat_memory[-1]["content"]
+            lang = st.session_state.get("language", "English")
+            
+            with st.chat_message("assistant", avatar="🕋"):
+                with st.spinner(t("thinking", lang)):
+                    final_state = self.graph.process(user_input, lang)
+                self._handle_response(final_state)
+            
+            # Force rerun to display properly
+            st.rerun()
 
     # -------------------
     # Chat History Display
@@ -119,6 +68,7 @@ class ChatInterface:
             
             with st.chat_message(role, avatar=avatar):
                 st.markdown(msg.get("content", ""), unsafe_allow_html=True)
+                
                 if role == "assistant":
                     col1, col2 = st.columns([0.7, 0.3])
                     with col1:
@@ -142,23 +92,25 @@ class ChatInterface:
     # User Input Handling
     # -------------------
     def _handle_user_input(self):
+        """Handle user input from chat input box"""
         lang = st.session_state.get("language", "English")
-        user_input = None
-        if st.session_state.get("selected_question"):
-            user_input = st.session_state["selected_question"]
-            st.session_state.selected_question = ""
-        else:
-            user_input = st.chat_input(t("input_placeholder", lang))
+        
+        # CRITICAL: Always show chat input
+        user_input = st.chat_input(t("input_placeholder", lang), key="main_chat_input")
         
         if not user_input:
             return
         
+        # Validate input
         valid, err = validate_user_input(user_input)
         if not valid:
             st.error(f"❌ {err}")
             return
 
+        # Add user message
         self._add_message("user", user_input)
+        
+        # Display user message
         with st.chat_message("user", avatar="👤"):
             st.markdown(user_input)
             st.markdown(
@@ -166,15 +118,20 @@ class ChatInterface:
                 unsafe_allow_html=True
             )
 
+        # Process and display response
         with st.chat_message("assistant", avatar="🕋"):
             with st.spinner(t("thinking", lang)):
                 final_state = self.graph.process(user_input, lang)
             self._handle_response(final_state)
+        
+        # Rerun to update display
+        st.rerun()
 
     # -------------------
     # Response Handling
     # -------------------
     def _handle_response(self, state: dict):
+        """Handle different types of responses"""
         if state.get("greeting_text"):
             self._respond(state["greeting_text"])
         elif state.get("needs_info"):
@@ -189,6 +146,7 @@ class ChatInterface:
             self._add_message("assistant", err)
 
     def _handle_needs_info(self, info_request: str):
+        """Handle information request"""
         lang = st.session_state.get("language", "English")
         st.markdown(info_request)
         if st.button("🔊 Listen", key=str(uuid.uuid4())):
@@ -196,6 +154,7 @@ class ChatInterface:
         self._add_message("assistant", info_request)
 
     def _respond(self, content: str):
+        """Display and save response"""
         st.markdown(content)
         if st.button("🔊 Listen", key=str(uuid.uuid4())):
             self._create_voice_player(content)
@@ -205,6 +164,7 @@ class ChatInterface:
     # Database Results Display
     # -------------------
     def _handle_database_results(self, state: dict):
+        """Display database query results"""
         summary = state.get("summary", "")
         if summary:
             st.markdown(summary)
@@ -216,11 +176,14 @@ class ChatInterface:
             self._add_message("assistant", summary)
 
     def _display_results(self, result_data: dict):
+        """Display results in formatted cards"""
         rows = result_data.get("rows", [])
         if not rows:
             st.info("No results found.")
             return
+            
         st.markdown("### 🕋 Authorized Hajj Agencies")
+        
         for row in rows:
             name_en = row.get("hajj_company_en", "") or "N/A"
             name_ar = row.get("hajj_company_ar", "") or ""
@@ -233,13 +196,14 @@ class ChatInterface:
             authorized = row.get("is_authorized", "")
             maps_link = row.get("google_maps_link", "")
             link_valid = row.get("link_valid", False)
-            is_authorized = authorized in ["yes", "true", "1"]
-            status_icon = "✅ Authorized" if authorized.lower() == "yes" else "❌ Not Authorized"
-            bg_color = "rgba(16,185,129,0.1)" if authorized.lower() == "yes" else "rgba(239,68,68,0.1)"
-            border_color = "#10b981" if authorized.lower() == "yes" else "#ef4444"
+            
+            is_authorized = authorized.lower() in ["yes", "true", "1"]
+            status_icon = "✅ Authorized" if is_authorized else "❌ Not Authorized"
+            bg_color = "rgba(16,185,129,0.1)" if is_authorized else "rgba(239,68,68,0.1)"
+            border_color = "#10b981" if is_authorized else "#ef4444"
 
             if maps_link and link_valid:
-                maps_buttons = f"""
+                maps_display = f"""
                 <div style='margin-top:10px;display:flex;gap:10px;align-items:center;'>
                     <a href='{maps_link}' target='_blank'
                     style='padding:6px 12px;background-color:#2563eb;color:white;
@@ -259,9 +223,9 @@ class ChatInterface:
                 </div>
                 """
             elif maps_link and not link_valid:
-                maps_buttons = "<span style='color:#f87171;'>⚠️ Invalid Link</span>"
+                maps_display = "<span style='color:#f87171;'>⚠️ Invalid Link</span>"
             else:
-                maps_buttons = "N/A"
+                maps_display = "N/A"
 
             st.markdown(f"""
             <div style='padding:14px;margin:10px 0;border-radius:10px;
@@ -277,38 +241,14 @@ class ChatInterface:
                 <br><b>Status:</b> {status_icon}
             </div>
             """, unsafe_allow_html=True)
-            save_chat_memory()
+        
+        save_chat_memory()
 
     # -------------------
     # TTS
     # -------------------
-    # def _create_voice_player(self, text: str, autoplay: bool = False, idx: str = None):
-    #     """Render audio player for TTS"""
-    #     if idx is None:
-    #         idx = str(uuid.uuid4())
-    #     try:
-    #         audio_io = self.llm.text_to_speech(text, st.session_state.get("language", "English"))
-    #         if audio_io is None:
-    #             raise RuntimeError("No audio returned")
-    #         audio_bytes = audio_io.getvalue() if hasattr(audio_io, "getvalue") else bytes(audio_io)
-    #         b64 = base64.b64encode(audio_bytes).decode("ascii")
-    #         html = f"""
-    #         <audio id="audio_{idx}" src="data:audio/mp3;base64,{b64}" {'autoplay' if autoplay else ''}></audio>
-    #         <div style="margin:5px 0;">
-    #             <button onclick="document.getElementById('audio_{idx}').play()">🔊 Play/Resume</button>
-    #             <button onclick="var a=document.getElementById('audio_{idx}'); a.currentTime=0; a.play();">🔄 Replay</button>
-    #             <button onclick="document.getElementById('audio_{idx}').pause()">⏹️ Stop</button>
-    #         </div>
-    #         """
-    #         components.html(html, height=60)
-    #     except Exception as e:
-    #         st.error(f"❌ TTS failed: {str(e)}")
     def _create_voice_player(self, text: str, idx: str = None):
         """Render audio player with icon-only buttons for TTS"""
-        import streamlit.components.v1 as components
-        import base64
-        import uuid
-
         if idx is None:
             idx = str(uuid.uuid4())
 
@@ -318,10 +258,6 @@ class ChatInterface:
                 raise RuntimeError("No audio returned")
             audio_bytes = audio_io.getvalue() if hasattr(audio_io, "getvalue") else bytes(audio_io)
             b64 = base64.b64encode(audio_bytes).decode("ascii")
-
-
-
-
             
             html = f"""
             <audio id="audio_{idx}" src="data:audio/mp3;base64,{b64}"></audio>
@@ -334,26 +270,32 @@ class ChatInterface:
                     onclick="document.getElementById('audio_{idx}').pause()">⏹️</button>
             </div>
             """
-
-            components.html(html, height=50)                   
+            components.html(html, height=50)
         except Exception as e:
             st.error(f"❌ TTS failed: {str(e)}")
-
 
     # -------------------
     # Chat Memory Helpers
     # -------------------
     def _add_message(self, role: str, content: str, result_data: dict = None):
-        message = {"role": role, "content": content, "timestamp": self._get_current_time()}
-        if result_data: message["result_data"] = result_data
+        """Add message to chat memory"""
+        message = {
+            "role": role,
+            "content": content,
+            "timestamp": self._get_current_time()
+        }
+        if result_data:
+            message["result_data"] = result_data
         st.session_state.chat_memory.append(message)
         save_chat_memory()
 
     @staticmethod
     def _get_current_time() -> float:
+        """Get current timestamp"""
         return datetime.now(pytz.timezone('Asia/Riyadh')).timestamp()
 
     @staticmethod
     def _format_time(timestamp: float) -> str:
+        """Format timestamp to readable time"""
         dt = datetime.fromtimestamp(timestamp, pytz.timezone('Asia/Riyadh'))
         return dt.strftime("%I:%M %p")
