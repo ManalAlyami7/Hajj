@@ -127,16 +127,9 @@ class ChatInterface:
                                 f"<div style='color: #777; font-size:0.8rem; margin-top:4px'>🕐 {self._format_time(msg['timestamp'])}</div>",
                                 unsafe_allow_html=True
                             )
-                    with col2:
-                        tts_btn_key = f"tts_btn_{idx}"
-                        if st.button("🔊", key=tts_btn_key, help="Listen to message"):
+                        # Show TTS for assistant messages
+                        if role == "assistant":
                             self._create_voice_player(msg.get("content", "")[:4000], idx=str(idx))
-                else:
-                    if msg.get("timestamp"):
-                        st.markdown(
-                            f"<div style='color: #777; font-size:0.8rem; margin-top:4px'>🕐 {self._format_time(msg['timestamp'])}</div>",
-                            unsafe_allow_html=True
-                        )
 
     # -------------------
     # User Input Handling
@@ -191,14 +184,13 @@ class ChatInterface:
     def _handle_needs_info(self, info_request: str):
         lang = st.session_state.get("language", "English")
         st.markdown(info_request)
-        if st.button("🔊 Listen", key=str(uuid.uuid4())):
-            self._create_voice_player(info_request)
+        self._create_voice_player(info_request)  # يظهر المشغل مباشرة
         self._add_message("assistant", info_request)
 
     def _respond(self, content: str):
         st.markdown(content)
-        if st.button("🔊 Listen", key=str(uuid.uuid4())):
-            self._create_voice_player(content)
+        # اعرض مشغل الصوت مع الثلاثة أيقونات مباشرة
+        self._create_voice_player(content)
         self._add_message("assistant", content)
 
     # -------------------
@@ -208,8 +200,7 @@ class ChatInterface:
         summary = state.get("summary", "")
         if summary:
             st.markdown(summary)
-            if st.button("🔊 Listen to Summary", key=str(uuid.uuid4())):
-                self._create_voice_player(summary)
+            self._create_voice_player(summary) 
             self._add_message("assistant", summary)
         else:
             st.warning(summary)
@@ -238,30 +229,34 @@ class ChatInterface:
             bg_color = "rgba(16,185,129,0.1)" if authorized.lower() == "yes" else "rgba(239,68,68,0.1)"
             border_color = "#10b981" if authorized.lower() == "yes" else "#ef4444"
 
-            if maps_link and link_valid:
-                maps_buttons = f"""
-                <div style='margin-top:10px;display:flex;gap:10px;align-items:center;'>
-                    <a href='{maps_link}' target='_blank'
-                    style='padding:6px 12px;background-color:#2563eb;color:white;
-                            text-decoration:none;border-radius:8px;font-size:0.9rem;'>
-                    📍 Open Map
-                    </a>
-                    <button onclick="navigator.clipboard.writeText('{maps_link}');
-                                    var msg=document.createElement('div');
-                                    msg.innerText='✅ Link copied!';
-                                    msg.style='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#10b981;color:white;padding:8px 14px;border-radius:8px;z-index:9999;font-size:0.9rem;';
-                                    document.body.appendChild(msg);
-                                    setTimeout(()=>msg.remove(),2000);"
-                            style='padding:6px 12px;background-color:#10b981;color:white;
-                                border:none;border-radius:8px;font-size:0.9rem;cursor:pointer;'>
-                        🔗 Copy Link
-                    </button>
-                </div>
-                """
-            elif maps_link and not link_valid:
-                maps_buttons = "<span style='color:#f87171;'>⚠️ Invalid Link</span>"
+            if maps_link:
+                if link_valid:
+                    maps_display = f"""
+                    <div style='margin-top:10px;display:flex;gap:10px;align-items:center;'>
+                        <a href='{maps_link}' target='_blank'
+                        style='padding:6px 12px;background-color:#2563eb;color:white;
+                                text-decoration:none;border-radius:8px;font-size:0.9rem;'>
+                        📍 Open Map
+                        </a>
+                        <button onclick="navigator.clipboard.writeText('{maps_link}');
+                                        var msg=document.createElement('div');
+                                        msg.innerText='✅ Link copied!';
+                                        msg.style='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+                                                background:#10b981;color:white;padding:8px 14px;border-radius:8px;
+                                                z-index:9999;font-size:0.9rem;';
+                                        document.body.appendChild(msg);
+                                        setTimeout(()=>msg.remove(),2000);"
+                                style='padding:6px 12px;background-color:#10b981;color:white;
+                                    border:none;border-radius:8px;font-size:0.9rem;cursor:pointer;'>
+                            🔗 Copy Link
+                        </button>
+                    </div>
+                    """
+                else:
+                    maps_display = "<span style='color:#f87171;'>⚠️ Invalid Link</span>"
             else:
-                maps_buttons = "N/A"
+                maps_display = "N/A"
+
 
             st.markdown(f"""
             <div style='padding:14px;margin:10px 0;border-radius:10px;
@@ -319,10 +314,6 @@ class ChatInterface:
             audio_bytes = audio_io.getvalue() if hasattr(audio_io, "getvalue") else bytes(audio_io)
             b64 = base64.b64encode(audio_bytes).decode("ascii")
 
-
-
-
-            
             html = f"""
             <audio id="audio_{idx}" src="data:audio/mp3;base64,{b64}"></audio>
             <div style="margin:5px 0; display:flex; gap:8px;">
