@@ -1,9 +1,6 @@
 """
-Hajj Voice Assistant - PRODUCTION READY
-- Fixed audio processing flow with audio_recorder
-- UI updates BEFORE TTS playback
-- Robust error handling
-- Added styled return button to chatbot
+Hajj Voice Assistant - BILINGUAL
+Uses the existing translation system from utils.translations
 """
 
 import time
@@ -25,45 +22,65 @@ if str(ROOT) not in sys.path:
 
 from core.voice_processor import VoiceProcessor
 from core.voice_graph import VoiceGraphBuilder
+from utils.translations import t  # Import your existing translation function
+
+# ---------------------------
+# Language Detection
+# ---------------------------
+# Initialize language from session state or default to English
+if 'language' not in st.session_state:
+    st.session_state.language = 'English'
+
+lang = st.session_state.language
+is_arabic = (lang == 'العربية')
 
 # ---------------------------
 # Streamlit Config
 # ---------------------------
 st.set_page_config(
-    page_title="Hajj Voice Assistant",
+    page_title=t('voice_page_title', lang),
     page_icon="🕋",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 # ---------------------------
-# Styles (with return button)
+# Styles (RTL support for Arabic)
 # ---------------------------
-st.markdown("""
+rtl_class = 'rtl' if is_arabic else ''
+text_align = 'right' if is_arabic else 'left'
+flex_direction = 'row-reverse' if is_arabic else 'row'
+return_position = 'right: 20px;' if is_arabic else 'left: 20px;'
+transform_direction = 'translateX(5px)' if is_arabic else 'translateX(-5px)'
+icon_transform = 'translateX(3px)' if is_arabic else 'translateX(-3px)'
+arrow_icon = '←' if not is_arabic else '→'
+
+st.markdown(f"""
 <style>
-.stApp {
+.stApp {{
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
   background-attachment: fixed;
   overflow: hidden !important;
   height: 100vh;
-}
-#MainMenu, footer, header {visibility: hidden;}
-.main .block-container {
+}}
+#MainMenu, footer, header {{visibility: hidden;}}
+.main .block-container {{
   padding: 0.75rem 1rem;
   max-width: 1400px;
   height: 100vh;
   display: flex;
   flex-direction: column;
-}
+  direction: {'rtl' if is_arabic else 'ltr'};
+}}
 
 /* Return Button Styles */
-.return-button-container {
+.return-button-container {{
   position: fixed;
   top: 20px;
-  left: 20px;
+  {return_position}
   z-index: 2000;
-}
-.return-button {
+}}
+.return-button {{
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -79,127 +96,122 @@ st.markdown("""
   transition: all 0.3s ease;
   box-shadow: 0 4px 20px rgba(96, 165, 250, 0.2);
   cursor: pointer;
-}
-.return-button:hover {
+  direction: {'rtl' if is_arabic else 'ltr'};
+}}
+.return-button:hover {{
   background: rgba(96, 165, 250, 0.25);
   border-color: rgba(96, 165, 250, 0.5);
-  transform: translateX(-5px);
+  transform: {transform_direction};
   box-shadow: 0 6px 30px rgba(96, 165, 250, 0.4);
   color: #93c5fd;
-}
-.return-button .icon {
+}}
+.return-button .icon {{
   font-size: 1.2rem;
   transition: transform 0.3s ease;
-}
-.return-button:hover .icon {
-  transform: translateX(-3px);
-}
+}}
+.return-button:hover .icon {{
+  transform: {icon_transform};
+}}
 
-.voice-header{text-align:center;padding:0.75rem 0;margin-bottom:0.5rem;}
-.voice-title{
+.voice-header{{text-align:center;padding:0.75rem 0;margin-bottom:0.5rem;}}
+.voice-title{{
   font-size:2.2rem;font-weight:800;letter-spacing:2px;
   background:linear-gradient(135deg,#60a5fa 0%,#a78bfa 100%);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
   margin-bottom:0.25rem;
-}
-.voice-subtitle{color:rgba(255,255,255,0.85);font-size:0.95rem;}
-.voice-container{
+}}
+.voice-subtitle{{color:rgba(255,255,255,0.85);font-size:0.95rem;}}
+.voice-container{{
   display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;
   flex:1;min-height:0;padding:0 1rem;
-}
-.voice-left{
+}}
+.voice-left{{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:rgba(255,255,255,0.03);border-radius:2rem;padding:1.5rem;
   backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);
   box-shadow:0 8px 32px rgba(0,0,0,0.25);overflow:hidden;
-}
-.voice-avatar{width:180px;height:180px;border-radius:50%;
+}}
+.voice-avatar{{width:180px;height:180px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;font-size:90px;
   background:linear-gradient(135deg,#60a5fa 0%,#a78bfa 100%);
   box-shadow:0 20px 60px rgba(96,165,250,0.35);
   border:6px solid rgba(255,255,255,0.15);
   animation:float 3s ease-in-out infinite;
-}
-.voice-avatar.listening{animation:pulse-listening 0.8s infinite;box-shadow:0 0 80px rgba(96,165,250,0.8);}
-.voice-avatar.speaking{animation:pulse-speaking 0.6s infinite;box-shadow:0 0 80px rgba(167,139,250,0.8);}
-.voice-ring{position:absolute;border:3px solid rgba(96,165,250,0.3);
+}}
+.voice-avatar.listening{{animation:pulse-listening 0.8s infinite;box-shadow:0 0 80px rgba(96,165,250,0.8);}}
+.voice-avatar.speaking{{animation:pulse-speaking 0.6s infinite;box-shadow:0 0 80px rgba(167,139,250,0.8);}}
+.voice-ring{{position:absolute;border:3px solid rgba(96,165,250,0.3);
   border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);
   animation:expand 3s ease-out infinite;
-}
-.voice-ring-1{width:200px;height:200px;animation-delay:0s;}
-.voice-ring-2{width:240px;height:240px;animation-delay:1s;}
-.voice-ring-3{width:280px;height:280px;animation-delay:2s;}
-@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-15px);}}
-@keyframes pulse-listening{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
-@keyframes pulse-speaking{0%,100%{transform:scale(1);}50%{transform:scale(1.15);}}
-@keyframes expand{0%{transform:translate(-50%,-50%) scale(0.8);opacity:0.8;}100%{transform:translate(-50%,-50%) scale(1.5);opacity:0;}}
-.record-label{margin-top:1rem;color:white;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;}
-.voice-right{display:flex;flex-direction:column;gap:1rem;height:100%;min-height:0;overflow:hidden;}
-.transcript-container,.response-container{
+}}
+.voice-ring-1{{width:200px;height:200px;animation-delay:0s;}}
+.voice-ring-2{{width:240px;height:240px;animation-delay:1s;}}
+.voice-ring-3{{width:280px;height:280px;animation-delay:2s;}}
+@keyframes float{{0%,100%{{transform:translateY(0);}}50%{{transform:translateY(-15px);}}}}
+@keyframes pulse-listening{{0%,100%{{transform:scale(1);}}50%{{transform:scale(1.1);}}}}
+@keyframes pulse-speaking{{0%,100%{{transform:scale(1);}}50%{{transform:scale(1.15);}}}}
+@keyframes expand{{0%{{transform:translate(-50%,-50%) scale(0.8);opacity:0.8;}}100%{{transform:translate(-50%,-50%) scale(1.5);opacity:0;}}}}
+.record-label{{margin-top:1rem;color:white;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;}}
+.voice-right{{display:flex;flex-direction:column;gap:1rem;height:100%;min-height:0;overflow:hidden;}}
+.transcript-container,.response-container{{
   background:rgba(255,255,255,0.04);border-radius:1.5rem;padding:1.25rem;
   backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.08);
   box-shadow:0 8px 32px rgba(0,0,0,0.22);flex:1;min-height:0;
   display:flex;flex-direction:column;overflow:hidden;
-}
-.panel-header{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;
-  padding-bottom:0.75rem;border-bottom:2px solid rgba(255,255,255,0.08);}
-.panel-icon{font-size:1.75rem;}
-.panel-title{font-size:1.2rem;font-weight:700;color:white;margin:0;}
-.panel-badge{margin-left:auto;padding:0.3rem 0.8rem;border-radius:1rem;
+}}
+.panel-header{{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;
+  padding-bottom:0.75rem;border-bottom:2px solid rgba(255,255,255,0.08);
+  flex-direction: {flex_direction};
+}}
+.panel-icon{{font-size:1.75rem;}}
+.panel-title{{font-size:1.2rem;font-weight:700;color:white;margin:0;}}
+.panel-badge{{margin-{'right' if is_arabic else 'left'}:auto;padding:0.3rem 0.8rem;border-radius:1rem;
   font-weight:600;font-size:0.75rem;background:rgba(96,165,250,0.16);
-  color:#60a5fa;border:1px solid rgba(96,165,250,0.2);}
-.panel-badge.active{background:rgba(34,197,94,0.16);color:#22c55e;
-  border-color:rgba(34,197,94,0.25);animation:badge-pulse 1s infinite;}
-@keyframes badge-pulse{0%,100%{opacity:1;}50%{opacity:0.6;}}
-.transcript-text,.response-content{
+  color:#60a5fa;border:1px solid rgba(96,165,250,0.2);
+}}
+.panel-badge.active{{background:rgba(34,197,94,0.16);color:#22c55e;
+  border-color:rgba(34,197,94,0.25);animation:badge-pulse 1s infinite;
+}}
+@keyframes badge-pulse{{0%,100%{{opacity:1;}}50%{{opacity:0.6;}}}}
+.transcript-text,.response-content{{
   color:rgba(255,255,255,0.92);font-size:1.1rem;line-height:1.6;
-  flex:1;overflow-y:auto;padding-right:0.5rem;
-}
-.transcript-text.empty,.response-content.empty{
+  flex:1;overflow-y:auto;padding-{'left' if is_arabic else 'right'}:0.5rem;
+  text-align:{text_align};
+}}
+.transcript-text.empty,.response-content.empty{{
   color:rgba(255,255,255,0.45);font-style:italic;overflow:hidden;
-}
-.metadata-card{background:rgba(255,255,255,0.03);border-radius:1rem;padding:0.9rem;
-  margin-top:0.75rem;border-left:4px solid #60a5fa;}
-.metadata-title{font-size:0.85rem;font-weight:600;color:#60a5fa;
-  margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:1px;}
-.metadata-list{list-style:none;margin:0;padding:0;}
-.metadata-list li{padding:0.25rem 0;color:rgba(255,255,255,0.85);}
-.metadata-list li:before{content:"→ ";color:#60a5fa;font-weight:bold;margin-right:0.5rem;}
-.status-indicator{position:fixed;top:15px;right:15px;padding:0.6rem 1.25rem;
-  background:rgba(0,0,0,0.75);border-radius:2rem;color:white;font-weight:600;
-  font-size:0.85rem;backdrop-filter:blur(10px);
+}}
+.metadata-card{{background:rgba(255,255,255,0.03);border-radius:1rem;padding:0.9rem;
+  margin-top:0.75rem;border-{'right' if is_arabic else 'left'}:4px solid #60a5fa;
+  text-align:{text_align};
+}}
+.metadata-title{{font-size:0.85rem;font-weight:600;color:#60a5fa;
+  margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:1px;
+}}
+.metadata-list{{list-style:none;margin:0;padding:0;}}
+.metadata-list li{{padding:0.25rem 0;color:rgba(255,255,255,0.85);}}
+.metadata-list li:before{{content:"→ ";color:#60a5fa;font-weight:bold;margin-{'left' if is_arabic else 'right'}:0.5rem;}}
+.status-indicator{{position:fixed;top:15px;{'left' if is_arabic else 'right'}:15px;
+  padding:0.6rem 1.25rem;background:rgba(0,0,0,0.75);border-radius:2rem;
+  color:white;font-weight:600;font-size:0.85rem;backdrop-filter:blur(10px);
   border:1px solid rgba(255,255,255,0.12);z-index:1000;
   display:flex;align-items:center;gap:0.5rem;
-}
-.status-dot{width:10px;height:10px;border-radius:50%;background:#22c55e;animation:dot-pulse 1.5s infinite;}
-.status-dot.listening{background:#ef4444;}
-.status-dot.speaking{background:#a78bfa;}
-@keyframes dot-pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
-@media (max-width:1024px){
-  .voice-container{grid-template-columns:1fr;gap:1rem;}
-  .voice-avatar{width:140px;height:140px;font-size:70px;}
-  .return-button-container {
-    top: 10px;
-    left: 10px;
-  }
-  .return-button {
-    padding: 0.6rem 1.2rem;
-    font-size: 0.85rem;
-  }
-}
-audio {
-  display: none !important;
-  visibility: hidden !important;
-  height: 0 !important;
-  width: 0 !important;
-  overflow: hidden !important;
-}
-.audio-recorder-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 1.5rem 0;
-}
+  direction: {'rtl' if is_arabic else 'ltr'};
+}}
+.status-dot{{width:10px;height:10px;border-radius:50%;background:#22c55e;animation:dot-pulse 1.5s infinite;}}
+.status-dot.listening{{background:#ef4444;}}
+.status-dot.speaking{{background:#a78bfa;}}
+@keyframes dot-pulse{{0%,100%{{opacity:1;}}50%{{opacity:0.4;}}}}
+@media (max-width:1024px){{
+  .voice-container{{grid-template-columns:1fr;gap:1rem;}}
+  .voice-avatar{{width:140px;height:140px;font-size:70px;}}
+  .return-button-container {{top: 10px;{'right' if is_arabic else 'left'}: 10px;}}
+  .return-button {{padding: 0.6rem 1.2rem;font-size: 0.85rem;}}
+}}
+audio {{display: none !important;visibility: hidden !important;height: 0 !important;
+  width: 0 !important;overflow: hidden !important;
+}}
+.audio-recorder-container {{display: flex;justify-content: center;align-items: center;margin: 1.5rem 0;}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -223,13 +235,13 @@ def build_initial_state(audio_bytes):
     return {
         "audio_bytes": audio_bytes,
         "transcript": "",
-        "detected_language": "en",
+        "detected_language": "ar" if is_arabic else "en",
         "transcription_confidence": 0.0,
         "user_input": "",
         "intent": "",
         "intent_confidence": 0.0,
         "intent_reasoning": "",
-        "is_arabic": False,
+        "is_arabic": is_arabic,
         "urgency": "low",
         "response": "",
         "response_tone": "",
@@ -256,20 +268,20 @@ defaults = {
     "current_transcript": "",
     "current_response": "",
     "current_metadata": {},
-    "status": "Ready",
+    "status": t('voice_status_ready', lang),
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
 # ---------------------------
-# Return Button (Top Left)
+# Return Button
 # ---------------------------
-st.markdown("""
+st.markdown(f"""
 <div class="return-button-container">
   <a href="/" class="return-button" target="_self">
-    <span class="icon">←</span>
-    <span>Return to Chatbot</span>
+    <span class="icon">{arrow_icon}</span>
+    <span>{t('voice_return_button', lang)}</span>
   </a>
 </div>
 """, unsafe_allow_html=True)
@@ -277,10 +289,10 @@ st.markdown("""
 # ---------------------------
 # UI Header
 # ---------------------------
-st.markdown("""
+st.markdown(f"""
 <div class="voice-header">
-  <div>🕋<span class="voice-title"> Hajj Voice Assistant</span></div>
-  <div class="voice-subtitle">Real-time Speech Recognition & AI Responses</div>
+  <div>🕋<span class="voice-title"> {t('voice_main_title', lang)}</span></div>
+  <div class="voice-subtitle">{t('voice_subtitle', lang)}</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -310,6 +322,8 @@ with col_left:
         else "speaking" if st.session_state.is_speaking
         else ""
     )
+    recording_label = f"🔴 {t('voice_recording', lang)}" if st.session_state.is_recording else f"🎤 {t('voice_press_to_speak', lang)}"
+    
     st.markdown(f"""
     <div class="voice-left" style="position:relative;">
       <div style="position:relative;">
@@ -318,9 +332,7 @@ with col_left:
         <div class="voice-ring voice-ring-3"></div>
         <div class="voice-avatar {avatar_class}">🕋</div>
       </div>
-      <div class="record-label">
-        {'🔴 Recording...' if st.session_state.is_recording else '🎤 Press to Speak'}
-      </div>
+      <div class="record-label">{recording_label}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -339,9 +351,12 @@ with col_left:
 # Right: Transcript + Response
 with col_right:
     transcript_badge = "active" if st.session_state.is_recording or st.session_state.is_processing else ""
-    transcript = st.session_state.current_transcript or "Speak now..."
+    transcript_status = t('voice_status_listening', lang) if st.session_state.is_recording else t('voice_status_ready', lang)
+    transcript = st.session_state.current_transcript or t('voice_speak_now', lang)
+    
     response_badge = "active" if st.session_state.is_speaking else ""
-    response_text = st.session_state.current_response or "Response will appear here..."
+    response_status = t('voice_status_speaking', lang) if st.session_state.is_speaking else t('voice_status_ready', lang)
+    response_text = st.session_state.current_response or t('voice_response_placeholder', lang)
 
     # Clean any HTML tags
     clean_response = re.sub(r"<.*?>", "", response_text)
@@ -357,7 +372,7 @@ with col_right:
             key_points_html = "".join(f"<li>{re.escape(str(p))}</li>" for p in meta["key_points"])
             meta_html_parts.append(f"""
             <div class="metadata-card">
-                <div class="metadata-title">💡 Key Points</div>
+                <div class="metadata-title">💡 {t('voice_key_points', lang)}</div>
                 <ul class="metadata-list">{key_points_html}</ul>
             </div>
             """)
@@ -366,8 +381,8 @@ with col_right:
         if meta.get("suggested_actions"):
             suggested_html = "".join(f"<li>{re.escape(str(a))}</li>" for a in meta["suggested_actions"])
             meta_html_parts.append(f"""
-            <div class="metadata-card" style="border-left-color:#a78bfa;">
-                <div class="metadata-title" style="color:#a78bfa;">✅ Suggested Actions</div>
+            <div class="metadata-card" style="border-{'right' if is_arabic else 'left'}-color:#a78bfa;">
+                <div class="metadata-title" style="color:#a78bfa;">✅ {t('voice_suggested_actions', lang)}</div>
                 <ul class="metadata-list">{suggested_html}</ul>
             </div>
             """)
@@ -376,8 +391,8 @@ with col_right:
         if meta.get("verification_steps"):
             verify_html = "".join(f"<li>{re.escape(str(s))}</li>" for s in meta["verification_steps"])
             meta_html_parts.append(f"""
-            <div class="metadata-card" style="border-left-color:#ef4444;">
-                <div class="metadata-title" style="color:#ef4444;">⚠️ Verification Steps</div>
+            <div class="metadata-card" style="border-{'right' if is_arabic else 'left'}-color:#ef4444;">
+                <div class="metadata-title" style="color:#ef4444;">⚠️ {t('voice_verification_steps', lang)}</div>
                 <ul class="metadata-list">{verify_html}</ul>
             </div>
             """)
@@ -389,20 +404,16 @@ with col_right:
     <div class="transcript-container">
       <div class="panel-header">
         <div class="panel-icon">🎤</div>
-        <h3 class="panel-title">Live Transcript</h3>
-        <div class="panel-badge {transcript_badge}">
-          {'● Listening' if st.session_state.is_recording else '○ Ready'}
-        </div>
+        <h3 class="panel-title">{t('voice_transcript_title', lang)}</h3>
+        <div class="panel-badge {transcript_badge}">{'● ' + transcript_status}</div>
       </div>
       <div class="transcript-text">{clean_transcript}</div>
     </div>
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
         <div class="panel-icon">🤖</div>
-        <h3 class="panel-title">AI Response</h3>
-        <div class="panel-badge {response_badge}">
-          {'● Speaking' if st.session_state.is_speaking else '○ Ready'}
-        </div>
+        <h3 class="panel-title">{t('voice_response_title', lang)}</h3>
+        <div class="panel-badge {response_badge}">{'● ' + response_status}</div>
       </div>
       <div class="response-content">{clean_response}</div>
       {meta_html}
@@ -413,45 +424,35 @@ with col_right:
 st.markdown("</div>", unsafe_allow_html=True)
 
 # ---------------------------
-# Play Pending Audio (AFTER UI is rendered)
+# Play Pending Audio
 # ---------------------------
 if st.session_state.pending_audio:
     logger.info("Playing pending audio response...")
-    
-    # Play audio
     st.markdown("<div style='display:none'>", unsafe_allow_html=True)
     st.audio(st.session_state.pending_audio, format="audio/mp3", autoplay=True)
     st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Clear pending audio
     st.session_state.pending_audio = None
     st.session_state.is_speaking = False
-    st.session_state.status = "Ready"
+    st.session_state.status = t('voice_status_ready', lang)
 
 # ---------------------------
-# Process Audio with audio_recorder
+# Process Audio
 # ---------------------------
 if audio_bytes:
-    # Compute hash of current audio
     audio_hash = _hash_bytes(audio_bytes)
     
-    # Check if this is new audio
     if audio_hash != st.session_state.last_audio_hash and not st.session_state.is_processing:
         logger.info(f"New audio detected: {audio_hash[:8]}...")
         
-        # Update hash and start processing
         st.session_state.last_audio_hash = audio_hash
         st.session_state.is_recording = False
         st.session_state.is_processing = True
-        st.session_state.status = "Processing audio..."
+        st.session_state.status = t('voice_status_processing', lang)
         
         try:
             logger.info("Invoking voice graph...")
-            
-            # Process audio through voice graph
             final_state = voice_graph.invoke(build_initial_state(audio_bytes))
             
-            # Extract results
             transcript = final_state.get("transcript", "")
             response = final_state.get("response", "")
             response_audio = final_state.get("response_audio", b"")
@@ -460,21 +461,20 @@ if audio_bytes:
             if error:
                 logger.error(f"Voice graph error: {error}")
                 st.session_state.current_transcript = f"❌ {error}"
-                st.session_state.current_response = "Please try again."
-                st.session_state.status = "Error"
+                st.session_state.current_response = t('voice_try_again', lang)
+                st.session_state.status = t('voice_status_error', lang)
                 st.session_state.pending_audio = None
                 
             elif not transcript:
                 logger.warning("No speech detected")
-                st.session_state.current_transcript = "❌ No speech detected"
-                st.session_state.current_response = "Please speak clearly and try again."
-                st.session_state.status = "Ready"
+                st.session_state.current_transcript = f"❌ {t('voice_no_speech', lang)}"
+                st.session_state.current_response = t('voice_try_again', lang)
+                st.session_state.status = t('voice_status_ready', lang)
                 st.session_state.pending_audio = None
                 
             else:
                 logger.info(f"Success - Transcript: {transcript[:50]}...")
                 
-                # Update UI state FIRST
                 st.session_state.current_transcript = transcript
                 st.session_state.current_response = response
                 st.session_state.current_metadata = {
@@ -483,42 +483,32 @@ if audio_bytes:
                     "verification_steps": final_state.get("verification_steps", []),
                 }
                 
-                # Update conversation history
                 if transcript:
-                    st.session_state.voice_messages.append({
-                        "role": "user",
-                        "content": transcript
-                    })
+                    st.session_state.voice_messages.append({"role": "user", "content": transcript})
                 if response:
-                    st.session_state.voice_messages.append({
-                        "role": "assistant",
-                        "content": response
-                    })
+                    st.session_state.voice_messages.append({"role": "assistant", "content": response})
                 
-                # Store audio to play AFTER UI updates
                 if response_audio and len(response_audio) > 0:
                     logger.info("Storing audio for playback after UI update...")
                     st.session_state.pending_audio = response_audio
                     st.session_state.is_speaking = True
-                    st.session_state.status = "Speaking..."
+                    st.session_state.status = t('voice_status_speaking', lang)
                 else:
                     st.session_state.pending_audio = None
-                    st.session_state.status = "Ready"
+                    st.session_state.status = t('voice_status_ready', lang)
         
         except Exception as e:
             logger.error(f"Audio processing error: {e}", exc_info=True)
-            st.session_state.current_transcript = f"❌ Error: {str(e)}"
-            st.session_state.current_response = "An error occurred. Please try again."
-            st.session_state.status = "Error"
+            st.session_state.current_transcript = f"❌ {t('voice_status_error', lang)}: {str(e)}"
+            st.session_state.current_response = t('voice_error_occurred', lang)
+            st.session_state.status = t('voice_status_error', lang)
             st.session_state.pending_audio = None
         
         finally:
             st.session_state.is_processing = False
-            # Force UI update - audio will play on next render
             st.rerun()
 
 else:
-    # No audio - reset recording state
     if st.session_state.is_recording:
         st.session_state.is_recording = False
-        st.session_state.status = "Ready"
+        st.session_state.status = t('voice_status_ready', lang)
