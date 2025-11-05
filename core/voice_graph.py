@@ -126,55 +126,110 @@ class VoiceGraphBuilder:
 
         return state
 
-    def detect_intent_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
-        """Node: Detect intent"""
-        state['user_input'] = state.get('transcript', '')
-        state['detected_language'] = state.get('detected_language', 'en')
-        return self.graph._node_detect_intent(state)
+    def respond_greeting_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
+        """Node: Respond to greeting"""
+        try:
+            logger.info("🟩 Entering node: respond_greeting_node")
+            state['user_input'] = state.get('transcript', '')
+            state['language'] = state.get('detected_language', 'en')
 
-    def handle_greeting_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
-        """Node: Greeting response"""
-        state
-        return self.graph._node_respond_greeting(state)
+            result = self.graph._node_respond_greeting(state)
+            logger.info(f"✅ Greeting node output: {repr(result.get('greeting_text', ''))[:100]}")
+            return result
+
+        except Exception as e:
+            logger.error(f"❌ Error in respond_greeting_node: {e}")
+            raise
+
 
     def generate_sql_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Generate SQL query"""
-        return self.graph._node_generate_sql(state)
+        try:
+            logger.info("🟦 Entering node: generate_sql_node")
+            state['user_input'] = state.get('transcript', '')
+            state['language'] = state.get('detected_language', 'en')
+
+            result = self.graph._node_generate_sql(state)
+            logger.info(f"✅ SQL node generated query: {repr(result.get('sql_query', ''))[:100]}")
+            return result
+
+        except Exception as e:
+            logger.error(f"❌ Error in generate_sql_node: {e}")
+            raise
+
 
     def execute_sql_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Execute SQL query"""
-        return self.graph._node_execute_sql(state)
+        try:
+            logger.info("🟨 Entering node: execute_sql_node")
+            state['sql_params'] = state.get('sql_params', {})
+            state['sql_query'] = state.get('sql_query', '')
+
+            result = self.graph._node_execute_sql(state)
+            logger.info(f"✅ SQL executed successfully, rows: {len(result.get('sql_results', []))}")
+            return result
+
+        except Exception as e:
+            logger.error(f"❌ Error in execute_sql_node: {e}")
+            raise
+
 
     def summary_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Summarize SQL results"""
-        return self.graph._node_summarize_results(state)
+        try:
+            logger.info("🟪 Entering node: summary_node")
+            result = self.graph._node_summarize_results(state)
+            logger.info(f"✅ Summary node output: {repr(result.get('summary', ''))[:100]}")
+            return result
+
+        except Exception as e:
+            logger.error(f"❌ Error in summary_node: {e}")
+            raise
+
 
     def handle_general_hajj_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Handle general questions"""
-        return self.graph._node_respond_general(state)
-
-    def text_to_speech_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
-        """Node: Convert response text to audio"""
         try:
-            
-            state['response'] = (
-    state.get('greeting_text')
-    or state.get('summary')
-    or state.get('general_answer')
-    or "I'm here! How can I assist you today?"
-)
-
-            audio_bytes = self.processor.text_to_speech(
-                state.get("response", ""),
-                state.get("detected_language", "en")
-            )
-            if audio_bytes:
-                state["response_audio"] = audio_bytes
-            else:
-                logger.warning("TTS generation returned no audio")
+            logger.info("🟧 Entering node: handle_general_hajj_node")
+            result = self.graph._node_respond_general(state)
+            logger.info(f"✅ General node output: {repr(result.get('general_answer', ''))[:100]}")
+            return result
 
         except Exception as e:
-            logger.error(f"TTS node error: {e}")
+            logger.error(f"❌ Error in handle_general_hajj_node: {e}")
+            raise
+
+
+def text_to_speech_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
+    """Node: Convert response text to audio"""
+    try:
+        logger.info("🎤 Entering node: text_to_speech_node")
+
+        state['response'] = (
+            state.get('greeting_text')
+            or state.get('summary')
+            or state.get('general_answer')
+            or "I'm here! How can I assist you today?"
+        )
+
+        logger.info(f"🧠 Response text before TTS: {repr(state['response'][:120])}")
+
+        audio_bytes = self.processor.text_to_speech(
+            state.get("response", ""),
+            state.get("detected_language", "en")
+        )
+
+        if audio_bytes:
+            logger.info("🔊 TTS audio generated successfully.")
+            state["response_audio"] = audio_bytes
+        else:
+            logger.warning("⚠️ TTS generation returned no audio (empty or failed).")
+
+        return state
+
+    except Exception as e:
+        logger.error(f"❌ TTS node error: {e}")
+        raise
 
         return state
 
