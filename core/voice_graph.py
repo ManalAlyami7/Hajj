@@ -231,7 +231,6 @@ def text_to_speech_node(self, state: VoiceAssistantState) -> VoiceAssistantState
         logger.error(f"❌ TTS node error: {e}")
         raise
 
-        return state
 
     # -----------------------------
     # Router Function
