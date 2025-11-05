@@ -292,6 +292,15 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 st.markdown("""
+<div class="return-button-container">
+  <a href="/" class="return-button" target="_self">
+    <span class="icon">←</span>
+    <span>Return to Chatbot</span>
+  </a>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("""
 <div class="voice-header">
   <div>🕋<span class="voice-title"> Hajj Voice Assistant</span> <span style="font-size:0.7em;color:#60a5fa;">LIVE + STREAMING</span></div>
   <div class="voice-subtitle">Real-time Speech Recognition & TRUE AI Streaming Responses</div>
