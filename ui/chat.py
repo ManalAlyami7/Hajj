@@ -184,12 +184,11 @@ class ChatInterface:
     def _handle_needs_info(self, info_request: str):
         lang = st.session_state.get("language", "English")
         st.markdown(info_request)
-        self._create_voice_player(info_request)  # يظهر المشغل مباشرة
+        self._create_voice_player(info_request)  
         self._add_message("assistant", info_request)
 
     def _respond(self, content: str):
         st.markdown(content)
-        # اعرض مشغل الصوت مع الثلاثة أيقونات مباشرة
         self._create_voice_player(content)
         self._add_message("assistant", content)
 
@@ -299,36 +298,38 @@ class ChatInterface:
     #     except Exception as e:
     #         st.error(f"❌ TTS failed: {str(e)}")
     def _create_voice_player(self, text: str, idx: str = None):
-        """Render audio player with icon-only buttons for TTS"""
+        """Render audio player for TTS only when buttons are clicked"""
         import streamlit.components.v1 as components
-        import base64
         import uuid
 
         if idx is None:
             idx = str(uuid.uuid4())
 
-        try:
-            audio_io = self.llm.text_to_speech(text, st.session_state.get("language", "English"))
-            if audio_io is None:
-                raise RuntimeError("No audio returned")
-            audio_bytes = audio_io.getvalue() if hasattr(audio_io, "getvalue") else bytes(audio_io)
-            b64 = base64.b64encode(audio_bytes).decode("ascii")
+        html = f"""
+        <div style="margin:5px 0; display:flex; gap:8px;">
+            <button style="font-size:20px; padding:6px 10px; border-radius:8px; border:none; cursor:pointer;"
+                onclick="
+                    (async () => {{
+                        const resp = await fetch('/generate_tts', {{
+                            method: 'POST',
+                            headers: {{'Content-Type':'application/json'}},
+                            body: JSON.stringify({{'text':'{text.replace("'", "\\'")}'}})
+                        }});
+                        const data = await resp.json();
+                        const audio = new Audio('data:audio/mp3;base64,' + data.audio_b64);
+                        audio.id = 'audio_{idx}';
+                        audio.play();
+                        window.audio_{idx} = audio;
+                    }})();
+                ">🔊</button>
+            <button style="font-size:20px; padding:6px 10px; border-radius:8px; border:none; cursor:pointer;"
+                onclick="if(window.audio_{idx}){{ window.audio_{idx}.currentTime=0; window.audio_{idx}.play(); }}">🔄</button>
+            <button style="font-size:20px; padding:6px 10px; border-radius:8px; border:none; cursor:pointer;"
+                onclick="if(window.audio_{idx}){{ window.audio_{idx}.pause(); }}">⏹️</button>
+        </div>
+        """
+        components.html(html, height=50)
 
-            html = f"""
-            <audio id="audio_{idx}" src="data:audio/mp3;base64,{b64}"></audio>
-            <div style="margin:5px 0; display:flex; gap:8px;">
-                <button style="font-size:20px; padding:6px 10px; border-radius:8px; border:none; cursor:pointer;"
-                    onclick="document.getElementById('audio_{idx}').play()">🔊</button>
-                <button style="font-size:20px; padding:6px 10px; border-radius:8px; border:none; cursor:pointer;"
-                    onclick="var a=document.getElementById('audio_{idx}'); a.currentTime=0; a.play();">🔄</button>
-                <button style="font-size:20px; padding:6px 10px; border-radius:8px; border:none; cursor:pointer;"
-                    onclick="document.getElementById('audio_{idx}').pause()">⏹️</button>
-            </div>
-            """
-
-            components.html(html, height=50)                   
-        except Exception as e:
-            st.error(f"❌ TTS failed: {str(e)}")
 
 
     # -------------------
