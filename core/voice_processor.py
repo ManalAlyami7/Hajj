@@ -229,7 +229,7 @@ Also provide:
 - Suggested actions user can take"""
         
         try:
-            response = self.client.beta.chat.completions.parse(
+            response = self.client.chat.completions.parse(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -518,7 +518,7 @@ Voice guidelines:
             
             messages.append({"role": "user", "content": user_input})
             
-            response = self.client.beta.completions.parse(
+            response = self.client.completions.parse(
                 model="gpt-4o-mini",
                 messages=messages,
                 response_format=VoiceResponse,
