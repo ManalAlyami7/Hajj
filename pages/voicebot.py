@@ -482,7 +482,7 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
 
         initial_state = {
     # --- Audio input ---
-    "audio_bytes": b"",
+    "audio_bytes": pending_audio_bytes,
     
     # --- Transcription ---
     "transcript": "",
@@ -491,7 +491,7 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
     
     # --- User input ---
     "user_input": "",
-    "language": "en",
+    "language": "",
     
     # --- Intent understanding ---
     "intent": "",
