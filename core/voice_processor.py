@@ -18,7 +18,6 @@ import base64
 import requests
 
 logger = logging.getLogger(__name__)
-audio_client = OpenAI(api_key=st.secrets.get('key'))
 
 
 class VoiceProcessor:
@@ -28,7 +27,6 @@ class VoiceProcessor:
         """Initialize Voice Processor with OpenAI client"""
         self.client = self._get_client()
         self.db = DatabaseManager() # INITIALIZE DATABASE MANAGER
-        self.audio_client = audio_client
     
     @st.cache_resource
     def _get_client(_self):
