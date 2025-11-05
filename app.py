@@ -21,7 +21,7 @@ from utils.state import initialize_session_state, save_chat_memory, load_chat_me
 # Page Configuration
 # -----------------------------
 st.set_page_config(
-    page_title="Hajj Chatbot",
+    page_title="Chatbot",
     page_icon="🕋",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -91,18 +91,59 @@ st.markdown("""
         box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12) !important;
     }
     
+    /* ===== تعديلات السايدبار - لون النص أبيض ===== */
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1e3a5f 0%, #2c5f8d 100%);
     }
     
-    [data-testid="stSidebar"] .element-container {
-        color: white;
+    /* تغيير لون جميع النصوص في السايدبار للأبيض */
+    [data-testid="stSidebar"] * {
+        color: white !important;
     }
     
-    [data-testid="stSidebar"] h3 {
+    /* العناوين */
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] h4 {
         color: white !important;
         font-weight: 600;
         margin-top: 1rem;
+    }
+    
+    /* النصوص والفقرات */
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] div {
+        color: white !important;
+    }
+    
+    /* إخفاء قائمة التنقل التلقائية */
+    [data-testid="stSidebarNav"] {
+        display: none !important;
+    }
+    
+    /* ستايل الأزرار المخصصة للتنقل */
+    .nav-button {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%) !important;
+        color: white !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 12px !important;
+        padding: 1rem 1.5rem !important;
+        font-weight: 600 !important;
+        font-size: 1.05rem !important;
+        transition: all 0.3s ease !important;
+        text-align: center !important;
+        width: 100% !important;
+        margin: 0.5rem 0 !important;
+    }
+    
+    .nav-button:hover {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%) !important;
+        transform: translateY(-3px) scale(1.02) !important;
+        border-color: rgba(255, 255, 255, 0.6) !important;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2) !important;
     }
     
     .stat-card {
@@ -217,7 +258,7 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-# ...existing code...
+
 def _trim_session_memory(max_messages: int = 80, max_message_chars: int = 1000):
     """Keep only the last N chat messages and truncate long texts to save memory."""
     if "chat_memory" in st.session_state and isinstance(st.session_state.chat_memory, list):
@@ -236,7 +277,6 @@ def _trim_session_memory(max_messages: int = 80, max_message_chars: int = 1000):
     st.session_state.pop("openai_client", None)
 
 
-# ...existing code...
 # -----------------------------
 # Initialize Application
 # -----------------------------
@@ -244,17 +284,18 @@ def main():
     """Main application entry point"""
     
     # Initialize session state
-    # Call after session init/load to enforce limits
     initialize_session_state()
-    # load existing chat memory (if your flow loads elsewhere, keep a single call)
+    
+    # Load existing chat memory
     try:
         load_chat_memory()
     except Exception:
-        # ignore load errors but proceed to trimming
         pass
 
+    # Trim session memory
     _trim_session_memory()
-    # persist trimmed memory
+    
+    # Persist trimmed memory
     try:
         save_chat_memory()
     except Exception:
@@ -282,14 +323,6 @@ def main():
         <p class="subtitle">{t('subtitle', lang)}</p>
     </div>
     """, unsafe_allow_html=True)
-    
-    # Voice assistant button
-   
-   # if st.button("🎙️ " + t("voice_assistant", lang)):
-      #  try:
-           # st.switch_page("pages/voicebot.py")
-       # except Exception:
-           # st.info(t("voice_not_available", lang))
     
     # Render chat interface
     chat_ui.render()
