@@ -2,7 +2,6 @@
 Hajj Voice Assistant - BILINGUAL (cleaned)
 Uses the existing translation system from utils.translations
 """
-
 import time
 import re
 import logging
@@ -240,34 +239,6 @@ def _hash_bytes(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
 # ---------------------------
-# TRUE streaming helper
-# ---------------------------
-def stream_response_word_by_word(response_text: str, delay: float = 0.05):
-    """
-    Stream response word-by-word with typing effect
-
-    Mutates st.session_state.streaming_response and st.session_state.is_streaming_response.
-    Calls st.rerun() periodically to update UI.
-    """
-    words = response_text.split()
-    st.session_state.streaming_response = ""
-    st.session_state.is_streaming_response = True
-
-    # stream a few words at a time to avoid too many reruns
-    for i, word in enumerate(words):
-        st.session_state.streaming_response += word + " "
-        if i % 3 == 0 or i == len(words) - 1:
-            # update UI
-            st.rerun()
-            # give UI a moment (this will actually abort current run due to rerun)
-            time.sleep(delay)
-
-    # finalize
-    st.session_state.current_response = response_text
-    st.session_state.streaming_response = ""
-    st.session_state.is_streaming_response = False
-
-# ---------------------------
 # Build initial state for voice graph (if used)
 # ---------------------------
 def build_initial_state(audio_bytes):
@@ -303,13 +274,13 @@ defaults = {
     "is_recording": False,
     "is_processing": False,
     "is_speaking": False,
-    "is_streaming_response": False,
     "pending_audio": None,
     "current_transcript": "",
     "current_response": "",
-    "streaming_response": "",
     "current_metadata": {},
     "status": t('voice_status_ready', st.session_state.language),
+    # store pending raw bytes across reruns
+    "pending_audio_bytes": None,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -358,7 +329,7 @@ with col_left:
     avatar_class = (
         "listening" if st.session_state.is_recording
         else "speaking" if st.session_state.is_speaking
-        else "processing" if st.session_state.is_processing or st.session_state.is_streaming_response
+        else "processing" if st.session_state.is_processing
         else ""
     )
 
@@ -405,10 +376,6 @@ with col_right:
     # transcript and response display
     transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
     response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
-
-    # show streaming partials if active
-    if st.session_state.is_streaming_response and st.session_state.streaming_response:
-        response_text = st.session_state.streaming_response
 
     # sanitize from HTML tags
     clean_transcript = re.sub(r"<.*?>", "", transcript)
@@ -499,6 +466,8 @@ if audio_bytes:
         st.session_state.last_audio_hash = audio_hash
         st.session_state.is_recording = False
         st.session_state.is_processing = True
+        # store the raw bytes so they persist across reruns
+        st.session_state.pending_audio_bytes = audio_bytes
         st.session_state.status = t('voice_status_transcribing', st.session_state.language) if 'voice_status_transcribing' in globals() else "Transcribing..."
         st.session_state.current_metadata = {}
         st.rerun()
@@ -519,8 +488,6 @@ else:
 # it likely means we've been re-rendered to perform the heavy work.
 if st.session_state.is_processing and not audio_bytes and st.session_state.last_audio_hash:
     # NOTE: In this run we don't have the original audio_bytes object (Streamlit audio_recorder resets it).
-    # If you need to persist audio across reruns, store bytes in session_state.pending_audio_bytes when received.
-    # For demo, we attempt to read pending_audio_bytes from session if present.
     pending_audio_bytes = st.session_state.get("pending_audio_bytes", None)
     if not pending_audio_bytes:
         # Nothing to process; gracefully bail out
@@ -557,35 +524,16 @@ if st.session_state.is_processing and not audio_bytes and st.session_state.last_
                 k: result.get(k, []) for k in ("key_points", "suggested_actions", "verification_steps", "official_sources")
             }
 
-            # TRUE STREAMING: stream words
+            # Instead of streaming word-by-word, set the full response at once
             st.session_state.is_processing = False
-            st.session_state.status = t('voice_status_streaming', language) if 'voice_status_streaming' in globals() else "Streaming response..."
-            # Save the response_text for later TTS
             st.session_state.current_response = response_text
-            # If you want to actually stream while generating, you need to call stream_response_word_by_word
-            # but note that stream_response_word_by_word uses st.rerun and will interrupt flow.
-            # For a simplified reliable flow we'll set streaming_response and toggle flags here:
-            st.session_state.streaming_response = ""
-            st.session_state.is_streaming_response = True
-            # Break the response into chunks and update session state (without sleeping extensively here)
-            words = response_text.split()
-            for i, w in enumerate(words):
-                st.session_state.streaming_response += w + " "
-                if i % 6 == 0 or i == len(words) - 1:
-                    # show partial updates
-                    st.rerun()
-
-            # finalize streaming state (won't be reached if rerun triggers; logic may re-enter)
-            st.session_state.current_response = response_text
-            st.session_state.streaming_response = ""
-            st.session_state.is_streaming_response = False
+            st.session_state.status = t('voice_status_generating_audio', language) if 'voice_status_generating_audio' in globals() else "Preparing audio..."
 
             # Append conversation history
             st.session_state.voice_messages.append({"role": "user", "content": transcript})
             st.session_state.voice_messages.append({"role": "assistant", "content": response_text})
 
             # Generate TTS
-            st.session_state.status = t('voice_status_generating_audio', language) if 'voice_status_generating_audio' in globals() else "Preparing audio..."
             logger.info("Generating TTS...")
             audio_response = voice_processor.text_to_speech(response_text, language)
 
@@ -607,4 +555,5 @@ if st.session_state.is_processing and not audio_bytes and st.session_state.last_
             st.session_state.is_processing = False
             # clear pending bytes once processed
             st.session_state.pending_audio_bytes = None
+            # re-render to show final transcript/response/audio controls
             st.rerun()
