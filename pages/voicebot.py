@@ -549,16 +549,38 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         st.session_state.voice_messages.append({"role": "assistant", "content": response_text})
         st.session_state.status = t('voice_status_completed', st.session_state.language)
         # ...existing code...
+
         if st.session_state.pending_audio:
             logger.info("Playing response audio...")
-    # Auto-play audio response
+
             audio_base64 = base64.b64encode(st.session_state.pending_audio).decode("utf-8")
+
+            # Use JavaScript to handle autoplay correctly
             audio_html = f"""
-                <audio autoplay style="display:none;">
+                <audio id="assistant_audio" style="display:none;">
                     <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
                 </audio>
+                <script>
+                const audio = document.getElementById('assistant_audio');
+                if (audio) {{
+                    const playPromise = audio.play();
+                    if (playPromise !== undefined) {{
+                        playPromise.catch(_ => {{
+                            // If autoplay is blocked, play after next click or key press
+                            const unlock = () => {{
+                                audio.play();
+                                document.removeEventListener('click', unlock);
+                                document.removeEventListener('keydown', unlock);
+                            }};
+                            document.addEventListener('click', unlock, {{ once: true }});
+                            document.addEventListener('keydown', unlock, {{ once: true }});
+                        }});
+                    }}
+                }}
+                </script>
             """
-            st.markdown(audio_html, unsafe_allow_html=True) 
+
+            st.markdown(audio_html, unsafe_allow_html=True)
 
 
 
