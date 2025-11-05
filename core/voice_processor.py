@@ -5,7 +5,7 @@ Handles audio transcription, intent detection, and response generation for voice
 
 import streamlit as st
 from openai import OpenAI
-from openrouter import OpenRouter
+import openrouter
 import io
 from typing import Dict, Optional
 import logging
@@ -34,7 +34,7 @@ class VoiceProcessor:
             logger.error("OpenRouter API key not found")
             st.error("⚠️ Please add your OPENROUTER_API_KEY to Streamlit secrets")
             st.stop()
-        return OpenRouter(api_key=api_key, base_url="https://openrouter.ai/api/v1")
+        return openrouter.OpenRouterClient(api_key=api_key, base_url="https://openrouter.ai/api/v1")
 
     def _normalize_transcription(self, transcription) -> str:
         """Return a plain transcript string from various SDK return types."""
