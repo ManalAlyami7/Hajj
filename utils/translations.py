@@ -21,6 +21,12 @@ TRANSLATIONS = {
         "clear_chat": "🧹 Clear Chat History",
         "features_title": "ℹ️ Features",
         
+        # Mode Navigation (NEW)
+        "mode_title": "🔀 Mode",
+        "mode_chatbot": "Chatbot",
+        "mode_voicebot": "Voicebot",
+        "voicebot_unavailable": "Voice assistant page not available",
+        
         # Stats
         "total_agencies": "Total Agencies",
         "authorized": "Authorized",
@@ -73,14 +79,11 @@ TRANSLATIONS = {
         "input_too_long": "Question is too long (max 500 characters)",
         "input_invalid": "Invalid characters detected in your question",
 
-
         # Quick Actions
         "find_authorized": "Find Authorized Agencies",
         "show_stats": "Show Statistics",
         "find_by_country": "Search by Country",
         "general_help": "General Help",
-        
-
     },
     
     "العربية": {
@@ -99,6 +102,12 @@ TRANSLATIONS = {
         "examples_title": "💡 أمثلة سريعة",
         "clear_chat": "🧹 مسح سجل المحادثة",
         "features_title": "ℹ️ المميزات",
+        
+        # Mode Navigation (NEW)
+        "mode_title": "🔀 الوضع",
+        "mode_chatbot": "المحادثة",
+        "mode_voicebot": "المساعد الصوتي",
+        "voicebot_unavailable": "صفحة المساعد الصوتي غير متاحة",
         
         # Stats
         "total_agencies": "إجمالي الشركات",
