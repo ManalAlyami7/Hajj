@@ -153,6 +153,7 @@ class VoiceGraphBuilder:
     def text_to_speech_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Convert response text to audio"""
         try:
+            state['response'] = state.get('greeting_text', '') or state.get('summary', '') or state.get('general_answer', '')
             audio_bytes = self.processor.text_to_speech(
                 state.get("response", ""),
                 state.get("detected_language", "en")
