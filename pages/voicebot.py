@@ -5,6 +5,7 @@ Uses the existing translation system from utils.translations
 import time
 import re
 import logging
+import base64
 import hashlib
 from pathlib import Path
 import sys
@@ -549,10 +550,16 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         st.session_state.status = t('voice_status_completed', st.session_state.language)
         # ...existing code...
         if st.session_state.pending_audio:
-            # Add hidden audio player for the response audio
-            st.audio(st.session_state.pending_audio, format='audio/wav', start_time=0, help="This audio will play the assistant's response.")
-        # ...existing code...
-        
+    # Auto-play audio response
+            audio_base64 = base64.b64encode(st.session_state.pending_audio).decode("utf-8")
+            audio_html = f"""
+                <audio autoplay style="display:none;">
+                    <source src="data:audio/wav;base64,{audio_base64}" type="audio/wav">
+                </audio>
+            """
+            st.markdown(audio_html, unsafe_allow_html=True) 
+
+
 
 
     except Exception as e:
