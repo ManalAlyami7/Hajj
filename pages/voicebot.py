@@ -19,6 +19,7 @@ if str(ROOT) not in sys.path:
 
 from core.voice_processor import VoiceProcessor
 from utils.translations import t  # existing translation function
+from core.voice_graph import VoiceGraphBuilder
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -30,25 +31,38 @@ if 'language' not in st.session_state:
     # default to English code 'en' (use 'ar' for Arabic)
     st.session_state.language = 'en'
 
-# convenience boolean for Arabic UI
-def is_arabic_code(code):
-    return code in ('ar', 'arabic', 'العربية')
-
-# ---------------------------
-# Streamlit Config
-# ---------------------------
+lang_code = st.session_state.language
 st.set_page_config(
     page_title=t('voice_page_title', st.session_state.language),
     page_icon="🕋",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+if 'language' not in st.session_state:
+    # default to English code 'en' (use 'ar' for Arabic)
+    st.session_state.language = 'en'
+def init_voice_graph():
+    voice_processor = VoiceProcessor()
+    graph_builder = VoiceGraphBuilder(voice_processor)
+    workflow = graph_builder.build()
+    return voice_processor, workflow
+
+voice_processor, workflow = init_voice_graph()
+# convenience boolean for Arabic UI
+def is_arabic_code(code):
+    return code in ('ar', 'arabic', 'العربية')
+
+is_arabic = is_arabic_code(st.session_state.language)
+
+# ---------------------------
+# Streamlit Config
+# ---------------------------
+
 
 # ---------------------------
 # Styles (RTL support for Arabic)
 # ---------------------------
-lang_code = st.session_state.language
-is_arabic = is_arabic_code(lang_code)
+
 
 rtl_class = 'rtl' if is_arabic else ''
 text_align = 'right' if is_arabic else 'left'
@@ -221,11 +235,7 @@ audio {{display: none !important;visibility: hidden !important;height: 0 !import
 # ---------------------------
 # Initialize components and cached resources
 # ---------------------------
-@st.cache_resource
-def initialize_voice_system():
-    return VoiceProcessor()
 
-voice_processor = initialize_voice_system()
 
 # Optional: initialize a voice graph if available
 
@@ -275,7 +285,6 @@ defaults = {
     "current_metadata": {},
     "status": t('voice_status_ready', st.session_state.language),
     # store pending raw bytes across reruns
-    "pending_audio_bytes": None,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -450,106 +459,56 @@ if st.session_state.pending_audio:
 # ---------------------------
 # Processing pipeline when audio is recorded
 # ---------------------------
-if audio_bytes:
+# ---------------------------
+# Handle new audio input
+# ---------------------------
+if audio_bytes and not st.session_state.is_processing:
     audio_hash = _hash_bytes(audio_bytes)
-    if audio_hash == st.session_state.last_audio_hash:
-        # same audio as before; ignore
-        logger.debug("Received same audio as last processed; ignoring.")
-    elif st.session_state.is_processing:
-        logger.debug("Already processing audio; ignoring new audio input.")
-    else:
-        # New audio: process it
+    if audio_hash != st.session_state.last_audio_hash:
         st.session_state.last_audio_hash = audio_hash
-        st.session_state.is_recording = False
-        st.session_state.is_processing = True
-        # store the raw bytes so they persist across reruns
         st.session_state.pending_audio_bytes = audio_bytes
-        st.session_state.status = t('voice_status_transcribing', st.session_state.language) if 'voice_status_transcribing' in globals() else "Transcribing..."
-        st.session_state.current_metadata = {}
+        st.session_state.is_processing = True
+        st.session_state.status = t('voice_status_analyzing', st.session_state.language)
         st.rerun()
 
-        # We re-run to update UI first; subsequent run will continue below after rerun returns.
-else:
-    # No audio input; ensure recording flag is off
-    if st.session_state.is_recording:
-        st.session_state.is_recording = False
-        st.session_state.status = t('voice_status_ready', st.session_state.language)
+# ---------------------------
+# Process pending audio (after rerun)
+# ---------------------------
+elif st.session_state.is_processing and st.session_state.get("pending_audio_bytes"):
+    try:
+        logger.info("Running LangGraph workflow on pending audio...")
 
-# The actual heavy processing should be performed when we detect last_audio_hash has been set
-# and is_processing is True. To avoid long-running blocking operations in the same Streamlit run,
-# we perform those operations in a controlled block below only when audio_bytes is not present
-# (i.e., after the st.rerun forced a second rendering). This keeps UI responsive.
+        pending_audio_bytes = st.session_state.pending_audio_bytes
 
-# If we're in processing state and there's a last_audio_hash but no audio_bytes in current run,
-# it likely means we've been re-rendered to perform the heavy work.
-if st.session_state.is_processing and not audio_bytes and st.session_state.last_audio_hash:
-    # NOTE: In this run we don't have the original audio_bytes object (Streamlit audio_recorder resets it).
-    pending_audio_bytes = st.session_state.get("pending_audio_bytes", None)
-    if not pending_audio_bytes:
-        # Nothing to process; gracefully bail out
+        initial_state = {
+            "audio_bytes": pending_audio_bytes,
+            "user_input": "",
+            "language": "",
+            "response": "",
+            "response_audio": b"",
+            "error": "",
+            "messages_history": [],
+        }
+
+        result = workflow.invoke(initial_state)
+        transcript = result.get("transcript", "")
+        response_text = result.get("response", "")
+        response_audio = result.get("response_audio", None)
+
+        st.session_state.current_transcript = transcript or t('voice_no_speech', st.session_state.language)
+        st.session_state.current_response = response_text or t('voice_could_not_understand', st.session_state.language)
+        st.session_state.pending_audio = response_audio
+
+        st.session_state.voice_messages.append({"role": "user", "content": transcript})
+        st.session_state.voice_messages.append({"role": "assistant", "content": response_text})
+        st.session_state.status = t('voice_status_completed', st.session_state.language)
+
+    except Exception as e:
+        logger.exception("Error during voice processing: %s", e)
+        st.session_state.current_transcript = f"❌ Error: {str(e)}"
+        st.session_state.current_response = t('voice_error_processing', st.session_state.language)
+        st.session_state.pending_audio = None
+    finally:
         st.session_state.is_processing = False
-        st.session_state.status = t('voice_status_ready', st.session_state.language)
-    else:
-        try:
-            logger.info("Transcribing audio...")
-            transcription_result = voice_processor.transcribe_audio(pending_audio_bytes)
-            transcript = transcription_result.get("text", "")
-            language = transcription_result.get("language", st.session_state.language)
-            st.session_state.current_transcript = transcript or t('voice_no_speech', language)
-            st.session_state.language = language
-            st.session_state.status = t('voice_status_analyzing', language) if 'voice_status_analyzing' in globals() else "Analyzing intent..."
-
-            # Intent detection
-            logger.info("Detecting intent...")
-            intent_result = voice_processor.detect_voice_intent(transcript, language)
-            intent = intent_result.get("intent", "GENERAL_HAJJ")
-            is_arabic = intent_result.get("is_arabic", is_arabic_code(language))
-
-            # Generate response
-            logger.info("Generating response for intent: %s", intent)
-            if intent == "GREETING":
-                result = voice_processor.generate_voice_greeting(transcript, is_arabic)
-            elif intent == "DATABASE":
-                result = voice_processor.generate_database_response(transcript, is_arabic)
-            else:
-                result = voice_processor.generate_general_response(transcript, is_arabic)
-
-            response_text = result.get("response", t('voice_try_again', language))
-            # store metadata
-            st.session_state.current_metadata = {
-                k: result.get(k, []) for k in ("key_points", "suggested_actions", "verification_steps", "official_sources")
-            }
-
-            # Instead of streaming word-by-word, set the full response at once
-            st.session_state.is_processing = False
-            st.session_state.current_response = response_text
-            st.session_state.status = t('voice_status_generating_audio', language) if 'voice_status_generating_audio' in globals() else "Preparing audio..."
-
-            # Append conversation history
-            st.session_state.voice_messages.append({"role": "user", "content": transcript})
-            st.session_state.voice_messages.append({"role": "assistant", "content": response_text})
-
-            # Generate TTS
-            logger.info("Generating TTS...")
-            audio_response = voice_processor.text_to_speech(response_text, language)
-
-            if audio_response:
-                st.session_state.pending_audio = audio_response
-                st.session_state.is_speaking = True
-                st.session_state.status = t('voice_status_speaking', language)
-            else:
-                st.session_state.pending_audio = None
-                st.session_state.status = t('voice_status_ready', language)
-
-        except Exception as e:
-            logger.exception("Error during audio processing: %s", e)
-            st.session_state.current_transcript = f"❌ {str(e)}"
-            st.session_state.current_response = t('voice_error_occurred', st.session_state.language)
-            st.session_state.status = t('voice_status_error', st.session_state.language)
-            st.session_state.pending_audio = None
-        finally:
-            st.session_state.is_processing = False
-            # clear pending bytes once processed
-            st.session_state.pending_audio_bytes = None
-            # re-render to show final transcript/response/audio controls
-            st.rerun()
+        st.session_state.pending_audio_bytes = None
+        st.rerun()
