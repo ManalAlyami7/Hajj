@@ -547,6 +547,13 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         st.session_state.voice_messages.append({"role": "user", "content": transcript})
         st.session_state.voice_messages.append({"role": "assistant", "content": response_text})
         st.session_state.status = t('voice_status_completed', st.session_state.language)
+        # ...existing code...
+        if st.session_state.pending_audio:
+            # Add hidden audio player for the response audio
+            st.audio(st.session_state.pending_audio, format='audio/wav', start_time=0, key="hidden_audio_player", help="This audio will play the assistant's response.")
+        # ...existing code...
+        
+
 
     except Exception as e:
         logger.exception("Error during voice processing: %s", e)
