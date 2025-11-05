@@ -384,13 +384,7 @@ with col_left:
         <div class="voice-ring voice-ring-3"></div>
         <div class="voice-avatar {avatar_class}">🕋</div>
       </div>
-      <div class="record-label">
-        {'🔴 Recording...' if st.session_state.is_recording 
-         else '⚡ Streaming...' if st.session_state.is_streaming_response
-         else '⚙️ Processing...' if st.session_state.is_processing
-         else '🔊 Speaking...' if st.session_state.is_speaking
-         else '🎤 Press to Speak'}
-      </div>
+     
       {waveform_html}
       <div class="record-label">{recording_label}</div>
     </div>
