@@ -231,9 +231,38 @@ class ChatInterface:
             phone = row.get("contact_Info", "")
             rating = row.get("rating_reviews", "")
             authorized = row.get("is_authorized", "")
+            maps_link = row.get("google_maps_link", "")
+            link_valid = row.get("link_valid", False)
+            is_authorized = authorized in ["yes", "true", "1"]
             status_icon = "✅ Authorized" if authorized.lower() == "yes" else "❌ Not Authorized"
             bg_color = "rgba(16,185,129,0.1)" if authorized.lower() == "yes" else "rgba(239,68,68,0.1)"
             border_color = "#10b981" if authorized.lower() == "yes" else "#ef4444"
+
+            if maps_link and link_valid:
+                maps_buttons = f"""
+                <div style='margin-top:10px;display:flex;gap:10px;align-items:center;'>
+                    <a href='{maps_link}' target='_blank'
+                    style='padding:6px 12px;background-color:#2563eb;color:white;
+                            text-decoration:none;border-radius:8px;font-size:0.9rem;'>
+                    📍 Open Map
+                    </a>
+                    <button onclick="navigator.clipboard.writeText('{maps_link}');
+                                    var msg=document.createElement('div');
+                                    msg.innerText='✅ Link copied!';
+                                    msg.style='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#10b981;color:white;padding:8px 14px;border-radius:8px;z-index:9999;font-size:0.9rem;';
+                                    document.body.appendChild(msg);
+                                    setTimeout(()=>msg.remove(),2000);"
+                            style='padding:6px 12px;background-color:#10b981;color:white;
+                                border:none;border-radius:8px;font-size:0.9rem;cursor:pointer;'>
+                        🔗 Copy Link
+                    </button>
+                </div>
+                """
+            elif maps_link and not link_valid:
+                maps_buttons = "<span style='color:#f87171;'>⚠️ Invalid Link</span>"
+            else:
+                maps_buttons = "N/A"
+
             st.markdown(f"""
             <div style='padding:14px;margin:10px 0;border-radius:10px;
                         background:{bg_color};border:1.5px solid {border_color};'>
@@ -243,7 +272,8 @@ class ChatInterface:
                 <br>🏙️ <b>City:</b> {city or "N/A"} | 🌍 <b>Country:</b> {country or "N/A"}  
                 <br>☎️ <b>Phone:</b> {phone or "N/A"}  
                 <br>📧 <b>Email:</b> {email or "N/A"}  
-                <br>⭐ <b>Rating & Reviews:</b> {rating or "N/A"}  
+                <br>⭐ <b>Rating & Reviews:</b> {rating or "N/A"} 
+                <br>🗺️ <b>Google Maps:</b> {maps_display} 
                 <br><b>Status:</b> {status_icon}
             </div>
             """, unsafe_allow_html=True)
