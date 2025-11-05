@@ -152,6 +152,9 @@ class LLMManager:
         2️⃣ DATABASE: questions about verifying specific Hajj agencies, checking authorization, company details, locations, contacts, etc. 
         - User mentions agency names, locations, or asks for authorized agencies.
         - Focus on database-related queries.
+        - Always provide a complete response including all columns: 
+        hajj_company_ar, hajj_company_en, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link.
+        - Respond in the same language as the user message.
         - count of agencies, list of countries/cities with agencies, is X authorized, details about Y agency, etc.
         - asking for an agency's address, email, phone, location, or contact info
         - checking if an agency is authorized or not
@@ -356,12 +359,15 @@ Instructions:
 - Provide actionable advice if relevant
 - Use emojis sparingly to enhance friendliness
 - use a mix of sentences and bullet points
-- Summarize each agency with name, city, country, authorization status.
+- Summarize each agency with the following columns: 
+    hajj_company_ar, hajj_company_en, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
 - translate city and country, is_authorized if needed based on user language
+- Include contact info and Google Maps link if available
+- Respond in the same language as the user's question
 - translate the column names if needed based on user language
-- Include contact info if available.
 - Detect the user language from user question and respond in the same language.
-- you designed to protect pilgrims form scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
+- Ensure the response is complete and readable, no truncated or missing information
+- you  are designed to protect pilgrims form scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
 
 
 - Keep tone friendly, professional, and natural.
