@@ -135,7 +135,8 @@ class DatabaseManager:
                 """
                 SELECT DISTINCT 
                     hajj_company_en, hajj_company_ar, formatted_address, 
-                    city, country, email, contact_Info, rating_reviews, is_authorized
+                    city, country, email, contact_Info, rating_reviews, is_authorized,
+                    google_maps_link, link_valid
                 FROM agencies
                 WHERE LOWER(hajj_company_en) LIKE :search
                    OR LOWER(hajj_company_ar) LIKE :search
