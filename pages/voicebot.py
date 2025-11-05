@@ -258,7 +258,7 @@ def stream_response_word_by_word(response_text: str, delay: float = 0.05):
         st.session_state.streaming_response += word + " "
         if i % 3 == 0 or i == len(words) - 1:
             # update UI
-            st.experimental_rerun()
+            st.rerun()
             # give UI a moment (this will actually abort current run due to rerun)
             time.sleep(delay)
 
@@ -507,7 +507,7 @@ if audio_bytes:
         st.session_state.is_processing = True
         st.session_state.status = t('voice_status_transcribing', st.session_state.language) if 'voice_status_transcribing' in globals() else "Transcribing..."
         st.session_state.current_metadata = {}
-        st.experimental_rerun()
+        st.rerun()
 
         # We re-run to update UI first; subsequent run will continue below after rerun returns.
 else:
@@ -519,7 +519,7 @@ else:
 # The actual heavy processing should be performed when we detect last_audio_hash has been set
 # and is_processing is True. To avoid long-running blocking operations in the same Streamlit run,
 # we perform those operations in a controlled block below only when audio_bytes is not present
-# (i.e., after the st.experimental_rerun forced a second rendering). This keeps UI responsive.
+# (i.e., after the st.rerun forced a second rendering). This keeps UI responsive.
 
 # If we're in processing state and there's a last_audio_hash but no audio_bytes in current run,
 # it likely means we've been re-rendered to perform the heavy work.
@@ -569,7 +569,7 @@ if st.session_state.is_processing and not audio_bytes and st.session_state.last_
             # Save the response_text for later TTS
             st.session_state.current_response = response_text
             # If you want to actually stream while generating, you need to call stream_response_word_by_word
-            # but note that stream_response_word_by_word uses st.experimental_rerun and will interrupt flow.
+            # but note that stream_response_word_by_word uses st.rerun and will interrupt flow.
             # For a simplified reliable flow we'll set streaming_response and toggle flags here:
             st.session_state.streaming_response = ""
             st.session_state.is_streaming_response = True
@@ -579,7 +579,7 @@ if st.session_state.is_processing and not audio_bytes and st.session_state.last_
                 st.session_state.streaming_response += w + " "
                 if i % 6 == 0 or i == len(words) - 1:
                     # show partial updates
-                    st.experimental_rerun()
+                    st.rerun()
 
             # finalize streaming state (won't be reached if rerun triggers; logic may re-enter)
             st.session_state.current_response = response_text
@@ -613,4 +613,4 @@ if st.session_state.is_processing and not audio_bytes and st.session_state.last_
             st.session_state.is_processing = False
             # clear pending bytes once processed
             st.session_state.pending_audio_bytes = None
-            st.experimental_rerun()
+            st.rerun()
