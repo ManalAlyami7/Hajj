@@ -286,6 +286,16 @@ for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
+
+st.markdown("""
+<div class="return-button-container">
+  <a href="/" class="return-button" target="_self">
+    <span class="icon">←</span>
+    <span>Return to Chatbot</span>
+  </a>
+</div>
+""", unsafe_allow_html=True)
+
 # ---------------------------
 # Return button and header
 # ---------------------------
