@@ -284,14 +284,14 @@ defaults = {
     "is_recording": False,
     "is_processing": False,
     "is_speaking": False,
-    "pending_audio": None,  # Store audio to play after UI update
+    "is_streaming_response": False,  # ← FIXED: Added this!
+    "pending_audio": None,
     "current_transcript": "",
     "current_response": "",
     "streaming_response": "",
     "current_metadata": {},
     "status": "Ready",
     "language": "en",
-    "show_live_indicator": False,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
