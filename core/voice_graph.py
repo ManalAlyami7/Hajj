@@ -200,36 +200,32 @@ class VoiceGraphBuilder:
             raise
 
 
-def text_to_speech_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
-    """Node: Convert response text to audio"""
-    try:
-        logger.info("🎤 Entering node: text_to_speech_node")
+    def text_to_speech_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
+        """Node: Convert response text to audio"""
+        try:
+            logger.info("🎤 Entering node: text_to_speech_node")
 
-        state['response'] = (
-            state.get('greeting_text')
-            or state.get('summary')
-            or state.get('general_answer')
-            or "I'm here! How can I assist you today?"
-        )
+            state['response'] = (
+                state.get('greeting_text')
+                or state.get('summary')
+                or state.get('general_answer')
+                or "I'm here! How can I assist you today?"
+            )
 
-        logger.info(f"🧠 Response text before TTS: {repr(state['response'][:120])}")
+            logger.info(f"🧠 Response text before TTS: {repr(state['response'][:120])}")
+            audio_bytes = self.processor.text_to_speech(state['response'], state.get('detected_language', 'en'))
 
-        audio_bytes = self.processor.text_to_speech(
-            state.get("response", ""),
-            state.get("detected_language", "en")
-        )
+            if audio_bytes:
+                logger.info("🔊 TTS audio generated successfully.")
+                state["response_audio"] = audio_bytes
+            else:
+                logger.warning("⚠️ TTS generation returned no audio (empty or failed).")
 
-        if audio_bytes:
-            logger.info("🔊 TTS audio generated successfully.")
-            state["response_audio"] = audio_bytes
-        else:
-            logger.warning("⚠️ TTS generation returned no audio (empty or failed).")
+            return state
 
-        return state
-
-    except Exception as e:
-        logger.error(f"❌ TTS node error: {e}")
-        raise
+        except Exception as e:
+            logger.error(f"❌ TTS node error: {e}")
+            raise
 
 
     # -----------------------------
