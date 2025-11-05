@@ -116,20 +116,41 @@ class ChatInterface:
         for idx, msg in enumerate(st.session_state.chat_memory):
             role = msg.get("role", "assistant")
             avatar = "🕋" if role == "assistant" else "👤"
-            
+
             with st.chat_message(role, avatar=avatar):
                 st.markdown(msg.get("content", ""), unsafe_allow_html=True)
+
+                if msg.get("timestamp"):
+                    st.markdown(
+                        f"<div style='color: #777; font-size:0.8rem; margin-top:4px'>🕐 {self._format_time(msg['timestamp'])}</div>",
+                        unsafe_allow_html=True
+                    )
+
+                # Show TTS buttons without generating audio yet
                 if role == "assistant":
-                    col1, col2 = st.columns([0.7, 0.3])
-                    with col1:
-                        if msg.get("timestamp"):
-                            st.markdown(
-                                f"<div style='color: #777; font-size:0.8rem; margin-top:4px'>🕐 {self._format_time(msg['timestamp'])}</div>",
-                                unsafe_allow_html=True
-                            )
-                        # Show TTS for assistant messages
-                        if role == "assistant":
-                            self._create_voice_player(msg.get("content", "")[:4000], idx=str(idx))
+                    html = f"""
+                    <div style="margin:5px 0; display:flex; gap:8px;">
+                        <button style="font-size:20px; padding:6px 10px; border-radius:8px; border:none; cursor:pointer;"
+                            onclick="fetch('/generate_tts', {{
+                                method: 'POST',
+                                headers: {{'Content-Type':'application/json'}},
+                                body: JSON.stringify({{'text':'{msg.get('content','').replace("'", "\\'")}'}})
+                            }}).then(resp => resp.json())
+                            .then(data => {{
+                                const audio = new Audio('data:audio/mp3;base64,' + data.audio_b64);
+                                audio.id = 'audio_{idx}';
+                                audio.play();
+                                window.audio_{idx} = audio;
+                            }});"
+                        >🔊</button>
+                        <button style="font-size:20px; padding:6px 10px; border-radius:8px; border:none; cursor:pointer;"
+                            onclick="if(window.audio_{idx}){{ window.audio_{idx}.currentTime=0; window.audio_{idx}.play(); }}">🔄</button>
+                        <button style="font-size:20px; padding:6px 10px; border-radius:8px; border:none; cursor:pointer;"
+                            onclick="if(window.audio_{idx}){{ window.audio_{idx}.pause(); }}">⏹️</button>
+                    </div>
+                    """
+                    components.html(html, height=50)
+
 
     # -------------------
     # User Input Handling
