@@ -5,7 +5,6 @@ Handles audio transcription, intent detection, and response generation for voice
 
 import streamlit as st
 from openai import OpenAI
-import openrouter
 import io
 from typing import Dict, Optional
 import logging
