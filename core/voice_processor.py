@@ -1,7 +1,7 @@
 """
-Voice Processor Module - STREAMING VERSION
-Handles real-time audio transcription, streaming responses, and live feedback
-Optional enhanced version - use this if you want streaming AI responses
+Voice Processor Module - OPENROUTER VERSION
+Uses OpenRouter for AI models (Claude, GPT, Gemini, etc.)
+Supports OpenAI for Whisper (transcription) and TTS
 """
 
 import streamlit as st
@@ -20,32 +20,56 @@ logger = logging.getLogger(__name__)
 
 
 class VoiceProcessor:
-    """Enhanced Voice Processor with streaming support"""
+    """Voice Processor with OpenRouter for AI and OpenAI for audio"""
     
     def __init__(self):
-        """Initialize Voice Processor with OpenAI client"""
-        self.client = self._get_client()
+        """Initialize with OpenRouter and OpenAI clients"""
+        self.openrouter_client = self._get_openrouter_client()
+        self.openai_client = self._get_openai_client()
         self.db = DatabaseManager()
+        
+        # Default model (can be changed)
+        self.model = "anthropic/claude-3.5-sonnet"  # Or any OpenRouter model
     
     @st.cache_resource
-    def _get_client(_self):
-        """Get cached OpenAI client"""
-        api_key = st.secrets.get('key')
+    def _get_openrouter_client(_self):
+        """Get cached OpenRouter client"""
+        api_key = st.secrets.get('openrouter_key')
         if not api_key:
-            logger.error("OpenAI API key not found")
-            st.error("⚠️ Please add your OPENAI_API_KEY to Streamlit secrets")
+            logger.error("OpenRouter API key not found")
+            st.error("⚠️ Please add your openrouter_key to Streamlit secrets")
             st.stop()
+        
+        # OpenRouter uses OpenAI-compatible API
+        return OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key,
+        )
+    
+    @st.cache_resource
+    def _get_openai_client(_self):
+        """Get cached OpenAI client for Whisper and TTS"""
+        api_key = st.secrets.get('key')  # Your OpenAI key
+        if not api_key:
+            logger.warning("OpenAI API key not found - Whisper/TTS disabled")
+            return None
         return OpenAI(api_key=api_key)
     
     def transcribe_audio(self, audio_bytes: bytes) -> Dict:
-        """
-        Transcribe audio to text with language detection
-        """
+        """Transcribe audio using OpenAI Whisper"""
+        if not self.openai_client:
+            return {
+                "text": "",
+                "language": "en",
+                "confidence": 0.0,
+                "error": "OpenAI client not configured"
+            }
+        
         try:
             audio_file = io.BytesIO(audio_bytes)
             audio_file.name = "audio.wav"
 
-            transcript = self.client.audio.transcriptions.create(
+            transcript = self.openai_client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_file,
                 response_format="verbose_json",
@@ -78,7 +102,7 @@ class VoiceProcessor:
             }
     
     def detect_voice_intent(self, user_input: str, language: str = "en") -> Dict:
-        """Detect intent with urgency level"""
+        """Detect intent using OpenRouter model"""
         if not user_input or not user_input.strip():
             logger.warning("Empty user_input provided")
             return {
@@ -98,28 +122,34 @@ Classify this voice message into ONE category:
 
 Message: {user_input}
 
-Provide structured classification with intent, confidence, reasoning, is_arabic, urgency.
+Respond with a JSON object containing:
+- intent: one of ["GREETING", "DATABASE", "GENERAL_HAJJ"]
+- confidence: float between 0 and 1
+- reasoning: brief explanation
+- is_arabic: boolean
+- urgency: one of ["low", "medium", "high"]
 """
         
         try:
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
+            response = self.openrouter_client.chat.completions.create(
+                model=self.model,
                 messages=[
-                    {"role": "system", "content": "You classify voice intents."},
+                    {"role": "system", "content": "You classify voice intents. Return only valid JSON."},
                     {"role": "user", "content": intent_prompt}
                 ],
-                response_format=VoiceIntentClassification,
-                temperature=0
+                temperature=0,
+                response_format={"type": "json_object"}
             )
             
-            intent_data = response.choices[0].message.parsed
+            import json
+            intent_data = json.loads(response.choices[0].message.content)
             
             return {
-                "intent": intent_data.intent,
-                "confidence": intent_data.confidence,
-                "reasoning": intent_data.reasoning,
-                "is_arabic": intent_data.is_arabic,
-                "urgency": intent_data.urgency
+                "intent": intent_data.get("intent", "GENERAL_HAJJ"),
+                "confidence": float(intent_data.get("confidence", 0.7)),
+                "reasoning": intent_data.get("reasoning", ""),
+                "is_arabic": intent_data.get("is_arabic", False),
+                "urgency": intent_data.get("urgency", "medium")
             }
             
         except Exception as e:
@@ -155,7 +185,8 @@ Provide structured classification with intent, confidence, reasoning, is_arabic,
         is_arabic: bool = False
     ) -> Generator[str, None, None]:
         """
-        Generate streaming response word-by-word (OPTIONAL - for advanced use)
+        Generate streaming response using OpenRouter (TRUE STREAMING)
+        This returns a generator that yields text chunks in real-time
         """
         system_prompt = self._build_prompt(intent, is_arabic)
         
@@ -165,11 +196,12 @@ Provide structured classification with intent, confidence, reasoning, is_arabic,
                 {"role": "user", "content": user_input}
             ]
             
-            stream = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+            # Stream from OpenRouter
+            stream = self.openrouter_client.chat.completions.create(
+                model=self.model,
                 messages=messages,
                 temperature=0.7,
-                stream=True
+                stream=True  # Enable streaming
             )
             
             for chunk in stream:
@@ -202,28 +234,27 @@ ALWAYS emphasize using AUTHORIZED agencies.
 {'Respond in Arabic' if is_arabic else 'Respond in English'}"""
     
     def generate_voice_greeting(self, user_input: str, is_arabic: bool = False) -> Dict:
-        """Generate greeting response"""
+        """Generate greeting response using OpenRouter"""
         system_prompt = self._build_prompt("GREETING", is_arabic)
         
         try:
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
+            response = self.openrouter_client.chat.completions.create(
+                model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_input}
                 ],
-                response_format=VoiceResponse,
                 temperature=0.7
             )
             
-            voice_data = response.choices[0].message.parsed
+            response_text = response.choices[0].message.content
             
             return {
-                "response": voice_data.response,
-                "tone": voice_data.tone,
-                "key_points": voice_data.key_points,
-                "suggested_actions": voice_data.suggested_actions,
-                "includes_warning": voice_data.includes_warning
+                "response": response_text,
+                "tone": "warm",
+                "key_points": ["Greeting"],
+                "suggested_actions": ["Ask about agencies", "Ask about Hajj"],
+                "includes_warning": False
             }
             
         except Exception as e:
@@ -237,26 +268,31 @@ ALWAYS emphasize using AUTHORIZED agencies.
             }
     
     def generate_database_response(self, user_input: str, is_arabic: bool = False) -> Dict:
-        """Generate database/verification response"""
+        """Generate database/verification response using OpenRouter"""
+        system_prompt = self._build_prompt("DATABASE", is_arabic)
+        
         try:
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
+            response = self.openrouter_client.chat.completions.create(
+                model=self.model,
                 messages=[
-                    {"role": "system", "content": self._build_prompt("DATABASE", is_arabic)},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_input}
                 ],
-                response_format=DatabaseVoiceResponse,
                 temperature=0.5
             )
             
-            db_data = response.choices[0].message.parsed
+            response_text = response.choices[0].message.content
             
             return {
-                "response": db_data.response,
-                "verification_steps": db_data.verification_steps,
-                "warning_message": db_data.warning_message,
-                "official_sources": db_data.official_sources,
-                "tone": db_data.tone
+                "response": response_text,
+                "verification_steps": [
+                    "Check official Ministry database",
+                    "Verify physical office location",
+                    "Read authentic reviews"
+                ],
+                "warning_message": "Book ONLY through AUTHORIZED agencies!",
+                "official_sources": ["Ministry of Hajj and Umrah"],
+                "tone": "urgent"
             }
             
         except Exception as e:
@@ -271,15 +307,15 @@ ALWAYS emphasize using AUTHORIZED agencies.
                 }
             else:
                 return {
-                    "response": "⚠️ CRITICAL: Always verify agency authorization before booking!",
-                    "verification_steps": ["Check Ministry of Hajj database"],
+                    "response": "⚠️ CRITICAL: Always verify agency authorization!",
+                    "verification_steps": ["Check Ministry database"],
                     "warning_message": "Book ONLY through AUTHORIZED agencies!",
-                    "official_sources": ["Ministry of Hajj and Umrah"],
+                    "official_sources": ["Ministry of Hajj"],
                     "tone": "urgent"
                 }
     
     def generate_general_response(self, user_input: str, is_arabic: bool = False, context: list = None) -> Dict:
-        """Generate general Hajj information response"""
+        """Generate general Hajj information response using OpenRouter"""
         system_prompt = self._build_prompt("GENERAL_HAJJ", is_arabic)
         
         try:
@@ -290,21 +326,20 @@ ALWAYS emphasize using AUTHORIZED agencies.
             
             messages.append({"role": "user", "content": user_input})
             
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
+            response = self.openrouter_client.chat.completions.create(
+                model=self.model,
                 messages=messages,
-                response_format=VoiceResponse,
                 temperature=0.6
             )
             
-            voice_data = response.choices[0].message.parsed
+            response_text = response.choices[0].message.content
             
             return {
-                "response": voice_data.response,
-                "tone": voice_data.tone,
-                "key_points": voice_data.key_points,
-                "suggested_actions": voice_data.suggested_actions,
-                "includes_warning": voice_data.includes_warning
+                "response": response_text,
+                "tone": "informative",
+                "key_points": ["Hajj information"],
+                "suggested_actions": ["Ask follow-up questions"],
+                "includes_warning": "authorized" in response_text.lower()
             }
             
         except Exception as e:
@@ -318,7 +353,11 @@ ALWAYS emphasize using AUTHORIZED agencies.
             }
     
     def text_to_speech(self, text: str, language: str = "en") -> Optional[bytes]:
-        """Convert text to speech audio"""
+        """Convert text to speech using OpenAI TTS"""
+        if not self.openai_client:
+            logger.warning("OpenAI client not configured - TTS disabled")
+            return None
+        
         if not text or not text.strip():
             logger.warning("Empty text provided to TTS")
             return None
@@ -334,7 +373,7 @@ ALWAYS emphasize using AUTHORIZED agencies.
         voice = voice_map.get(language, "alloy")
         
         try:
-            response = self.client.audio.speech.create(
+            response = self.openai_client.audio.speech.create(
                 model="tts-1",
                 voice=voice,
                 input=text,
@@ -347,3 +386,8 @@ ALWAYS emphasize using AUTHORIZED agencies.
         except Exception as e:
             logger.error(f"TTS failed: {e}")
             return None
+    
+    def set_model(self, model_name: str):
+        """Change the OpenRouter model"""
+        self.model = model_name
+        logger.info(f"Model changed to: {model_name}")
