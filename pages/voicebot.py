@@ -550,7 +550,7 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         # ...existing code...
         if st.session_state.pending_audio:
             # Add hidden audio player for the response audio
-            st.audio(st.session_state.pending_audio, format='audio/wav', start_time=0, key="hidden_audio_player", help="This audio will play the assistant's response.")
+            st.audio(st.session_state.pending_audio, format='audio/wav', start_time=0, help="This audio will play the assistant's response.")
         # ...existing code...
         
 
