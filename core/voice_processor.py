@@ -16,6 +16,7 @@ from core.voice_models import (
 from core.database import DatabaseManager  # ADD THIS IMPORT
 
 logger = logging.getLogger(__name__)
+audio_client = OpenAI(api_key=st.secrets.get('key'))
 
 
 class VoiceProcessor:
@@ -25,6 +26,7 @@ class VoiceProcessor:
         """Initialize Voice Processor with OpenAI client"""
         self.client = self._get_client()
         self.db = DatabaseManager() # INITIALIZE DATABASE MANAGER
+        self.audio_client = audio_client
     
     @st.cache_resource
     def _get_client(_self):
@@ -70,7 +72,7 @@ class VoiceProcessor:
             audio_file.name = "audio.wav"
 
             # Use verbose_json to get language detection
-            transcript = self.client.audio.transcriptions.create(
+            transcript = self.audio_client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_file,
                 response_format="verbose_json"  # Provides language detection
@@ -572,7 +574,7 @@ Voice guidelines:
         voice = voice_map.get(language, "alloy")
         
         try:
-            response = self.client.audio.speech.create(
+            response = self.audio_client.audio.speech.create(
                 model="tts-1",
                 voice=voice,
                 input=text
