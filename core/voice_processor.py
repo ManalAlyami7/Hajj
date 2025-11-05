@@ -128,7 +128,6 @@ class VoiceProcessor:
                 model="gpt-4o-mini-tts",  # Better quality + faster response
                 voice=voice,
                 input=text.strip(),
-                format="mp3",
                 speed=1.0
             )
 
