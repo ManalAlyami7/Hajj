@@ -128,6 +128,8 @@ class VoiceGraphBuilder:
 
     def detect_intent_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Detect intent"""
+        state['user_input'] = state.get('transcript', '')
+        state['detected_language'] = state.get('detected_language', 'en')
         return self.graph._node_detect_intent(state)
 
     def handle_greeting_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
