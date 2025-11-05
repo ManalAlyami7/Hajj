@@ -163,7 +163,6 @@ Provide structured classification.
                     {"role": "system", "content": "You classify voice intents with urgency assessment."},
                     {"role": "user", "content": intent_prompt}
                 ],
-                response_format=VoiceIntentClassification,
                 temperature=0
             )
             
@@ -236,7 +235,6 @@ Also provide:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_input}
                 ],
-                response_format=VoiceResponse,
                 temperature=0.7
             )
             
@@ -302,7 +300,6 @@ Also provide:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_input}
                 ],
-                response_format=DatabaseVoiceResponse,
                 temperature=0.5
             )
             
@@ -522,7 +519,6 @@ Voice guidelines:
             response = self.client.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
-                response_format=VoiceResponse,
                 temperature=0.6
             )
             
@@ -579,7 +575,7 @@ Voice guidelines:
                 voice=voice,
                 input=text
             )
-            audio_bytes = response['content']
+            audio_bytes = response.content
             logger.info(f"TTS generated for: '{text[:50]}...'")
             return audio_bytes
             
