@@ -202,30 +202,34 @@ class ChatInterface:
             bg_color = "rgba(16,185,129,0.1)" if is_authorized else "rgba(239,68,68,0.1)"
             border_color = "#10b981" if is_authorized else "#ef4444"
 
-            if maps_link and link_valid:
-                maps_display = f"""
-                <div style='margin-top:10px;display:flex;gap:10px;align-items:center;'>
-                    <a href='{maps_link}' target='_blank'
-                    style='padding:6px 12px;background-color:#2563eb;color:white;
-                            text-decoration:none;border-radius:8px;font-size:0.9rem;'>
-                    📍 Open Map
-                    </a>
-                    <button onclick="navigator.clipboard.writeText('{maps_link}');
-                                    var msg=document.createElement('div');
-                                    msg.innerText='✅ Link copied!';
-                                    msg.style='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#10b981;color:white;padding:8px 14px;border-radius:8px;z-index:9999;font-size:0.9rem;';
-                                    document.body.appendChild(msg);
-                                    setTimeout(()=>msg.remove(),2000);"
-                            style='padding:6px 12px;background-color:#10b981;color:white;
-                                border:none;border-radius:8px;font-size:0.9rem;cursor:pointer;'>
-                        🔗 Copy Link
-                    </button>
-                </div>
-                """
-            elif maps_link and not link_valid:
-                maps_display = "<span style='color:#f87171;'>⚠️ Invalid Link</span>"
+             if maps_link:
+                if link_valid:
+                    maps_display = f"""
+                    <div style='margin-top:10px;display:flex;gap:10px;align-items:center;'>
+                        <a href='{maps_link}' target='_blank'
+                        style='padding:6px 12px;background-color:#2563eb;color:white;
+                                text-decoration:none;border-radius:8px;font-size:0.9rem;'>
+                        📍 Open Map
+                        </a>
+                        <button onclick="navigator.clipboard.writeText('{maps_link}');
+                                        var msg=document.createElement('div');
+                                        msg.innerText='✅ Link copied!';
+                                        msg.style='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+                                                   background:#10b981;color:white;padding:8px 14px;border-radius:8px;
+                                                   z-index:9999;font-size:0.9rem;';
+                                        document.body.appendChild(msg);
+                                        setTimeout(()=>msg.remove(),2000);"
+                                style='padding:6px 12px;background-color:#10b981;color:white;
+                                    border:none;border-radius:8px;font-size:0.9rem;cursor:pointer;'>
+                            🔗 Copy Link
+                        </button>
+                    </div>
+                    """
+                else:
+                    maps_display = "<span style='color:#f87171;'>⚠️ Invalid Link</span>"
             else:
                 maps_display = "N/A"
+
 
             st.markdown(f"""
             <div style='padding:14px;margin:10px 0;border-radius:10px;
