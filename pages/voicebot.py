@@ -550,6 +550,7 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         st.session_state.status = t('voice_status_completed', st.session_state.language)
         # ...existing code...
         if st.session_state.pending_audio:
+            logger.info("Playing response audio...")
     # Auto-play audio response
             audio_base64 = base64.b64encode(st.session_state.pending_audio).decode("utf-8")
             audio_html = f"""
