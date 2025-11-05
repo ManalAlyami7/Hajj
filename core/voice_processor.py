@@ -5,6 +5,7 @@ Handles audio transcription, intent detection, and response generation for voice
 
 import streamlit as st
 from openai import OpenAI
+from openrouter import OpenRouter
 import io
 from typing import Dict, Optional
 import logging
@@ -28,14 +29,13 @@ class VoiceProcessor:
     
     @st.cache_resource
     def _get_client(_self):
-        """Get cached OpenAI client"""
-        api_key = st.secrets.get('key')
+        api_key = st.secrets.get('openrouter_key')  # new key
         if not api_key:
-            logger.error("OpenAI API key not found")
-            st.error("⚠️ Please add your OPENAI_API_KEY to Streamlit secrets")
+            logger.error("OpenRouter API key not found")
+            st.error("⚠️ Please add your OPENROUTER_API_KEY to Streamlit secrets")
             st.stop()
-        return OpenAI(api_key=api_key)
-    
+        return OpenRouter(api_key=api_key)
+
     def _normalize_transcription(self, transcription) -> str:
         """Return a plain transcript string from various SDK return types."""
         try:
@@ -76,9 +76,11 @@ class VoiceProcessor:
                 file=audio_file,
                 response_format="verbose_json"  # Provides language detection
             )
+            text = transcript['text']  # extract manually
+
 
             # Extract text using normalization
-            text = self._normalize_transcription(transcript)
+            text = self._normalize_transcription(text)
             
             # Extract language if available (verbose_json provides this)
             language = getattr(transcript, "language", None)
@@ -154,7 +156,7 @@ Provide structured classification.
 """
         
         try:
-            response = self.client.beta.chat.completions.parse(
+            response = self.client.chat.completions.parse(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You classify voice intents with urgency assessment."},
@@ -164,7 +166,8 @@ Provide structured classification.
                 temperature=0
             )
             
-            intent_data = response.choices[0].message.parsed
+            intent_data = response['choices'][0]['message']['content']
+
             
             logger.info(f"Intent: {intent_data.intent} (confidence: {intent_data.confidence}, urgency: {intent_data.urgency})")
             
@@ -292,7 +295,7 @@ Also provide:
         system_prompt = self._build_database_prompt(user_input, is_arabic, actual_data)
         
         try:
-            response = self.client.beta.chat.completions.parse(
+            response = self.client.chat.completions.parse(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -302,7 +305,7 @@ Also provide:
                 temperature=0.5
             )
             
-            db_data = response.choices[0].message.parsed
+            db_data = response['choices'][0]['message']['content']
             
             result = {
                 "response": db_data.response,
@@ -336,6 +339,8 @@ Database table 'agencies' columns:
 - formatted_address
 - rating_reviews
 - is_authorized ('Yes' or 'No')
+- google_maps_link
+- link_valid 
 
 LOCATION HANDLING:
 - Use LIKE with % for fuzzy matching
@@ -363,7 +368,7 @@ If cannot generate safe SQL, return: NO_SQL"""
                 temperature=0
             )
             
-            sql = response.choices[0].message.content.strip()
+            sql = response['choices'][0]['message']['content'].strip()
             
             # Clean SQL (remove markdown formatting if present)
             if sql.startswith("```"):
@@ -513,14 +518,14 @@ Voice guidelines:
             
             messages.append({"role": "user", "content": user_input})
             
-            response = self.client.beta.chat.completions.parse(
+            response = self.client.beta.completions.parse(
                 model="gpt-4o-mini",
                 messages=messages,
                 response_format=VoiceResponse,
                 temperature=0.6
             )
             
-            voice_data = response.choices[0].message.parsed
+            voice_data = response['choices'][0]['message']['content']
             
             return {
                 "response": voice_data.response,
@@ -573,9 +578,9 @@ Voice guidelines:
                 voice=voice,
                 input=text
             )
-            
+            audio_bytes = response['content']
             logger.info(f"TTS generated for: '{text[:50]}...'")
-            return response.content
+            return audio_bytes
             
         except Exception as e:
             logger.error(f"TTS failed: {e}")
