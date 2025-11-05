@@ -1,30 +1,30 @@
 """
-Voice Processor Module - PRODUCTION READY
-Handles audio transcription, intent detection, and response generation for voice
+Voice Processor Module - STREAMING VERSION
+Handles real-time audio transcription, streaming responses, and live feedback
 """
 
 import streamlit as st
 from openai import OpenAI
 import io
-from typing import Dict, Optional
+from typing import Dict, Optional, Generator
 import logging
 from core.voice_models import (
     VoiceIntentClassification,
     VoiceResponse,
     DatabaseVoiceResponse
 )
-from core.database import DatabaseManager  # ADD THIS IMPORT
+from core.database import DatabaseManager
 
 logger = logging.getLogger(__name__)
 
 
-class VoiceProcessor:
-    """Manages voice-specific AI operations"""
+class StreamingVoiceProcessor:
+    """Manages voice-specific AI operations with streaming support"""
     
     def __init__(self):
         """Initialize Voice Processor with OpenAI client"""
         self.client = self._get_client()
-        self.db = DatabaseManager() # INITIALIZE DATABASE MANAGER
+        self.db = DatabaseManager()
     
     @st.cache_resource
     def _get_client(_self):
@@ -36,29 +36,10 @@ class VoiceProcessor:
             st.stop()
         return OpenAI(api_key=api_key)
     
-    def _normalize_transcription(self, transcription) -> str:
-        """Return a plain transcript string from various SDK return types."""
-        try:
-            # dict-like
-            return transcription.text
-            # if hasattr(transcription, "get"):
-            #     return transcription.get("text") or transcription.get("transcript") or str(transcription)
-            # # object with attribute .text
-            # if hasattr(transcription, "text"):
-            #     return transcription.text or str(transcription)
-            # # fallback to string
-            # return str(transcription)
-        except Exception:
-            return ""
-    
-    def transcribe_audio(self, audio_bytes: bytes) -> Dict:
+    def transcribe_audio_streaming(self, audio_bytes: bytes) -> Dict:
         """
-        Transcribe audio to text with language detection
-        Returns a normalized dict (always dict => safe .get usage).
-        
-        Whisper API Response Formats:
-        - "json": Returns object with .text attribute only
-        - "verbose_json": Returns object with .text, .language, .duration, etc.
+        Transcribe audio with immediate feedback
+        Optimized for real-time display
         
         Args:
             audio_bytes: Raw audio data
@@ -70,26 +51,25 @@ class VoiceProcessor:
             audio_file = io.BytesIO(audio_bytes)
             audio_file.name = "audio.wav"
 
-            # Use verbose_json to get language detection
+            # Use verbose_json for language detection
             transcript = self.client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_file,
-                response_format="verbose_json"  # Provides language detection
+                response_format="verbose_json",
+                temperature=0  # More deterministic
             )
 
-            # Extract text using normalization
-            text = self._normalize_transcription(transcript)
-            
-            # Extract language if available (verbose_json provides this)
+            text = transcript.text if hasattr(transcript, 'text') else ""
             language = getattr(transcript, "language", None)
+            
             if not language:
-                # Fallback: detect from text if it contains Arabic characters
                 language = "ar" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "en"
 
             result = {
                 "text": text,
                 "language": language,
-                "confidence": 1.0  # Whisper doesn't provide confidence scores
+                "confidence": 1.0,
+                "duration": getattr(transcript, "duration", 0)
             }
 
             logger.info(f"Transcribed: '{result['text'][:50]}...' (lang: {result['language']})")
@@ -97,8 +77,6 @@ class VoiceProcessor:
 
         except Exception as e:
             logger.error(f"Transcription failed: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
             return {
                 "text": "",
                 "language": "en",
@@ -117,7 +95,6 @@ class VoiceProcessor:
         Returns:
             Dict with intent, confidence, reasoning, urgency
         """
-        # CRITICAL: Validate input before processing
         if not user_input or not user_input.strip():
             logger.warning("Empty user_input provided to detect_voice_intent")
             return {
@@ -134,7 +111,6 @@ Classify this voice message into ONE category with confidence and urgency:
 1️⃣ GREETING: greetings like hello, hi, salam, السلام عليكم, مرحبا
 2️⃣ DATABASE: questions about Hajj agencies, authorization, company verification
 3️⃣ GENERAL_HAJJ: general Hajj questions (rituals, requirements, documents)
-
 
 Message: {user_input}
 
@@ -202,128 +178,129 @@ Provide structured classification.
             "urgency": urgency
         }
     
-    def generate_voice_greeting(self, user_input: str, is_arabic: bool = False) -> Dict:
+    def generate_response_streaming(
+        self, 
+        user_input: str, 
+        intent: str,
+        is_arabic: bool = False,
+        context: list = None
+    ) -> Generator[str, None, None]:
         """
-        Generate greeting response optimized for voice
+        Generate streaming response word-by-word
         
         Args:
-            user_input: User's greeting
+            user_input: User's query
+            intent: Detected intent
             is_arabic: Whether to respond in Arabic
+            context: Conversation history
         
-        Returns:
-            Dict with response, tone, key_points, suggested_actions
+        Yields:
+            Response chunks as they're generated
         """
-        system_prompt = f"""You are a friendly Hajj voice assistant. Generate a warm greeting:
+        # Build system prompt based on intent
+        if intent == "GREETING":
+            system_prompt = self._build_greeting_prompt(is_arabic)
+        elif intent == "DATABASE":
+            system_prompt = self._build_database_prompt_streaming(user_input, is_arabic)
+        else:
+            system_prompt = self._build_general_prompt(is_arabic)
+        
+        try:
+            messages = [{"role": "system", "content": system_prompt}]
+            
+            if context:
+                messages.extend(context[-6:])
+            
+            messages.append({"role": "user", "content": user_input})
+            
+            # Stream the response
+            stream = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                temperature=0.7,
+                stream=True
+            )
+            
+            for chunk in stream:
+                if chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
+            
+        except Exception as e:
+            logger.error(f"Streaming response failed: {e}")
+            yield "I apologize, but I encountered an error. Please try again."
+    
+    def _build_greeting_prompt(self, is_arabic: bool) -> str:
+        """Build greeting system prompt"""
+        return f"""You are a friendly Hajj voice assistant. Generate a warm greeting:
 1. Acknowledge the greeting warmly
 2. Offer help with Hajj agencies and questions
 3. Keep it BRIEF for voice (2-3 sentences max)
 4. Use natural speaking style
-{'5. Respond in Arabic' if is_arabic else '5. Respond in English'}
-
-Also provide:
-- Tone assessment
-- Key points covered
-- Suggested actions user can take"""
-        
-        try:
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_input}
-                ],
-                response_format=VoiceResponse,
-                temperature=0.7
-            )
-            
-            voice_data = response.choices[0].message.parsed
-            
-            return {
-                "response": voice_data.response,
-                "tone": voice_data.tone,
-                "key_points": voice_data.key_points,
-                "suggested_actions": voice_data.suggested_actions,
-                "includes_warning": voice_data.includes_warning
-            }
-            
-        except Exception as e:
-            logger.error(f"Voice greeting generation failed: {e}")
-            return {
-                "response": "السلام عليكم! 🌙 كيف يمكنني مساعدتك؟" if is_arabic else "Hello! 👋 How can I assist you today?",
-                "tone": "warm",
-                "key_points": ["Greeting", "Offer to help"],
-                "suggested_actions": ["Ask about agencies", "Ask about Hajj requirements"],
-                "includes_warning": False
-            }
+{'5. Respond in Arabic' if is_arabic else '5. Respond in English'}"""
     
-    def generate_database_response(self, user_input: str, is_arabic: bool = False) -> Dict:
-        """
-        Generate database/verification response for voice WITH REAL DATA
-        
-        Args:
-            user_input: User's query about agencies
-            is_arabic: Whether to respond in Arabic
-        
-        Returns:
-            Dict with response, verification steps, warning, sources, and actual data
-        """
-        
-        # STEP 1: Try to get actual database results
+    def _build_database_prompt_streaming(self, user_input: str, is_arabic: bool) -> str:
+        """Build database query prompt with real-time context"""
+        # Try to get database results
         actual_data = None
-        sql_query = None
-        
         try:
-            # Generate SQL query using AI
             sql_query = self._generate_sql_for_voice(user_input, is_arabic)
-            
             if sql_query:
-                logger.info(f"Generated SQL: {sql_query}")
                 df, error = self.db.execute_query(sql_query)
-                
                 if df is not None and not df.empty:
                     actual_data = df
                     logger.info(f"Found {len(df)} results from database")
-                elif error:
-                    logger.warning(f"SQL execution error: {error}")
         except Exception as e:
             logger.error(f"Database query failed: {e}")
         
-        # STEP 2: Generate voice response with context from actual data
-        system_prompt = self._build_database_prompt(user_input, is_arabic, actual_data)
+        data_context = ""
+        if actual_data is not None and not actual_data.empty:
+            total = len(actual_data)
+            authorized = len(actual_data[actual_data['is_authorized'] == 'Yes']) if 'is_authorized' in actual_data.columns else 0
+            sample = actual_data.head(3).to_dict('records')
+            
+            data_context = f"""
+ACTUAL DATABASE RESULTS FOUND:
+- Total agencies found: {total}
+- Authorized agencies: {authorized}
+- Sample records: {sample}
+
+IMPORTANT: Reference these ACTUAL results in your response!
+"""
+        else:
+            data_context = "NO RESULTS FOUND in database. Guide user to rephrase or check spelling."
         
-        try:
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_input}
-                ],
-                response_format=DatabaseVoiceResponse,
-                temperature=0.5
-            )
-            
-            db_data = response.choices[0].message.parsed
-            
-            result = {
-                "response": db_data.response,
-                "verification_steps": db_data.verification_steps,
-                "warning_message": db_data.warning_message,
-                "official_sources": db_data.official_sources,
-                "tone": db_data.tone,
-                "actual_data": actual_data,  # Include actual DataFrame
-                "sql_query": sql_query
-            }
-            
-            return result
-            
-        except Exception as e:
-            logger.error(f"Database voice response failed: {e}")
-            return self._fallback_database_response(is_arabic, actual_data)
+        return f"""You are a fraud-prevention voice assistant for Hajj pilgrims.
+
+CRITICAL CONTEXT:
+- 415 fake Hajj offices closed in 2025
+- 269,000+ unauthorized pilgrims stopped
+
+{data_context}
+
+Generate a response that:
+1. {'References the ACTUAL agencies found' if actual_data is not None else 'Explains no results were found'}
+2. Provides clear verification steps
+3. Issues warning about fake agencies
+4. Keep it BRIEF for voice but COMPREHENSIVE
+{'5. Respond in Arabic' if is_arabic else '5. Respond in English'}"""
+    
+    def _build_general_prompt(self, is_arabic: bool) -> str:
+        """Build general Hajj information prompt"""
+        return f"""You are a knowledgeable Hajj voice assistant. Help with:
+- Hajj & Umrah rituals
+- Travel requirements
+- Health & safety guidelines
+
+CRITICAL: Always emphasize using AUTHORIZED agencies.
+
+Voice guidelines:
+- Keep responses BRIEF (3-4 sentences for voice)
+- Use clear, simple language
+- Include key actions user should take
+{'- Respond in Arabic' if is_arabic else '- Respond in English'}"""
     
     def _generate_sql_for_voice(self, user_input: str, is_arabic: bool) -> Optional[str]:
-        """
-        Generate SQL query from voice input using AI
-        """
+        """Generate SQL query from voice input using AI"""
         sql_generation_prompt = f"""Generate SQL query for this voice request about Hajj agencies.
 
 Database table 'agencies' columns:
@@ -340,15 +317,14 @@ Database table 'agencies' columns:
 LOCATION HANDLING:
 - Use LIKE with % for fuzzy matching
 - Include Arabic AND English variations
-- Example for Mecca: (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%')
 
 User voice input: {user_input}
 
 Rules:
 1. ONLY return SELECT queries
-2. Use is_authorized = 'Yes' when user asks about verified/authorized agencies
+2. Use is_authorized = 'Yes' when asking about verified agencies
 3. Use LOWER() for case-insensitive English text
-4. Limit to 50 results unless specified
+4. Limit to 50 results
 5. Return ONLY the SQL query, no explanation
 
 If cannot generate safe SQL, return: NO_SQL"""
@@ -365,7 +341,6 @@ If cannot generate safe SQL, return: NO_SQL"""
             
             sql = response.choices[0].message.content.strip()
             
-            # Clean SQL (remove markdown formatting if present)
             if sql.startswith("```"):
                 sql = sql.split("```")[1]
                 if sql.startswith("sql"):
@@ -375,174 +350,15 @@ If cannot generate safe SQL, return: NO_SQL"""
             if sql == "NO_SQL" or not sql.upper().startswith("SELECT"):
                 return None
             
-            # Validate with database manager
             return self.db.sanitize_sql(sql)
             
         except Exception as e:
             logger.error(f"SQL generation failed: {e}")
             return None
     
-    def _build_database_prompt(self, user_input: str, is_arabic: bool, actual_data) -> str:
-        """Build system prompt with actual data context"""
-        
-        data_context = ""
-        if actual_data is not None and not actual_data.empty:
-            # Summarize actual results
-            total = len(actual_data)
-            authorized = len(actual_data[actual_data['is_authorized'] == 'Yes']) if 'is_authorized' in actual_data.columns else 0
-            
-            # Get sample records
-            sample = actual_data.head(5).to_dict('records')
-            
-            data_context = f"""
-ACTUAL DATABASE RESULTS FOUND:
-- Total agencies found: {total}
-- Authorized agencies: {authorized}
-- Sample records: {sample}
-
-IMPORTANT: Reference these ACTUAL results in your response!
-"""
-        else:
-            data_context = """
-NO RESULTS FOUND in database for this query.
-User may need to:
-1. Rephrase their question
-2. Try different city/country names
-3. Check spelling
-"""
-        
-        base_prompt = f"""You are a fraud-prevention voice assistant for Hajj pilgrims.
-
-CRITICAL CONTEXT:
-- 415 fake Hajj offices closed in 2025
-- 269,000+ unauthorized pilgrims stopped
-- URGENT: User needs immediate verification guidance
-
-{data_context}
-
-Generate a voice response that:
-1. {'References the ACTUAL agencies found' if actual_data is not None and not actual_data.empty else 'Explains no results were found'}
-2. Provides clear verification steps (3-4 steps)
-3. Issues strong warning about fake agencies
-4. Lists official sources
-5. Keep it BRIEF for voice but COMPREHENSIVE
-{'6. Respond in Arabic' if is_arabic else '6. Respond in English'}
-
-User query: {user_input}"""
-        
-        return base_prompt
-    
-    def _fallback_database_response(self, is_arabic: bool, actual_data=None) -> Dict:
-        """Enhanced fallback with actual data if available"""
-        
-        # If we have data, include it in fallback
-        if actual_data is not None and not actual_data.empty:
-            count = len(actual_data)
-            auth_count = len(actual_data[actual_data['is_authorized'] == 'Yes']) if 'is_authorized' in actual_data.columns else 0
-            
-            if is_arabic:
-                response = f"وجدت {count} وكالة، منها {auth_count} معتمدة. تحقق من الترخيص قبل الحجز!"
-            else:
-                response = f"Found {count} agencies, {auth_count} are authorized. Verify authorization before booking!"
-        else:
-            if is_arabic:
-                response = "تحذير هام! تم إغلاق 415 مكتب حج مزيف. تحقق من ترخيص الوكالة قبل الحجز."
-            else:
-                response = "⚠️ CRITICAL: 415 fake Hajj offices were closed. Always verify agency authorization before booking!"
-        
-        if is_arabic:
-            return {
-                "response": response,
-                "verification_steps": [
-                    "تحقق من قاعدة بيانات وزارة الحج",
-                    "تأكد من موقع المكتب الفعلي",
-                    "اقرأ التقييمات الموثوقة"
-                ],
-                "warning_message": "احجز فقط من خلال الوكالات المعتمدة!",
-                "official_sources": ["وزارة الحج والعمرة"],
-                "tone": "urgent",
-                "actual_data": actual_data,
-                "sql_query": None
-            }
-        else:
-            return {
-                "response": response,
-                "verification_steps": [
-                    "Check Ministry of Hajj official database",
-                    "Verify physical office location",
-                    "Read authentic reviews",
-                    "Confirm authorization status"
-                ],
-                "warning_message": "Book ONLY through AUTHORIZED agencies!",
-                "official_sources": ["Ministry of Hajj and Umrah"],
-                "tone": "urgent",
-                "actual_data": actual_data,
-                "sql_query": None
-            }
-    def generate_general_response(self, user_input: str, is_arabic: bool = False, context: list = None) -> Dict:
+    def text_to_speech_streaming(self, text: str, language: str = "en") -> Optional[bytes]:
         """
-        Generate general Hajj information response for voice
-        
-        Args:
-            user_input: User's question
-            is_arabic: Whether to respond in Arabic
-            context: Previous conversation context
-        
-        Returns:
-            Dict with response and metadata
-        """
-        system_prompt = f"""You are a knowledgeable Hajj voice assistant. Help with:
-- Hajj & Umrah rituals
-- Travel requirements
-- Health & safety guidelines
-
-CRITICAL: Always emphasize using AUTHORIZED agencies.
-Context: 415 fake offices closed, 269,000+ unauthorized pilgrims stopped in 2025.
-
-Voice guidelines:
-- Keep responses BRIEF (3-4 sentences for voice)
-- Use clear, simple language
-- Include key actions user should take
-{'- Respond in Arabic' if is_arabic else '- Respond in English'}"""
-        
-        try:
-            messages = [{"role": "system", "content": system_prompt}]
-            
-            if context:
-                messages.extend(context[-6:])  # Last 6 messages for context
-            
-            messages.append({"role": "user", "content": user_input})
-            
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=messages,
-                response_format=VoiceResponse,
-                temperature=0.6
-            )
-            
-            voice_data = response.choices[0].message.parsed
-            
-            return {
-                "response": voice_data.response,
-                "tone": voice_data.tone,
-                "key_points": voice_data.key_points,
-                "suggested_actions": voice_data.suggested_actions,
-                "includes_warning": voice_data.includes_warning
-            }
-            
-        except Exception as e:
-            logger.error(f"General voice response failed: {e}")
-            return {
-                "response": "I can help you with Hajj and Umrah information. Please ask your question.",
-                "tone": "warm",
-                "key_points": [],
-                "suggested_actions": [],
-                "includes_warning": False
-            }
-    
-    def text_to_speech(self, text: str, language: str = "en") -> Optional[bytes]:
-        """
-        Convert text to speech audio
+        Convert text to speech audio with optimized settings
         
         Args:
             text: Text to convert
@@ -551,14 +367,12 @@ Voice guidelines:
         Returns:
             Audio bytes or None if failed
         """
-        # Validate input
         if not text or not text.strip():
             logger.warning("Empty text provided to TTS")
             return None
         
-        # Voice mapping
         voice_map = {
-            "ar": "onyx",  # Better for Arabic
+            "ar": "onyx",
             "en": "alloy",
             "ur": "alloy",
             "id": "alloy",
@@ -571,7 +385,8 @@ Voice guidelines:
             response = self.client.audio.speech.create(
                 model="tts-1",
                 voice=voice,
-                input=text
+                input=text,
+                speed=1.0
             )
             
             logger.info(f"TTS generated for: '{text[:50]}...'")
