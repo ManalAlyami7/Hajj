@@ -104,6 +104,9 @@ class VoiceProcessor:
     def generate_summary(self, user_input: str, language: str, row_count: int, sample_rows) -> Dict:
         """Summarize a piece of text."""
         return self.llm.generate_summary(user_input, language, row_count, sample_rows)
+    def ask_for_more_info(self, user_input: str, language: str) -> Dict:
+        """Generate a request for more information from the user."""
+        return self.llm.ask_for_more_info(user_input, language)
 
     # --- Text-to-Speech -------------------------------------------------------
     def text_to_speech(self, text: str, language: str = "en") -> Optional[bytes]:
