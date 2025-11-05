@@ -1,23 +1,8 @@
-<<<<<<< HEAD
-# voicebot_streaming.py
-"""
-Hajj Voice Assistant - REAL-TIME STREAMING VERSION
-- Live transcription display as user speaks
-- Streaming AI responses word-by-word
-- Continuous audio capture with visual feedback
-- Enhanced user experience with real-time updates
-=======
-"""
-Hajj Voice Assistant - PRODUCTION READY
-- Fixed audio processing flow with audio_recorder
-- UI updates BEFORE TTS playback
-- Robust error handling
-- Added styled return button to chatbot
->>>>>>> 3c3c8a7ca542e73bb0ac08af637601a05dcc72bc
-"""
 
-import time
+
+
 import re
+
 import streamlit as st
 import sys
 from pathlib import Path
@@ -48,11 +33,7 @@ st.set_page_config(
 )
 
 # ---------------------------
-<<<<<<< HEAD
-# Enhanced Styles with Streaming Animations
-=======
-# Styles (with return button)
->>>>>>> 3c3c8a7ca542e73bb0ac08af637601a05dcc72bc
+# Styles (unchanged)
 # ---------------------------
 st.markdown("""
 <style>
@@ -303,11 +284,7 @@ defaults = {
     "is_recording": False,
     "is_processing": False,
     "is_speaking": False,
-<<<<<<< HEAD
-    "is_streaming_response": False,
-=======
->>>>>>> 3c3c8a7ca542e73bb0ac08af637601a05dcc72bc
-    "pending_audio": None,
+    "pending_audio": None,  # Store audio to play after UI update
     "current_transcript": "",
     "current_response": "",
     "streaming_response": "",
@@ -320,78 +297,9 @@ for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
-# ---------------------------
-<<<<<<< HEAD
-# Helper Functions
-# ---------------------------
-def update_streaming_response(text_chunk: str):
-    """Update streaming response in session state"""
-    st.session_state.streaming_response += text_chunk
+   
 
-def stream_ai_response(user_input: str, intent: str, is_arabic: bool):
-    """Stream AI response word by word"""
-    st.session_state.is_streaming_response = True
-    st.session_state.streaming_response = ""
-    st.session_state.status = "Generating response..."
-    
-    try:
-        # Use streaming from voice processor (you'll need to implement this)
-        # For now, we'll simulate streaming with the existing generate methods
-        
-        if intent == "GREETING":
-            result = voice_processor.generate_voice_greeting(user_input, is_arabic)
-            response_text = result["response"]
-        elif intent == "DATABASE":
-            result = voice_processor.generate_database_response(user_input, is_arabic)
-            response_text = result["response"]
-            st.session_state.current_metadata = {
-                "verification_steps": result.get("verification_steps", []),
-                "official_sources": result.get("official_sources", []),
-            }
-        else:
-            result = voice_processor.generate_general_response(user_input, is_arabic)
-            response_text = result["response"]
-            st.session_state.current_metadata = {
-                "key_points": result.get("key_points", []),
-                "suggested_actions": result.get("suggested_actions", []),
-            }
-        
-        # Simulate streaming by yielding words
-        words = response_text.split()
-        for i, word in enumerate(words):
-            st.session_state.streaming_response += word + " "
-            time.sleep(0.05)  # Simulate streaming delay
-            
-            # Update UI every few words
-            if i % 3 == 0:
-                yield st.session_state.streaming_response
-        
-        # Final update
-        st.session_state.current_response = response_text
-        st.session_state.streaming_response = ""
-        
-    except Exception as e:
-        logger.error(f"Streaming response failed: {e}")
-        st.session_state.streaming_response = "I apologize, but I encountered an error."
-    
-    finally:
-        st.session_state.is_streaming_response = False
-=======
-# Return Button (Top Left)
-# ---------------------------
-st.markdown("""
-<div class="return-button-container">
-  <a href="/" class="return-button" target="_self">
-    <span class="icon">←</span>
-    <span>Return to Chatbot</span>
-  </a>
-</div>
-""", unsafe_allow_html=True)
->>>>>>> 3c3c8a7ca542e73bb0ac08af637601a05dcc72bc
-
-# ---------------------------
-# UI Header
-# ---------------------------
+   # 
 st.markdown("""
 <div class="voice-header">
   <div>🕋<span class="voice-title"> Hajj Voice Assistant</span> <span style="font-size:0.7em;color:#60a5fa;">LIVE</span></div>
@@ -683,15 +591,6 @@ if audio_bytes:
 else:
     if st.session_state.is_recording:
         st.session_state.is_recording = False
-<<<<<<< HEAD
+          
         st.session_state.status = "Ready"
-
-# ---------------------------
-# Auto-refresh for streaming (optional)
-# ---------------------------
-if st.session_state.is_streaming_response:
-    time.sleep(0.1)
-    st.rerun()
-=======
-        st.session_state.status = "Ready"
->>>>>>> 3c3c8a7ca542e73bb0ac08af637601a05dcc72bc
+      
