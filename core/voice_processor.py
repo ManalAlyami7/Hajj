@@ -34,7 +34,7 @@ class VoiceProcessor:
             logger.error("OpenRouter API key not found")
             st.error("⚠️ Please add your OPENROUTER_API_KEY to Streamlit secrets")
             st.stop()
-        return OpenRouter(api_key=api_key)
+        return OpenRouter(api_key=api_key, base_url="https://openrouter.ai/api/v1")
 
     def _normalize_transcription(self, transcription) -> str:
         """Return a plain transcript string from various SDK return types."""
