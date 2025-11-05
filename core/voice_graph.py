@@ -173,6 +173,8 @@ class VoiceGraphBuilder:
     def handle_general_hajj_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         logger.info("Handling general Hajj questions")
         """Node: Handle general questions"""
+        state['user_input'] = state.get('transcript', '')
+        state['language'] = state.get('detected_language', 'en')
         return self.graph._node_respond_general(state)
 
     def text_to_speech_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
@@ -184,7 +186,7 @@ class VoiceGraphBuilder:
                 state.get('greeting_text')
                 or state.get('summary')
                 or state.get('general_answer')
-                or state.get('needs_ifo')
+                or state.get('needs_info')
                 or "I'm here! How can I assist you today?"
             )
 
