@@ -23,6 +23,10 @@ class SidebarInterface:
             self._render_header()
             st.markdown("---")
             
+            # أزرار التنقل المخصصة
+            self._render_navigation_buttons()
+            st.markdown("---")
+            
             self._render_language_selector()
             st.markdown("---")
             
@@ -36,6 +40,28 @@ class SidebarInterface:
             st.markdown("---")
             
             self._render_features()
+    
+    def _render_navigation_buttons(self):
+        """Render navigation buttons for Chatbot and Voicebot"""
+        lang = st.session_state.language
+        
+        st.markdown(f"<h3>{'🔀 الوضع' if lang == 'العربية' else '🔀 Mode'}</h3>", unsafe_allow_html=True)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("💬 Chatbot", key="nav_chatbot", use_container_width=True):
+                try:
+                    st.switch_page("app.py")
+                except Exception:
+                    st.rerun()
+        
+        with col2:
+            if st.button("🎙️ Voicebot", key="nav_voicebot", use_container_width=True):
+                try:
+                    st.switch_page("pages/voicebot.py")
+                except Exception:
+                    st.info("Voice assistant page not available")
     
     def _render_header(self):
         """Render sidebar header"""
