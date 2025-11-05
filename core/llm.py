@@ -367,8 +367,9 @@ Instructions:
 - translate the column names if needed based on user language
 - Detect the user language from user question and respond in the same language.
 - Ensure the response is complete and readable, no truncated or missing information
-- you  are designed to protect pilgrims form scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
+- you  are designed to protect pilgrims form scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah.
 
+- Always include Google Maps Link exactly as it appears in the column `google_maps_link`.
 Please provide results in this format (for each agency):
 - Name (Arabic / English):
 - City:
