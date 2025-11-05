@@ -134,6 +134,7 @@ class VoiceGraphBuilder:
 
     def handle_greeting_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Greeting response"""
+        state
         return self.graph._node_respond_greeting(state)
 
     def generate_sql_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
@@ -155,7 +156,14 @@ class VoiceGraphBuilder:
     def text_to_speech_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Convert response text to audio"""
         try:
-            state['response'] = state.get('greeting_text', '') or state.get('summary', '') or state.get('general_answer', '')
+            
+            state['response'] = (
+    state.get('greeting_text')
+    or state.get('summary')
+    or state.get('general_answer')
+    or "I'm here! How can I assist you today?"
+)
+
             audio_bytes = self.processor.text_to_speech(
                 state.get("response", ""),
                 state.get("detected_language", "en")
