@@ -36,9 +36,17 @@ def initialize_session_state():
     if "last_result_df" not in st.session_state:
         st.session_state.last_result_df = None
     
-    # Selected question from examples
+    # Pending example flag - CRITICAL for sidebar examples
+    if "pending_example" not in st.session_state:
+        st.session_state.pending_example = False
+    
+    # Selected question from examples (legacy - kept for compatibility)
     if "selected_question" not in st.session_state:
         st.session_state.selected_question = None
+    
+    # Submit example flag (legacy - kept for compatibility)
+    if "submit_example" not in st.session_state:
+        st.session_state.submit_example = False
     
     # OpenAI client cache
     if "openai_client" not in st.session_state:
@@ -122,6 +130,7 @@ def clear_chat_memory():
     }]
     
     st.session_state.last_result_df = None
+    st.session_state.pending_example = False  # Reset the flag
     save_chat_memory()
 
 
@@ -161,5 +170,6 @@ def get_session_info() -> Dict:
     return {
         "language": st.session_state.get("language", "English"),
         "message_count": len(st.session_state.get("chat_memory", [])),
-        "has_results": st.session_state.get("last_result_df") is not None
+        "has_results": st.session_state.get("last_result_df") is not None,
+        "pending_example": st.session_state.get("pending_example", False)
     }
