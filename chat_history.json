@@ -13,5 +13,155 @@
     "role": "assistant",
     "content": "📊 Found 100 matching records.",
     "timestamp": 1762324493.338736
+  },
+  {
+    "role": "user",
+    "content": "Find companies with email addresses",
+    "timestamp": 1762325327.495634
+  },
+  {
+    "role": "user",
+    "content": "How many agencies are in each country?",
+    "timestamp": 1762325332.667953
+  },
+  {
+    "role": "user",
+    "content": "List companies in Saudi Arabia",
+    "timestamp": 1762325336.738968
+  },
+  {
+    "role": "user",
+    "content": "List companies in Saudi Arabia",
+    "timestamp": 1762325337.434863
+  },
+  {
+    "role": "user",
+    "content": "Show me all authorized Hajj companies",
+    "timestamp": 1762325345.164825
+  },
+  {
+    "role": "user",
+    "content": "hi",
+    "timestamp": 1762325349.252605
+  },
+  {
+    "role": "assistant",
+    "content": "Hello! 👋 How can I help you today?",
+    "timestamp": 1762325351.194548
+  },
+  {
+    "role": "user",
+    "content": "List companies in Saudi Arabia",
+    "timestamp": 1762325670.955857
+  },
+  {
+    "role": "assistant",
+    "content": "I encountered an error. Please try rephrasing your question.",
+    "timestamp": 1762325672.92505
+  },
+  {
+    "role": "user",
+    "content": "Show me all authorized Hajj companies",
+    "timestamp": 1762325996.86456
+  },
+  {
+    "role": "assistant",
+    "content": "📊 Found 100 matching records.",
+    "timestamp": 1762326000.284066
+  },
+  {
+    "role": "user",
+    "content": "How many agencies are in each country?",
+    "timestamp": 1762326005.557009
+  },
+  {
+    "role": "assistant",
+    "content": "I encountered an error. Please try rephrasing your question.",
+    "timestamp": 1762326007.283097
+  },
+  {
+    "role": "user",
+    "content": "List companies in Saudi Arabia",
+    "timestamp": 1762326008.738092
+  },
+  {
+    "role": "assistant",
+    "content": "I encountered an error. Please try rephrasing your question.",
+    "timestamp": 1762326009.857321
+  },
+  {
+    "role": "user",
+    "content": "Show me all authorized Hajj companies",
+    "timestamp": 1762326012.441156
+  },
+  {
+    "role": "assistant",
+    "content": "📊 Found 100 matching records.",
+    "timestamp": 1762326014.374692
+  },
+  {
+    "role": "user",
+    "content": "Show me all authorized Hajj companies",
+    "timestamp": 1762326018.603997
+  },
+  {
+    "role": "assistant",
+    "content": "📊 Found 100 matching records.",
+    "timestamp": 1762326020.222923
+  },
+  {
+    "role": "user",
+    "content": "List companies in Saudi Arabia",
+    "timestamp": 1762326022.028173
+  },
+  {
+    "role": "assistant",
+    "content": "I encountered an error. Please try rephrasing your question.",
+    "timestamp": 1762326023.022207
+  },
+  {
+    "role": "user",
+    "content": "Find companies with email addresses",
+    "timestamp": 1762326028.118266
+  },
+  {
+    "role": "assistant",
+    "content": "I encountered an error. Please try rephrasing your question.",
+    "timestamp": 1762326029.407403
+  },
+  {
+    "role": "user",
+    "content": "How many agencies are in each country?",
+    "timestamp": 1762326178.962536
+  },
+  {
+    "role": "assistant",
+    "content": "I encountered an error. Please try rephrasing your question.",
+    "timestamp": 1762326181.070904
+  },
+  {
+    "role": "user",
+    "content": "List companies in Saudi Arabia",
+    "timestamp": 1762326182.68486
+  },
+  {
+    "role": "user",
+    "content": "List companies in Saudi Arabia",
+    "timestamp": 1762326183.698444
+  },
+  {
+    "role": "assistant",
+    "content": "I encountered an error. Please try rephrasing your question.",
+    "timestamp": 1762326184.758506
+  },
+  {
+    "role": "user",
+    "content": "Find companies with email addresses",
+    "timestamp": 1762329500.971705
+  },
+  {
+    "role": "assistant",
+    "content": "I encountered an error. Please try rephrasing your question.",
+    "timestamp": 1762329503.461167
   }
 ]
