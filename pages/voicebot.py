@@ -1,15 +1,10 @@
-
-
-
 import re
-
 import streamlit as st
 import sys
 from pathlib import Path
 import logging
 import hashlib
-import queue
-import threading
+import time
 from audio_recorder_streamlit import audio_recorder
 
 logging.basicConfig(level=logging.INFO)
@@ -168,30 +163,6 @@ st.markdown("""
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0; }
 }
-/* Live indicator */
-.live-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0.75rem;
-  background: rgba(239, 68, 68, 0.16);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 1rem;
-  color: #ef4444;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-.live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #ef4444;
-  animation: live-pulse 1.5s infinite;
-}
-@keyframes live-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.2); }
-}
 .metadata-card{background:rgba(255,255,255,0.03);border-radius:1rem;padding:0.9rem;
   margin-top:0.75rem;border-left:4px solid #60a5fa;}
 .metadata-title{font-size:0.85rem;font-weight:600;color:#60a5fa;
@@ -224,10 +195,6 @@ st.markdown("""
 }
 audio {
   display: none !important;
-  visibility: hidden !important;
-  height: 0 !important;
-  width: 0 !important;
-  overflow: hidden !important;
 }
 .audio-recorder-container {
   display: flex;
@@ -235,7 +202,6 @@ audio {
   align-items: center;
   margin: 1.5rem 0;
 }
-/* Waveform animation for listening */
 .waveform {
   display: flex;
   align-items: center;
@@ -276,6 +242,34 @@ def _hash_bytes(b: bytes) -> str:
     return hashlib.sha256(b).hexdigest()
 
 # ---------------------------
+# NEW: Helper function for TRUE AI streaming
+# ---------------------------
+def stream_response_word_by_word(response_text: str, delay: float = 0.05):
+    """
+    Stream response word-by-word with typing effect
+    
+    Args:
+        response_text: Complete response to stream
+        delay: Delay between words (seconds)
+    """
+    words = response_text.split()
+    st.session_state.streaming_response = ""
+    st.session_state.is_streaming_response = True
+    
+    for i, word in enumerate(words):
+        st.session_state.streaming_response += word + " "
+        
+        # Update UI every 3 words for performance
+        if i % 3 == 0 or i == len(words) - 1:
+            st.rerun()
+            time.sleep(delay)
+    
+    # Finish streaming
+    st.session_state.current_response = response_text
+    st.session_state.streaming_response = ""
+    st.session_state.is_streaming_response = False
+
+# ---------------------------
 # Session State
 # ---------------------------
 defaults = {
@@ -284,11 +278,11 @@ defaults = {
     "is_recording": False,
     "is_processing": False,
     "is_speaking": False,
-    "is_streaming_response": False,  # ← FIXED: Added this!
+    "is_streaming_response": False,  # TRUE streaming flag
     "pending_audio": None,
     "current_transcript": "",
     "current_response": "",
-    "streaming_response": "",
+    "streaming_response": "",  # Partial response during streaming
     "current_metadata": {},
     "status": "Ready",
     "language": "en",
@@ -298,19 +292,9 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 st.markdown("""
-<div class="return-button-container">
-  <a href="/" class="return-button" target="_self">
-    <span class="icon">←</span>
-    <span>Return to Chatbot</span>
-  </a>
-</div>
-""", unsafe_allow_html=True)
-
-   # 
-st.markdown("""
 <div class="voice-header">
-  <div>🕋<span class="voice-title"> Hajj Voice Assistant</span> <span style="font-size:0.7em;color:#60a5fa;">LIVE</span></div>
-  <div class="voice-subtitle">Real-time Speech Recognition & Streaming AI Responses</div>
+  <div>🕋<span class="voice-title"> Hajj Voice Assistant</span> <span style="font-size:0.7em;color:#60a5fa;">LIVE + STREAMING</span></div>
+  <div class="voice-subtitle">Real-time Speech Recognition & TRUE AI Streaming Responses</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -339,11 +323,10 @@ with col_left:
     avatar_class = (
         "listening" if st.session_state.is_recording
         else "speaking" if st.session_state.is_speaking
-        else "processing" if st.session_state.is_processing
+        else "processing" if st.session_state.is_processing or st.session_state.is_streaming_response
         else ""
     )
     
-    # Waveform display when listening
     waveform_html = ""
     if st.session_state.is_recording:
         waveform_html = """
@@ -366,6 +349,7 @@ with col_left:
       </div>
       <div class="record-label">
         {'🔴 Recording...' if st.session_state.is_recording 
+         else '⚡ Streaming...' if st.session_state.is_streaming_response
          else '⚙️ Processing...' if st.session_state.is_processing
          else '🔊 Speaking...' if st.session_state.is_speaking
          else '🎤 Press to Speak'}
@@ -374,7 +358,6 @@ with col_left:
     </div>
     """, unsafe_allow_html=True)
 
-    # Audio Recorder Component
     st.markdown("<div class='audio-recorder-container'>", unsafe_allow_html=True)
     audio_bytes = audio_recorder(
         text="",
@@ -388,7 +371,6 @@ with col_left:
 
 # Right: Transcript + Response
 with col_right:
-    # Transcript Panel
     transcript_badge_class = ""
     transcript_badge_text = "○ Ready"
     
@@ -401,15 +383,14 @@ with col_right:
     
     transcript = st.session_state.current_transcript or "Speak now..."
     clean_transcript = re.sub(r"<.*?>", "", transcript)
-    
-    # Add streaming class if processing
     transcript_class = "streaming-text" if st.session_state.is_processing else ""
     
-    # Response Panel
+    # Response Panel with TRUE streaming support
     response_badge_class = ""
     response_badge_text = "○ Ready"
     
     if st.session_state.is_streaming_response:
+        # TRUE STREAMING: Show partial response
         response_badge_class = "streaming"
         response_badge_text = "⚡ Streaming"
         response_text = st.session_state.streaming_response
@@ -457,7 +438,6 @@ with col_right:
 
     meta_html = "".join(meta_html_parts)
 
-    # Display Panels
     panel_html = f"""
     <div class="transcript-container">
       <div class="panel-header">
@@ -496,7 +476,7 @@ if st.session_state.pending_audio:
     st.session_state.status = "Ready"
 
 # ---------------------------
-# Process Audio with Real-Time Updates
+# Process Audio with TRUE STREAMING
 # ---------------------------
 if audio_bytes:
     audio_hash = _hash_bytes(audio_bytes)
@@ -566,15 +546,21 @@ if audio_bytes:
                     "suggested_actions": result.get("suggested_actions", []),
                 }
             
-            # Update response
-            st.session_state.current_response = response_text
-            st.session_state.status = "Preparing audio..."
+            # Step 4: TRUE STREAMING - Stream response word-by-word
+            st.session_state.is_processing = False
+            st.session_state.status = "Streaming response..."
+            logger.info("Starting word-by-word streaming...")
+            
+            stream_response_word_by_word(response_text, delay=0.05)
             
             # Update conversation history
             st.session_state.voice_messages.append({"role": "user", "content": transcript})
             st.session_state.voice_messages.append({"role": "assistant", "content": response_text})
             
-            # Step 4: Generate TTS
+            # Step 5: Generate TTS
+            st.session_state.status = "Preparing audio..."
+            st.rerun()
+            
             logger.info("Generating speech...")
             audio_response = voice_processor.text_to_speech(response_text, language)
             
@@ -590,6 +576,7 @@ if audio_bytes:
             st.session_state.current_transcript = f"❌ Error: {str(e)}"
             st.session_state.current_response = "An error occurred. Please try again."
             st.session_state.status = "Error"
+            st.session_state.is_streaming_response = False
         
         finally:
             st.session_state.is_processing = False
@@ -598,6 +585,4 @@ if audio_bytes:
 else:
     if st.session_state.is_recording:
         st.session_state.is_recording = False
-          
         st.session_state.status = "Ready"
-      
