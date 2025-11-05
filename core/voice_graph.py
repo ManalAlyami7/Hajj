@@ -72,6 +72,7 @@ class VoiceAssistantState(TypedDict):
     summary: Optional[str]
     greeting_text: Optional[str]
     general_answer: Optional[str]
+    needs_ifo: Optional[str]
 
     # --- Interaction / reasoning support ---
     
@@ -105,6 +106,7 @@ class VoiceGraphBuilder:
     def transcribe_audio_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Transcribe audio to text"""
         try:
+            logger.info("Transcribing audio input")
             result = self.processor.transcribe_audio(state["audio_bytes"])
 
             if "error" in result:
@@ -128,38 +130,53 @@ class VoiceGraphBuilder:
 
     def detect_intent_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Detect intent"""
+        logger.info("Detecting intent from user input")
         state['user_input'] = state.get('transcript', '')
         state['language'] = state.get('detected_language', 'en')
         return self.graph._node_detect_intent(state)
 
     def handle_greeting_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Greeting response"""
+        logger.info("Handling greeting intent")
         state['user_input'] = state.get('transcript', '')
         state['language'] = state.get('detected_language', 'en')
         return self.graph._node_respond_greeting(state)
 
     def generate_sql_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
+        logger.info("Generating SQL query from user input")
         """Node: Generate SQL query"""
         state['user_input'] = state.get('transcript', '')
         state['language'] = state.get('detected_language', 'en')
         return self.graph._node_generate_sql(state)
+    
+    def generate_ask_for_info_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
+        """Node: Generate ask for more info"""
+        logger.info("Generating ask for more info from user input")
+        state['user_input'] = state.get('transcript', '')
+        state['language'] = state.get('detected_language', 'en')
+        return self.graph._node_ask_for_more_info(state)
 
     def execute_sql_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Execute SQL query"""
+        logger.info("Executing SQL query")
         state['sql_params'] = state.get('sql_params', {})
         state['sql_query'] = state.get('sql_query', '')
         return self.graph._node_execute_sql(state)
 
     def summary_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Summarize SQL results"""
-        
+        logger.info("Summarizing SQL results")
+        state['result_rows'] = state.get('result_rows', [])
+        state['columns'] = state.get('columns', [])
         return self.graph._node_summarize_results(state)
 
     def handle_general_hajj_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
+        logger.info("Handling general Hajj questions")
         """Node: Handle general questions"""
         return self.graph._node_respond_general(state)
 
     def text_to_speech_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
+        logger.info("Converting text response to audio")
         """Node: Convert response text to audio"""
         try:
             
@@ -167,6 +184,7 @@ class VoiceGraphBuilder:
                 state.get('greeting_text')
                 or state.get('summary')
                 or state.get('general_answer')
+                or state.get('needs_ifo')
                 or "I'm here! How can I assist you today?"
             )
 
@@ -196,8 +214,10 @@ class VoiceGraphBuilder:
             return "respond_greeting"
         elif intent == "DATABASE":
             return "generate_sql"
-        else:
+        elif intent == "GENERAL_HAJJ":
             return "respond_general"
+        else:
+            return "needs_info"
 
     # -----------------------------
     # Build Graph
@@ -213,6 +233,7 @@ class VoiceGraphBuilder:
         workflow.add_node("respond_general", self.handle_general_hajj_node)
         workflow.add_node("generate_sql", self.generate_sql_node)
         workflow.add_node("execute_sql", self.execute_sql_node)
+        workflow.add_node("ask_for_info", self.generate_ask_for_info_node)
         workflow.add_node("summarize_results", self.summary_node)
         workflow.add_node("tts", self.text_to_speech_node)
 
@@ -226,7 +247,9 @@ class VoiceGraphBuilder:
             {
                 "respond_greeting": "respond_greeting",
                 "generate_sql": "generate_sql",
-                "respond_general": "respond_general"
+                "respond_general": "respond_general",
+                "needs_info": "ask_for_info"
+
             }
         )
 
@@ -236,6 +259,7 @@ class VoiceGraphBuilder:
         workflow.add_edge("summarize_results", "tts")
 
         # Greeting and general go straight to TTS
+        workflow.add_edge("ask_for_info", "tts")
         workflow.add_edge("respond_greeting", "tts")
         workflow.add_edge("respond_general", "tts")
 
