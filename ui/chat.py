@@ -32,8 +32,8 @@ class ChatInterface:
         self._display_chat_history()
         
         # Handle pending example from sidebar
-        if st.session_state.get("pending_example", True):
-            st.session_state.pending_example = True
+        if st.session_state.get("pending_example", False):
+            st.session_state.pending_example = False
             self._process_pending_example()
         
         # Always show input (CRITICAL!)
