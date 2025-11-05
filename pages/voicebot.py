@@ -481,14 +481,59 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         pending_audio_bytes = st.session_state.pending_audio_bytes
 
         initial_state = {
-            "audio_bytes": pending_audio_bytes,
-            "user_input": "",
-            "language": "",
-            "response": "",
-            "response_audio": b"",
-            "error": "",
-            "messages_history": [],
-        }
+    # --- Audio input ---
+    "audio_bytes": b"",
+    
+    # --- Transcription ---
+    "transcript": "",
+    "detected_language": "en",
+    "transcription_confidence": 0.0,
+    
+    # --- User input ---
+    "user_input": "",
+    "language": "en",
+    
+    # --- Intent understanding ---
+    "intent": "",
+    "intent_confidence": 0.0,
+    "intent_reasoning": "",
+    "is_vague": False,
+    "is_arabic": False,
+    "urgency": "",
+    
+    # --- SQL / Database-related ---
+    "sql_query": "",
+    "sql_params": {},
+    "sql_query_type": "",
+    "sql_filters": [],
+    "sql_explanation": "",
+    "sql_error": "",
+    "result_rows": [],
+    "columns": [],
+    "row_count": 0,
+    
+    # --- Generated content ---
+    "summary": "",
+    "greeting_text": "",
+    "general_answer": "",
+    "response": "",
+    "response_tone": "",
+    "key_points": [],
+    "suggested_actions": [],
+    "includes_warning": False,
+    "verification_steps": [],
+    "official_sources": [],
+    
+    # --- Audio output ---
+    "response_audio": b"",
+    
+    # --- Error handling ---
+    "error": "",
+    
+    # --- Context / Conversation memory ---
+    "messages_history": []
+}
+
 
         result = workflow.invoke(initial_state)
         transcript = result.get("transcript", "")
