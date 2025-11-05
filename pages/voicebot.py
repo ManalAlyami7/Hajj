@@ -240,8 +240,14 @@ audio {{display: none !important;visibility: hidden !important;height: 0 !import
 
 # Optional: initialize a voice graph if available
 
-def _hash_bytes(b: bytes) -> str:
-    """Generate SHA-256 for audio bytes"""
+def _hash_bytes(b):
+    if b is None:
+        return None
+    if not isinstance(b, (bytes, bytearray)):
+        try:
+            b = b.getvalue()  # works for UploadedFile or BytesIO
+        except Exception:
+            raise TypeError(f"Unsupported type for hashing: {type(b)}")
     return hashlib.sha256(b).hexdigest()
 
 # ---------------------------
