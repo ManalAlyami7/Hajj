@@ -485,6 +485,7 @@ if audio_bytes and not st.session_state.is_processing:
 # ---------------------------
 # Process pending audio (after rerun)
 # ---------------------------
+# ---------------------------
 elif st.session_state.is_processing and st.session_state.get("pending_audio_bytes"):
     try:
         logger.info("Running LangGraph workflow on pending audio...")
@@ -492,59 +493,58 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         pending_audio_bytes = st.session_state.pending_audio_bytes
 
         initial_state = {
-    # --- Audio input ---
-    "audio_bytes": pending_audio_bytes,
-    
-    # --- Transcription ---
-    "transcript": "",
-    "detected_language": "en",
-    "transcription_confidence": 0.0,
-    
-    # --- User input ---
-    "user_input": "",
-    "language": "",
-    
-    # --- Intent understanding ---
-    "intent": "",
-    "intent_confidence": 0.0,
-    "intent_reasoning": "",
-    "is_vague": False,
-    "is_arabic": False,
-    "urgency": "",
-    
-    # --- SQL / Database-related ---
-    "sql_query": "",
-    "sql_params": {},
-    "sql_query_type": "",
-    "sql_filters": [],
-    "sql_explanation": "",
-    "sql_error": "",
-    "result_rows": [],
-    "columns": [],
-    "row_count": 0,
-    
-    # --- Generated content ---
-    "summary": "",
-    "greeting_text": "",
-    "general_answer": "",
-    "response": "",
-    "response_tone": "",
-    "key_points": [],
-    "suggested_actions": [],
-    "includes_warning": False,
-    "verification_steps": [],
-    "official_sources": [],
-    
-    # --- Audio output ---
-    "response_audio": b"",
-    
-    # --- Error handling ---
-    "error": "",
-    
-    # --- Context / Conversation memory ---
-    "messages_history": []
-}
-
+            # --- Audio input ---
+            "audio_bytes": pending_audio_bytes,
+            
+            # --- Transcription ---
+            "transcript": "",
+            "detected_language": "en",
+            "transcription_confidence": 0.0,
+            
+            # --- User input ---
+            "user_input": "",
+            "language": "",
+            
+            # --- Intent understanding ---
+            "intent": "",
+            "intent_confidence": 0.0,
+            "intent_reasoning": "",
+            "is_vague": False,
+            "is_arabic": False,
+            "urgency": "",
+            
+            # --- SQL / Database-related ---
+            "sql_query": "",
+            "sql_params": {},
+            "sql_query_type": "",
+            "sql_filters": [],
+            "sql_explanation": "",
+            "sql_error": "",
+            "result_rows": [],
+            "columns": [],
+            "row_count": 0,
+            
+            # --- Generated content ---
+            "summary": "",
+            "greeting_text": "",
+            "general_answer": "",
+            "response": "",
+            "response_tone": "",
+            "key_points": [],
+            "suggested_actions": [],
+            "includes_warning": False,
+            "verification_steps": [],
+            "official_sources": [],
+            
+            # --- Audio output ---
+            "response_audio": b"",
+            
+            # --- Error handling ---
+            "error": "",
+            
+            # --- Context / Conversation memory ---
+            "messages_history": []
+        }
 
         result = workflow.invoke(initial_state)
         transcript = result.get("transcript", "")
@@ -553,34 +553,24 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
 
         st.session_state.current_transcript = transcript or t('voice_no_speech', st.session_state.language)
         st.session_state.current_response = response_text or t('voice_could_not_understand', st.session_state.language)
-        st.session_state.pending_audio = response_audio
+        
+        # Store metadata
+        st.session_state.current_metadata = {
+            "key_points": result.get("key_points", []),
+            "suggested_actions": result.get("suggested_actions", []),
+            "verification_steps": result.get("verification_steps", []),
+        }
+        
+        # Store audio for playing
+        if response_audio:
+            st.session_state.pending_audio = response_audio
+            st.session_state.is_speaking = True
 
+        # Update message history
         st.session_state.voice_messages.append({"role": "user", "content": transcript})
         st.session_state.voice_messages.append({"role": "assistant", "content": response_text})
+        
         st.session_state.status = t('voice_status_completed', st.session_state.language)
-        # ...existing code...
-
-        if st.session_state.pending_audio:
-          try:
-              logger.info("Playing response audio...")
-
-              audio_base64 = base64.b64encode(st.session_state.pending_audio).decode("utf-8")
-
-              # Inject hidden audio element with autoplay (works in Streamlit reruns)
-              st.markdown(f"""
-                  <audio autoplay="true" id="assistant_audio" style="display:none;">
-                      <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-                  </audio>
-              """, unsafe_allow_html=True)
-
-          except Exception as e:
-              logger.warning("Failed to play pending audio: %s", e)
-
-          st.session_state.pending_audio = None
-          st.session_state.is_speaking = False
-          logger.info("Finished playing response audio.")
-          st.session_state.status = t('voice_status_ready', st.session_state.language)
-
 
     except Exception as e:
         logger.exception("Error during voice processing: %s", e)
@@ -590,4 +580,5 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
     finally:
         st.session_state.is_processing = False
         st.session_state.pending_audio_bytes = None
+        # THIS IS THE KEY FIX - force rerun to update UI and trigger audio playback
         st.rerun()
