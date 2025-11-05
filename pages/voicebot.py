@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # voicebot_streaming.py
 """
 Hajj Voice Assistant - REAL-TIME STREAMING VERSION
@@ -5,6 +6,14 @@ Hajj Voice Assistant - REAL-TIME STREAMING VERSION
 - Streaming AI responses word-by-word
 - Continuous audio capture with visual feedback
 - Enhanced user experience with real-time updates
+=======
+"""
+Hajj Voice Assistant - PRODUCTION READY
+- Fixed audio processing flow with audio_recorder
+- UI updates BEFORE TTS playback
+- Robust error handling
+- Added styled return button to chatbot
+>>>>>>> 3c3c8a7ca542e73bb0ac08af637601a05dcc72bc
 """
 
 import time
@@ -39,7 +48,11 @@ st.set_page_config(
 )
 
 # ---------------------------
+<<<<<<< HEAD
 # Enhanced Styles with Streaming Animations
+=======
+# Styles (with return button)
+>>>>>>> 3c3c8a7ca542e73bb0ac08af637601a05dcc72bc
 # ---------------------------
 st.markdown("""
 <style>
@@ -57,6 +70,46 @@ st.markdown("""
   display: flex;
   flex-direction: column;
 }
+
+/* Return Button Styles */
+.return-button-container {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 2000;
+}
+.return-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(96, 165, 250, 0.15);
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(96, 165, 250, 0.3);
+  border-radius: 1rem;
+  color: #60a5fa;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(96, 165, 250, 0.2);
+  cursor: pointer;
+}
+.return-button:hover {
+  background: rgba(96, 165, 250, 0.25);
+  border-color: rgba(96, 165, 250, 0.5);
+  transform: translateX(-5px);
+  box-shadow: 0 6px 30px rgba(96, 165, 250, 0.4);
+  color: #93c5fd;
+}
+.return-button .icon {
+  font-size: 1.2rem;
+  transition: transform 0.3s ease;
+}
+.return-button:hover .icon {
+  transform: translateX(-3px);
+}
+
 .voice-header{text-align:center;padding:0.75rem 0;margin-bottom:0.5rem;}
 .voice-title{
   font-size:2.2rem;font-weight:800;letter-spacing:2px;
@@ -179,6 +232,14 @@ st.markdown("""
 @media (max-width:1024px){
   .voice-container{grid-template-columns:1fr;gap:1rem;}
   .voice-avatar{width:140px;height:140px;font-size:70px;}
+  .return-button-container {
+    top: 10px;
+    left: 10px;
+  }
+  .return-button {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.85rem;
+  }
 }
 audio {
   display: none !important;
@@ -242,7 +303,10 @@ defaults = {
     "is_recording": False,
     "is_processing": False,
     "is_speaking": False,
+<<<<<<< HEAD
     "is_streaming_response": False,
+=======
+>>>>>>> 3c3c8a7ca542e73bb0ac08af637601a05dcc72bc
     "pending_audio": None,
     "current_transcript": "",
     "current_response": "",
@@ -257,6 +321,7 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 # ---------------------------
+<<<<<<< HEAD
 # Helper Functions
 # ---------------------------
 def update_streaming_response(text_chunk: str):
@@ -311,6 +376,18 @@ def stream_ai_response(user_input: str, intent: str, is_arabic: bool):
     
     finally:
         st.session_state.is_streaming_response = False
+=======
+# Return Button (Top Left)
+# ---------------------------
+st.markdown("""
+<div class="return-button-container">
+  <a href="/" class="return-button" target="_self">
+    <span class="icon">←</span>
+    <span>Return to Chatbot</span>
+  </a>
+</div>
+""", unsafe_allow_html=True)
+>>>>>>> 3c3c8a7ca542e73bb0ac08af637601a05dcc72bc
 
 # ---------------------------
 # UI Header
@@ -606,6 +683,7 @@ if audio_bytes:
 else:
     if st.session_state.is_recording:
         st.session_state.is_recording = False
+<<<<<<< HEAD
         st.session_state.status = "Ready"
 
 # ---------------------------
@@ -614,3 +692,6 @@ else:
 if st.session_state.is_streaming_response:
     time.sleep(0.1)
     st.rerun()
+=======
+        st.session_state.status = "Ready"
+>>>>>>> 3c3c8a7ca542e73bb0ac08af637601a05dcc72bc
