@@ -3,5 +3,15 @@
     "role": "assistant",
     "content": "Welcome! 👋\n\nI'm your Hajj Data Assistant. Ask me anything about Hajj companies, locations, or authorization status!",
     "timestamp": 1762254931.922832
+  },
+  {
+    "role": "user",
+    "content": "Show me all authorized Hajj companies",
+    "timestamp": 1762324490.804356
+  },
+  {
+    "role": "assistant",
+    "content": "📊 Found 100 matching records.",
+    "timestamp": 1762324493.338736
   }
 ]
