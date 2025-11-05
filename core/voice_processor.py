@@ -14,6 +14,8 @@ from core.voice_models import (
     DatabaseVoiceResponse
 )
 from core.database import DatabaseManager  # ADD THIS IMPORT
+import base64
+import requests
 
 logger = logging.getLogger(__name__)
 audio_client = OpenAI(api_key=st.secrets.get('key'))
@@ -52,63 +54,48 @@ class VoiceProcessor:
         except Exception:
             return ""
     
+
     def transcribe_audio(self, audio_bytes: bytes) -> Dict:
-        """
-        Transcribe audio to text with language detection
-        Returns a normalized dict (always dict => safe .get usage).
-        
-        Whisper API Response Formats:
-        - "json": Returns object with .text attribute only
-        - "verbose_json": Returns object with .text, .language, .duration, etc.
-        
-        Args:
-            audio_bytes: Raw audio data
-        
-        Returns:
-            Dict with text, language, confidence
-        """
+        """Transcribe audio using OpenRouter instead of Whisper."""
         try:
-            audio_file = io.BytesIO(audio_bytes)
-            audio_file.name = "audio.wav"
-
-            # Use verbose_json to get language detection
-            transcript = self.audio_client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file,
-                response_format="verbose_json"  # Provides language detection
-            )
-            text = transcript['text']  # extract manually
-
-
-            # Extract text using normalization
-            text = self._normalize_transcription(text)
-            
-            # Extract language if available (verbose_json provides this)
-            language = getattr(transcript, "language", None)
-            if not language:
-                # Fallback: detect from text if it contains Arabic characters
-                language = "ar" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "en"
-
-            result = {
-                "text": text,
-                "language": language,
-                "confidence": 1.0  # Whisper doesn't provide confidence scores
+            base64_audio = base64.b64encode(audio_bytes).decode("utf-8")
+            payload = {
+                "model": "google/gemini-2.5-flash",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "Please transcribe this audio file."},
+                            {"type": "input_audio", "input_audio": {"data": base64_audio, "format": "wav"}}
+                        ]
+                    }
+                ]
             }
 
-            logger.info(f"Transcribed: '{result['text'][:50]}...' (lang: {result['language']})")
-            return result
+            headers = {
+                "Authorization": f"Bearer {st.secrets.get('openrouter_key')}",
+                "Content-Type": "application/json"
+            }
+
+            response = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers=headers,
+                json=payload
+            )
+
+            result = response.json()
+            # Extract transcription text
+            text = result["choices"][0]["message"]["content"][0]["text"]
+            return {
+                "text": text,
+                "language": "ar" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "en",
+                "confidence": 1.0
+            }
 
         except Exception as e:
-            logger.error(f"Transcription failed: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
-            return {
-                "text": "",
-                "language": "en",
-                "confidence": 0.0,
-                "error": str(e)
-            }
-    
+            logger.error(f"OpenRouter transcription failed: {e}")
+            return {"text": "", "language": "en", "confidence": 0.0, "error": str(e)}
+
     def detect_voice_intent(self, user_input: str, language: str = "en") -> Dict:
         """
         Detect intent with urgency level for voice interactions
@@ -543,42 +530,35 @@ Voice guidelines:
             }
     
     def text_to_speech(self, text: str, language: str = "en") -> Optional[bytes]:
-        """
-        Convert text to speech audio
-        
-        Args:
-            text: Text to convert
-            language: Language for voice selection
-        
-        Returns:
-            Audio bytes or None if failed
-        """
-        # Validate input
-        if not text or not text.strip():
-            logger.warning("Empty text provided to TTS")
+        if not text.strip():
             return None
-        
-        # Voice mapping
-        voice_map = {
-            "ar": "onyx",  # Better for Arabic
-            "en": "alloy",
-            "ur": "alloy",
-            "id": "alloy",
-            "tr": "alloy"
-        }
-        
+
+        voice_map = {"ar": "onyx", "en": "alloy"}
         voice = voice_map.get(language, "alloy")
-        
+
+        payload = {
+            "model": "google/gemini-2.5-flash",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": text},
+                        {"type": "input_audio", "input_audio": {"voice": voice}}
+                    ]
+                }
+            ]
+        }
+
+        headers = {
+            "Authorization": f"Bearer {st.secrets.get('openrouter_key')}",
+            "Content-Type": "application/json"
+        }
+
         try:
-            response = self.audio_client.audio.speech.create(
-                model="tts-1",
-                voice=voice,
-                input=text
-            )
-            audio_bytes = response.content
-            logger.info(f"TTS generated for: '{text[:50]}...'")
-            return audio_bytes
-            
+            response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
+            result = response.json()
+            audio_base64 = result["choices"][0]["message"]["content"][0]["audio_data"]
+            return base64.b64decode(audio_base64)
         except Exception as e:
-            logger.error(f"TTS failed: {e}")
+            logger.error(f"OpenRouter TTS failed: {e}")
             return None
