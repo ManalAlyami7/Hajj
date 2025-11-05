@@ -368,7 +368,18 @@ with col_left:
     """, unsafe_allow_html=True)
 
     st.markdown("<div class='audio-recorder-container'>", unsafe_allow_html=True)
-    audio_bytes = st.audio_input("label", *, sample_rate=16000, key=None, help=None, on_change=None, args=None, kwargs=None, disabled=False, label_visibility="visible", width="stretch")
+    audio_bytes = st.audio_input(
+    "label",
+    sample_rate=16000,
+    key=None,
+    help=None,
+    on_change=None,
+    args=None,
+    kwargs=None,
+    disabled=False,
+    label_visibility="visible",
+    width="stretch"
+)
     st.markdown("</div>", unsafe_allow_html=True)
 
 with col_right:
