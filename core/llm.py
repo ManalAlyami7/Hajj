@@ -152,8 +152,6 @@ class LLMManager:
         2️⃣ DATABASE: questions about verifying specific Hajj agencies, checking authorization, company details, locations, contacts, etc. 
         - User mentions agency names, locations, or asks for authorized agencies.
         - Focus on database-related queries.
-        - Always provide a complete response including all columns: 
-        hajj_company_ar, hajj_company_en, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link.
         - Respond in the same language as the user message.
         - count of agencies, list of countries/cities with agencies, is X authorized, details about Y agency, etc.
         - asking for an agency's address, email, phone, location, or contact info
