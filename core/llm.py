@@ -526,7 +526,7 @@ Use LOWER(TRIM()) and SELECT DISTINCT to avoid case duplicates.
 
 
     Q: "هل شركة الهدى معتمدة؟"
-    → ELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized
+    → ELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
 FROM agencies
 WHERE (LOWER(TRIM(hajj_company_en)) LIKE LOWER('%alhuda%')
    OR LOWER(TRIM(hajj_company_ar)) LIKE LOWER('%الهدى%'))
