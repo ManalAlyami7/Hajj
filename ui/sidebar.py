@@ -5,9 +5,12 @@ Handles sidebar display with stats, examples, and settings
 
 import streamlit as st
 from utils.translations import t
-from utils.state import save_chat_memory
+from utils.state import save_chat_memory,clear_chat_memory
+
 from datetime import datetime
 import pytz
+
+
 
 
 class SidebarInterface:
@@ -160,6 +163,7 @@ class SidebarInterface:
                 
                 # Set flag to process this message
                 st.session_state.pending_example = True
+
                 
                 # Save and rerun
                 save_chat_memory()
@@ -174,6 +178,8 @@ class SidebarInterface:
             use_container_width=True,
             type="primary"
         ):
+        
+        
             st.session_state.chat_memory = [{
                 "role": "assistant",
                 "content": t("welcome_msg", lang),
@@ -181,7 +187,7 @@ class SidebarInterface:
             }]
             st.session_state.last_result_df = None
             st.session_state.pending_example = False
-            save_chat_memory()
+            clear_chat_memory()
             st.rerun()
     
     def _render_features(self):
