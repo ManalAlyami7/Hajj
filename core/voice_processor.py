@@ -67,7 +67,7 @@ class VoiceProcessor:
             if not language:
                 language = "arabic" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "english"
             #Find all of the words that sound like Hajj, but transcribed as hatch or similar and convert them to Hajj
-            words_like_hajj = ['hatch','hatching']
+            words_like_hajj = ['hatch','hatching', 'head', 'hadj', 'haj', 'hajji', 'haji', 'hajje', 'hajjeh']
             for word in words_like_hajj:
                 text = text.replace(word, 'Hajj')
 
