@@ -375,12 +375,14 @@ with col_left:
 
     st.markdown("<div class='audio-recorder-container'>", unsafe_allow_html=True)
     audio_bytes = st.audio_input(
+    "",
     key=None,
     help=None,
     on_change=None,
     args=None,
     kwargs=None,
     disabled=False,
+  
     width="stretch"
 )
     st.markdown("</div>", unsafe_allow_html=True)
