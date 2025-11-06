@@ -367,6 +367,7 @@ Guidelines:
 - End with a gentle offer to assist further, such as:
   - “Would you like me to check more agencies for you?”
   - “Would you like to hear their contact details?”
+- Use emojis sparingly to enhance friendliness. 
 
 The response should sound fluid, natural, and ready for text-to-speech — like a human guide speaking to the user.
 """
