@@ -462,21 +462,29 @@ if st.session_state.pending_audio:
 # ---------------------------
 # ---------------------------
 # Handle new audio input
-# ---------------------------
 if audio_bytes and not st.session_state.is_processing:
-    audio = audio_bytes.read()
+    # Handle different audio input types
+    if hasattr(audio_bytes, 'read'):
+        # It's an UploadedFile from st.audio_input()
+        audio = audio_bytes.read()
+        audio_bytes.seek(0)  # Reset file pointer for potential re-reading
+    else:
+        # It's already bytes from audio_recorder
+        audio = audio_bytes
     
-    audio_hash = _hash_bytes(audio_bytes)
+    # Generate hash from the actual bytes
+    audio_hash = _hash_bytes(audio)
+    
     if audio_hash != st.session_state.last_audio_hash:
         st.session_state.last_audio_hash = audio_hash
-        st.session_state.pending_audio_bytes = audio_bytes
+        # Store the actual bytes (not the UploadedFile object)
+        st.session_state.pending_audio_bytes = audio
         st.session_state.is_processing = True
         st.session_state.status = t('voice_status_analyzing', st.session_state.language)
         st.rerun()
 
 # ---------------------------
 # Process pending audio (after rerun)
-# ---------------------------
 # ---------------------------
 elif st.session_state.is_processing and st.session_state.get("pending_audio_bytes"):
     try:
@@ -486,7 +494,7 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
 
         initial_state = {
             # --- Audio input ---
-            "audio_bytes": pending_audio_bytes,
+            "audio_bytes": pending_audio_bytes,  # Now it's guaranteed to be bytes
             
             # --- Transcription ---
             "transcript": "",
@@ -535,14 +543,18 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
             "error": "",
             
             # --- Context / Conversation memory ---
-            "messages_history": []
+            "messages_history": st.session_state.get("voice_messages", [])
         }
 
+        # Run the workflow
         result = workflow.invoke(initial_state)
+        
+        # Extract results
         transcript = result.get("transcript", "")
         response_text = result.get("response", "")
         response_audio = result.get("response_audio", None)
 
+        # Update session state with results
         st.session_state.current_transcript = transcript or t('voice_no_speech', st.session_state.language)
         st.session_state.current_response = response_text or t('voice_could_not_understand', st.session_state.language)
         
@@ -551,26 +563,32 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
             "key_points": result.get("key_points", []),
             "suggested_actions": result.get("suggested_actions", []),
             "verification_steps": result.get("verification_steps", []),
+            "official_sources": result.get("official_sources", []),
         }
         
         # Store audio for playing
         if response_audio:
             st.session_state.pending_audio = response_audio
             st.session_state.is_speaking = True
+            st.session_state.status = t('voice_status_speaking', st.session_state.language)
+        else:
+            st.session_state.status = t('voice_status_ready', st.session_state.language)
 
         # Update message history
-        st.session_state.voice_messages.append({"role": "user", "content": transcript})
-        st.session_state.voice_messages.append({"role": "assistant", "content": response_text})
-        
-        st.session_state.status = t('voice_status_completed', st.session_state.language)
+        if transcript:
+            st.session_state.voice_messages.append({"role": "user", "content": transcript})
+        if response_text:
+            st.session_state.voice_messages.append({"role": "assistant", "content": response_text})
 
     except Exception as e:
         logger.exception("Error during voice processing: %s", e)
         st.session_state.current_transcript = f"❌ Error: {str(e)}"
-        st.session_state.current_response = t('voice_error_processing', st.session_state.language)
+        st.session_state.current_response = t('voice_error_processing', st.session_state.language) if 'voice_error_processing' in globals() else "An error occurred during processing."
+        st.session_state.status = t('voice_status_error', st.session_state.language)
         st.session_state.pending_audio = None
+    
     finally:
         st.session_state.is_processing = False
         st.session_state.pending_audio_bytes = None
-        # THIS IS THE KEY FIX - force rerun to update UI and trigger audio playback
+        # Force rerun to update UI and trigger audio playback
         st.rerun()
