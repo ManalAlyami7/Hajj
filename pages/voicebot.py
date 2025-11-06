@@ -171,54 +171,136 @@ st.markdown(f"""
 @keyframes expand{{0%{{transform:translate(-50%,-50%) scale(0.8);opacity:0.8;}}100%{{transform:translate(-50%,-50%) scale(1.5);opacity:0;}}}}
 .record-label{{margin-top:1rem;color:white;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;}}
 .voice-right{{display:flex;flex-direction:column;gap:1rem;height:100%;min-height:0;overflow:hidden;}}
+
+/* LIGHTER, CLEARER PANELS */
 .transcript-container,.response-container{{
-  background:rgba(255,255,255,0.04);border-radius:1.5rem;padding:1.25rem;
-  backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,0.08);
-  box-shadow:0 8px 32px rgba(0,0,0,0.22);flex:1;min-height:0;
-  display:flex;flex-direction:column;overflow:hidden;
+  background: rgba(248, 250, 252, 0.95); /* Much lighter background */
+  border-radius: 1.5rem;
+  padding: 1.25rem;
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.9); /* Stronger border */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15); /* Lighter shadow */
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }}
-.panel-header{{display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;
-  padding-bottom:0.75rem;border-bottom:2px solid rgba(255,255,255,0.08);
+
+.panel-header{{
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba(15, 23, 42, 0.1); /* Darker, more visible border */
   flex-direction: {flex_direction};
 }}
 .panel-icon{{font-size:1.75rem;}}
-.panel-title{{font-size:1.2rem;font-weight:700;color:white;margin:0;}}
-.panel-badge{{margin-{'right' if is_arabic else 'left'}:auto;padding:0.3rem 0.8rem;border-radius:1rem;
-  font-weight:600;font-size:0.75rem;background:rgba(96,165,250,0.16);
-  color:#60a5fa;border:1px solid rgba(96,165,250,0.2);
+.panel-title{{
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0f172a; /* Dark text for better contrast */
+  margin: 0;
 }}
-.panel-badge.active{{background:rgba(34,197,94,0.16);color:#22c55e;
-  border-color:rgba(34,197,94,0.25);animation:badge-pulse 1s infinite;
+.panel-badge{{
+  margin-{'right' if is_arabic else 'left'}: auto;
+  padding: 0.3rem 0.8rem;
+  border-radius: 1rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+  background: rgba(96, 165, 250, 0.2); /* More opaque */
+  color: #1e40af; /* Darker blue for better readability */
+  border: 1px solid rgba(96, 165, 250, 0.3);
+}}
+.panel-badge.active{{
+  background: rgba(34, 197, 94, 0.2);
+  color: #166534; /* Darker green */
+  border-color: rgba(34, 197, 94, 0.3);
+  animation: badge-pulse 1s infinite;
 }}
 @keyframes badge-pulse{{0%,100%{{opacity:1;}}50%{{opacity:0.6;}}}}
-.transcript-text,.response-content{{
-  color:rgba(255,255,255,0.92);font-size:1.1rem;line-height:1.6;
-  flex:1;overflow-y:auto;padding-{'left' if is_arabic else 'right'}:0.5rem;
-  text-align:{text_align};
+
+/* DARK TEXT FOR BETTER READABILITY */
+.transcript-text, .response-content{{
+  color: #1e293b; /* Dark gray for excellent readability */
+  font-size: 1.1rem;
+  line-height: 1.6;
+  flex: 1;
+  overflow-y: auto;
+  padding-{'left' if is_arabic else 'right'}: 0.5rem;
+  text-align: {text_align};
+  font-weight: 500; /* Slightly bolder text */
 }}
-.transcript-text.empty,.response-content.empty{{
-  color:rgba(255,255,255,0.45);font-style:italic;overflow:hidden;
+
+.transcript-text.empty, .response-content.empty{{
+  color: #64748b; /* Medium gray for placeholder text */
+  font-style: italic;
+  overflow: hidden;
+  font-weight: normal;
 }}
-.metadata-card{{background:rgba(255,255,255,0.03);border-radius:1rem;padding:0.9rem;
-  margin-top:0.75rem;border-{'right' if is_arabic else 'left'}:4px solid #60a5fa;
-  text-align:{text_align};
+
+.metadata-card{{
+  background: rgba(248, 250, 252, 0.9); /* Lighter background */
+  border-radius: 1rem;
+  padding: 0.9rem;
+  margin-top: 0.75rem;
+  border-{'right' if is_arabic else 'left'}: 4px solid #60a5fa;
+  text-align: {text_align};
+  border: 1px solid rgba(15, 23, 42, 0.1); /* Added border */
 }}
-.metadata-title{{font-size:0.85rem;font-weight:600;color:#60a5fa;
-  margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:1px;
+.metadata-title{{
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e40af; /* Darker blue */
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }}
-.metadata-list{{list-style:none;margin:0;padding:0;}}
-.metadata-list li{{padding:0.25rem 0;color:rgba(255,255,255,0.85);}}
-.metadata-list li:before{{content:"→ ";color:#60a5fa;font-weight:bold;margin-{'left' if is_arabic else 'right'}:0.5rem;}}
-.status-indicator{{position:fixed;top:15px;{'left' if is_arabic else 'right'}:15px;
-  padding:0.6rem 1.25rem;background:rgba(0,0,0,0.75);border-radius:2rem;
-  color:white;font-weight:600;font-size:0.85rem;backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,0.12);z-index:1000;
-  display:flex;align-items:center;gap:0.5rem;
+.metadata-list{{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}}
+.metadata-list li{{
+  padding: 0.25rem 0;
+  color: #374151; /* Dark gray for readability */
+  font-weight: 500;
+}}
+.metadata-list li:before{{
+  content: "→ ";
+  color: #60a5fa;
+  font-weight: bold;
+  margin-{'left' if is_arabic else 'right'}: 0.5rem;
+}}
+
+.status-indicator{{
+  position: fixed;
+  top: 15px;
+  {'left' if is_arabic else 'right'}: 15px;
+  padding: 0.6rem 1.25rem;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 2rem;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   direction: {'rtl' if is_arabic else 'ltr'};
 }}
-.status-dot{{width:10px;height:10px;border-radius:50%;background:#22c55e;animation:dot-pulse 1.5s infinite;}}
-.status-dot.listening{{background:#ef4444;}}
-.status-dot.speaking{{background:#a78bfa;}}
+.status-dot{{
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: dot-pulse 1.5s infinite;
+}}
+.status-dot.listening{{background: #ef4444;}}
+.status-dot.speaking{{background: #a78bfa;}}
 @keyframes dot-pulse{{0%,100%{{opacity:1;}}50%{{opacity:0.4;}}}}
 @media (max-width:1024px){{
   .voice-container{{grid-template-columns:1fr;gap:1rem;}}
