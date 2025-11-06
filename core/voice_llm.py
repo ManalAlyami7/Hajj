@@ -151,6 +151,7 @@ class LLMManager:
             context_string = '\n'.join([f"{msg['role'].title()}: {msg['content']}" for msg in recent_context])
         else:
             context_string = "No previous conversation"
+        logger.debug(f"Chat context for intent detection:\n{len(self.build_chat_context())} characters")
         
         intent_prompt = f"""
 You are a fraud-prevention assistant for Hajj pilgrims. Analyze the conversation history and current message to classify the user's intent.
