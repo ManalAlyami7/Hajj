@@ -100,7 +100,7 @@ class VoiceGraphBuilder:
         self.processor = voice_processor
         self.voice_llm = LLMManager()
         self.db_manager = DatabaseManager()
-        self.graph = ChatGraph(self.db_manager, self.llm)
+        self.graph = ChatGraph(self.db_manager, self.voice_llm)
 
     # -----------------------------
     # Node Functions
