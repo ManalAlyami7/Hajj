@@ -356,7 +356,6 @@ Guidelines:
 - Always respond in the same language as the user question.
 - Speak naturally, like a caring assistant giving helpful information.
 - Avoid bullet points, numbering, or reading URLs or links.
-- If you need to mention a link, just say “I can show you their location on the map” instead of reading the link.
 - Mention only the most important details such as agency name, city, country, whether it’s authorized, and rating if available.
 - Summarize multiple agencies conversationally, e.g.:
   - “I found several authorized agencies in Makkah. One of them is Al Huda Hajj Company, based in Saudi Arabia. It’s an authorized agency with good reviews.”
@@ -371,9 +370,6 @@ Guidelines:
 
 The response should sound fluid, natural, and ready for text-to-speech — like a human guide speaking to the user.
 """
-
-
-
         try:
             response = self.client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
