@@ -374,17 +374,10 @@ with col_left:
     """, unsafe_allow_html=True)
 
     audio_bytes = st.audio_input(
-    "",
-    key=None,
-    help=None,
-    on_change=None,
-    args=None,
-    kwargs=None,
-    disabled=False,
-  
-    width="stretch"
+    label="",
+    key="audio_recorder",
+    help="Click to start recording, click again to stop"
 )
-
 with col_right:
     # transcript and response display
     transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
@@ -471,6 +464,9 @@ if st.session_state.pending_audio:
 # Handle new audio input
 # ---------------------------
 if audio_bytes and not st.session_state.is_processing:
+    audio_bytes = audio_bytes.read()
+    audio_bytes.seek(0)  # Reset file pointer
+    
     audio_hash = _hash_bytes(audio_bytes)
     if audio_hash != st.session_state.last_audio_hash:
         st.session_state.last_audio_hash = audio_hash
