@@ -447,9 +447,15 @@ st.markdown("</div>", unsafe_allow_html=True)
 # ---------------------------
 # Play pending audio (if any)
 # ---------------------------
-if st.session_state.pending_audio:
+if st.session_state.get('pending_audio'):
+    logger.info("Playing pending audio response...")
     try:
-        st.audio(st.session_state.pending_audio, format="audio/mp3", start_time=0)
+    
+    # Hidden audio player with autoplay
+      st.markdown("<div style='display:none'>", unsafe_allow_html=True)
+      st.audio(st.session_state.pending_audio, format="audio/mp3", autoplay=True)
+      st.markdown("</div>", unsafe_allow_html=True)
+    
     except Exception as e:
         logger.warning("Failed to play pending audio: %s", e)
     # clear the pending audio once we've queued it for play
@@ -571,6 +577,7 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
             st.session_state.pending_audio = response_audio
             st.session_state.is_speaking = True
             st.session_state.status = t('voice_status_speaking', st.session_state.language)
+
         else:
             st.session_state.status = t('voice_status_ready', st.session_state.language)
 
@@ -589,6 +596,7 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
     
     finally:
         st.session_state.is_processing = False
+        st.session_state.status = t('voice_status_ready', st.session_state.language)
         st.session_state.pending_audio_bytes = None
         # Force rerun to update UI and trigger audio playback
         st.rerun()
