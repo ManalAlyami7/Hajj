@@ -184,6 +184,7 @@ class VoiceGraphBuilder:
         logger.info("Converting text response to audio")
         """Node: Convert response text to audio"""
         try:
+            logger.info("needs_info", state.get('need_info', None))
             
             state['response'] = (
                 state.get('greeting_text')
