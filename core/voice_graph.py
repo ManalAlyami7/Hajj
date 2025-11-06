@@ -98,7 +98,7 @@ class VoiceGraphBuilder:
     def __init__(self, voice_processor):
 
         self.processor = voice_processor
-        self.llm = LLMManager()
+        self.voice_llm = LLMManager()
         self.db_manager = DatabaseManager()
         self.graph = ChatGraph(self.db_manager, self.llm)
 
@@ -134,16 +134,31 @@ class VoiceGraphBuilder:
     def detect_intent_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Detect intent"""
         logger.info("Detecting intent from user input")
-        state['user_input'] = state.get('transcript', '')
-        state['language'] = state.get('detected_language', 'en')
-        return self.graph._node_detect_intent(state)
+        """Detect user intent with structured output"""
+        user_input = state["user_input"]
+        language = state["language"]
+        
+        intent_result = self.voice_llm.detect_intent(user_input, language)
+        
+        return {
+            "intent": intent_result["intent"],
+            "intent_confidence": intent_result["confidence"],
+            "intent_reasoning": intent_result["reasoning"],
+            "is_vague": self._is_vague_input(user_input)
+        }
+    
 
     def handle_greeting_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Greeting response"""
         logger.info("Handling greeting intent")
         state['user_input'] = state.get('transcript', '')
         state['language'] = state.get('detected_language', 'en')
-        return self.graph._node_respond_greeting(state)
+        """Generate greeting response"""
+        greeting = self.voice_llm.generate_greeting(
+            state["user_input"],
+            state["language"]
+        )
+        return {"greeting_text": greeting}
 
     def generate_sql_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         logger.info("Generating SQL query from user input")
@@ -164,7 +179,18 @@ class VoiceGraphBuilder:
         
         logger.info(f"Ask for info - language: {state['language']}")
         
-        return self.graph._node_ask_for_more_info(state)
+        response = self.voice_llm.ask_for_more_info(
+            state["user_input"],
+            state["language"]
+        )
+        return {
+            "needs_info": response.get("needs_info"),
+            "suggestions": response.get("suggestions", []),
+            "missing_info": response.get("missing_info", []),
+            "sample_query": response.get("sample_query"),
+            "summary": None,
+            "result_rows": []
+        }
 
     def execute_sql_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Execute SQL query"""
@@ -178,7 +204,19 @@ class VoiceGraphBuilder:
         logger.info("Summarizing SQL results")
         state['result_rows'] = state.get('result_rows', [])
         state['columns'] = state.get('columns', [])
-        return self.graph._node_summarize_results(state)
+        row_count = state.get("row_count", 0)
+        rows = state.get("result_rows", [])
+        summary_result = self.voice_llm.generate_summary(
+            state["user_input"],
+            state["language"],
+            row_count,
+            rows
+        )
+        
+        return {
+            "summary": summary_result["summary"],
+        }
+
 
     def handle_general_hajj_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         logger.info("Handling general Hajj questions")
