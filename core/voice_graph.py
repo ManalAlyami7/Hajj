@@ -156,7 +156,13 @@ class VoiceGraphBuilder:
         """Node: Generate ask for more info"""
         logger.info("Generating ask for more info from user input")
         state['user_input'] = state.get('transcript', '')
-        state['language'] = state.get('detected_language', 'en')
+        
+        # FIX: Convert language code to full language name
+        detected_lang = state.get('detected_language', 'en')
+        state['language'] = 'العربية' if detected_lang == 'ar' else 'English'
+        
+        logger.info(f"Ask for info - language: {state['language']}")
+        
         return self.graph._node_ask_for_more_info(state)
 
     def execute_sql_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
