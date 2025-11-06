@@ -239,7 +239,7 @@ class VoiceGraphBuilder:
         workflow.add_node("respond_general", self.handle_general_hajj_node)
         workflow.add_node("generate_sql", self.generate_sql_node)
         workflow.add_node("execute_sql", self.execute_sql_node)
-        workflow.add_node("ask_for_info", self.generate_ask_for_info_node)
+        workflow.add_node("needs_info", self.generate_ask_for_info_node)
         workflow.add_node("summarize_results", self.summary_node)
         workflow.add_node("tts", self.text_to_speech_node)
 
@@ -254,7 +254,7 @@ class VoiceGraphBuilder:
                 "respond_greeting": "respond_greeting",
                 "generate_sql": "generate_sql",
                 "respond_general": "respond_general",
-                "needs_info": "ask_for_info"
+                "needs_info": "needs_info"
 
             }
         )
@@ -265,7 +265,7 @@ class VoiceGraphBuilder:
         workflow.add_edge("summarize_results", "tts")
 
         # Greeting and general go straight to TTS
-        workflow.add_edge("ask_for_info", "tts")
+        workflow.add_edge("needs_info", "tts")
         workflow.add_edge("respond_greeting", "tts")
         workflow.add_edge("respond_general", "tts")
 
