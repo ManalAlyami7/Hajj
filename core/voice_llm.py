@@ -140,46 +140,91 @@ class LLMManager:
         """
         Detect user intent using LLM with structured output
         Returns: Dict with intent, confidence, and reasoning
+
         """
+        chat_context = self.build_chat_context()
+    
+        # Format context for better readability
+        if chat_context and len(chat_context) > 0:
+            # Get last 5-6 messages for context (not too much to avoid token overflow)
+            recent_context = chat_context[-6:] if len(chat_context) > 6 else chat_context
+            context_string = '\n'.join([f"{msg['role'].title()}: {msg['content']}" for msg in recent_context])
+        else:
+            context_string = "No previous conversation"
+        
         intent_prompt = f"""
-        You are a fraud-prevention assistant for Hajj pilgrims. you need to understand user and use the context in addition to the message, Classify this message into ONE of four categories:
+You are a fraud-prevention assistant for Hajj pilgrims. Analyze the conversation history and current message to classify the user's intent.
 
-        1️⃣ GREETING: greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا. 
-        - No specific agency information is provided.
-        - if user asks about your capabilities or services or what can you provide or do.
-        - User just wants to chat or start conversation.
+INTENT CATEGORIES:
 
-        2️⃣ DATABASE: questions about verifying specific Hajj agencies, checking authorization, company details, locations, contacts, etc. 
-        - User mentions agency names, locations, or asks for authorized agencies.
-        - Focus on database-related queries.
-        - Always provide a complete response including all columns: 
-        hajj_company_ar, hajj_company_en, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link.
-        - Respond in the same language as the user message.
-        - count of agencies, list of countries/cities with agencies, is X authorized, details about Y agency, etc.
-        - asking for an agency's address, email, phone, location, or contact info
-        - checking if an agency is authorized or not
-        - asking about Hajj offices in a specific city or country
-        - mentioning or asking about a company name (like "Royal City", "Al-Safa", etc.)
+1️⃣ GREETING: 
+   - Greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا
+   - User asks about your capabilities or services ("what can you do?", "how can you help?")
+   - User wants to start a conversation
+   - No specific agency information is provided
 
-        3️⃣ GENERAL_HAJJ: general Hajj-related questions (rituals, requirements, documents, safety, procedures).
+2️⃣ DATABASE: 
+   - Questions about verifying specific Hajj agencies, checking authorization, company details
+   - User mentions agency names, locations, or asks for authorized agencies
+   - Queries requiring database lookup:
+     • Count of agencies, list of countries/cities with agencies
+     • "Is X authorized?", details about Y agency
+     • Agency's address, email, phone, location, contact info
+     • Checking if an agency is authorized or not
+     • Asking about Hajj offices in specific city or country
+     • Mentioning company names (like "Royal City", "Al-Safa", etc.)
+   
+   **CONTEXT-AWARE DATABASE CLASSIFICATION:**
+   - If user says "are they authorized?", "what's their address?", "tell me more about them"
+     → Check context: if an agency was mentioned previously → DATABASE
+   - If user provides agency name after being asked → DATABASE
+   - Follow-up questions about previously mentioned agency → DATABASE
+   
+   **Response Requirements:**
+   - Respond in the same language as the user message
 
-        4️⃣ NEEDS_INFO: message is too vague or lacks details needed to provide accurate information, such as:
-        - "I want to verify an agency" (which agency?)
-        - "Tell me about Hajj companies" (what specifically?)
-        - "Is this authorized?" (which company?)
-        - "Check this company" (need company name)
+3️⃣ GENERAL_HAJJ: 
+   - General Hajj-related questions (rituals, requirements, documents, safety, procedures)
+   - Questions about Hajj process, visa, costs, timing, health requirements
+   - Travel tips, what to bring, health advice
+   - Hajj regulations and rules
 
-        CRITICAL CONTEXT:
-        - 415 fake Hajj offices closed in 2025
-        - 269,000+ unauthorized pilgrims stopped
-        - Mission: prevent fraud, protect pilgrims
-        - For DATABASE questions, we need specific agency names or clear location criteria
-        - Mark as NEEDS_INFO if user should provide more details
+4️⃣ NEEDS_INFO: 
+   - Message is too vague or lacks details needed for accurate response
+   - Examples:
+     • "I want to verify an agency" (which agency?)
+     • "Tell me about Hajj companies" (what specifically?)
+     • "Is this authorized?" (which company? - unless mentioned in context)
+     • "Check this company" (need company name - unless in context)
+   
+   **EXCEPTION:** If conversation context contains agency reference, DON'T mark as NEEDS_INFO
 
-        Message: {user_input}
+CRITICAL CONTEXT:
+- 415 fake Hajj offices closed in 2025
+- 269,000+ unauthorized pilgrims stopped
+- Mission: prevent fraud, protect pilgrims
+- For DATABASE questions, we need specific agency names or clear location criteria
+- Mark as NEEDS_INFO if user should provide more details
 
-        Classify the intent, provide confidence score, and explain your reasoning.
-        """
+**CONTEXT-AWARE RULES:**
+1. Check conversation context for agency references before marking NEEDS_INFO
+2. Pronouns like "they", "them", "their", "it" → Look in context for referent
+3. "This company", "that agency" → Check if identified in previous messages
+4. Follow-up questions → Consider previous topic and continue classification
+5. User providing info after NEEDS_INFO response → Mark as DATABASE
+
+---
+
+**CURRENT MESSAGE:** {user_input}
+
+**CONVERSATION CONTEXT:**
+{context_string}
+
+---
+
+Analyze the conversation history and current message. Classify the intent, provide confidence score (0.0-1.0), 
+and explain your reasoning.
+"""
         
         try:
             response = self.client.beta.chat.completions.parse(
