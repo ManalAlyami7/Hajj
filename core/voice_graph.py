@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 from core.graph import ChatGraph
 from core.voice_processor import VoiceProcessor
-from core.llm import LLMManager
+from core.voice_llm import LLMManager
 from core.database import DatabaseManager
 
 
