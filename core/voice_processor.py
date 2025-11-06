@@ -16,7 +16,7 @@ from core.voice_models import (
     DatabaseVoiceResponse
 )
 from core.database import DatabaseManager
-from core.llm import LLMManager
+from core.voice_llm import LLMManager
 
 # Configure logging
 logger = logging.getLogger(__name__)
