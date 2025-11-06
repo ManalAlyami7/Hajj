@@ -222,7 +222,7 @@ class VoiceGraphBuilder:
             return "generate_sql"
         elif intent == "GENERAL_HAJJ":
             return "respond_general"
-        else:
+        elif intent == "NEEDS_INFO":
             return "needs_info"
 
     # -----------------------------
