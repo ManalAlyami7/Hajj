@@ -263,17 +263,9 @@ class VoiceGraphBuilder:
     @staticmethod
     def route_intent(state: VoiceAssistantState) -> Literal["respond_greeting", "generate_sql", "respond_general", "needs_info"]:
         """Route based on detected intent"""
-        intent = state.get("intent", "GENERAL_HAJJ")
+        return state.get("intent", "needs_info")
 
-        if intent == "GREETING":
-            return "respond_greeting"
-        elif intent == "DATABASE":
-            return "generate_sql"
-        elif intent == "GENERAL_HAJJ":
-            return "respond_general"
-        elif intent == "NEEDS_INFO":
-            return "needs_info"
-
+       
     # -----------------------------
     # Build Graph
     # -----------------------------
@@ -299,12 +291,12 @@ class VoiceGraphBuilder:
         workflow.add_conditional_edges(
             "detect_intent",
             self.route_intent,
-            {
-                "respond_greeting": "respond_greeting",
-                "generate_sql": "generate_sql",
-                "respond_general": "respond_general",
-                "needs_info": "needs_info"
-
+            {{
+                "GREETING": "respond_greeting",
+                "GENERAL_HAJJ": "respond_general",
+                "DATABASE": "generate_sql",
+                "NEEDS_INFO": "needs_info"  # Placeholder for future node
+            }
             }
         )
 
