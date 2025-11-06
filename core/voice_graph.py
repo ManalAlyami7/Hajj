@@ -291,12 +291,12 @@ class VoiceGraphBuilder:
         workflow.add_conditional_edges(
             "detect_intent",
             self.route_intent,
-            {{
+            {
                 "GREETING": "respond_greeting",
                 "GENERAL_HAJJ": "respond_general",
                 "DATABASE": "generate_sql",
                 "NEEDS_INFO": "needs_info"  # Placeholder for future node
-            }
+            
             }
         )
 
