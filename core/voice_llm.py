@@ -270,6 +270,9 @@ Keep the response concise, friendly, and professional."""
 Be concise, factual, and helpful. Focus on practical information.
 Detect if the user's question is in Arabic or English, and respond in the same language.
 you designed to protect pilgrims form scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
+- Always respond in the same language as the user question.
+- Speak naturally, like a caring assistant giving helpful information.
+- Avoid bullet points, numbering, or reading URLs or links.
 Avoid religious rulings or fatwa - stick to practical guidance."""
         
         try:
