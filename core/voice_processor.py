@@ -62,7 +62,7 @@ class VoiceProcessor:
 
             # Auto-detect Arabic if language is missing
             if not language:
-                language = "ar" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "en"
+                language = "arabic" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "english"
 
             result = {
                 "text": text.strip(),

@@ -504,7 +504,7 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
             
             # --- Transcription ---
             "transcript": "",
-            "detected_language": "en",
+            "detected_language": "",
             "transcription_confidence": 0.0,
             
             # --- User input ---
