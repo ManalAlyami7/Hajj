@@ -464,8 +464,7 @@ if st.session_state.pending_audio:
 # Handle new audio input
 # ---------------------------
 if audio_bytes and not st.session_state.is_processing:
-    audio_bytes = audio_bytes.read()
-    audio_bytes.seek(0)  # Reset file pointer
+    audio = audio_bytes.read()
     
     audio_hash = _hash_bytes(audio_bytes)
     if audio_hash != st.session_state.last_audio_hash:
