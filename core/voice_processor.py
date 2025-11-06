@@ -49,6 +49,7 @@ class VoiceProcessor:
         try:
             audio_file = io.BytesIO(audio_bytes)
             audio_file.name = "audio.wav"
+            logger.info("🎙️ Sending audio for transcription...")
 
             transcript = self.client.audio.transcriptions.create(
                 model="whisper-1",
@@ -56,6 +57,8 @@ class VoiceProcessor:
                 response_format="verbose_json",
                 temperature=0
             )
+            logger.info("🎙️ Transcription received.")
+
 
             text = getattr(transcript, "text", "") or ""
             language = getattr(transcript, "language", None)
