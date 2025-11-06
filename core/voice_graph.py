@@ -187,10 +187,10 @@ class VoiceGraphBuilder:
             logger.info("needs_info", state.get('need_info', None))
             
             state['response'] = (
+                state.get('needs_info') or
                 state.get('greeting_text')
                 or state.get('summary')
                 or state.get('general_answer')
-                or state.get('needs_info')
                 or "I'm here! How can I assist you today?"
             )
 
@@ -212,7 +212,7 @@ class VoiceGraphBuilder:
     # Router Function
     # -----------------------------
     @staticmethod
-    def route_intent(state: VoiceAssistantState) -> Literal["respond_greeting", "generate_sql", "respond_general"]:
+    def route_intent(state: VoiceAssistantState) -> Literal["respond_greeting", "generate_sql", "respond_general", "NEEDS_INFO"]:
         """Route based on detected intent"""
         intent = state.get("intent", "GENERAL_HAJJ")
 
