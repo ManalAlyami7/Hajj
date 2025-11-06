@@ -212,7 +212,7 @@ class VoiceGraphBuilder:
     # Router Function
     # -----------------------------
     @staticmethod
-    def route_intent(state: VoiceAssistantState) -> Literal["respond_greeting", "generate_sql", "respond_general", "NEEDS_INFO"]:
+    def route_intent(state: VoiceAssistantState) -> Literal["respond_greeting", "generate_sql", "respond_general", "needs_info"]:
         """Route based on detected intent"""
         intent = state.get("intent", "GENERAL_HAJJ")
 
