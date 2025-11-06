@@ -159,6 +159,7 @@ class VoiceGraphBuilder:
         
         # FIX: Convert language code to full language name
         detected_lang = state.get('detected_language', 'en')
+        logger.info(f"Detected language code: {detected_lang}")
         state['language'] = 'العربية' if detected_lang == 'ar' else 'English'
         
         logger.info(f"Ask for info - language: {state['language']}")
