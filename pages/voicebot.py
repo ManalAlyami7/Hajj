@@ -373,7 +373,6 @@ with col_left:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div class='audio-recorder-container'>", unsafe_allow_html=True)
     audio_bytes = st.audio_input(
     "",
     key=None,
@@ -385,7 +384,6 @@ with col_left:
   
     width="stretch"
 )
-    st.markdown("</div>", unsafe_allow_html=True)
 
 with col_right:
     # transcript and response display
