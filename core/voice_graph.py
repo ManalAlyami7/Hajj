@@ -63,6 +63,7 @@ class VoiceAssistantState(TypedDict):
     sql_query_type: Optional[str]
     sql_filters: Optional[List[str]]
     sql_explanation: Optional[str]
+    
     sql_error: Optional[str]
     result_rows: Optional[List[Dict]]
     columns: Optional[List[str]]
@@ -144,7 +145,7 @@ class VoiceGraphBuilder:
             "intent": intent_result["intent"],
             "intent_confidence": intent_result["confidence"],
             "intent_reasoning": intent_result["reasoning"],
-            "is_vague": self._is_vague_input(user_input)
+            # "is_vague": self._is_vague_input(user_input)
         }
     
 

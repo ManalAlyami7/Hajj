@@ -116,7 +116,7 @@ class ChatGraph:
             "intent": intent_result["intent"],
             "intent_confidence": intent_result["confidence"],
             "intent_reasoning": intent_result["reasoning"],
-            "is_vague": self._is_vague_input(user_input)
+           # "is_vague": self._is_vague_input(user_input)
         }
     
     def _node_respond_greeting(self, state: GraphState) -> dict:
