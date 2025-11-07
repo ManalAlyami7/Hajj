@@ -588,28 +588,13 @@ with col_mem:
     </div>
     """, unsafe_allow_html=True)
 
-import streamlit.components.v1 as components
 with col_clear:
-    components.html(f"""
-    <a href="#" class="clear-memory-btn">
-        {t('voice_clear_memory', st.session_state.language)}
-    </a>
-
-    <script>
-    const link = document.querySelector('.clear-memory-btn');
-    if (link) {{
-        link.addEventListener('click', function(e) {{
-            e.preventDefault();
-            try {{
-                window.parent.location.reload();
-            }} catch(err) {{
-                window.location.reload();
-            }}
-        }});
-    }}
-    </script>
-    """, height=60)
-
+    # 2️⃣ Visible custom button triggering the hidden Streamlit button
+  st.markdown(f"""
+<a href="/" class="clear-memory-btn" style="pointer-events: auto; text-decoration: none;">
+    {t('voice_clear_memory', st.session_state.language)}
+</a>
+""", unsafe_allow_html=True)
 
     # # 3️⃣ Hidden actual button (logic intact)
     # if st.button("", key="clear_memory_btn", use_container_width=False):
