@@ -628,28 +628,10 @@ with col_right:
             {'● ' + (t('voice_status_speaking', st.session_state.language)
             if st.session_state.is_speaking
             else t('voice_status_ready', st.session_state.language))}
+          f"<div class='response-content'>{html.escape(clean_response)}</div>",
         </div>
       </div>
     """, unsafe_allow_html=True)
-
-    # ✅ Placeholder MUST be inside the container
-    response_placeholder = st.empty()
-        # ✅ Streaming effect AFTER placeholder exists
-    streamed_text = ""
-    if clean_response:
-        for word in clean_response.split():
-            streamed_text += word + " "
-            response_placeholder.markdown(
-                f"<div class='response-content'>{html.escape(streamed_text)}</div>",
-                unsafe_allow_html=True
-            )
-            time.sleep(0.04)
-    else:
-        response_placeholder.markdown(
-            f"<div class='response-content empty'>{html.escape(t('voice_response_placeholder', st.session_state.language))}</div>",
-            unsafe_allow_html=True
-        )
-
 
 # ----------------------
 
