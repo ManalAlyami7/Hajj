@@ -115,26 +115,7 @@ class LLMManager:
             st.stop()
         return OpenAI(api_key=api_key)
     
-    def build_chat_context(self, limit: int = 6) -> List[Dict[str, str]]:
-        """
-        Build chat context from recent messages
-        Excludes messages with dataframes
-        """
-        if "voice_memory" not in st.session_state:
-            return []
-        
-        context = []
-        recent = st.session_state.chat_memory[-limit:] if len(st.session_state.chat_memory) > limit else st.session_state.chat_memory
-        
-        for msg in recent:
-            if "dataframe" in msg or "result_data" in msg:
-                continue
-            context.append({
-                "role": msg["role"],
-                "content": msg["content"]
-            })
-        
-        return context
+
     
     def detect_intent(self, user_input: str, language: str, context_string=None) -> Dict:
         """
@@ -285,7 +266,7 @@ Keep the response concise, friendly, and professional."""
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_input},
-                    *self.build_chat_context()
+                    
                 ],
                 response_format=GreetingResponse,
                 temperature=0.7
@@ -316,7 +297,6 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_input},
-                    *self.build_chat_context()
                 ],
                 temperature=0.6,
                 max_tokens=400
@@ -340,7 +320,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
                 messages=[
                     {"role": "system", "content": "You are a SQL expert that generates safe queries for a Hajj agency database."},
                     {"role": "user", "content": sql_prompt},
-                    *self.build_chat_context()
+        
                 ],
                 response_format=SQLQueryGeneration,
                 temperature=0
