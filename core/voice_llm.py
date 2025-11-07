@@ -599,26 +599,44 @@ LIMIT 50;
         return None
     
     def ask_for_more_info(self, user_input: str, language: str, context_string=None) -> Dict:
-        """Generate structured response asking user for more specific information"""
+        
         is_arabic = language == "العربية"
-        prompt = f"""You are a helpful Hajj verification assistant.
+        
+        # Simple cutoff/ambiguous detection (words like 'you', 'me', or very short incomplete input)
+        cutoff_keywords = ["you", "me", "i", "it", "this", "that", "check", "verify", "agency"]
+        is_cutoff = any(user_input.lower().strip().endswith(word) for word in cutoff_keywords) \
+                    or len(user_input.strip()) < 5
+        
+        prompt = f"""
+    You are a helpful Hajj verification assistant.
     The user's question: "{user_input}" needs more details to provide accurate information.
     Context: {context_string}
+
     Examples of vague questions:
     - "I want to verify an agency" (which agency?)
     - "Tell me about Hajj companies" (what specifically?)
     - "Is this authorized?" (which company?)
     - "Check this company" (need company name)
 
-    Ask for specific details in a friendly way. Focus on:
+    If the user input is cut off, incomplete, or uses ambiguous words like 'you', 'me', etc.,
+    prompt them to clarify politely.
+
+    Ask for specific details in a friendly way:
     1. Agency name (if verifying a company)
     2. Location (city/country)
     3. What specifically they want to know
 
     Use Arabic if user input is Arabic, otherwise English.
+    Use emojis appropriately.
     Keep it brief but friendly.
     Add a simple example of a more specific question.
+
     """
+
+        if is_cutoff:
+            prompt += "\nNote: The user's input may be incomplete or vague. Please ask them to clarify."
+
+
         try:
             response = self.client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
