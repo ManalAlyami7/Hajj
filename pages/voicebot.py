@@ -589,15 +589,12 @@ with col_mem:
     """, unsafe_allow_html=True)
 
 import streamlit.components.v1 as components
-import streamlit.components.v1 as components
-
 with col_clear:
     components.html(f"""
     <style>
     .clear-memory-btn {{
-        position: fixed;
-        top: 15px;
-        { 'left' if is_arabic else 'right' }: 15px;
+        display: inline-block;
+        margin-top: 6px;
         text-decoration: none !important;
         color: inherit !important;
         background: rgba(255, 255, 255, 0.12);
@@ -609,7 +606,7 @@ with col_clear:
         font-size: 0.85rem;
         cursor: pointer;
         transition: all 0.3s ease;
-        z-index: 9999;
+        text-align: center;
     }}
     .clear-memory-btn:hover {{
         background: rgba(255, 255, 255, 0.2);
@@ -625,16 +622,19 @@ with col_clear:
 
     <script>
     const link = document.querySelector('.clear-memory-btn');
-    link.addEventListener('click', function(e) {{
-        e.preventDefault();
-        try {{
-            window.parent.location.reload();
-        }} catch(err) {{
-            window.location.reload();
-        }}
-    }});
+    if (link) {{
+        link.addEventListener('click', function(e) {{
+            e.preventDefault();
+            try {{
+                window.parent.location.reload();
+            }} catch(err) {{
+                window.location.reload();
+            }}
+        }});
+    }}
     </script>
     """, height=60)
+
 
     # # 3️⃣ Hidden actual button (logic intact)
     # if st.button("", key="clear_memory_btn", use_container_width=False):
