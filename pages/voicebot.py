@@ -1,5 +1,5 @@
 """
-Hajj Voice Assistant - BILINGUAL (cleaned)
+Hajj Voice Assistant - WITH MEMORY
 Uses the existing translation system from utils.translations
 """
 import time
@@ -9,6 +9,7 @@ import base64
 import hashlib
 from pathlib import Path
 import sys
+from datetime import datetime
 
 import streamlit as st
 from audio_recorder_streamlit import audio_recorder
@@ -26,11 +27,122 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ---------------------------
+# Memory Management
+# ---------------------------
+class ConversationMemory:
+    """Manages conversation memory for voice assistant"""
+    
+    def __init__(self, max_turns=10):
+        """
+        Initialize memory
+        max_turns: Maximum number of conversation turns to remember (user+assistant = 1 turn)
+        """
+        self.max_turns = max_turns
+        if 'voice_memory' not in st.session_state:
+            st.session_state.voice_memory = {
+                'messages': [],  # List of {role, content, timestamp}
+                'user_context': {},  # Persistent user context (agencies mentioned, locations, etc.)
+                'session_start': datetime.now().isoformat()
+            }
+    
+    def add_message(self, role: str, content: str):
+        """Add a message to memory"""
+        message = {
+            'role': role,  # 'user' or 'assistant'
+            'content': content,
+            'timestamp': datetime.now().isoformat()
+        }
+        st.session_state.voice_memory['messages'].append(message)
+        
+        # Trim to max_turns (keep most recent)
+        # Each turn = user message + assistant message = 2 messages
+        max_messages = self.max_turns * 2
+        if len(st.session_state.voice_memory['messages']) > max_messages:
+            st.session_state.voice_memory['messages'] = \
+                st.session_state.voice_memory['messages'][-max_messages:]
+        
+        logger.info(f"Added {role} message to memory. Total messages: {len(st.session_state.voice_memory['messages'])}")
+    
+    def get_conversation_history(self, limit=None):
+        """
+        Get conversation history
+        limit: Number of recent turns to retrieve (None = all)
+        """
+        messages = st.session_state.voice_memory['messages']
+        if limit:
+            messages = messages[-(limit * 2):]  # limit turns * 2 messages per turn
+        return messages
+    
+    def get_formatted_history(self, limit=5):
+        """Get formatted history string for LLM context"""
+        messages = self.get_conversation_history(limit)
+        if not messages:
+            return "No previous conversation."
+        
+        formatted = []
+        for msg in messages:
+            role_label = "User" if msg['role'] == 'user' else "Assistant"
+            formatted.append(f"{role_label}: {msg['content']}")
+        
+        return "\n".join(formatted)
+    
+    def update_context(self, key: str, value: any):
+        """Update persistent user context"""
+        st.session_state.voice_memory['user_context'][key] = value
+        logger.info(f"Updated context: {key} = {value}")
+    
+    def get_context(self, key: str, default=None):
+        """Get value from persistent context"""
+        return st.session_state.voice_memory['user_context'].get(key, default)
+    
+    def extract_entities(self, text: str):
+        """
+        Extract and store important entities from user input
+        (agencies mentioned, locations, etc.)
+        """
+        # Extract agency names (simple pattern - improve as needed)
+        agencies = re.findall(r'(?:agency|company|office)\s+([A-Z][A-Za-z\s]+)', text, re.IGNORECASE)
+        if agencies:
+            self.update_context('last_agency_mentioned', agencies[0].strip())
+        
+        # Extract locations (simple pattern)
+        locations = re.findall(r'(?:in|at|from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)', text)
+        if locations:
+            self.update_context('last_location_mentioned', locations[0].strip())
+    
+    def clear_memory(self):
+        """Clear all memory (useful for new session)"""
+        st.session_state.voice_memory = {
+            'messages': [],
+            'user_context': {},
+            'session_start': datetime.now().isoformat()
+        }
+        logger.info("Memory cleared")
+    
+    def get_memory_summary(self):
+        """Get a summary of current memory state"""
+        return {
+            'total_messages': len(st.session_state.voice_memory['messages']),
+            'session_duration': self._get_session_duration(),
+            'context': st.session_state.voice_memory['user_context']
+        }
+    
+    def _get_session_duration(self):
+        """Calculate session duration"""
+        start = datetime.fromisoformat(st.session_state.voice_memory['session_start'])
+        duration = datetime.now() - start
+        minutes = int(duration.total_seconds() / 60)
+        return f"{minutes} minutes"
+
+
+# ---------------------------
 # Language Detection / Session defaults
 # ---------------------------
 if 'language' not in st.session_state:
-    # default to English code 'en' (use 'ar' for Arabic)
     st.session_state.language = 'en'
+
+# Initialize memory
+memory = ConversationMemory(max_turns=10)
 
 lang_code = st.session_state.language
 st.set_page_config(
@@ -39,9 +151,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
-if 'language' not in st.session_state:
-    # default to English code 'en' (use 'ar' for Arabic)
-    st.session_state.language = 'en'
+
 def init_voice_graph():
     voice_processor = VoiceProcessor()
     graph_builder = VoiceGraphBuilder(voice_processor)
@@ -49,22 +159,15 @@ def init_voice_graph():
     return voice_processor, workflow
 
 voice_processor, workflow = init_voice_graph()
-# convenience boolean for Arabic UI
+
 def is_arabic_code(code):
     return code in ('ar', 'arabic', 'العربية')
 
 is_arabic = is_arabic_code(st.session_state.language)
 
 # ---------------------------
-# Streamlit Config
-# ---------------------------
-
-
-# ---------------------------
 # Styles (RTL support for Arabic)
 # ---------------------------
-
-
 rtl_class = 'rtl' if is_arabic else ''
 text_align = 'right' if is_arabic else 'left'
 flex_direction = 'row-reverse' if is_arabic else 'row'
@@ -89,6 +192,47 @@ st.markdown(f"""
   display: flex;
   flex-direction: column;
   direction: {'rtl' if is_arabic else 'ltr'};
+}}
+
+/* Memory Badge */
+.memory-badge {{
+  position: fixed;
+  top: 70px;
+  {'left' if is_arabic else 'right'}: 15px;
+  padding: 0.5rem 1rem;
+  background: rgba(167, 139, 250, 0.15);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 1rem;
+  color: #a78bfa;
+  font-weight: 600;
+  font-size: 0.75rem;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}}
+
+/* Clear Memory Button */
+.clear-memory-btn {{
+  position: fixed;
+  top: 115px;
+  {'left' if is_arabic else 'right'}: 15px;
+  padding: 0.4rem 0.8rem;
+  background: rgba(239, 68, 68, 0.15);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 0.8rem;
+  color: #ef4444;
+  font-weight: 600;
+  font-size: 0.7rem;
+  z-index: 1000;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}}
+.clear-memory-btn:hover {{
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
 }}
 
 /* Return Button Styles */
@@ -174,12 +318,12 @@ st.markdown(f"""
 
 /* LIGHTER, CLEARER PANELS */
 .transcript-container,.response-container{{
-  background: rgba(248, 250, 252, 0.95); /* Much lighter background */
+  background: rgba(248, 250, 252, 0.95);
   border-radius: 1.5rem;
   padding: 1.25rem;
   backdrop-filter: blur(18px);
-  border: 1px solid rgba(255, 255, 255, 0.9); /* Stronger border */
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15); /* Lighter shadow */
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   flex: 1;
   min-height: 0;
   display: flex;
@@ -193,14 +337,14 @@ st.markdown(f"""
   gap: 0.75rem;
   margin-bottom: 0.75rem;
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid rgba(15, 23, 42, 0.1); /* Darker, more visible border */
+  border-bottom: 2px solid rgba(15, 23, 42, 0.1);
   flex-direction: {flex_direction};
 }}
 .panel-icon{{font-size:1.75rem;}}
 .panel-title{{
   font-size: 1.2rem;
   font-weight: 700;
-  color: #0f172a; /* Dark text for better contrast */
+  color: #0f172a;
   margin: 0;
 }}
 .panel-badge{{
@@ -209,50 +353,49 @@ st.markdown(f"""
   border-radius: 1rem;
   font-weight: 600;
   font-size: 0.75rem;
-  background: rgba(96, 165, 250, 0.2); /* More opaque */
-  color: #1e40af; /* Darker blue for better readability */
+  background: rgba(96, 165, 250, 0.2);
+  color: #1e40af;
   border: 1px solid rgba(96, 165, 250, 0.3);
 }}
 .panel-badge.active{{
   background: rgba(34, 197, 94, 0.2);
-  color: #166534; /* Darker green */
+  color: #166534;
   border-color: rgba(34, 197, 94, 0.3);
   animation: badge-pulse 1s infinite;
 }}
 @keyframes badge-pulse{{0%,100%{{opacity:1;}}50%{{opacity:0.6;}}}}
 
-/* DARK TEXT FOR BETTER READABILITY */
 .transcript-text, .response-content{{
-  color: #1e293b; /* Dark gray for excellent readability */
+  color: #1e293b;
   font-size: 1.1rem;
   line-height: 1.6;
   flex: 1;
   overflow-y: auto;
   padding-{'left' if is_arabic else 'right'}: 0.5rem;
   text-align: {text_align};
-  font-weight: 500; /* Slightly bolder text */
+  font-weight: 500;
 }}
 
 .transcript-text.empty, .response-content.empty{{
-  color: #64748b; /* Medium gray for placeholder text */
+  color: #64748b;
   font-style: italic;
   overflow: hidden;
   font-weight: normal;
 }}
 
 .metadata-card{{
-  background: rgba(248, 250, 252, 0.9); /* Lighter background */
+  background: rgba(248, 250, 252, 0.9);
   border-radius: 1rem;
   padding: 0.9rem;
   margin-top: 0.75rem;
   border-{'right' if is_arabic else 'left'}: 4px solid #60a5fa;
   text-align: {text_align};
-  border: 1px solid rgba(15, 23, 42, 0.1); /* Added border */
+  border: 1px solid rgba(15, 23, 42, 0.1);
 }}
 .metadata-title{{
   font-size: 0.85rem;
   font-weight: 600;
-  color: #1e40af; /* Darker blue */
+  color: #1e40af;
   margin-bottom: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -264,7 +407,7 @@ st.markdown(f"""
 }}
 .metadata-list li{{
   padding: 0.25rem 0;
-  color: #374151; /* Dark gray for readability */
+  color: #374151;
   font-weight: 500;
 }}
 .metadata-list li:before{{
@@ -316,48 +459,17 @@ audio {{display: none !important;visibility: hidden !important;height: 0 !import
 """, unsafe_allow_html=True)
 
 # ---------------------------
-# Initialize components and cached resources
+# Initialize components
 # ---------------------------
-
-
-# Optional: initialize a voice graph if available
-
 def _hash_bytes(b):
     if b is None:
         return None
     if not isinstance(b, (bytes, bytearray)):
         try:
-            b = b.getvalue()  # works for UploadedFile or BytesIO
+            b = b.getvalue()
         except Exception:
             raise TypeError(f"Unsupported type for hashing: {type(b)}")
     return hashlib.sha256(b).hexdigest()
-
-# ---------------------------
-# Build initial state for voice graph (if used)
-# ---------------------------
-def build_initial_state(audio_bytes):
-    return {
-        "audio_bytes": audio_bytes,
-        "transcript": "",
-        "detected_language": "ar" if is_arabic else "en",
-        "transcription_confidence": 0.0,
-        "user_input": "",
-        "intent": "",
-        "intent_confidence": 0.0,
-        "intent_reasoning": "",
-        "is_arabic": is_arabic,
-        "urgency": "low",
-        "response": "",
-        "response_tone": "",
-        "key_points": [],
-        "suggested_actions": [],
-        "includes_warning": False,
-        "verification_steps": [],
-        "official_sources": [],
-        "response_audio": b"",
-        "error": "",
-        "messages_history": st.session_state.get("voice_messages", []),
-    }
 
 # ---------------------------
 # Default session state keys
@@ -373,16 +485,16 @@ defaults = {
     "current_response": "",
     "current_metadata": {},
     "status": t('voice_status_ready', st.session_state.language),
-    # store pending raw bytes across reruns
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
+# ---------------------------
+# UI Elements
+# ---------------------------
 
-# ---------------------------
-# Return button and header
-# ---------------------------
+# Return button
 st.markdown(f"""
 <div class="return-button-container">
   <a href="/" class="return-button" target="_self">
@@ -392,9 +504,32 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
+# Memory badge
+memory_summary = memory.get_memory_summary()
+st.markdown(f"""
+<div class="memory-badge">
+  🧠 {memory_summary['total_messages']} messages | ⏱️ {memory_summary['session_duration']}
+</div>
+""", unsafe_allow_html=True)
+
+# Clear memory button
+if st.markdown("""
+<div class="clear-memory-btn" onclick="document.getElementById('clear-memory-trigger').click()">
+  🗑️ Clear Memory
+</div>
+""", unsafe_allow_html=True):
+    pass
+
+# Hidden button for clear memory
+if st.button("", key="clear-memory-trigger", help="Clear conversation memory"):
+    memory.clear_memory()
+    st.session_state.voice_messages = []
+    st.rerun()
+
+# Header
 st.markdown(f"""
 <div class="voice-header">
-  <div>🕋<span class="voice-title"> {t('voice_main_title', st.session_state.language)}</span> <span style="font-size:0.7em;color:#60a5fa;">LIVE + STREAMING</span></div>
+  <div>🕋<span class="voice-title"> {t('voice_main_title', st.session_state.language)}</span> <span style="font-size:0.7em;color:#60a5fa;">WITH MEMORY</span></div>
   <div class="voice-subtitle">{t('voice_subtitle', st.session_state.language)}</div>
 </div>
 """, unsafe_allow_html=True)
@@ -414,7 +549,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ---------------------------
-# Main UI layout: left (recorder/avatar) and right (transcript/response)
+# Main UI layout
 # ---------------------------
 st.markdown('<div class="voice-container">', unsafe_allow_html=True)
 col_left, col_right = st.columns(2)
@@ -449,38 +584,29 @@ with col_left:
         <div class="voice-ring voice-ring-3"></div>
         <div class="voice-avatar {avatar_class}">🕋</div>
       </div>
-     
       {waveform_html}
       <div class="record-label">{recording_label}</div>
     </div>
     """, unsafe_allow_html=True)
 
     audio_bytes = st.audio_input(
-    label="",
-    key="audio_recorder",
-    help="Click to start recording, click again to stop"
-)
-# ===========================================================================
-# FIXED SECTION: Replace lines ~240-290 in your voice.py
-# ===========================================================================
+        label="",
+        key="audio_recorder",
+        help="Click to start recording, click again to stop"
+    )
 
 with col_right:
-    # transcript and response display
     transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
     response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
 
-    # FIXED: Properly escape HTML in the response text
-    # Use html.escape() to prevent HTML injection and display text correctly
     import html
     clean_transcript = html.escape(transcript)
     clean_response = html.escape(response_text)
 
-    # Build metadata HTML (safe insertion)
     meta = st.session_state.current_metadata or {}
     meta_html_parts = []
 
     if meta.get("key_points"):
-        # Escape each key point
         key_points_escaped = [html.escape(str(p)) for p in meta["key_points"]]
         key_points_html = "".join(f"<li>{p}</li>" for p in key_points_escaped)
         meta_html_parts.append(f"""
@@ -491,7 +617,6 @@ with col_right:
         """)
 
     if meta.get("suggested_actions"):
-        # Escape each suggested action
         suggested_escaped = [html.escape(str(a)) for a in meta["suggested_actions"]]
         suggested_html = "".join(f"<li>{a}</li>" for a in suggested_escaped)
         meta_html_parts.append(f"""
@@ -502,7 +627,6 @@ with col_right:
         """)
 
     if meta.get("verification_steps"):
-        # Escape each verification step
         verify_escaped = [html.escape(str(s)) for s in meta["verification_steps"]]
         verify_html = "".join(f"<li>{s}</li>" for s in verify_escaped)
         meta_html_parts.append(f"""
@@ -514,7 +638,6 @@ with col_right:
 
     meta_html = "".join(meta_html_parts)
 
-    # FIXED: Use escaped text in the HTML
     panel_html = f"""
     <div class="transcript-container">
       <div class="panel-header">
@@ -536,54 +659,46 @@ with col_right:
     </div>
     """
     st.markdown(panel_html, unsafe_allow_html=True)
-  
+
+st.markdown("</div>", unsafe_allow_html=True)
+
 # ---------------------------
-# Play pending audio (if any)
+# Play pending audio
 # ---------------------------
 if st.session_state.get('pending_audio'):
     logger.info("Playing pending audio response...")
     try:
-    
-    # Hidden audio player with autoplay
-      st.markdown("<div style='display:none'>", unsafe_allow_html=True)
-      st.audio(st.session_state.pending_audio, format="audio/mp3", autoplay=True)
-      st.markdown("</div>", unsafe_allow_html=True)
-    
+        st.markdown("<div style='display:none'>", unsafe_allow_html=True)
+        st.audio(st.session_state.pending_audio, format="audio/mp3", autoplay=True)
+        st.markdown("</div>", unsafe_allow_html=True)
     except Exception as e:
         logger.warning("Failed to play pending audio: %s", e)
-    # clear the pending audio once we've queued it for play
+    
     st.session_state.pending_audio = None
     st.session_state.is_speaking = False
     st.session_state.status = t('voice_status_ready', st.session_state.language)
 
 # ---------------------------
-# Processing pipeline when audio is recorded
-# ---------------------------
-# ---------------------------
 # Handle new audio input
+# ---------------------------
 if audio_bytes and not st.session_state.is_processing:
-    # Handle different audio input types
     if hasattr(audio_bytes, 'read'):
-        # It's an UploadedFile from st.audio_input()
         audio = audio_bytes.read()
-        audio_bytes.seek(0)  # Reset file pointer for potential re-reading
+        audio_bytes.seek(0)
     else:
-        # It's already bytes from audio_recorder
         audio = audio_bytes
     
-    # Generate hash from the actual bytes
     audio_hash = _hash_bytes(audio)
     
     if audio_hash != st.session_state.last_audio_hash:
         st.session_state.last_audio_hash = audio_hash
-        # Store the actual bytes (not the UploadedFile object)
         st.session_state.pending_audio_bytes = audio
         st.session_state.is_processing = True
         st.session_state.status = t('voice_status_analyzing', st.session_state.language)
         st.rerun()
 
 # ---------------------------
-# Process pending audio (after rerun)
+# Process pending audio
 # ---------------------------
 elif st.session_state.is_processing and st.session_state.get("pending_audio_bytes"):
     try:
@@ -591,28 +706,22 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
 
         pending_audio_bytes = st.session_state.pending_audio_bytes
 
+        # Get conversation history for context
+        conversation_history = memory.get_formatted_history(limit=5)
+
         initial_state = {
-            # --- Audio input ---
-            "audio_bytes": pending_audio_bytes,  # Now it's guaranteed to be bytes
-            
-            # --- Transcription ---
+            "audio_bytes": pending_audio_bytes,
             "transcript": "",
             "detected_language": "",
             "transcription_confidence": 0.0,
-            
-            # --- User input ---
             "user_input": "",
             "language": "",
-            
-            # --- Intent understanding ---
             "intent": "",
             "intent_confidence": 0.0,
             "intent_reasoning": "",
             "is_vague": False,
             "is_arabic": False,
             "urgency": "",
-            
-            # --- SQL / Database-related ---
             "sql_query": "",
             "sql_params": {},
             "sql_query_type": "",
@@ -622,8 +731,6 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
             "result_rows": [],
             "columns": [],
             "row_count": 0,
-            
-            # --- Generated content ---
             "summary": "",
             "greeting_text": "",
             "general_answer": "",
@@ -634,30 +741,22 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
             "includes_warning": False,
             "verification_steps": [],
             "official_sources": [],
-            
-            # --- Audio output ---
             "response_audio": b"",
-            
-            # --- Error handling ---
             "error": "",
-            
-            # --- Context / Conversation memory ---
-            "messages_history": st.session_state.get("voice_messages", [])
+            "messages_history": memory.get_conversation_history(limit=5),  # Pass memory to workflow
+            "conversation_context": conversation_history  # Formatted history string
         }
 
-        # Run the workflow
         result = workflow.invoke(initial_state)
         
-        # Extract results
         transcript = result.get("transcript", "")
         response_text = result.get("response", "")
         response_audio = result.get("response_audio", None)
 
-        # Update session state with results
+        # Update session state
         st.session_state.current_transcript = transcript or t('voice_no_speech', st.session_state.language)
         st.session_state.current_response = response_text or t('voice_could_not_understand', st.session_state.language)
         
-        # Store metadata
         st.session_state.current_metadata = {
             "key_points": result.get("key_points", []),
             "suggested_actions": result.get("suggested_actions", []),
@@ -665,20 +764,19 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
             "official_sources": result.get("official_sources", []),
         }
         
-        # Store audio for playing
         if response_audio:
             st.session_state.pending_audio = response_audio
             st.session_state.is_speaking = True
             st.session_state.status = t('voice_status_speaking', st.session_state.language)
-
         else:
             st.session_state.status = t('voice_status_ready', st.session_state.language)
 
-        # Update message history
+        # ADD TO MEMORY
         if transcript:
-            st.session_state.voice_messages.append({"role": "user", "content": transcript})
+            memory.add_message('user', transcript)
+            memory.extract_entities(transcript)  # Extract entities for context
         if response_text:
-            st.session_state.voice_messages.append({"role": "assistant", "content": response_text})
+            memory.add_message('assistant', response_text)
 
     except Exception as e:
         logger.exception("Error during voice processing: %s", e)
@@ -691,5 +789,5 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         st.session_state.is_processing = False
         st.session_state.status = t('voice_status_ready', st.session_state.language)
         st.session_state.pending_audio_bytes = None
-        # Force rerun to update UI and trigger audio playback
+        
         st.rerun()
