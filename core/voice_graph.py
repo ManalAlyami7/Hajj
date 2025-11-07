@@ -184,14 +184,18 @@ class VoiceGraphBuilder:
             state["user_input"],
             state["language"]
         )
-        return {
-            "needs_info": response.get("needs_info"),
-            "suggestions": response.get("suggestions", []),
-            "missing_info": response.get("missing_info", []),
-            "sample_query": response.get("sample_query"),
-            "summary": None,
-            "result_rows": []
-        }
+        
+        # FIXED: Update the state object directly instead of returning a new dict
+        state["needs_info"] = response.get("needs_info")
+        state["suggestions"] = response.get("suggestions", [])
+        state["missing_info"] = response.get("missing_info", [])
+        state["sample_query"] = response.get("sample_query")
+        state["summary"] = None
+        state["result_rows"] = []
+        
+        logger.info(f"NEEDS_INFO response set: {state['needs_info'][:50] if state['needs_info'] else 'None'}")
+        
+        return state
 
     def execute_sql_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Execute SQL query"""
