@@ -513,7 +513,7 @@ st.markdown(f"""
   </a>
 </div>
 """, unsafe_allow_html=True)
-col1, col2, col3 = st.columns[1,1,1.5]
+col1, col2, col3 = st.columns([1, 1, 1.5])
 with col1:
 # Memory badge
   memory_summary = memory.get_memory_summary()
