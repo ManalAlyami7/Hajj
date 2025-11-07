@@ -439,17 +439,16 @@ st.markdown(f"""
 }}
 /* Clear Memory Button */ 
 .clear-memory-btn {{ position: fixed;
- top: 115px;
+ top: 15px;
  {'left' if is_arabic else 'right'}: 15px;
    padding: 0.4rem 0.8rem; 
    background: rgba(239, 68, 68, 0.15); 
-   backdrop-filter: blur(20px);
-  border: 1px solid rgba(167, 139, 250, 0.3);
+   backdrop-filter: blur(20px); border: 1px solid rgba(239, 68, 68, 0.3);
+     color: #ef4444;
+       font-weight: 600; font-size: 0.75rem; z-index: 1000;
+         cursor: pointer; transition: all 0.3s ease; 
+         backdrop-filter: blur(20px);
   border-radius: 2rem;
-  color: #a78bfa;
-  font-weight: 600;
-  font-size: 0.75rem;
-  z-index: 1000;
   display: flex;
   align-items: center;
   gap: 0.5rem;}} 
