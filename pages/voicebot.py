@@ -565,8 +565,11 @@ if st.query_params.get("clear_memory") == "true":
 # ---------------------------
 # Main UI layout
 # ---------------------------
-st.markdown('<div class="voice-container">', unsafe_allow_html=True)
-col_left, col_right = st.columns(2)
+st.markdown("""
+<div class="voice-container" style="display: flex; align-items: flex-end; gap: 2rem;">
+""", unsafe_allow_html=True)
+
+col_left, col_right = st.columns([1, 2])  # optional: adjust widths
 
 with col_left:
     avatar_class = (
@@ -608,15 +611,15 @@ with col_left:
         key="audio_recorder",
         help="Click to start recording, click again to stop"
     )
+
 with col_right:
     transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
     response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
 
-    import html, time
+    import html
     clean_transcript = html.escape(transcript)
     clean_response = response_text
 
-    # ✅ Transcript panel first
     st.markdown(f"""
     <div class="transcript-container">
       <div class="panel-header">
@@ -632,7 +635,6 @@ with col_right:
     </div>
     """, unsafe_allow_html=True)
 
-    # ✅ Response container (CLOSED properly)
     st.markdown(f"""
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
@@ -647,7 +649,8 @@ with col_right:
       <div class='response-content'>{html.escape(clean_response)}</div> 
     </div>
     """, unsafe_allow_html=True)
-# ----------------------
+
+st.markdown("</div>", unsafe_allow_html=True)
 
     # ✅ Now close the container
 
