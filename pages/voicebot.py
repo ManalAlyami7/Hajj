@@ -199,7 +199,7 @@ st.markdown(f"""
   position: fixed;
   top: 15px;
   {'left' if is_arabic else 'right'}: 170px;
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.25rem;
   background: rgba(167, 139, 250, 0.15);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(167, 139, 250, 0.3);
@@ -217,8 +217,8 @@ st.markdown(f"""
 .clear-memory-btn {{
   position: fixed;
   top: 15px;
-  {'left' if is_arabic else 'right'}: 100px;
-  padding: 0.4rem 0.8rem;
+  {'left' if is_arabic else 'right'}: 130px;
+  padding: 0.6rem 1.25rem;
   background: rgba(239, 68, 68, 0.15);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(239, 68, 68, 0.3);
