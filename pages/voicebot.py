@@ -442,7 +442,7 @@ st.markdown(f"""
  top: 15px;
  {'left' if is_arabic else 'right'}: 15px;
    padding: 0.6rem 1.25rem;
-   background: rgba(239, 68, 68, 0.15); 
+   background: rgba(239, 68, 68, 0.75); 
    backdrop-filter: blur(20px); border: 1px solid rgba(239, 68, 68, 0.3);
      color: #ef4444;
        font-weight: 600; font-size: 0.75rem; z-index: 1000;
@@ -459,7 +459,7 @@ st.markdown(f"""
   top: 15px;
   {'left' if is_arabic else 'right'}: 365px;
   padding: 0.6rem 1.25rem;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.15);
   border-radius: 2rem;
   color: white;
   font-weight: 600;
