@@ -438,22 +438,45 @@ st.markdown(f"""
   margin-{'left' if is_arabic else 'right'}: 0.5rem;
 }}
 /* Clear Memory Button */ 
-.clear-memory-btn {{ position: fixed;
- top: 15px;
- {'left' if is_arabic else 'right'}: 15px;
-   padding: 0.6rem 1.25rem;
-   background: rgba(239, 68, 68, 0.75); 
-   backdrop-filter: blur(20px); border: 1px solid rgba(239, 68, 68, 0.3);
-     color: #ffffff;
-       font-weight: 600; font-size: 0.75rem; z-index: 1000;
-         cursor: pointer; transition: all 0.3s ease; 
-         backdrop-filter: blur(20px);
-  border-radius: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;}} 
-         .clear-memory-btn:hover {{ background: rgba(239, 68, 68, 0.25); 
-         border-color: rgba(239, 68, 68, 0.5); }}
+.clear-memory-btn {{
+    position: fixed;
+    top: 15px;
+    {'left' if is_arabic else 'right'}: 15px;
+    padding: 0.6rem 1.25rem;
+    background: rgba(239, 68, 68, 0.75); 
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.75rem;
+    z-index: 1000;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
+}}
+
+.clear-memory-btn:hover {{
+    background: rgba(239, 68, 68, 0.9);
+    border-color: rgba(239, 68, 68, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+}}
+
+.clear-memory-btn:active {{
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3);
+    background: rgba(220, 38, 38, 0.85);
+}}
+
+.clear-memory-btn:focus {{
+    outline: 2px solid rgba(239, 68, 68, 0.5);
+    outline-offset: 2px;
+}}
 .status-indicator{{
   position: fixed;
   top: 15px;
