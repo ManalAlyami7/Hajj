@@ -677,7 +677,7 @@ with col_right:
 
     import html
     clean_transcript = html.escape(transcript)
-    clean_response = response_text
+    clean_response = html.escape(response_text)
 
     # Transcript panel (flex layout for header)
     st.markdown(f"""
