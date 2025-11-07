@@ -299,7 +299,7 @@ st.markdown(f"""
 .return-button:hover .icon {{
   transform: {icon_transform};
 }}
-.voice-header{{text-align:center;padding:0.75rem 0;margin-bottom:2.5rem;}}
+.voice-header{{text-align:center;padding:0.75rem 0;margin-bottom:3.5rem;}}
 .voice-title{{
   font-size:2.2rem;font-weight:800;letter-spacing:2px;
   background:linear-gradient(135deg,#60a5fa 0%,#a78bfa 100%);
@@ -522,7 +522,7 @@ audio {{display: none !important;visibility: hidden !important;height: 0 !import
 button:hover {{
     opacity: 0.9;
 }}
-.audio-recorder-container {{display: flex;justify-content: center;align-items: center;margin: 1.5rem 0;}}
+.audio-recorder-container {{display: flex;justify-content: center;align-items: center;}}
 
 [data-testid="stButton-clear_memory_btn"] {{
     display: none !important;
