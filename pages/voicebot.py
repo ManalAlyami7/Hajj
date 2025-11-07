@@ -558,14 +558,15 @@ st.markdown(f"""
 # ---------------------------
 st.markdown('<div class="voice-container">', unsafe_allow_html=True)
 col_left, col_right = st.columns(2)
-
 with col_left:
     avatar_class = (
-        "speaking" if st.session_state.is_speaking
-        else "listening" if st.session_state.is_processing
+        "listening" if st.session_state.is_recording
+        else "speaking" if st.session_state.is_speaking
+        else "processing" if st.session_state.is_processing
         else ""
     )
-
+    
+    # 1. Define waveform HTML based on state (now uses is_speaking)
     waveform_html = ""
     if st.session_state.is_speaking:
         waveform_html = """
@@ -577,10 +578,18 @@ with col_left:
             <div class="waveform-bar"></div>
         </div>
         """
+    
+    # 2. Define the user-facing status label
+    recording_label = (
+        f"🔴 {t('voice_recording', st.session_state.language)}" if st.session_state.is_recording
+        else f"🔊 {t('voice_speaking', st.session_state.language)}" if st.session_state.is_speaking
+        else f"🎤 {t('voice_press_to_speak', st.session_state.language)}"
+    )
 
-    # Build the complete HTML string properly
+    # 3. Build the complete HTML string
+    # Note: The CSS class 'voice-left' already defines the flex properties
     html_content = f"""
-    <div class="voice-left" style="display:flex; flex-direction:column; justify-content:flex-end; align-items:center; position:relative; max-height:300px;">
+    <div class="voice-left" style="position:relative;"> 
       <div style="position:relative;">
         <div class="voice-ring voice-ring-1"></div>
         <div class="voice-ring voice-ring-2"></div>
@@ -588,6 +597,7 @@ with col_left:
         <div class="voice-avatar {avatar_class}">🕋</div>
       </div>
       {waveform_html}
+      <div class="record-label">{recording_label}</div> {/* RE-INTRODUCE THE LABEL */}
     </div>
     """
     
