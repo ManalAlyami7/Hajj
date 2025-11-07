@@ -599,7 +599,6 @@ with col_left:
         <div class="voice-avatar {avatar_class}">🕋</div>
       </div>
       {waveform_html}
-      <div class="record-label">{recording_label}</div>
       <div style="margin-top:1rem;">
         <!-- placeholder for audio recorder -->
       </div>
