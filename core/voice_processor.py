@@ -96,7 +96,7 @@ The recording may mix Arabic and English words — transcribe both naturally.
                 response_format="text",  # FASTER than verbose_json
                 temperature=0.0,  # More deterministic = faster
                 language=None,  # Auto-detect language
-                prompt=context_prompt  # NEW: Contextual guidance for better accuracy
+                #prompt=context_prompt  # NEW: Contextual guidance for better accuracy
             )
             
             text = transcript if isinstance(transcript, str) else getattr(transcript, "text", "")
