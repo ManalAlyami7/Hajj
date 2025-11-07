@@ -177,12 +177,30 @@ class DatabaseManager:
     
     def search_agency_fuzzy(self, search_term: str) -> pd.DataFrame:
         """
-        Fuzzy search for agencies by name or location
+        Smart search:
+        1. Try exact match first
+        2. If nothing found, fallback to partial (fuzzy) match
         """
-        query = """
+        # البحث الدقيق أولاً
+        exact_query = """
         SELECT DISTINCT 
             hajj_company_en, hajj_company_ar, formatted_address,
-            city, country, email, contact_Info, rating_reviews, is_authorized
+            city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
+        FROM agencies
+        WHERE LOWER(TRIM(hajj_company_en)) = LOWER(:term)
+           OR LOWER(TRIM(hajj_company_ar)) = LOWER(:term)
+        LIMIT 10
+        """
+    
+        df, error = self.execute_query(exact_query, {"term": search_term.strip().lower()})
+        if df is not None and not df.empty:
+            return df  # ✅ وجدنا نتيجة مطابقة تمامًا
+    
+        # 🔍 إذا ما لقى نتيجة، جرب بحث غامض (جزئي)
+        fuzzy_query = """
+        SELECT DISTINCT 
+            hajj_company_en, hajj_company_ar, formatted_address,
+            city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
         FROM agencies
         WHERE LOWER(TRIM(hajj_company_en)) LIKE LOWER(:term)
            OR LOWER(TRIM(hajj_company_ar)) LIKE LOWER(:term)
@@ -190,6 +208,5 @@ class DatabaseManager:
            OR LOWER(country) LIKE LOWER(:term)
         LIMIT 50
         """
-        
-        df, error = self.execute_query(query, {"term": f"%{search_term}%"})
+        df, error = self.execute_query(fuzzy_query, {"term": f"%{search_term.strip().lower()}%"})
         return df if df is not None else pd.DataFrame()
