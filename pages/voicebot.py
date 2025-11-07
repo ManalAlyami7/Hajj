@@ -513,46 +513,58 @@ st.markdown(f"""
   </a>
 </div>
 """, unsafe_allow_html=True)
-col1, col2, col3 = st.columns([1, 1, 1.5])
+# Compact top bar
+st.markdown('<div style="margin-bottom: 1rem;"></div>', unsafe_allow_html=True)
+
+col1, col2, col3 = st.columns([1, 1, 1])
+
+# Memory Badge
 with col1:
-# Memory badge
-  memory_summary = memory.get_memory_summary()
-  st.markdown(f"""
-  <div class="memory-badge">
-    🧠 {memory_summary['total_messages']} messages | ⏱️ {memory_summary['session_duration']}
-  </div>
-  """, unsafe_allow_html=True)
-
-# Clear memory button
-with col2:
-  if st.markdown("""
-  <div class="clear-memory-btn" onclick="document.getElementById('clear-memory-trigger').click()">
-    🗑️ Clear Memory
-  </div>
-  """, unsafe_allow_html=True):
-      pass
-
-  # Hidden button for clear memory
-  if st.button("", key="clear-memory-trigger", help="Clear conversation memory"):
-      memory.clear_memory()
-      st.session_state.voice_messages = []
-      st.rerun()
-
-with col3:
-    status_dot_class = (
-    "listening" if st.session_state.is_recording
-    else "processing" if st.session_state.is_processing
-    else "speaking" if st.session_state.is_speaking
-    else ""
-)
-
+    memory_summary = memory.get_memory_summary()
     st.markdown(f"""
-    <div class="status-indicator">
-      <div class="status-dot {status_dot_class}"></div>
-      <span>{st.session_state.status}</span>
+    <div style="background: linear-gradient(135deg, rgba(167, 139, 250, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%);
+                padding: 0.7rem 1rem; border-radius: 12px;
+                border: 2px solid rgba(167, 139, 250, 0.3);
+                color: #a78bfa; font-weight: 700; font-size: 0.8rem;
+                text-align: center; box-shadow: 0 4px 15px rgba(167, 139, 250, 0.2);">
+        🧠 {memory_summary['total_messages']} | ⏱️ {memory_summary['session_duration']}
     </div>
     """, unsafe_allow_html=True)
 
+# Clear Button
+with col2:
+    if st.button("🗑️ Clear", key="clear_memory", use_container_width=True, 
+                 help="Clear conversation memory"):
+        memory.clear_memory()
+        st.session_state.voice_messages = []
+        st.rerun()
+
+# Status
+with col3:
+    status_dot_class = (
+        "listening" if st.session_state.is_recording
+        else "processing" if st.session_state.is_processing
+        else "speaking" if st.session_state.is_speaking
+        else ""
+    )
+    
+    status_emoji = {
+        "listening": "🔴",
+        "processing": "⚙️",
+        "speaking": "🔊",
+        "": "✅"
+    }
+    emoji = status_emoji.get(status_dot_class, "✅")
+    
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.85) 100%);
+                padding: 0.7rem 1rem; border-radius: 12px;
+                border: 2px solid rgba(96, 165, 250, 0.3);
+                color: white; font-weight: 700; font-size: 0.8rem;
+                text-align: center; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
+        {emoji} {st.session_state.status}
+    </div>
+    """, unsafe_allow_html=True)
 # Header
 st.markdown(f"""
 <div class="voice-header">
