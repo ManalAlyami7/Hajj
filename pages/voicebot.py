@@ -496,6 +496,15 @@ button:hover {{
     opacity: 0.9;
 }}
 .audio-recorder-container {{display: flex;justify-content: center;align-items: center;margin: 1.5rem 0;}}
+#clear_memory_btn button {{
+    display: none;   /* completely hides the button */
+    visibility: hidden;
+    height: 0;
+    width: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -550,11 +559,13 @@ with col_mem:
     """, unsafe_allow_html=True)
 
 with col_clear:
-    st.markdown("""
-    <button class="clear-memory-btn" onclick="document.querySelector('[data-testid=\\'stButton\\'] button').click()">
+    st.markdown(f"""
+    <button class="clear-memory-btn" 
+        onclick="document.querySelector('[data-testid="stButton-clear_memory_btn"] button').click()">
         🗑️ Clear Memory
     </button>
     """, unsafe_allow_html=True)
+
     
     # Hidden actual button
     if st.button("", key="clear_memory_btn", use_container_width=False):
