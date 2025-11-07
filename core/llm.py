@@ -141,6 +141,11 @@ class LLMManager:
         Detect user intent using LLM with structured output
         Returns: Dict with intent, confidence, and reasoning
         """
+
+        if "last_company_name" in st.session_state and len(user_input.strip().split()) <= 4:
+        user_input = f"{user_input.strip()} لشركة {st.session_state['last_company_name']}"
+        logger.info(f"Context auto-filled with last company: {st.session_state['last_company_name']}")
+        
         intent_prompt = f"""
         You are a fraud-prevention assistant for Hajj pilgrims. you need to understand user and use the context in addition to the message, Classify this message into ONE of four categories:
 
