@@ -536,7 +536,7 @@ st.markdown(f"""
   </div>
 
   <div class="clear-memory-btn" onclick="fetch('?clear_memory=true', {{method:'POST'}})">
-    🗑️ مسح الذاكرة
+    🗑️ Clear memory 
   </div>
 
   <div class="status-indicator">
