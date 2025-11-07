@@ -628,15 +628,15 @@ with col_right:
             {'● ' + (t('voice_status_speaking', st.session_state.language)
             if st.session_state.is_speaking
             else t('voice_status_ready', st.session_state.language))}
-          f"<div class='response-content'>{html.escape(clean_response)}</div>",
+          
         </div>
+        <div class='response-content'>{html.escape(clean_response)}</div>,
       </div>
     """, unsafe_allow_html=True)
 
 # ----------------------
 
     # ✅ Now close the container
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # Play pending audio
 # ---------------------------
