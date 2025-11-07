@@ -444,7 +444,7 @@ st.markdown(f"""
    padding: 0.6rem 1.25rem;
    background: rgba(239, 68, 68, 0.75); 
    backdrop-filter: blur(20px); border: 1px solid rgba(239, 68, 68, 0.3);
-     color: #ef4444;
+     color: #ffffff;
        font-weight: 600; font-size: 0.75rem; z-index: 1000;
          cursor: pointer; transition: all 0.3s ease; 
          backdrop-filter: blur(20px);
