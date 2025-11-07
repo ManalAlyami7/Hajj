@@ -532,7 +532,7 @@ st.markdown(f"""
     direction: {'rtl' if is_arabic else 'ltr'};
 ">
   <div class="memory-badge">
-    🧠 {memory_summary['total_messages']} | ⏱️ {memory_summary['session_duration']}
+    🧠 {memory_summary['total_messages']} messages | ⏱️ {memory_summary['session_duration']}
   </div>
 
   <div class="clear-memory-btn" onclick="fetch('?clear_memory=true', {{method:'POST'}})">
@@ -552,6 +552,12 @@ st.markdown(f"""
   <div class="voice-subtitle">{t('voice_subtitle', st.session_state.language)}</div>
 </div>
 """, unsafe_allow_html=True)
+
+if st.query_params.get("clear_memory") == "true":
+    memory.clear_memory()
+    st.session_state.voice_messages = []
+    st.rerun()
+
 
 # Status indicator
 
