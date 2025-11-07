@@ -587,7 +587,7 @@ with col_left:
         </div>
         """
 
-    recording_label = f"🔴 {t('voice_recording', st.session_state.language)}" if st.session_state.is_recording else f"🎤 {t('voice_press_to_speak', st.session_state.language)}"
+    #recording_label = f"🔴 {t('voice_recording', st.session_state.language)}" if st.session_state.is_recording else f"🎤 {t('voice_press_to_speak', st.session_state.language)}"
 
     # Wrap everything in a flex column container
     st.markdown(f"""
