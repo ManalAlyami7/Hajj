@@ -60,13 +60,16 @@ The SQLite database must contain a table named **`agencies`** with these columns
 |--------|--------------|
 | `hajj_company_ar` | Arabic company name |
 | `hajj_company_en` | English company name |
-| `formatted_address` | Full address (used for Maps) |
+| `formatted_address` | Full address |
 | `city` | City name |
 | `country` | Country |
 | `email` | Contact email |
 | `contact_Info` | Additional contact details |
 | `rating_reviews` | Reviews or ratings |
 | `is_authorized` | 'Yes' or 'No' |
+| `google_maps_link` | Link of Google maps |
+| `link_valid` | 'True' or 'False' |
+
 
 ---
 
