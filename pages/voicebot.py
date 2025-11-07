@@ -591,31 +591,6 @@ with col_mem:
 import streamlit.components.v1 as components
 with col_clear:
     components.html(f"""
-    <style>
-    .clear-memory-btn {{
-        display: inline-block;
-        margin-top: 6px;
-        text-decoration: none !important;
-        color: inherit !important;
-        background: rgba(255, 255, 255, 0.12);
-        padding: 0.6rem 1.2rem;
-        border-radius: 1.5rem;
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        backdrop-filter: blur(12px);
-        font-weight: 600;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-align: center;
-    }}
-    .clear-memory-btn:hover {{
-        background: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.4);
-        color: #fff !important;
-        text-decoration: none !important;
-    }}
-    </style>
-
     <a href="#" class="clear-memory-btn">
         {t('voice_clear_memory', st.session_state.language)}
     </a>
