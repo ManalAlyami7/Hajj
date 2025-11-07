@@ -594,6 +594,7 @@ with col_clear:
   <button class="clear-memory-btn" 
       <a href="/" class="return-button" style="pointer-events: auto; text-decoration: none;">
       {t('voice_clear_memory', st.session_state.language)}
+      </a>
   </button>
   """, unsafe_allow_html=True)
 
