@@ -73,7 +73,7 @@ class VoiceAssistantState(TypedDict):
     summary: Optional[str]
     greeting_text: Optional[str]
     general_answer: Optional[str]
-    needs_ifo: Optional[str]
+    needs_info: Optional[str]
     suggestions: Optional[List[str]]
     missing_info: Optional[List[str]]
     sample_query: Optional[str]
