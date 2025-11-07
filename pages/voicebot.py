@@ -591,7 +591,7 @@ with col_mem:
 with col_clear:
     # 2️⃣ Visible custom button triggering the hidden Streamlit button
   st.markdown(f"""
-  <button class="clear-memory-btn" 
+  <button class="clear-memory-btn">
       <a href="/" style="pointer-events: auto; text-decoration: none;">
       {t('voice_clear_memory', st.session_state.language)}
       </a>
