@@ -534,7 +534,33 @@ with col_mem:
     """, unsafe_allow_html=True)
 
 with col_clear:
-    if st.button("🗑️ Clear Memory", key="clear_memory_btn", use_container_width=True):
+    st.markdown("""
+    <style>
+    .clear-btn {
+        width: 100%;
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        display: block;
+    }
+    .clear-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+    </style>
+    <button class="clear-btn" onclick="document.querySelector('[data-testid=\\'stButton\\'] button').click()">
+        🗑️ Clear Memory
+    </button>
+    """, unsafe_allow_html=True)
+    
+    # Hidden actual button
+    if st.button("", key="clear_memory_btn", use_container_width=True):
         st.session_state.clear_memory_clicked = True
         st.rerun()
 
