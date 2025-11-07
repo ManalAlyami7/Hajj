@@ -255,11 +255,10 @@ st.markdown(f"""
   align-items: center;
   gap: 0.5rem;
 }}
-
 /* Return Button Styles */
 .return-button-container {{
   position: fixed;
-  top: 20px;
+  top: 15px;
   {return_position}
   z-index: 2000;
 }}
@@ -267,35 +266,35 @@ st.markdown(f"""
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: rgba(96, 165, 250, 0.15);
+  padding: 0.6rem 1.25rem;
+  background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(20px);
-  border: 2px solid rgba(96, 165, 250, 0.3);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 2rem;
-  color: #60a5fa;
+  color: rgba(255, 255, 255, 0.9);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   text-decoration: none;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(96, 165, 250, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   direction: {'rtl' if is_arabic else 'ltr'};
 }}
 .return-button:hover {{
-  background: rgba(96, 165, 250, 0.25);
-  border-color: rgba(96, 165, 250, 0.5);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.35);
   transform: {transform_direction};
-  box-shadow: 0 6px 30px rgba(96, 165, 250, 0.4);
-  color: #93c5fd;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  color: #ffffff;
 }}
 .return-button .icon {{
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   transition: transform 0.3s ease;
 }}
 .return-button:hover .icon {{
   transform: {icon_transform};
 }}
-
 .voice-header{{text-align:center;padding:0.75rem 0;margin-bottom:0.5rem;}}
 .voice-title{{
   font-size:2.2rem;font-weight:800;letter-spacing:2px;
@@ -590,7 +589,7 @@ with col_clear:
     st.markdown(f"""
     <button class="clear-memory-btn" 
         onclick="document.querySelector('[data-testid=\\'stButton-clear_memory_btn\\'] button').click()">
-        + {t('voice_clear_memory', st.session_state.language)}
+         {t('voice_clear_memory', st.session_state.language)}
     </button>
     """, unsafe_allow_html=True)
 
