@@ -274,7 +274,7 @@ st.markdown(f"""
   border-radius: 2rem;
   color: rgba(255, 255, 255, 0.9);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   text-decoration: none !important; /* Ensure no underline */
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
@@ -292,7 +292,7 @@ st.markdown(f"""
 }}
 
 .return-button .icon {{
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   transition: transform 0.3s ease;
 }}
 
