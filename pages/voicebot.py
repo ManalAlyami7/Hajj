@@ -603,15 +603,24 @@ with col_right:
     clean_response = response_text  # keep HTML intact for AI responses
 
     # --- streaming effect for response ---
-    response_placeholder = st.empty()
+    # Create a Streamlit placeholder to update the response incrementally
+    response_placeholder = t('voice_response_placeholder', st.session_state.language)
+
     streamed_text = ""
-    for word in clean_response.split():
-        streamed_text += word + " "
+    if clean_response:
+        for word in clean_response.split():
+            streamed_text += word + " "
+            response_placeholder.markdown(
+                f"<div class='response-content'>{html.escape(streamed_text)}</div>",
+                unsafe_allow_html=True
+            )
+            time.sleep(0.04)  # typing speed (lower = faster)
+    else:
+        # Show placeholder text if no response available
         response_placeholder.markdown(
-            f"<div class='response-content'>{html.escape(streamed_text)}</div>",
+            f"<div class='response-content empty'>{html.escape(t('voice_response_placeholder', st.session_state.language))}</div>",
             unsafe_allow_html=True
         )
-        time.sleep(0.04)  # typing speed (lower = faster)
 
 
     meta = st.session_state.current_metadata or {}
@@ -665,6 +674,7 @@ with col_right:
         <h3 class="panel-title">AI Response</h3>
         <div class="panel-badge">{'● ' + (t('voice_status_speaking', st.session_state.language) if st.session_state.is_speaking else t('voice_status_ready', st.session_state.language))}</div>
       </div>
+      <div class="response-content">{clean_response}</div>
     </div>
     """
     st.markdown(panel_html, unsafe_allow_html=True)
