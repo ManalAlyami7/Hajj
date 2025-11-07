@@ -198,7 +198,7 @@ st.markdown(f"""
 .memory-badge {{
   position: fixed;
   top: 15px;
-  {'left' if is_arabic else 'right'}: 120px;
+  {'left' if is_arabic else 'right'}: 160px;
   padding: 0.6rem 1.25rem;
   background: rgba(167, 139, 250, 0.15);
   backdrop-filter: blur(20px);
@@ -250,7 +250,7 @@ st.markdown(f"""
   background: rgba(96, 165, 250, 0.15);
   backdrop-filter: blur(20px);
   border: 2px solid rgba(96, 165, 250, 0.3);
-  border-radius: 1rem;
+  border-radius: 2rem;
   color: #60a5fa;
   font-weight: 600;
   font-size: 0.95rem;
