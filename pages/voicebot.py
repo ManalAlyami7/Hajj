@@ -441,7 +441,7 @@ st.markdown(f"""
 .clear-memory-btn {{ position: fixed;
  top: 15px;
  {'left' if is_arabic else 'right'}: 15px;
-   padding: 0.4rem 0.8rem; 
+   padding: 0.6rem 1.25rem;
    background: rgba(239, 68, 68, 0.15); 
    backdrop-filter: blur(20px); border: 1px solid rgba(239, 68, 68, 0.3);
      color: #ef4444;
