@@ -634,7 +634,7 @@ with col_clear:
         }}
     }});
     </script>
-    """, height=40)
+    """, height=60)
 
     # # 3️⃣ Hidden actual button (logic intact)
     # if st.button("", key="clear_memory_btn", use_container_width=False):
