@@ -510,11 +510,12 @@ Feel free to:
 
         1. "Authorized" → add `AND is_authorized = 'Yes'`
         2. "Is X authorized?" → check `is_authorized` for company name
-            - If the user mentions a company explicitly using words like 
+            - If the user mentions a specific company or agency using words like 
                 "شركة", "وكالة", "مؤسسة", "agency", "company", or "travel",
                 use **exact match** instead of LIKE:
                 WHERE TRIM(hajj_company_ar) = 'الاسم' OR TRIM(hajj_company_en) = 'name'
-            - Otherwise (general keyword), use LIKE for partial name matches:
+            - Do NOT use LIKE in this case.
+            - Otherwise (general keyword), use LIKE for partial matches:
                 WHERE LOWER(TRIM(hajj_company_ar)) LIKE LOWER('%term%')
                     OR LOWER(TRIM(hajj_company_en)) LIKE LOWER('%term%')
         3. "Number of ..." or "How many ..." → use `SELECT COUNT(*)`
@@ -556,7 +557,7 @@ Feel free to:
         Q: "هل شركة الهدى معتمدة؟"
         → SELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
         FROM agencies
-        WHERE (TRIM(hajj_company_ar) = 'الهدى' OR TRIM(hajj_company_en) = 'AL HOUDA')
+        WHERE (TRIM(hajj_company_ar) = 'شركة الهدى' OR TRIM(hajj_company_en) = 'Al Huda Company')
         LIMIT 1;
 
         Q: "Authorized agencies in Makkah"
