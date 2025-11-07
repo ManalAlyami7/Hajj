@@ -241,7 +241,7 @@ st.markdown(f"""
 .memory-badge {{
   position: fixed;
   top: 15px;
-  {'left' if is_arabic else 'right'}: 215px;
+  {'left' if is_arabic else 'right'}: 225px;
   padding: 0.6rem 1.25rem;
   background: rgba(167, 139, 250, 0.15);
   backdrop-filter: blur(20px);
