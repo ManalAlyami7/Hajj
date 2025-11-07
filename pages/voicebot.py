@@ -590,6 +590,9 @@ with col_mem:
 
 import streamlit.components.v1 as components
 
+import streamlit.components.v1 as components
+import streamlit as st # Make sure you import st if it's used for session_state/t
+
 with col_clear:
     components.html(f"""
     <a href="#" class="clear-memory-btn" style="pointer-events: auto; text-decoration: none;">
@@ -599,7 +602,7 @@ with col_clear:
     const link = document.querySelector('.clear-memory-btn');
     link.addEventListener('click', function(e) {{
         e.preventDefault();
-        // Reload the full Streamlit app, even if it's inside an iframe
+        // This is correct for forcing a full Streamlit page reload
         try {{
             window.parent.location.reload();
         }} catch(err) {{
@@ -607,8 +610,11 @@ with col_clear:
         }}
     }});
     </script>
-    """)
-
+    """, 
+    # 🎯 THE FIX: Define minimal height and width for the iframe
+    height=30,  # Adjust this value based on your button's font size
+    width=150   # Adjust this value to fit your translated button text
+    )
     # # 3️⃣ Hidden actual button (logic intact)
     # if st.button("", key="clear_memory_btn", use_container_width=False):
     #     st.session_state.clear_memory_clicked = True
