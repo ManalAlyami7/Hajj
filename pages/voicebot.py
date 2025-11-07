@@ -460,21 +460,29 @@ with col_left:
     key="audio_recorder",
     help="Click to start recording, click again to stop"
 )
+# ===========================================================================
+# FIXED SECTION: Replace lines ~240-290 in your voice.py
+# ===========================================================================
+
 with col_right:
     # transcript and response display
     transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
     response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
 
-    # sanitize from HTML tags
-    clean_transcript = re.sub(r"<.*?>", "", transcript)
-    clean_response = re.sub(r"<.*?>", "", response_text)
+    # FIXED: Properly escape HTML in the response text
+    # Use html.escape() to prevent HTML injection and display text correctly
+    import html
+    clean_transcript = html.escape(transcript)
+    clean_response = html.escape(response_text)
 
     # Build metadata HTML (safe insertion)
     meta = st.session_state.current_metadata or {}
     meta_html_parts = []
 
     if meta.get("key_points"):
-        key_points_html = "".join(f"<li>{p}</li>" for p in meta["key_points"])
+        # Escape each key point
+        key_points_escaped = [html.escape(str(p)) for p in meta["key_points"]]
+        key_points_html = "".join(f"<li>{p}</li>" for p in key_points_escaped)
         meta_html_parts.append(f"""
         <div class="metadata-card">
             <div class="metadata-title">💡 {t('voice_key_points', st.session_state.language)}</div>
@@ -483,7 +491,9 @@ with col_right:
         """)
 
     if meta.get("suggested_actions"):
-        suggested_html = "".join(f"<li>{a}</li>" for a in meta["suggested_actions"])
+        # Escape each suggested action
+        suggested_escaped = [html.escape(str(a)) for a in meta["suggested_actions"]]
+        suggested_html = "".join(f"<li>{a}</li>" for a in suggested_escaped)
         meta_html_parts.append(f"""
         <div class="metadata-card" style="border-left-color:#a78bfa;">
             <div class="metadata-title" style="color:#a78bfa;">✅ {t('voice_suggested_actions', st.session_state.language)}</div>
@@ -492,7 +502,9 @@ with col_right:
         """)
 
     if meta.get("verification_steps"):
-        verify_html = "".join(f"<li>{s}</li>" for s in meta["verification_steps"])
+        # Escape each verification step
+        verify_escaped = [html.escape(str(s)) for s in meta["verification_steps"]]
+        verify_html = "".join(f"<li>{s}</li>" for s in verify_escaped)
         meta_html_parts.append(f"""
         <div class="metadata-card" style="border-left-color:#ef4444;">
             <div class="metadata-title" style="color:#ef4444;">⚠️ {t('voice_verification_steps', st.session_state.language)}</div>
@@ -502,6 +514,7 @@ with col_right:
 
     meta_html = "".join(meta_html_parts)
 
+    # FIXED: Use escaped text in the HTML
     panel_html = f"""
     <div class="transcript-container">
       <div class="panel-header">
@@ -523,9 +536,7 @@ with col_right:
     </div>
     """
     st.markdown(panel_html, unsafe_allow_html=True)
-
-st.markdown("</div>", unsafe_allow_html=True)
-
+  
 # ---------------------------
 # Play pending audio (if any)
 # ---------------------------
