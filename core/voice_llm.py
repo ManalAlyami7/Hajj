@@ -386,8 +386,13 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         Provide a natural spoken summary that sounds like you're talking to the listener — not reading a list or a table.
 
         Guidelines:
-        - Always Acknowledge the user's question
-        - translate any word and any database column based on the user language
+        - Always acknowledge the user's question.
+        - Respond entirely in the same language as the user question (Arabic or English).
+        - Use the Arabic agency name (name_ar) if the user language is Arabic.
+        - Use the English agency name (name) if the user language is English.
+        - Translate all other database fields (location, rating, reviews, authorized status) into the user language.
+        - Keep ratings, reviews, and locations accurate.
+
         - Always respond in the same language as the user question.
         - Speak naturally, like a caring assistant giving helpful information.
         
