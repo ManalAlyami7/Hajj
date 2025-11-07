@@ -159,7 +159,8 @@ class VoiceGraphBuilder:
         """Generate greeting response"""
         greeting = self.voice_llm.generate_greeting(
             state["user_input"],
-            state["language"]
+            state["language"],
+            state["conversation_context"] if 'conversation_context' in state else ""
         )
         return {"greeting_text": greeting}
 
@@ -168,7 +169,19 @@ class VoiceGraphBuilder:
         """Node: Generate SQL query"""
         state['user_input'] = state.get('transcript', '')
         state['language'] = state.get('detected_language', 'en')
-        return self.graph._node_generate_sql(state)
+        context_string = state['conversation_context'] if 'conversation_context' in state else ""
+        sql_result = self.voice_llm.generate_sql(
+            state["user_input"],
+            state["language"],
+            context_string
+        )
+        return {
+            "sql_query": sql_result.get("sql_query"),
+            "sql_query_type": sql_result.get("query_type"),
+            "sql_filters": sql_result.get("filters"),
+            "sql_explanation": sql_result.get("explanation"),
+        }
+        
     
     def generate_ask_for_info_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         """Node: Generate ask for more info"""
@@ -184,7 +197,9 @@ class VoiceGraphBuilder:
         
         response = self.voice_llm.ask_for_more_info(
             state["user_input"],
-            state["language"]
+            state["language"],
+            state["conversation_context"] if 'conversation_context' in state else ""
+            
         )
         
         # FIXED: Update the state object directly instead of returning a new dict
@@ -217,7 +232,8 @@ class VoiceGraphBuilder:
             state["user_input"],
             state["language"],
             row_count,
-            rows
+            rows,
+            state["conversation_context"] if 'conversation_context' in state else ""
         )
         
         return {
@@ -230,7 +246,13 @@ class VoiceGraphBuilder:
         """Node: Handle general questions"""
         state['user_input'] = state.get('transcript', '')
         state['language'] = state.get('detected_language', 'en')
-        return self.graph._node_respond_general(state)
+        answer = self.voice_llm.generate_general_answer(
+            state["user_input"],
+            state["language"], 
+            state["conversation_context"] if 'conversation_context' in state else ""
+        )
+        return {"general_answer": answer}
+        
 
     def text_to_speech_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
         logger.info("Converting text response to audio")
