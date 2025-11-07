@@ -615,7 +615,7 @@ with col_right:
         <h3 class="panel-title">Spoken Request</h3>
         <div class="panel-badge">
             {'● ' + (t('voice_status_listening', st.session_state.language)
-            if st.session_state.is_processing
+            if st.session_state.is_speaking
             else t('voice_status_ready', st.session_state.language))}
         </div>
       </div>
