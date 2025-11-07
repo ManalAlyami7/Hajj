@@ -567,7 +567,7 @@ with col_left:
     )
 
     waveform_html = ""
-    if st.session_state.is_processing:
+    if st.session_state.is_speaking:
         waveform_html = """
         <div class="waveform">
             <div class="waveform-bar"></div>
@@ -610,8 +610,8 @@ with col_right:
     st.markdown(f"""
     <div class="transcript-container">
       <div class="panel-header">
-        <div class="panel-icon">🎤</div>
-        <h3 class="panel-title">Live Transcript</h3>
+        <div class="panel-icon">🗣️</div>
+        <h3 class="panel-title">Spoken Request</h3>
         <div class="panel-badge">
             {'● ' + (t('voice_status_listening', st.session_state.language)
             if st.session_state.is_processing
