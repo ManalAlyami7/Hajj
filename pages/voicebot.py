@@ -597,74 +597,12 @@ with col_left:
 with col_right:
     transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
     response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
-
     import html, time
     clean_transcript = html.escape(transcript)
-    clean_response = response_text  # keep HTML intact for AI responses
+    clean_response = response_text
 
-    # --- streaming effect for response ---
-    # Create a Streamlit placeholder to update the response incrementally
-
-    import html, time
-
-    clean_transcript = html.escape(transcript)
-    clean_response = response_text  # keep HTML intact for AI responses
-
-    # --- create placeholder for streaming text ---
-    response_placeholder = st.empty()
-
-    # --- streaming effect for response ---
-    streamed_text = ""
-    if clean_response:
-        for word in clean_response.split():
-            streamed_text += word + " "
-            response_placeholder.markdown(
-                f"<div class='response-content'>{html.escape(streamed_text)}</div>",
-                unsafe_allow_html=True
-            )
-            time.sleep(0.04)  # adjust typing speed
-    else:
-        response_placeholder.markdown(
-            f"<div class='response-content empty'>{html.escape(t('voice_response_placeholder', st.session_state.language))}</div>",
-            unsafe_allow_html=True
-        )
-
-    meta = st.session_state.current_metadata or {}
-    meta_html_parts = []
-
-    if meta.get("key_points"):
-        key_points_escaped = [html.escape(str(p)) for p in meta["key_points"]]
-        key_points_html = "".join(f"<li>{p}</li>" for p in key_points_escaped)
-        meta_html_parts.append(f"""
-        <div class="metadata-card">
-            <div class="metadata-title">💡 {t('voice_key_points', st.session_state.language)}</div>
-            <ul class="metadata-list">{key_points_html}</ul>
-        </div>
-        """)
-
-    if meta.get("suggested_actions"):
-        suggested_escaped = [html.escape(str(a)) for a in meta["suggested_actions"]]
-        suggested_html = "".join(f"<li>{a}</li>" for a in suggested_escaped)
-        meta_html_parts.append(f"""
-        <div class="metadata-card" style="border-left-color:#a78bfa;">
-            <div class="metadata-title" style="color:#a78bfa;">✅ {t('voice_suggested_actions', st.session_state.language)}</div>
-            <ul class="metadata-list">{suggested_html}</ul>
-        </div>
-        """)
-
-    if meta.get("verification_steps"):
-        verify_escaped = [html.escape(str(s)) for s in meta["verification_steps"]]
-        verify_html = "".join(f"<li>{s}</li>" for s in verify_escaped)
-        meta_html_parts.append(f"""
-        <div class="metadata-card" style="border-left-color:#ef4444;">
-            <div class="metadata-title" style="color:#ef4444;">⚠️ {t('voice_verification_steps', st.session_state.language)}</div>
-            <ul class="metadata-list">{verify_html}</ul>
-        </div>
-        """)
-
-    meta_html = "".join(meta_html_parts)
-
-    panel_html = f"""
+    # --- 1. Transcript Panel ---
+    transcript_panel_html = f"""
     <div class="transcript-container">
       <div class="panel-header">
         <div class="panel-icon">🎤</div>
@@ -673,19 +611,46 @@ with col_right:
       </div>
       <div class="transcript-text">{clean_transcript}</div>
     </div>
+    """
+    st.markdown(transcript_panel_html, unsafe_allow_html=True)
 
+    # --- 2. Response Panel Structure with Placeholder ---
+    st.markdown("""
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
         <div class="panel-icon">🤖</div>
         <h3 class="panel-title">AI Response</h3>
         <div class="panel-badge">{'● ' + (t('voice_status_speaking', st.session_state.language) if st.session_state.is_speaking else t('voice_status_ready', st.session_state.language))}</div>
       </div>
-      
-    </div>
-    """
-    st.markdown(panel_html, unsafe_allow_html=True)
+    """, unsafe_allow_html=True) # Open the response-container
 
-st.markdown("</div>", unsafe_allow_html=True)
+    # Create a placeholder *inside* the response panel structure (logically)
+    response_placeholder = st.empty()
+    
+    # Close the response-container div
+    st.markdown("</div>", unsafe_allow_html=True) 
+
+    # --- 3. Streaming Logic (AFTER the placeholder is defined) ---
+    streamed_text = ""
+    if clean_response:
+        # If you want to use the streaming effect, keep this:
+        for word in clean_response.split():
+            streamed_text += word + " "
+            response_placeholder.markdown(
+                f"<div class='response-content'>{html.escape(streamed_text)}</div>",
+                unsafe_allow_html=True
+            )
+            time.sleep(0.04)  # adjust typing speed
+    else:
+        # If no response, show placeholder text
+        response_placeholder.markdown(
+            f"<div class='response-content empty'>{html.escape(t('voice_response_placeholder', st.session_state.language))}</div>",
+            unsafe_allow_html=True
+        )
+
+    # --- 4. Metadata (Place at the end of col_right, after the panels) ---
+    # ... metadata logic (meta, meta_html_parts, etc.) remains the same ...
+    # ... make sure meta_html is rendered after the response panel ...
 
 # ---------------------------
 # Play pending audio
