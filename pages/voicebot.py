@@ -556,15 +556,15 @@ def _hash_bytes(b):
 # ---------------------------
 
 # Return button
+# Return button
 st.markdown(f"""
-<div class="return-button-container">
-  <a href="/" class="return-button" target="_self">
-    <span class="icon">{arrow_icon}</span>
-    <span>{t('voice_return_button', st.session_state.language)}</span>
+<div class="return-button-container" style="pointer-events: auto;">
+  <a href="/" class="return-button" target="_self" style="pointer-events: auto; text-decoration: none;">
+    <span class="icon" style="pointer-events: none;">{arrow_icon}</span>
+    <span style="pointer-events: none;">{t('voice_return_button', st.session_state.language)}</span>
   </a>
 </div>
 """, unsafe_allow_html=True)
-
 # Compact top bar
 st.markdown('<div style="margin-bottom: 1rem;"></div>', unsafe_allow_html=True)
 
