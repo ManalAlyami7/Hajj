@@ -138,13 +138,13 @@ class DatabaseManager:
                     city, country, email, contact_Info, rating_reviews, is_authorized,
                     google_maps_link, link_valid
                 FROM agencies
-                WHERE LOWER(hajj_company_en) LIKE :search
-                   OR LOWER(hajj_company_ar) LIKE :search
-                   OR LOWER(formatted_address) LIKE :search
-                   OR LOWER(city) LIKE :search
+                WHERE LOWER(hajj_company_en) = :search
+                   OR LOWER(hajj_company_ar) = :search
+                   OR LOWER(formatted_address) = :search
+                   OR LOWER(city) = :search
                 LIMIT 50
                 """,
-                {"search": f"%{q}%"}
+                {"search": q}
             )
         
         # Authorized agencies
