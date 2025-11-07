@@ -437,7 +437,18 @@ st.markdown(f"""
   font-weight: bold;
   margin-{'left' if is_arabic else 'right'}: 0.5rem;
 }}
-
+/* Clear Memory Button */ 
+.clear-memory-btn {{ position: fixed;
+ top: 115px;
+ {'left' if is_arabic else 'right'}: 15px;
+   padding: 0.4rem 0.8rem; 
+   background: rgba(239, 68, 68, 0.15); 
+   backdrop-filter: blur(20px); border: 1px solid rgba(239, 68, 68, 0.3);
+     border-radius: 0.8rem; color: #ef4444;
+       font-weight: 600; font-size: 0.7rem; z-index: 1000;
+         cursor: pointer; transition: all 0.3s ease; }} 
+         .clear-memory-btn:hover {{ background: rgba(239, 68, 68, 0.25); 
+         border-color: rgba(239, 68, 68, 0.5); }}
 .status-indicator{{
   position: fixed;
   top: 15px;
@@ -535,26 +546,7 @@ with col_mem:
 
 with col_clear:
     st.markdown("""
-    <style>
-    .clear-btn {
-        width: 100%;
-        padding: 0.5rem 1rem;
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        color: white;
-        border: none;
-        border-radius: 12px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-align: center;
-        display: block;
-    }
-    .clear-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-    }
-    </style>
-    <button class="clear-btn" onclick="document.querySelector('[data-testid=\\'stButton\\'] button').click()">
+    <button class="clear-memory-btn" onclick="document.querySelector('[data-testid=\\'stButton\\'] button').click()">
         🗑️ Clear Memory
     </button>
     """, unsafe_allow_html=True)
