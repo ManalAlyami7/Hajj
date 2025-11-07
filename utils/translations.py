@@ -88,7 +88,7 @@ TRANSLATIONS = {
         # Voice Bot Page (NEW)
         "voice_page_title": "Hajj Voice Assistant",
         "voice_main_title": "Hajj Voice Assistant",
-        "voice_subtitle": "Designed to verify authorized Hajj agencies and protect pilgrims from fraud.",
+        "voice_subtitle": "Designed to verify authorized Hajj agencies and protect pilgrims from fraud",
         "voice_return_button": "Return to Chatbot",
         "voice_recording": "Recording...",
         "voice_press_to_speak": "Press to Speak",
@@ -198,7 +198,7 @@ TRANSLATIONS = {
         # Voice Bot Page (NEW)
         "voice_page_title": "مساعد الحج الصوتي",
         "voice_main_title": "مساعد الحج الصوتي",
-        "voice_subtitle": "صُمم لمساعدة الحجاج على التحقق من الوكالات والبقاء في أمان طوال رحلتهم إلى الحج.",
+        "voice_subtitle": "صُمم لمساعدة الحجاج على التحقق من الوكالات والبقاء في أمان طوال رحلتهم إلى الحج",
 
         "voice_return_button": "العودة للمحادثة",
         "voice_recording": "جاري التسجيل...",
