@@ -454,13 +454,7 @@ st.markdown(f"""
 audio {{display: none !important;visibility: hidden !important;height: 0 !important;
   width: 0 !important;overflow: hidden !important;
 }}
-.memory-badge, .clear-memory-btn, .status-indicator {{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9rem;
-    margin-top: 8px;
-}}
+
 button:hover {{
     opacity: 0.9;
 }}
@@ -516,56 +510,42 @@ st.markdown(f"""
 # Compact top bar
 st.markdown('<div style="margin-bottom: 1rem;"></div>', unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns([1, 1, 1])
+# --- Memory, Clear Button & Status beside each other ---
+memory_summary = memory.get_memory_summary()
 
-# Memory Badge
-with col1:
-    memory_summary = memory.get_memory_summary()
-    st.markdown(f"""
-    <div style="background: linear-gradient(135deg, rgba(167, 139, 250, 0.2) 0%, rgba(139, 92, 246, 0.15) 100%);
-                padding: 0.7rem 1rem; border-radius: 12px;
-                border: 2px solid rgba(167, 139, 250, 0.3);
-                color: #a78bfa; font-weight: 700; font-size: 0.8rem;
-                text-align: center; box-shadow: 0 4px 15px rgba(167, 139, 250, 0.2);">
-        🧠 {memory_summary['total_messages']} | ⏱️ {memory_summary['session_duration']}
-    </div>
-    """, unsafe_allow_html=True)
+status_class = (
+    "listening" if st.session_state.is_recording
+    else "speaking" if st.session_state.is_speaking
+    else ""
+)
+status_text = st.session_state.status or "Ready"
 
-# Clear Button
-with col2:
-    if st.button("🗑️ Clear", key="clear_memory", use_container_width=True, 
-                 help="Clear conversation memory"):
-        memory.clear_memory()
-        st.session_state.voice_messages = []
-        st.rerun()
+st.markdown(f"""
+<div class="top-controls" style="
+    position: fixed;
+    top: 15px;
+    {'left' if is_arabic else 'right'}: 15px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 1500;
+    direction: {'rtl' if is_arabic else 'ltr'};
+">
+  <div class="memory-badge">
+    🧠 {memory_summary['total_messages']} | ⏱️ {memory_summary['session_duration']}
+  </div>
 
-# Status
-with col3:
-    status_dot_class = (
-        "listening" if st.session_state.is_recording
-        else "processing" if st.session_state.is_processing
-        else "speaking" if st.session_state.is_speaking
-        else ""
-    )
-    
-    status_emoji = {
-        "listening": "🔴",
-        "processing": "⚙️",
-        "speaking": "🔊",
-        "": "✅"
-    }
-    emoji = status_emoji.get(status_dot_class, "✅")
-    
-    st.markdown(f"""
-    <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.85) 100%);
-                padding: 0.7rem 1rem; border-radius: 12px;
-                border: 2px solid rgba(96, 165, 250, 0.3);
-                color: white; font-weight: 700; font-size: 0.8rem;
-                text-align: center; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);">
-        {emoji} {st.session_state.status}
-    </div>
-    """, unsafe_allow_html=True)
-# Header
+  <div class="clear-memory-btn" onclick="fetch('?clear_memory=true', {{method:'POST'}})">
+    🗑️ مسح الذاكرة
+  </div>
+
+  <div class="status-indicator">
+    <div class="status-dot {status_class}"></div>
+    {status_text}
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
 st.markdown(f"""
 <div class="voice-header">
   <div>🕋<span class="voice-title"> {t('voice_main_title', st.session_state.language)}</span> <span style="font-size:0.7em;color:#60a5fa;">WITH MEMORY</span></div>
@@ -669,8 +649,7 @@ with col_right:
 # ---------------------------
 if st.session_state.get('pending_audio'):
     logger.info("Playing pending audio response...")
-    st.session_state.status = t('voice_status_speaking', st.session_state.language)
-
+    
     try:
         st.markdown("<div style='display:none'>", unsafe_allow_html=True)
         st.audio(st.session_state.pending_audio, format="audio/mp3", autoplay=True)
