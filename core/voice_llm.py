@@ -384,7 +384,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         """
         if row_count == 0:
             return {
-                "summary": "No results found. Try rephrasing your question or broadening the search." if language == "English" else "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال.",
+                "summary": "No results found. Try rephrasing your question or broadening the search." if language == "english" else "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال.",
             }
 
         
