@@ -454,6 +454,16 @@ st.markdown(f"""
 audio {{display: none !important;visibility: hidden !important;height: 0 !important;
   width: 0 !important;overflow: hidden !important;
 }}
+.memory-badge, .clear-memory-btn, .status-indicator {{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    margin-top: 8px;
+}}
+button:hover {{
+    opacity: 0.9;
+}}
 .audio-recorder-container {{display: flex;justify-content: center;align-items: center;margin: 1.5rem 0;}}
 </style>
 """, unsafe_allow_html=True)
@@ -506,19 +516,19 @@ st.markdown(f"""
 
 # Memory badge
 memory_summary = memory.get_memory_summary()
-st.markdown(f"""
-<div class="memory-badge">
-  🧠 {memory_summary['total_messages']} messages | ⏱️ {memory_summary['session_duration']}
-</div>
-""", unsafe_allow_html=True)
+# st.markdown(f"""
+# <div class="memory-badge">
+#   🧠 {memory_summary['total_messages']} messages | ⏱️ {memory_summary['session_duration']}
+# </div>
+# """, unsafe_allow_html=True)
 
-# Clear memory button
-if st.markdown("""
-<div class="clear-memory-btn" onclick="document.getElementById('clear-memory-trigger').click()">
-  🗑️ Clear Memory
-</div>
-""", unsafe_allow_html=True):
-    pass
+# # Clear memory button
+# if st.markdown("""
+# <div class="clear-memory-btn" onclick="document.getElementById('clear-memory-trigger').click()">
+#   🗑️ Clear Memory
+# </div>
+# """, unsafe_allow_html=True):
+#     pass
 
 # Hidden button for clear memory
 if st.button("", key="clear-memory-trigger", help="Clear conversation memory"):
@@ -541,12 +551,61 @@ status_dot_class = (
     else "speaking" if st.session_state.is_speaking
     else ""
 )
-st.markdown(f"""
-<div class="status-indicator">
-  <div class="status-dot {status_dot_class}"></div>
-  <span>{st.session_state.status}</span>
-</div>
-""", unsafe_allow_html=True)
+# st.markdown(f"""
+# <div class="status-indicator">
+#   <div class="status-dot {status_dot_class}"></div>
+#   <span>{st.session_state.status}</span>
+# </div>
+# """, unsafe_allow_html=True)
+# Create top header section with memory badge, clear memory button, and status indicator
+col1, col2, col3 = st.columns([1, 1, 1.5])
+
+with col1:
+    st.markdown(
+        """
+        <div class="memory-badge">
+            🧠 <b>Memory Active</b>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with col2:
+    st.markdown(
+        """
+        <div class="clear-memory-btn">
+            <button style="
+                background-color: #dc2626;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 6px 14px;
+                cursor: pointer;
+                font-weight: 600;
+            ">🧹 Clear Memory</button>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with col3:
+    st.markdown(
+        """
+        <div class="status-indicator" style="text-align:right;">
+            <span style="
+                background-color: #22c55e;
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                display: inline-block;
+                margin-right: 6px;
+            "></span> 
+            <b>Status:</b> Ready
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 
 # ---------------------------
 # Main UI layout
