@@ -591,7 +591,7 @@ with col_left:
 
     # Wrap everything in a flex column container
     st.markdown(f"""
-    <div class="voice-left" style="display:flex; flex-direction:column; justify-content:flex-end; align-items:center; position:relative; max-height:400px;">
+    <div class="voice-left" style="display:flex; flex-direction:column; justify-content:flex-end; align-items:center; position:relative; max-height:300px;">
       <div style="position:relative;">
         <div class="voice-ring voice-ring-1"></div>
         <div class="voice-ring voice-ring-2"></div>
