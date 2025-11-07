@@ -559,14 +559,14 @@ with col_mem:
     """, unsafe_allow_html=True)
 
 with col_clear:
+    # Visible custom button triggering the hidden Streamlit button
     st.markdown(f"""
     <button class="clear-memory-btn" 
-        onclick="document.querySelector('[data-testid="stButton-clear_memory_btn"] button').click()">
+        onclick="document.querySelector('[data-testid=\\'stButton-clear_memory_btn\\'] button').click()">
         🗑️ Clear Memory
     </button>
     """, unsafe_allow_html=True)
 
-    
     # Hidden actual button
     if st.button("", key="clear_memory_btn", use_container_width=False):
         st.session_state.clear_memory_clicked = True
