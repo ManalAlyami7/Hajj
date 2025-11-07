@@ -292,20 +292,12 @@ st.markdown(f"""
   padding: 0 1rem;
 }}
 
-..voice-left {{
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end; /* bottom align content */
-  background: rgba(255,255,255,0.03);
-  border-radius: 2rem;
-  padding: 1.5rem;
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.08);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-  overflow: hidden;
+.voice-left{{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(255,255,255,0.03);border-radius:2rem;padding:1.5rem;
+  backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);
+  box-shadow:0 8px 32px rgba(0,0,0,0.25);overflow:hidden;
 }}
-
 .voice-avatar{{width:180px;height:180px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;font-size:90px;
   background:linear-gradient(135deg,#60a5fa 0%,#a78bfa 100%);
@@ -327,15 +319,7 @@ st.markdown(f"""
 @keyframes pulse-speaking{{0%,100%{{transform:scale(1);}}50%{{transform:scale(1.15);}}}}
 @keyframes expand{{0%{{transform:translate(-50%,-50%) scale(0.8);opacity:0.8;}}100%{{transform:translate(-50%,-50%) scale(1.5);opacity:0;}}}}
 .record-label{{margin-top:1rem;color:white;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;}}
-.voice-right {{
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  height: 100%; /* fill height of container */
-  min-height: 0;
-  overflow: hidden;
-  justify-content: flex-end; /* align content to bottom */
-}}
+.voice-right{{display:flex;flex-direction:column;gap:1rem;height:100%;min-height:0;overflow:hidden;}}
 
 /* LIGHTER, CLEARER PANELS */
 .transcript-container,.response-container{{
@@ -611,8 +595,9 @@ with col_left:
 
     recording_label = f"🔴 {t('voice_recording', st.session_state.language)}" if st.session_state.is_recording else f"🎤 {t('voice_press_to_speak', st.session_state.language)}"
 
+    # Wrap everything in a flex column container
     st.markdown(f"""
-    <div class="voice-left" style="position:relative;">
+    <div class="voice-left" style="display:flex; flex-direction:column; justify-content:flex-end; align-items:center; position:relative; min-height:400px;">
       <div style="position:relative;">
         <div class="voice-ring voice-ring-1"></div>
         <div class="voice-ring voice-ring-2"></div>
@@ -621,14 +606,19 @@ with col_left:
       </div>
       {waveform_html}
       <div class="record-label">{recording_label}</div>
+      <div style="margin-top:1rem;">
+        <!-- placeholder for audio recorder -->
+      </div>
     </div>
     """, unsafe_allow_html=True)
 
+    # Render audio_input right after inside the same column
     audio_bytes = st.audio_input(
         label="",
         key="audio_recorder",
         help="Click to start recording, click again to stop"
     )
+
 with col_right:
     transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
     response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
