@@ -198,7 +198,7 @@ st.markdown(f"""
 .memory-badge {{
   position: fixed;
   top: 15px;
-  {'left' if is_arabic else 'right'}: 150px;
+  {'left' if is_arabic else 'right'}: 155px;
   padding: 0.6rem 1.25rem;
   background: rgba(167, 139, 250, 0.15);
   backdrop-filter: blur(20px);
@@ -420,7 +420,7 @@ st.markdown(f"""
 .status-indicator{{
   position: fixed;
   top: 15px;
-  {'left' if is_arabic else 'right'}: 160px;
+  {'left' if is_arabic else 'right'}: 250px;
   padding: 0.6rem 1.25rem;
   background: rgba(0, 0, 0, 0.75);
   border-radius: 2rem;
