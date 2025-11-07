@@ -594,7 +594,6 @@ with col_left:
         <div class="voice-ring voice-ring-3"></div>
         <div class="voice-avatar {avatar_class}">🕋</div>
       </div>
-      {waveform_html}
       <div class="record-label">{recording_label}</div>
     </div>
     """
