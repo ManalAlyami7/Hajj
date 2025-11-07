@@ -207,7 +207,7 @@ TRANSLATIONS = {
         "voice_status_processing": "جاري المعالجة...",
         "voice_status_speaking": "جاري التحدث...",
         "voice_status_completed": "اكتملت المعالجة",
-        "voice_speaking": "المساعد يتحدث"
+        "voice_speaking": "المساعد يتحدث",
         "voice_status_analyzing": "جاري التحليل...",
         "voice_status_error": "خطأ",
         "voice_status_listening": "جاري الاستماع",
