@@ -203,7 +203,7 @@ st.markdown(f"""
   background: rgba(167, 139, 250, 0.15);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(167, 139, 250, 0.3);
-  border-radius: 1rem;
+  border-radius: 2rem;
   color: #a78bfa;
   font-weight: 600;
   font-size: 0.75rem;
@@ -217,12 +217,12 @@ st.markdown(f"""
 .clear-memory-btn {{
   position: fixed;
   top: 15px;
-  {'left' if is_arabic else 'right'}: 130px;
+  {'left' if is_arabic else 'right'}: 120px;
   padding: 0.6rem 1.25rem;
   background: rgba(239, 68, 68, 0.15);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 0.8rem;
+  border-radius: 2rem;
   color: #ef4444;
   font-weight: 600;
   font-size: 0.7rem;
