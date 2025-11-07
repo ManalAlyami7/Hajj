@@ -34,7 +34,6 @@ An **AI-powered multilingual platform** combining a **data chatbot** and a **voi
    Create a `.streamlit/secrets.toml` file:
    ```toml
    OPENAI_API_KEY = "your-openai-api-key"
-   GOOGLE_MAPS_API_KEY = "your-google-maps-api-key"  # optional
    ```
 
 3. **Add your database**
@@ -103,13 +102,31 @@ the app can:
 ## 📦 Project Structure
 
 ```
-├── app.py                    # Main chatbot (text-based)
-├── voicebot.py              # Voice-enabled assistant
-├── hajj_companies.db         # SQLite database
-├── requirements.txt          # Dependencies
-├── .streamlit/
-│   └── secrets.toml          # API keys
-└── README.md                 # Documentation
+|
+├── .streamlit
+│   └── secrets.toml
+├── README.md
+├── app.py
+├── chat_history.json
+├── core
+│   ├── database.py
+│   ├── graph.py
+│   ├── llm.py
+│   ├── voice_graph.py
+│   ├── voice_llm.py
+│   ├── voice_models.py
+│   └── voice_processor.py
+├── pages
+│   └── voicebot.py
+├── ui
+│   ├── chat.py
+│   ├── sidebar.py
+│   └── voice_interface.py
+├── utils
+│   ├── state.py
+│   ├── translations.py
+│   └── validators.py
+
 ```
 
 ---
