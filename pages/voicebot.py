@@ -560,8 +560,7 @@ st.markdown('<div class="voice-container">', unsafe_allow_html=True)
 col_left, col_right = st.columns(2)
 with col_left:
     avatar_class = (
-        "listening" if st.session_state.is_recording
-        else "speaking" if st.session_state.is_speaking
+        "speaking" if st.session_state.is_speaking
         else "processing" if st.session_state.is_processing
         else ""
     )
@@ -581,8 +580,7 @@ with col_left:
     
     # 2. Define the user-facing status label
     recording_label = (
-        f"🔴 {t('voice_recording', st.session_state.language)}" if st.session_state.is_recording
-        else f"🔊 {t('voice_speaking', st.session_state.language)}" if st.session_state.is_speaking
+        f"🔊 {t('voice_speaking', st.session_state.language)}" if st.session_state.is_speaking
         else f"🎤 {t('voice_press_to_speak', st.session_state.language)}"
     )
 
