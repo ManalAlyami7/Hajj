@@ -420,7 +420,7 @@ st.markdown(f"""
 .status-indicator{{
   position: fixed;
   top: 15px;
-  {'left' if is_arabic else 'right'}: 340px;
+  {'left' if is_arabic else 'right'}: 355px;
   padding: 0.6rem 1.25rem;
   background: rgba(0, 0, 0, 0.75);
   border-radius: 2rem;
@@ -532,7 +532,7 @@ st.markdown(f"""
     direction: {'rtl' if is_arabic else 'ltr'};
 ">
   <div class="memory-badge">
-    🧠 {memory_summary['total_messages']} messages | ⏱️ {memory_summary['session_duration']}
+    🧠 {memory_summary['total_messages']} messages  | ⏱️ {memory_summary['session_duration']}
   </div>
 
   <div class="clear-memory-btn" onclick="fetch('?clear_memory=true', {{method:'POST'}})">
