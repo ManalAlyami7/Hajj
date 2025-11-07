@@ -391,36 +391,54 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         data_preview = json.dumps(sample_rows[:50], ensure_ascii=False)
 
         summary_prompt = f"""
-You are a multilingual fraud-prevention and travel assistant for Hajj pilgrims. 
-Your task is to summarize the database query results in a warm, natural, and voice-friendly way — suitable for text-to-speech playback.
+        You are a multilingual fraud-prevention and travel assistant for Hajj pilgrims. 
+        Your task is to summarize the database query results in a warm, natural, and voice-friendly way.
 
-User question: {user_input}
-Language: {language}
-Data: {data_preview}
+        User question: {user_input}
+        Language: {language}
+        Data: {data_preview}
 
-🎯 GOAL:
-Provide a natural spoken summary that sounds like you're talking to the listener — not reading a list or a table.
+        🎯 GOAL:
+        Provide a natural spoken summary that sounds like you're talking to the listener — not reading a list or a table.
 
-Guidelines:
-- Always respond in the same language as the user question.
-- Speak naturally, like a caring assistant giving helpful information.
-- Avoid bullet points, numbering, or reading URLs or links.
-- Mention only the most important details such as agency name, city, country, whether it’s authorized, and rating if available.
-- Summarize multiple agencies conversationally, e.g.:
-  - “I found several authorized agencies in Makkah. One of them is Al Huda Hajj Company, based in Saudi Arabia. It’s an authorized agency with good reviews.”
-  - “Another trusted one is Royal City Hajj Agency located in Riyadh.”
-- Keep your tone friendly, respectful, and professional.
-- Include helpful connecting phrases like “In general”, “You might want to know that”, or “Most of them are authorized”.
-- Do not say column names or data labels — integrate information naturally.
-- Never output or read raw SQL, brackets, quotes, or database field names.
-- End with a gentle offer to assist further, such as:
-- When you talk about phone numbers or rating or reviews, do it with numbers instead of characters, e.g. "4.5 stars" instead of "four point five stars".
-  - “Would you like me to check more agencies for you?”
-  - “Would you like to hear their contact details?”
-- Use emojis sparingly to enhance friendliness. 
+        Guidelines:
+        - Always respond in the same language as the user question.
+        - Speak naturally, like a caring assistant giving helpful information.
+        - Avoid bullet points, numbering, or reading URLs or links.
+        - Mention only the most important details such as agency name, city, country, whether it's authorized, and rating if available.
+        - Summarize multiple agencies conversationally, e.g.:
+        - "I found several authorized agencies in Makkah. One of them is Al Huda Hajj Company, based in Saudi Arabia. It's an authorized agency with good reviews."
+        - "Another trusted one is Royal City Hajj Agency located in Riyadh."
+        - Keep your tone friendly, respectful, and professional.
+        - Include helpful connecting phrases like "In general", "You might want to know that", or "Most of them are authorized".
+        - Do not say column names or data labels — integrate information naturally.
+        - Never output or read raw SQL, brackets, quotes, or database field names.
+        - End with a gentle offer to assist further, such as:
+        - "Would you like me to check more agencies for you?"
+        - "Would you like to hear their contact details?"
+        - Use emojis sparingly to enhance friendliness.
 
-The response should sound fluid, natural, and ready for text-to-speech — like a human guide speaking to the user.
-"""
+        📞 CRITICAL - NUMBER FORMATTING RULES:
+        Use NUMERIC DIGITS for all numbers, not spelled-out words:
+        ✅ CORRECT FORMAT:
+        - Ratings: "3.8 stars" or "4.6 ⭐" (NOT "three point eight stars")
+        - Reviews: "217 reviews" (NOT "two hundred seventeen reviews")
+        - Phone numbers: "+966 12 345 6789" (NOT "plus nine six six twelve...")
+        - Counts: "5 agencies" (NOT "five agencies")
+
+        ❌ NEVER spell out numbers like:
+        - "three point eight stars" → Use "3.8 stars"
+        - "two hundred seventeen reviews" → Use "217 reviews"
+        - "plus nine six six" → Use "+966"
+        - "four hundred seventy-one" → Use "471"
+
+        EXAMPLES OF CORRECT OUTPUT:
+        "Al Haramain Travel is located in Amman, Jordan. They have a rating of 3.8 stars based on 217 reviews."
+        "PT. Al Haramain Jaya Wisata in Jakarta, Indonesia has a rating of 4.6 stars from 39 reviews."
+        "You can contact them at +966 12 533 3399."
+
+        The response should sound fluid and natural, with ALL numbers written as digits for clear display and proper TTS pronunciation.
+        """
         try:
             response = self.client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
