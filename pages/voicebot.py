@@ -299,7 +299,7 @@ st.markdown(f"""
 .return-button:hover .icon {{
   transform: {icon_transform};
 }}
-.voice-header{{text-align:center;padding:2rem 0;margin-bottom:0.5rem;}}
+.voice-header{{text-align:center;padding:0.75rem 0;margin-bottom:2.5rem;}}
 .voice-title{{
   font-size:2.2rem;font-weight:800;letter-spacing:2px;
   background:linear-gradient(135deg,#60a5fa 0%,#a78bfa 100%);
