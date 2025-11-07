@@ -283,15 +283,10 @@ st.markdown(f"""
   margin-bottom:0.25rem;
 }}
 .voice-subtitle{{color:rgba(255,255,255,0.85);font-size:0.95rem;}}
-.voice-container {{
-  display: flex;
-  align-items: flex-end; /* Align columns to bottom */
-  gap: 1.5rem;
-  flex: 1;
-  min-height: 0;
-  padding: 0 1rem;
+.voice-container{{
+  display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;
+  flex:1;min-height:0;padding:0 1rem;
 }}
-
 .voice-left{{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:rgba(255,255,255,0.03);border-radius:2rem;padding:1.5rem;
@@ -572,7 +567,6 @@ if st.query_params.get("clear_memory") == "true":
 # ---------------------------
 st.markdown('<div class="voice-container">', unsafe_allow_html=True)
 col_left, col_right = st.columns(2)
-
 with col_left:
     avatar_class = (
         "listening" if st.session_state.is_recording
