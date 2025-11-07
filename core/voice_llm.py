@@ -120,7 +120,7 @@ class LLMManager:
         Build chat context from recent messages
         Excludes messages with dataframes
         """
-        if "chat_memory" not in st.session_state:
+        if "voice_memory" not in st.session_state:
             return []
         
         context = []
@@ -136,22 +136,13 @@ class LLMManager:
         
         return context
     
-    def detect_intent(self, user_input: str, language: str) -> Dict:
+    def detect_intent(self, user_input: str, language: str, context_string=None) -> Dict:
         """
         Detect user intent using LLM with structured output
         Returns: Dict with intent, confidence, and reasoning
 
         """
-        chat_context = self.build_chat_context()
-    
-        # Format context for better readability
-        if chat_context and len(chat_context) > 0:
-            # Get last 5-6 messages for context (not too much to avoid token overflow)
-            recent_context = chat_context[-6:] if len(chat_context) > 6 else chat_context
-            context_string = '\n'.join([f"{msg['role'].title()}: {msg['content']}" for msg in recent_context])
-        else:
-            context_string = "No previous conversation"
-        logger.info(f"Chat context for intent detection:\n{len(self.build_chat_context())} characters")
+        
         
         intent_prompt = f"""
 You are a fraud-prevention assistant for Hajj pilgrims. Analyze the conversation history and current message to classify the user's intent.
@@ -232,9 +223,7 @@ and explain your reasoning.
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You classify user intents for a Hajj agency verification system."},
-                    {"role": "user", "content": intent_prompt},
-                    *self.build_chat_context()
-                ],
+                    {"role": "user", "content": intent_prompt}],
                 response_format=IntentClassification,
                 temperature=0
             )
