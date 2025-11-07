@@ -283,16 +283,29 @@ st.markdown(f"""
   margin-bottom:0.25rem;
 }}
 .voice-subtitle{{color:rgba(255,255,255,0.85);font-size:0.95rem;}}
-.voice-container{{
-  display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;
-  flex:1;min-height:0;padding:0 1rem;
+.voice-container {{
+  display: flex;
+  align-items: flex-end; /* Align columns to bottom */
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  padding: 0 1rem;
 }}
-.voice-left{{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(255,255,255,0.03);border-radius:2rem;padding:1.5rem;
-  backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);
-  box-shadow:0 8px 32px rgba(0,0,0,0.25);overflow:hidden;
+
+..voice-left {{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end; /* bottom align content */
+  background: rgba(255,255,255,0.03);
+  border-radius: 2rem;
+  padding: 1.5rem;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  overflow: hidden;
 }}
+
 .voice-avatar{{width:180px;height:180px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;font-size:90px;
   background:linear-gradient(135deg,#60a5fa 0%,#a78bfa 100%);
@@ -314,7 +327,15 @@ st.markdown(f"""
 @keyframes pulse-speaking{{0%,100%{{transform:scale(1);}}50%{{transform:scale(1.15);}}}}
 @keyframes expand{{0%{{transform:translate(-50%,-50%) scale(0.8);opacity:0.8;}}100%{{transform:translate(-50%,-50%) scale(1.5);opacity:0;}}}}
 .record-label{{margin-top:1rem;color:white;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;}}
-.voice-right{{display:flex;flex-direction:column;gap:1rem;height:100%;min-height:0;overflow:hidden;}}
+.voice-right {{
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%; /* fill height of container */
+  min-height: 0;
+  overflow: hidden;
+  justify-content: flex-end; /* align content to bottom */
+}}
 
 /* LIGHTER, CLEARER PANELS */
 .transcript-container,.response-container{{
@@ -565,11 +586,8 @@ if st.query_params.get("clear_memory") == "true":
 # ---------------------------
 # Main UI layout
 # ---------------------------
-st.markdown("""
-<div class="voice-container" style="display: flex; align-items: flex-end; gap: 2rem;">
-""", unsafe_allow_html=True)
-
-col_left, col_right = st.columns([1, 1])  # optional: adjust widths
+st.markdown('<div class="voice-container">', unsafe_allow_html=True)
+col_left, col_right = st.columns(2)
 
 with col_left:
     avatar_class = (
@@ -611,15 +629,15 @@ with col_left:
         key="audio_recorder",
         help="Click to start recording, click again to stop"
     )
-
 with col_right:
     transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
     response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
 
-    import html
+    import html, time
     clean_transcript = html.escape(transcript)
     clean_response = response_text
 
+    # ✅ Transcript panel first
     st.markdown(f"""
     <div class="transcript-container">
       <div class="panel-header">
@@ -635,6 +653,7 @@ with col_right:
     </div>
     """, unsafe_allow_html=True)
 
+    # ✅ Response container (CLOSED properly)
     st.markdown(f"""
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
@@ -649,8 +668,7 @@ with col_right:
       <div class='response-content'>{html.escape(clean_response)}</div> 
     </div>
     """, unsafe_allow_html=True)
-
-st.markdown("</div>", unsafe_allow_html=True)
+# ----------------------
 
     # ✅ Now close the container
 
