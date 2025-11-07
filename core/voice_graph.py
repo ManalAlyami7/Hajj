@@ -88,6 +88,7 @@ class VoiceAssistantState(TypedDict):
 
     # Context
     messages_history: Annotated[list, operator.add]
+    conversation_context: str
 
 
 # -----------------------------
@@ -138,8 +139,9 @@ class VoiceGraphBuilder:
         """Detect user intent with structured output"""
         user_input = state["user_input"]
         language = state["language"]
+        context_string = state['conversation_context'] if 'conversation_context' in state else ""
         
-        intent_result = self.voice_llm.detect_intent(user_input, language)
+        intent_result = self.voice_llm.detect_intent(user_input, language, context_string)
         
         return {
             "intent": intent_result["intent"],
