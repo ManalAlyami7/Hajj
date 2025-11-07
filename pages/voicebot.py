@@ -722,7 +722,10 @@ if st.session_state.get('pending_audio'):
     
     st.session_state.pending_audio = None
     st.session_state.is_speaking = False
-
+    st.session_state.status = t('voice_status_completed', st.session_state.language)
+    
+    # Optional: Reset to "Ready" after a brief delay
+    time.sleep(2)  # Show "Completed" for 2 seconds
     st.session_state.status = t('voice_status_ready', st.session_state.language)
 
 # ---------------------------
