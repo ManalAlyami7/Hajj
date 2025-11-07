@@ -210,11 +210,11 @@ class DatabaseManager:
            # ✅ نحفظ اسم آخر شركة تم العثور عليها
            row = df.iloc[0]
             # حفظ اسم الشركة في الذاكرة (عربي إن وجد، وإلا إنجليزي)
-            st.session_state["last_company_name"] = (
+           st.session_state["last_company_name"] = (
                 row["hajj_company_ar"].strip() if pd.notna(row["hajj_company_ar"]) and row["hajj_company_ar"].strip()
                 else row["hajj_company_en"].strip()
             )
-            return df  # ✅ وجدنا نتيجة بالاسم الكامل مثل "وكالة الحرمين"
+           return df  # ✅ وجدنا نتيجة بالاسم الكامل مثل "وكالة الحرمين"
     
         # --- 2️⃣ بحث دقيق بعد تنظيف الاسم ---
         if cleaned_term and cleaned_term != original_term:
@@ -222,11 +222,11 @@ class DatabaseManager:
             if df is not None and not df.empty:
                row = df.iloc[0]
                # حفظ اسم الشركة في الذاكرة (عربي إن وجد، وإلا إنجليزي)
-                st.session_state["last_company_name"] = (
+               st.session_state["last_company_name"] = (
                     row["hajj_company_ar"].strip() if pd.notna(row["hajj_company_ar"]) and row["hajj_company_ar"].strip()
                     else row["hajj_company_en"].strip()
                 )
-                return df  # ✅ وجدنا نتيجة بعد التنظيف
+               return df  # ✅ وجدنا نتيجة بعد التنظيف
     
         # --- 3️⃣ بحث غامض (جزئي) ---
         fuzzy_query = """
@@ -250,4 +250,4 @@ class DatabaseManager:
             return df
 
     # 🔴 ما وجدنا شيء
-    return pd.DataFrame()
+    # return pd.DataFrame()
