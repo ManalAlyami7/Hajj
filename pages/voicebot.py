@@ -602,40 +602,43 @@ with col_right:
     clean_transcript = html.escape(transcript)
     clean_response = response_text
 
-    # --- 1. Transcript Panel ---
-    transcript_panel_html = f"""
+    # ✅ Transcript panel first
+    st.markdown(f"""
     <div class="transcript-container">
       <div class="panel-header">
         <div class="panel-icon">🎤</div>
         <h3 class="panel-title">Live Transcript</h3>
         <div class="panel-badge">
-          {'● ' + (t('voice_status_listening', st.session_state.language) if st.session_state.is_recording else t('voice_status_ready', st.session_state.language))}
+            {'● ' + (t('voice_status_listening', st.session_state.language)
+            if st.session_state.is_recording
+            else t('voice_status_ready', st.session_state.language))}
         </div>
       </div>
       <div class="transcript-text">{clean_transcript}</div>
     </div>
-    """
-    st.markdown(transcript_panel_html, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-    # --- 2. Response Panel (Dynamic Header + Placeholder) ---
-    panel_badge = '● ' + (
-        t('voice_status_speaking', st.session_state.language)
-        if st.session_state.is_speaking else t('voice_status_ready', st.session_state.language)
-    )
-
+    # ✅ Response container (OPEN — DO NOT close it yet)
     st.markdown(f"""
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
         <div class="panel-icon">🤖</div>
         <h3 class="panel-title">AI Response</h3>
-        <div class="panel-badge">{panel_badge}</div>
+        <div class="panel-badge">
+            {'● ' + (t('voice_status_speaking', st.session_state.language)
+            if st.session_state.is_speaking
+            else t('voice_status_ready', st.session_state.language))}
+        </div>
       </div>
     """, unsafe_allow_html=True)
 
-    # --- 3. Streaming Placeholder ---
+    # ✅ Placeholder MUST be inside the container
     response_placeholder = st.empty()
 
-    # --- 4. Stream Response Word by Word ---
+    # ✅ Now close the container
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # ✅ Streaming effect AFTER placeholder exists
     streamed_text = ""
     if clean_response:
         for word in clean_response.split():
@@ -644,15 +647,13 @@ with col_right:
                 f"<div class='response-content'>{html.escape(streamed_text)}</div>",
                 unsafe_allow_html=True
             )
-            time.sleep(0.04)  # ⏱️ typing speed (reduce to 0.02 for faster)
+            time.sleep(0.04)
     else:
         response_placeholder.markdown(
             f"<div class='response-content empty'>{html.escape(t('voice_response_placeholder', st.session_state.language))}</div>",
             unsafe_allow_html=True
         )
 
-    # --- 5. Close Response Container ---
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # ---------------------------
 # Play pending audio
