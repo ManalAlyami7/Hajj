@@ -115,7 +115,7 @@ TRANSLATIONS = {
 "voice_error_processing": "I'm having trouble processing that request",
 
 # Additional helpful labels
-"voice_clear_memory": "Start New Conversation",
+"voice_clear_memory": " + Start New Conversation",
 "voice_stop_speaking": "Stop",
 "voice_memory_messages": "messages",
 "voice_session_duration": "Session time",
