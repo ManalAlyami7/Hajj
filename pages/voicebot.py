@@ -680,7 +680,7 @@ with col_right:
         <h3 class="panel-title">AI Response</h3>
         <div class="panel-badge">{'● ' + (t('voice_status_speaking', st.session_state.language) if st.session_state.is_speaking else t('voice_status_ready', st.session_state.language))}</div>
       </div>
-      <div class="response-content">{clean_response}</div>
+      
     </div>
     """
     st.markdown(panel_html, unsafe_allow_html=True)
