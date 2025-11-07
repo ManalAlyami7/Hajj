@@ -589,20 +589,44 @@ with col_mem:
     """, unsafe_allow_html=True)
 
 import streamlit.components.v1 as components
-
 import streamlit.components.v1 as components
-import streamlit as st # Make sure you import st if it's used for session_state/t
 
 with col_clear:
     components.html(f"""
-    <a href="#" class="clear-memory-btn" style="pointer-events: auto; text-decoration: none;">
+    <style>
+    .clear-memory-btn {{
+        position: fixed;
+        top: 15px;
+        { 'left' if is_arabic else 'right' }: 15px;
+        text-decoration: none !important;
+        color: inherit !important;
+        background: rgba(255, 255, 255, 0.12);
+        padding: 0.6rem 1.2rem;
+        border-radius: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        backdrop-filter: blur(12px);
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 9999;
+    }}
+    .clear-memory-btn:hover {{
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+        color: #fff !important;
+        text-decoration: none !important;
+    }}
+    </style>
+
+    <a href="#" class="clear-memory-btn">
         {t('voice_clear_memory', st.session_state.language)}
     </a>
+
     <script>
     const link = document.querySelector('.clear-memory-btn');
     link.addEventListener('click', function(e) {{
         e.preventDefault();
-        // This is correct for forcing a full Streamlit page reload
         try {{
             window.parent.location.reload();
         }} catch(err) {{
@@ -610,11 +634,8 @@ with col_clear:
         }}
     }});
     </script>
-    """, 
-    # 🎯 THE FIX: Define minimal height and width for the iframe
-    height=30,  # Adjust this value based on your button's font size
-    width=150   # Adjust this value to fit your translated button text
-    )
+    """, height=0)
+
     # # 3️⃣ Hidden actual button (logic intact)
     # if st.button("", key="clear_memory_btn", use_container_width=False):
     #     st.session_state.clear_memory_clicked = True
