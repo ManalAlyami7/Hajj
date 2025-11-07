@@ -244,11 +244,12 @@ and explain your reasoning.
             "reasoning": "Determined by keyword matching (fallback)"
         }
         
-    def generate_greeting(self, user_input: str, language: str) -> str:
+    def generate_greeting(self, user_input: str, language: str, context_string=None) -> str:
         """Generate natural greeting response with structured output"""
         is_arabic = language == "العربية"
+        context_string = context_string if context_string else ""
         
-        system_prompt = """You are a friendly Hajj and fraud prevention assistant designed to protect pilgrims form scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah. 
+        system_prompt = f"""You are a friendly Hajj and fraud prevention assistant designed to protect pilgrims form scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah. 
 Generate a short, warm, natural greeting (max 3 sentences) that:
 - Acknowledges the user's greeting
 - Expresses willingness to help
@@ -256,7 +257,8 @@ Generate a short, warm, natural greeting (max 3 sentences) that:
 - Uses emojis appropriately
 - Respond in Arabic **if the user input contains any Arabic text**, otherwise respond in English
 explain your reasoning and what you provide briefly.
-
+User input: {user_input}
+Use this context if helpful: {context_string}
 Keep the response concise, friendly, and professional."""
 
         
@@ -280,15 +282,17 @@ Keep the response concise, friendly, and professional."""
             logger.error(f"Structured greeting generation failed: {e}")
             return "Hello! 👋 How can I help you today?" if not is_arabic else "السلام عليكم! 👋 كيف يمكنني مساعدتك؟"
     
-    def generate_general_answer(self, user_input: str, language: str) -> str:
+    def generate_general_answer(self, user_input: str, language: str, context_string=None) -> str:
         """Generate answer for general Hajj questions"""
-        system_prompt = """You are a helpful assistant specialized in Hajj information. 
+        system_prompt = f"""You are a helpful assistant specialized in Hajj information. 
 Be concise, factual, and helpful. Focus on practical information.
 Detect if the user's question is in Arabic or English, and respond in the same language.
 you designed to protect pilgrims form scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
 - Always respond in the same language as the user question.
 - Speak naturally, like a caring assistant giving helpful information.
 - Avoid bullet points, numbering, or reading URLs or links.
+- User question: {user_input}
+- Use this Context if helpful: {context_string}
 Avoid religious rulings or fatwa - stick to practical guidance."""
         
         try:
@@ -307,12 +311,12 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             logger.error(f"General answer generation failed: {e}")
             return "I encountered an error. Please try rephrasing your question."
     
-    def generate_sql(self, user_input: str, language: str) -> Optional[Dict]:
+    def generate_sql(self, user_input: str, language: str ,context_string= None) -> Optional[Dict]:
         """
         Generate SQL query from user input with structured output
         Returns: Dict with sql_query, query_type, filters, explanation, safety_checked
         """
-        sql_prompt = self._get_sql_system_prompt(language) + f"\n\nUser Question: {user_input}"
+        sql_prompt = self._get_sql_system_prompt(language, context_string) + f"\n\nUser Question: {user_input}"
         
         try:
             response = self.client.beta.chat.completions.parse(
@@ -346,7 +350,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             logger.error(f"Structured SQL generation failed: {e}")
             return None
     
-    def generate_summary(self, user_input: str, language: str, row_count: int, sample_rows: List[Dict]) -> Dict:
+    def generate_summary(self, user_input: str, language: str, row_count: int, sample_rows: List[Dict], context_string=None) -> Dict:
         """
         Generate natural, friendly, and structured summary of query results.
         Adds assistant-like sentences and recommendations based on intent.
@@ -405,6 +409,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         "Al Haramain Travel is located in Amman, Jordan. They have a rating of 3.8 stars based on 217 reviews."
         "PT. Al Haramain Jaya Wisata in Jakarta, Indonesia has a rating of 4.6 stars from 39 reviews."
         "You can contact them at +966 12 533 3399."
+        Use this context if helpful: {context_string}
 
         The response should sound fluid and natural, with ALL numbers written as digits for clear display and proper TTS pronunciation.
         """
@@ -459,13 +464,15 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             return None
     
     @staticmethod
-    def _get_sql_system_prompt(language: str) -> str:
+    def _get_sql_system_prompt(language: str, context_string=None) -> str:
         """Get SQL generation system prompt"""
         return f"""
     You are a multilingual SQL fraud-prevention expert protecting Hajj pilgrims.
 
     🎯 MISSION: Generate an SQL query for database analysis on Hajj agencies.
     Do NOT generalize to world data — always query from the table 'agencies'.
+    Use the CONTEXT and USER QUESTION to create a safe, accurate SQL SELECT query.
+    Context: {context_string}
 
     TABLE STRUCTURE:
     - hajj_company_ar
@@ -590,11 +597,12 @@ LIMIT 50;
         
         return None
     
-    def ask_for_more_info(self, user_input: str, language: str) -> Dict:
+    def ask_for_more_info(self, user_input: str, language: str, context_string=None) -> Dict:
         """Generate structured response asking user for more specific information"""
         is_arabic = language == "العربية"
         prompt = f"""You are a helpful Hajj verification assistant.
     The user's question: "{user_input}" needs more details to provide accurate information.
+    Context: {context_string}
     Examples of vague questions:
     - "I want to verify an agency" (which agency?)
     - "Tell me about Hajj companies" (what specifically?)

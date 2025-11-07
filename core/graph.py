@@ -278,7 +278,7 @@ class ChatGraph:
             "row_count": None,
             "summary": None,
             "greeting_text": None,
-            "general_answer": None,
+            "": None,
             "needs_info": None,
             "suggestions": None,
             "missing_info": None,
