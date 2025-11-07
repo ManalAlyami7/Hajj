@@ -594,14 +594,13 @@ with col_left:
         key="audio_recorder",
         help="Click to start recording, click again to stop"
     )
-
 with col_right:
     transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
     response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
 
     import html
     clean_transcript = html.escape(transcript)
-    clean_response = html.escape(response_text)
+    clean_response = response_text  # keep HTML intact for AI responses
 
     meta = st.session_state.current_metadata or {}
     meta_html_parts = []
