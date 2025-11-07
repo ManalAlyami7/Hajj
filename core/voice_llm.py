@@ -386,8 +386,10 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         Provide a natural spoken summary that sounds like you're talking to the listener — not reading a list or a table.
 
         Guidelines:
+        - Always Acknowledge the user's question
         - Always respond in the same language as the user question.
         - Speak naturally, like a caring assistant giving helpful information.
+        
         - Avoid bullet points, numbering, or reading URLs or links.
         - Mention only the most important details such as agency name, city, country, whether it's authorized, and rating if available.
         - Summarize multiple agencies conversationally, e.g.:
