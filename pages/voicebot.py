@@ -578,8 +578,8 @@ with col_left:
         </div>
         """
 
-    # Wrap everything in a flex column container
-    st.markdown(f"""
+    # Build the complete HTML string properly
+    html_content = f"""
     <div class="voice-left" style="display:flex; flex-direction:column; justify-content:flex-end; align-items:center; position:relative; max-height:300px;">
       <div style="position:relative;">
         <div class="voice-ring voice-ring-1"></div>
@@ -589,7 +589,9 @@ with col_left:
       </div>
       {waveform_html}
     </div>
-    """, unsafe_allow_html=True)
+    """
+    
+    st.markdown(html_content, unsafe_allow_html=True)
 
     # Render audio_input right after inside the same column
     audio_bytes = st.audio_input(
@@ -597,7 +599,6 @@ with col_left:
         key="audio_recorder",
         help="Click to start recording, click again to stop"
     )
-
 with col_right:
     transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
     response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
