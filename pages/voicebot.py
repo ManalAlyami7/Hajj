@@ -255,12 +255,13 @@ st.markdown(f"""
   align-items: center;
   gap: 0.5rem;
 }}
-/* Return Button Styles */
+//* Return Button Styles */
 .return-button-container {{
   position: fixed;
   top: 15px;
   {return_position}
   z-index: 2000;
+  pointer-events: auto;
 }}
 .return-button {{
   display: inline-flex;
@@ -275,10 +276,11 @@ st.markdown(f"""
   color: rgba(255, 255, 255, 0.9);
   font-weight: 600;
   font-size: 0.9rem;
-  text-decoration: none !important; /* Ensure no underline */
+  text-decoration: none !important;
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   cursor: pointer;
+  pointer-events: auto;
   direction: {'rtl' if is_arabic else 'ltr'};
 }}
 
@@ -288,12 +290,20 @@ st.markdown(f"""
   transform: {transform_direction};
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   color: #ffffff;
-  text-decoration: none !important; /* Prevent underline on hover */
+  text-decoration: none !important;
+}}
+
+.return-button:visited,
+.return-button:active,
+.return-button:focus {{
+  text-decoration: none !important;
+  color: rgba(255, 255, 255, 0.9);
 }}
 
 .return-button .icon {{
   font-size: 1.2rem;
   transition: transform 0.3s ease;
+  pointer-events: none;
 }}
 
 .return-button:hover .icon {{
