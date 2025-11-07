@@ -575,7 +575,7 @@ status_class = (
 status_text = st.session_state.status or "Ready"
 
 # Create columns for top controls
-col_mem, col_status = st.columns(2)
+col_mem, col_clear, col_status = st.columns(3)
 
 with col_mem:
     st.markdown(f"""
@@ -584,19 +584,19 @@ with col_mem:
     </div>
     """, unsafe_allow_html=True)
 
-# with col_clear:
-#     # 2️⃣ Visible custom button triggering the hidden Streamlit button
-#     st.markdown("""
-#     <button class="clear-memory-btn" 
-#         onclick="document.querySelector('[data-testid=\\'stButton-clear_memory_btn\\'] button').click()">
-#         🗑️ Clear Memory
-#     </button>
-#     """, unsafe_allow_html=True)
+with col_clear:
+    # 2️⃣ Visible custom button triggering the hidden Streamlit button
+    st.markdown("""
+    <button class="clear-memory-btn" 
+        onclick="document.querySelector('[data-testid=\\'stButton-clear_memory_btn\\'] button').click()">
+        🗑️ Clear Memory
+    </button>
+    """, unsafe_allow_html=True)
 
-#     # # 3️⃣ Hidden actual button (logic intact)
-#     # if st.button("", key="clear_memory_btn", use_container_width=False):
-#     #     st.session_state.clear_memory_clicked = True
-#     #     st.rerun()
+    # # 3️⃣ Hidden actual button (logic intact)
+    # if st.button("", key="clear_memory_btn", use_container_width=False):
+    #     st.session_state.clear_memory_clicked = True
+    #     st.rerun()
 
 with col_status:
     st.markdown(f"""
