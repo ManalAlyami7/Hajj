@@ -334,7 +334,7 @@ st.markdown(f"""
 @keyframes pulse-listening{{0%,100%{{transform:scale(1);}}50%{{transform:scale(1.1);}}}}
 @keyframes pulse-speaking{{0%,100%{{transform:scale(1);}}50%{{transform:scale(1.15);}}}}
 @keyframes expand{{0%{{transform:translate(-50%,-50%) scale(0.8);opacity:0.8;}}100%{{transform:translate(-50%,-50%) scale(1.5);opacity:0;}}}}
-.record-label{{margin-top:1rem;color:white;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;}}
+.record-label{{margin-top:1rem;color:white;font-weight:600;letter-spacing:1.5px;}}
 .voice-right{{display:flex;flex-direction:column;gap:1rem;height:100%;min-height:0;overflow:hidden;}}
 
 /* LIGHTER, CLEARER PANELS */
