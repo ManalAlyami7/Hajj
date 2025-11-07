@@ -209,22 +209,6 @@ if st.session_state.get('clear_memory_clicked', False):
     st.rerun()
 
 # ---------------------------
-# Handle Stop Assistant Button
-# ---------------------------
-def handle_stop_assistant():
-    """Stop the assistant from speaking"""
-    st.session_state.is_speaking = False
-    st.session_state.pending_audio = None
-    st.session_state.status = t('voice_status_ready', st.session_state.language)
-    logger.info("Assistant stopped by user")
-
-# Check if stop button was clicked
-if st.session_state.get('stop_assistant_clicked', False):
-    handle_stop_assistant()
-    st.session_state.stop_assistant_clicked = False
-    st.rerun()
-
-# ---------------------------
 # Styles (RTL support for Arabic)
 # ---------------------------
 rtl_class = 'rtl' if is_arabic else ''
@@ -453,7 +437,6 @@ st.markdown(f"""
   font-weight: bold;
   margin-{'left' if is_arabic else 'right'}: 0.5rem;
 }}
-
 /* Clear Memory Button */ 
 .clear-memory-btn {{
     position: fixed;
@@ -494,44 +477,6 @@ st.markdown(f"""
     outline: 2px solid rgba(239, 68, 68, 0.5);
     outline-offset: 2px;
 }}
-
-/* Stop Button in Response Panel */
-.stop-button {{
-    padding: 0.6rem 1.25rem;
-    background: rgba(239, 68, 68, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(239, 68, 68, 0.4);
-    color: #ffffff;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border-radius: 1.5rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
-    margin-top: 0.75rem;
-}}
-
-.stop-button:hover {{
-    background: rgba(239, 68, 68, 0.95);
-    border-color: rgba(239, 68, 68, 0.6);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
-}}
-
-.stop-button:active {{
-    transform: translateY(0);
-    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3);
-    background: rgba(220, 38, 38, 0.9);
-}}
-
-.stop-button.hidden {{
-    display: none;
-}}
-
 .status-indicator{{
   position: fixed;
   top: 15px;
@@ -575,8 +520,7 @@ button:hover {{
 }}
 .audio-recorder-container {{display: flex;justify-content: center;align-items: center;margin: 1.5rem 0;}}
 
-[data-testid="stButton-clear_memory_btn"],
-[data-testid="stButton-stop_assistant_btn"] {{
+[data-testid="stButton-clear_memory_btn"] {{
     display: none !important;
     visibility: hidden !important;
     height: 0 !important;
@@ -585,6 +529,7 @@ button:hover {{
     margin: 0 !important;
     border: none !important;
 }}
+
 
 </style>
 """, unsafe_allow_html=True)
@@ -640,18 +585,18 @@ with col_mem:
     """, unsafe_allow_html=True)
 
 with col_clear:
-    # Visible custom button triggering the hidden Streamlit button
+    # 2️⃣ Visible custom button triggering the hidden Streamlit button
     st.markdown("""
     <button class="clear-memory-btn" 
         onclick="document.querySelector('[data-testid=\\'stButton-clear_memory_btn\\'] button').click()">
         🗑️ Clear Memory
     </button>
     """, unsafe_allow_html=True)
-    
-    # Hidden actual button (logic intact)
-    if st.button("", key="clear_memory_btn", use_container_width=False):
-        st.session_state.clear_memory_clicked = True
-        st.rerun()
+
+    # # 3️⃣ Hidden actual button (logic intact)
+    # if st.button("", key="clear_memory_btn", use_container_width=False):
+    #     st.session_state.clear_memory_clicked = True
+    #     st.rerun()
 
 with col_status:
     st.markdown(f"""
@@ -721,7 +666,6 @@ with col_left:
         key="audio_recorder",
         help="Click to start recording, click again to stop"
     )
-    
 with col_right:
     transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
     response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
@@ -746,10 +690,7 @@ with col_right:
     </div>
     """, unsafe_allow_html=True)
 
-    # ✅ Response container with stop button
-    stop_button_visibility = "" if st.session_state.is_speaking else "hidden"
-    stop_button_text = "Stop"
-    
+    # ✅ Response container
     st.markdown(f"""
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
@@ -761,18 +702,9 @@ with col_right:
             else t('voice_status_ready', st.session_state.language))}
         </div>
       </div>
-      <div class='response-content'>{clean_response}</div>
-      <button class="stop-button {stop_button_visibility}" 
-          onclick="document.querySelector('[data-testid=\\'stButton-stop_assistant_btn\\'] button').click()">
-          ⏹️ {stop_button_text}
-      </button>
+      <div class='response-content'>{clean_response}</div> 
     </div>
     """, unsafe_allow_html=True)
-    
-    # Hidden actual stop button
-    if st.button("", key="stop_assistant_btn", use_container_width=False):
-        st.session_state.stop_assistant_clicked = True
-        st.rerun()
 
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -790,6 +722,7 @@ if st.session_state.get('pending_audio'):
     
     st.session_state.pending_audio = None
     st.session_state.is_speaking = False
+
     st.session_state.status = t('voice_status_ready', st.session_state.language)
 
 # ---------------------------
