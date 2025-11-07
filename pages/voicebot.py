@@ -524,7 +524,7 @@ status_class = (
 status_text = st.session_state.status or "Ready"
 
 # Create columns for top controls
-col_mem, col_clear, col_status = st.columns([3, 2, 3])
+col_mem, col_clear, col_status = st.columns(3)
 
 with col_mem:
     st.markdown(f"""
