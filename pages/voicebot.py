@@ -598,9 +598,21 @@ with col_right:
     transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
     response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
 
-    import html
+    import html, time
     clean_transcript = html.escape(transcript)
     clean_response = response_text  # keep HTML intact for AI responses
+
+    # --- streaming effect for response ---
+    response_placeholder = st.empty()
+    streamed_text = ""
+    for word in clean_response.split():
+        streamed_text += word + " "
+        response_placeholder.markdown(
+            f"<div class='response-content'>{html.escape(streamed_text)}</div>",
+            unsafe_allow_html=True
+        )
+        time.sleep(0.04)  # typing speed (lower = faster)
+
 
     meta = st.session_state.current_metadata or {}
     meta_html_parts = []
@@ -653,8 +665,6 @@ with col_right:
         <h3 class="panel-title">AI Response</h3>
         <div class="panel-badge">{'● ' + (t('voice_status_speaking', st.session_state.language) if st.session_state.is_speaking else t('voice_status_ready', st.session_state.language))}</div>
       </div>
-      <div class="response-content">{clean_response}</div>
-      {meta_html}
     </div>
     """
     st.markdown(panel_html, unsafe_allow_html=True)

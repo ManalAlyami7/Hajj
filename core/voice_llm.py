@@ -293,6 +293,7 @@ you designed to protect pilgrims form scams and help them verify hajj agencies a
 - Avoid bullet points, numbering, or reading URLs or links.
 - User question: {user_input}
 - Use this Context if helpful: {context_string}
+- Make sure your info is up-to-date
 Avoid religious rulings or fatwa - stick to practical guidance."""
         
         try:
