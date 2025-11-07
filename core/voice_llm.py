@@ -626,6 +626,7 @@ LIMIT 50;
         
         prompt = f"""
     You are a helpful Hajj verification assistant.
+    Express willingness to help
     Make sure you help and understand the user
     The user's question: "{user_input}" needs more details to provide accurate information.
     Context: {context_string}
