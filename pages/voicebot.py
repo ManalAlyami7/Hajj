@@ -552,7 +552,7 @@ with col_clear:
     """, unsafe_allow_html=True)
     
     # Hidden actual button
-    if st.button("", key="clear_memory_btn", use_container_width=True):
+    if st.button("", key="clear_memory_btn", use_container_width=False):
         st.session_state.clear_memory_clicked = True
         st.rerun()
 
