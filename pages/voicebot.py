@@ -588,13 +588,27 @@ with col_mem:
     </div>
     """, unsafe_allow_html=True)
 
+import streamlit.components.v1 as components
+
 with col_clear:
-    # 2️⃣ Visible custom button triggering the hidden Streamlit button
-    st.markdown(f"""
- <a href="#" onClick="window.location.reload(true)" class="clear-memory-btn" style="pointer-events: auto; text-decoration: none;">
-    {t('voice_clear_memory', st.session_state.language)}
-</a>
-""", unsafe_allow_html=True)
+    components.html(f"""
+    <a href="#" class="clear-memory-btn" style="pointer-events: auto; text-decoration: none;">
+        {t('voice_clear_memory', st.session_state.language)}
+    </a>
+    <script>
+    const link = document.querySelector('.clear-memory-btn');
+    link.addEventListener('click', function(e) {{
+        e.preventDefault();
+        // Reload the full Streamlit app, even if it's inside an iframe
+        try {{
+            window.parent.location.reload();
+        }} catch(err) {{
+            window.location.reload();
+        }}
+    }});
+    </script>
+    """, height=40)
+
     # # 3️⃣ Hidden actual button (logic intact)
     # if st.button("", key="clear_memory_btn", use_container_width=False):
     #     st.session_state.clear_memory_clicked = True
