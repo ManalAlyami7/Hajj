@@ -577,52 +577,8 @@ status_class = (
     else ""
 )
 status_text = st.session_state.status or "Ready"
-import streamlit as st
-# Assuming 't' is your translation function
-# Assuming 'col_mem', 'col_clear', 'col_status' are defined as st.columns(3)
 
-# --- 1. Define the Rerun/Clear function ---
-def clear_memory_and_rerun():
-    # Place your actual memory clearing logic here
-    # Example:
-    if 'voice_memory' in st.session_state:
-        del st.session_state['voice_memory']
-    
-    # This command reloads the Streamlit script from the top
-    st.rerun()
-
-# --- 2. Inject CSS to style the Streamlit button as a custom link ---
-# This CSS makes the native st.button invisible (borderless/transparent)
-# and applies the 'clear-memory-btn' style to its label.
-st.markdown("""
-<style>
-/* Target the native Streamlit button container and make it look like a link */
-.stButton>button {
-    background-color: transparent !important;
-    color: inherit !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    text-decoration: none !important; 
-    cursor: pointer !important;
-    box-shadow: none !important;
-    /* This ensures it aligns correctly in the column */
-    display: flex; 
-    align-items: center; 
-}
-
-/* Ensure the text is styled as your link class */
-.clear-memory-btn {
-    text-decoration: none;
-    /* Add any other specific styling from your CSS here (e.g., color, hover) */
-}
-</style>
-""", unsafe_allow_html=True)
-
-
-# --- 3. Control Panel Implementation ---
-# Assuming these variables are defined elsewhere:
-# memory_summary, t, st.session_state.language, status_class, status_text
+# Create columns for top controls
 col_mem, col_clear, col_status = st.columns(3)
 
 with col_mem:
@@ -633,18 +589,16 @@ with col_mem:
     """, unsafe_allow_html=True)
 
 with col_clear:
-    # Get the translated label first
-    button_label = t('voice_clear_memory', st.session_state.language)
-    
-    # Use st.button with the callback
-    st.button(
-        # Wrap the label in your custom class for styling
-        label=f"<span class='clear-memory-btn'>{button_label}</span>",
-        on_click=clear_memory_and_rerun, # Triggers the RERUN
-        key="custom_clear_memory_btn", 
-        # Crucial for allowing HTML in the label (Streamlit >1.26)
-        use_container_width=False, 
-    )
+    # 2️⃣ Visible custom button triggering the hidden Streamlit button
+    st.markdown(f"""
+<a href="javascript:location.reload()" class="clear-memory-btn" style="pointer-events: auto; text-decoration: none;">
+    {t('voice_clear_memory', st.session_state.language)}
+</a>
+""", unsafe_allow_html=True)
+    # # 3️⃣ Hidden actual button (logic intact)
+    # if st.button("", key="clear_memory_btn", use_container_width=False):
+    #     st.session_state.clear_memory_clicked = True
+    #     st.rerun()
 
 with col_status:
     st.markdown(f"""
@@ -653,6 +607,7 @@ with col_status:
         {status_text}
     </div>
     """, unsafe_allow_html=True)
+
 st.markdown(f"""
 <div class="voice-header">
   <div>🕋<span class="voice-title"> {t('voice_main_title', st.session_state.language)}</span></div>
