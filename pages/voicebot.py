@@ -266,7 +266,6 @@ st.markdown(f"""
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  text-decoration: none
   padding: 0.6rem 1.25rem;
   background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(20px);
@@ -276,24 +275,27 @@ st.markdown(f"""
   color: rgba(255, 255, 255, 0.9);
   font-weight: 600;
   font-size: 0.85rem;
-  text-decoration: none;
+  text-decoration: none !important; /* Ensure no underline */
   transition: all 0.3s ease;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   direction: {'rtl' if is_arabic else 'ltr'};
 }}
+
 .return-button:hover {{
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.35);
   transform: {transform_direction};
-  text-decoration: none
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   color: #ffffff;
+  text-decoration: none !important; /* Prevent underline on hover */
 }}
+
 .return-button .icon {{
   font-size: 1.1rem;
   transition: transform 0.3s ease;
 }}
+
 .return-button:hover .icon {{
   transform: {icon_transform};
 }}
