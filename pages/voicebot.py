@@ -604,8 +604,16 @@ with col_right:
 
     # --- streaming effect for response ---
     # Create a Streamlit placeholder to update the response incrementally
-    response_placeholder = t('voice_response_placeholder', st.session_state.language)
 
+    import html, time
+
+    clean_transcript = html.escape(transcript)
+    clean_response = response_text  # keep HTML intact for AI responses
+
+    # --- create placeholder for streaming text ---
+    response_placeholder = st.empty()
+
+    # --- streaming effect for response ---
     streamed_text = ""
     if clean_response:
         for word in clean_response.split():
@@ -614,14 +622,12 @@ with col_right:
                 f"<div class='response-content'>{html.escape(streamed_text)}</div>",
                 unsafe_allow_html=True
             )
-            time.sleep(0.04)  # typing speed (lower = faster)
+            time.sleep(0.04)  # adjust typing speed
     else:
-        # Show placeholder text if no response available
         response_placeholder.markdown(
             f"<div class='response-content empty'>{html.escape(t('voice_response_placeholder', st.session_state.language))}</div>",
             unsafe_allow_html=True
         )
-
 
     meta = st.session_state.current_metadata or {}
     meta_html_parts = []
