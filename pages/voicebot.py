@@ -677,19 +677,21 @@ with col_right:
 
     import html
     clean_transcript = html.escape(transcript)
-    clean_response = html.escape(response_text)
+    clean_response = response_text
 
-    # Transcript panel
+    # Transcript panel (flex layout for header)
     st.markdown(f"""
-    <div class="transcript-container">
-      <div class="panel-header">
-        <div class="panel-icon">🗣️</div>
-        <h3 class="panel-title">Spoken Request</h3>
+    <div class="transcript-container" style="padding:1rem; background-color:#f5f6fa; border-radius:12px; margin-bottom:1rem;">
+      <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+          <div class="panel-icon">🗣️</div>
+          <h3 class="panel-title">Spoken Request</h3>
+        </div>
         <div class="panel-badge" style="color:#27ae60;font-weight:bold;">
-            ● {t('voice_status_listening', st.session_state.language) if st.session_state.is_speaking else t('voice_status_ready', st.session_state.language)}
+          ● {t('voice_status_listening', st.session_state.language) if st.session_state.is_speaking else t('voice_status_ready', st.session_state.language)}
         </div>
       </div>
-      <div class="transcript-text">{clean_transcript}</div>
+      <div class="transcript-text" style="margin-top:0.5rem;">{clean_transcript}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -704,7 +706,7 @@ with col_right:
         """
 
     st.markdown(f"""
-    <div class="response-container" style="margin-top:1rem;">
+    <div class="response-container" style="padding:1rem; background-color:#f5f6fa; border-radius:12px;">
       <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;">
         <div style="display:flex;align-items:center;gap:0.5rem;">
           <div class="panel-icon">🕋</div>
@@ -720,6 +722,7 @@ with col_right:
       <div class='response-content' style="margin-top:0.5rem;">{clean_response}</div> 
     </div>
     """, unsafe_allow_html=True)
+
 
 
 # Play pending audio
