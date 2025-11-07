@@ -679,46 +679,45 @@ with col_right:
     clean_transcript = html.escape(transcript)
     clean_response = html.escape(response_text)
 
-    # ✅ Transcript panel first
+    # ✅ Transcript panel
     st.markdown(f"""
-    <div class="transcript-container">
-      <div class="panel-header">
-        <div class="panel-icon">🗣️</div>
-        <h3 class="panel-title">Spoken Request</h3>
-        <div class="panel-badge">
-            {'● ' + (t('voice_status_listening', st.session_state.language)
-            if st.session_state.is_speaking
-            else t('voice_status_ready', st.session_state.language))}
+    <div class="transcript-container" style="margin-bottom:1rem;">
+        <div class="panel-header" style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+                <div class="panel-icon">🗣️</div>
+                <h3 class="panel-title">Spoken Request</h3>
+            </div>
+            <div class="panel-badge">
+                {'● ' + (t('voice_status_listening', st.session_state.language)
+                if st.session_state.is_speaking
+                else t('voice_status_ready', st.session_state.language))}
+            </div>
         </div>
-      </div>
-      <div class="transcript-text">{clean_transcript}</div>
+        <div class="transcript-text" style="padding:0.5rem 0;">{clean_transcript}</div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ✅ Response container
+    # ✅ Response panel with stop button
     st.markdown(f"""
-  <div class="response-container" style="margin-top:1rem;">
-      <div class="panel-header" style="display:flex; align-items:center; justify-content:space-between;">
-          <div style="display:flex; align-items:center; gap:0.5rem;">
-              <div class="panel-icon">🕋</div>
-              <h3 class="panel-title">Assistant Response</h3>
-          </div>
-          <div style="display:flex; align-items:center; gap:1rem;">
-              <div class="panel-badge">
-                  {'● ' + (t('voice_status_speaking', st.session_state.language)
-                  if st.session_state.is_speaking
-                  else t('voice_status_ready', st.session_state.language))}
-              </div>
-              {f'<button class="stop" onclick="window.dispatchEvent(new Event(\'stopSpeaking\'));">{t("stop", st.session_state.language)}</button>'
-                if st.session_state.is_speaking else ''}
-          </div>
-      </div>
-      <div class='response-content'>{clean_response}</div>
-  </div>
-  """, unsafe_allow_html=True)
-
-
-st.markdown('</div>', unsafe_allow_html=True)
+    <div class="response-container">
+        <div class="panel-header" style="display:flex; align-items:center; justify-content:space-between;">
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+                <div class="panel-icon">🕋</div>
+                <h3 class="panel-title">Assistant Response</h3>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+                <div class="panel-badge">
+                    {'● ' + (t('voice_status_speaking', st.session_state.language)
+                    if st.session_state.is_speaking
+                    else t('voice_status_ready', st.session_state.language))}
+                </div>
+                {f'<div><button class="stop" onclick="window.dispatchEvent(new Event(\'stopSpeaking\'));">{t("stop", st.session_state.language)}</button></div>'
+                  if st.session_state.is_speaking else ''}
+            </div>
+        </div>
+        <div class='response-content' style="padding:0.5rem 0;">{clean_response}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Play pending audio
 # ---------------------------
