@@ -292,7 +292,13 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         Generate SQL query from user input with structured output
         Returns: Dict with sql_query, query_type, filters, explanation, safety_checked
         """
-        sql_prompt = self._get_sql_system_prompt(language) + f"\n\nUser Question: {user_input}"
+        sql_prompt = (
+            self._get_sql_system_prompt(language)
+            + "\n\nWhen generating SQL, use exact matches (=) for agency names instead of LIKE. "
+              "Only use LIKE if the user explicitly says 'similar' or 'contains'.\n\n"
+              f"User Question: {user_input}"
+        )
+
         
         try:
             response = self.client.beta.chat.completions.parse(
