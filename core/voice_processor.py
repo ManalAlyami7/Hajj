@@ -35,7 +35,7 @@ class VoiceProcessor:
         self.client = self._get_client()
         self.async_client = self._get_async_client()
         self.db = DatabaseManager()
-        self.llm = LLMManager()
+        self.voice_llm = LLMManager()
 
     # --- Internal Methods -----------------------------------------------------
     @st.cache_resource
@@ -66,6 +66,15 @@ class VoiceProcessor:
             audio_file.name = "audio.wav"
             logger.info("🎙️ Sending audio for transcription...")
 
+            # Context prompt to guide Whisper transcription
+            # This helps with domain-specific terms and reduces errors
+            context_prompt = (
+                "Hajj pilgrimage, authorized agencies, Ministry of Hajj and Umrah, "
+                "verifying agencies, fraud prevention, scam protection, authorized offices, "
+                "Umrah, Makkah, Medina, Saudi Arabia, pilgrims, "
+                "agency verification, company authorization, travel agencies"
+            )
+
             # OPTIMIZATION: Use text format instead of verbose_json (faster)
             # OPTIMIZATION: Set temperature to 0 for faster, deterministic results
             transcript = self.client.audio.transcriptions.create(
@@ -73,7 +82,8 @@ class VoiceProcessor:
                 file=audio_file,
                 response_format="text",  # FASTER than verbose_json
                 temperature=0.0,  # More deterministic = faster
-                language=None  # Auto-detect or set to "en" if English-only
+                language=None,  # Auto-detect language
+                prompt=context_prompt  # NEW: Contextual guidance for better accuracy
             )
             
             text = transcript if isinstance(transcript, str) else getattr(transcript, "text", "")
@@ -81,7 +91,8 @@ class VoiceProcessor:
             # Auto-detect language from text
             language = "arabic" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "english"
             
-            # Fix common transcription errors for "Hajj"
+            # Fix common transcription errors for "Hajj" (keep as fallback)
+            # The prompt should reduce these errors, but we keep this as backup
             words_like_hajj = ['hatch', 'hatching', 'head', 'hadj', 'haj', 'hajji', 'haji', 'hajje', 'hajjeh']
             for word in words_like_hajj:
                 text = text.replace(word, 'Hajj')
@@ -105,31 +116,30 @@ class VoiceProcessor:
                 "confidence": 0.0,
                 "error": str(e)
             }
-
     # --- LLM Integration (SAME AS BEFORE) -------------------------------------
     def detect_voice_intent(self, user_input: str, language: str) -> Dict:
         """Detect the user's intent from spoken input."""
-        return self.llm.detect_intent(user_input, language)
+        return self.voice_llm.detect_intent(user_input, language)
 
     def generate_voice_greeting(self, user_input: str, language: str) -> Dict:
         """Generate a contextual voice greeting."""
-        return self.llm.generate_greeting(user_input, language)
+        return self.voice_llm.generate_greeting(user_input, language)
 
     def generate_sql_response(self, user_input: str, language: str) -> Dict:
         """Generate an SQL query and its result for voice queries."""
-        return self.llm.generate_sql(user_input, language)
+        return self.voice_llm.generate_sql(user_input, language)
 
     def generate_general_response(self, user_input: str, language: str) -> Dict:
         """Generate a general conversational AI response."""
-        return self.llm.generate_general_answer(user_input, language)
+        return self.voice_llm.generate_general_answer(user_input, language)
 
     def generate_summary(self, user_input: str, language: str, row_count: int, sample_rows) -> Dict:
         """Summarize a piece of text."""
-        return self.llm.generate_summary(user_input, language, row_count, sample_rows)
+        return self.voice_llm.generate_summary(user_input, language, row_count, sample_rows)
     
     def ask_for_more_info(self, user_input: str, language: str) -> Dict:
         """Generate a request for more information from the user."""
-        return self.llm.ask_for_more_info(user_input, language)
+        return self.voice_llm.ask_for_more_info(user_input, language)
 
     # --- Text-to-Speech (OPTIMIZED WITH CHUNKING) -----------------------------
     def text_to_speech(self, text: str, language: str = "en") -> Optional[bytes]:
