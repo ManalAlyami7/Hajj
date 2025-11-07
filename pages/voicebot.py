@@ -669,10 +669,13 @@ with col_right:
 # ---------------------------
 if st.session_state.get('pending_audio'):
     logger.info("Playing pending audio response...")
+    st.session_state.status = t('voice_status_speaking', st.session_state.language)
+
     try:
         st.markdown("<div style='display:none'>", unsafe_allow_html=True)
         st.audio(st.session_state.pending_audio, format="audio/mp3", autoplay=True)
         st.markdown("</div>", unsafe_allow_html=True)
+
     except Exception as e:
         logger.warning("Failed to play pending audio: %s", e)
     
