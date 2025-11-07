@@ -789,5 +789,4 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         st.session_state.is_processing = False
         st.session_state.status = t('voice_status_ready', st.session_state.language)
         st.session_state.pending_audio_bytes = None
-        
         st.rerun()
