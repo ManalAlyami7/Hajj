@@ -135,6 +135,7 @@ INTENT CATEGORIES:
    - User asks about your capabilities or services ("what can you do?", "how can you help?")
    - User wants to start a conversation
    - No specific agency information is provided
+   - If user want to know the developer or the author
 
 2️⃣ DATABASE: 
    - Questions about verifying specific Hajj agencies, checking authorization, company details
@@ -164,6 +165,7 @@ INTENT CATEGORIES:
 
 4️⃣ NEEDS_INFO: 
    - Message is too vague or lacks details needed for accurate response
+   - user input is cut off, incomplete, or uses ambiguous words like 'you', 'me', etc.,
    - Examples:
      • "I want to verify an agency" (which agency?)
      • "Tell me about Hajj companies" (what specifically?)
@@ -253,7 +255,9 @@ and explain your reasoning.
 Generate a short, warm, natural greeting (max 3 sentences) that:
 - Acknowledges the user's greeting
 - Expresses willingness to help
+- Make sure you help and understand the user
 - Mentions you can help verify Hajj companies
+- Detect User language and use it in your response
 - Uses emojis appropriately
 - Respond in Arabic **if the user input contains any Arabic text**, otherwise respond in English
 explain your reasoning and what you provide briefly.
@@ -291,6 +295,9 @@ you designed to protect pilgrims form scams and help them verify hajj agencies a
 - Always respond in the same language as the user question.
 - Speak naturally, like a caring assistant giving helpful information.
 - Avoid bullet points, numbering, or reading URLs or links.
+ - Make sure you help and understand the user
+  Detect User language and use it in your response
+
 - User question: {user_input}
 - Use this Context if helpful: {context_string}
 - Make sure your info is up-to-date
@@ -391,6 +398,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         - "Would you like me to check more agencies for you?"
         - "Would you like to hear their contact details?"
         - Use emojis sparingly to enhance friendliness.
+         Detect User language and use it in your response
 
         📞 CRITICAL - NUMBER FORMATTING RULES:
         Use NUMERIC DIGITS for all numbers, not spelled-out words:
@@ -405,6 +413,9 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         - "two hundred seventeen reviews" → Use "217 reviews"
         - "plus nine six six" → Use "+966"
         - "four hundred seventy-one" → Use "471"
+
+        Make sure you help and understand the user
+
 
         EXAMPLES OF CORRECT OUTPUT:
         "Al Haramain Travel is located in Amman, Jordan. They have a rating of 3.8 stars based on 217 reviews."
@@ -546,6 +557,9 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
 Always normalize and deduplicate company names.
 Use LOWER(TRIM()) and SELECT DISTINCT to avoid case duplicates.
 
+    Make sure you help and understand the user
+
+
 
     Q: "هل شركة الهدى معتمدة؟"
     → ELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
@@ -609,6 +623,7 @@ LIMIT 50;
         
         prompt = f"""
     You are a helpful Hajj verification assistant.
+    Make sure you help and understand the user
     The user's question: "{user_input}" needs more details to provide accurate information.
     Context: {context_string}
 
