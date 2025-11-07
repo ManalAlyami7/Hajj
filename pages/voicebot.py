@@ -496,15 +496,18 @@ button:hover {{
     opacity: 0.9;
 }}
 .audio-recorder-container {{display: flex;justify-content: center;align-items: center;margin: 1.5rem 0;}}
-#clear_memory_btn button {{
-    display: none;   /* completely hides the button */
-    visibility: hidden;
-    height: 0;
-    width: 0;
-    padding: 0;
-    margin: 0;
-    border: none;
+
+[data-testid="stButton-clear_memory_btn"] {{
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
 }}
+
+
 </style>
 """, unsafe_allow_html=True)
 
