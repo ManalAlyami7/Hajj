@@ -618,7 +618,7 @@ with col_right:
     </div>
     """, unsafe_allow_html=True)
 
-    # ✅ Response container (OPEN — DO NOT close it yet)
+    # ✅ Response container (CLOSED properly)
     st.markdown(f"""
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
@@ -628,12 +628,11 @@ with col_right:
             {'● ' + (t('voice_status_speaking', st.session_state.language)
             if st.session_state.is_speaking
             else t('voice_status_ready', st.session_state.language))}
-          
         </div>
-        <div class='response-content'>{html.escape(clean_response)}</div>,
       </div>
+      <div class='response-content'>{html.escape(clean_response)}</div> 
+    </div>
     """, unsafe_allow_html=True)
-
 # ----------------------
 
     # ✅ Now close the container
