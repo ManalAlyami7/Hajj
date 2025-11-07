@@ -197,8 +197,8 @@ st.markdown(f"""
 /* Memory Badge */
 .memory-badge {{
   position: fixed;
-  top: 70px;
-  {'left' if is_arabic else 'right'}: 15px;
+  top: 15px;
+  {'left' if is_arabic else 'right'}: 100px;
   padding: 0.5rem 1rem;
   background: rgba(167, 139, 250, 0.15);
   backdrop-filter: blur(20px);
@@ -216,8 +216,8 @@ st.markdown(f"""
 /* Clear Memory Button */
 .clear-memory-btn {{
   position: fixed;
-  top: 115px;
-  {'left' if is_arabic else 'right'}: 15px;
+  top: 15px;
+  {'left' if is_arabic else 'right'}: 70px;
   padding: 0.4rem 0.8rem;
   background: rgba(239, 68, 68, 0.15);
   backdrop-filter: blur(20px);
