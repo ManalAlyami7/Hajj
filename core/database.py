@@ -207,12 +207,25 @@ class DatabaseManager:
         """
         df, error = self.execute_query(exact_query, {"term": original_term})
         if df is not None and not df.empty:
+           # ✅ نحفظ اسم آخر شركة تم العثور عليها
+           row = df.iloc[0]
+            # حفظ اسم الشركة في الذاكرة (عربي إن وجد، وإلا إنجليزي)
+            st.session_state["last_company_name"] = (
+                row["hajj_company_ar"].strip() if pd.notna(row["hajj_company_ar"]) and row["hajj_company_ar"].strip()
+                else row["hajj_company_en"].strip()
+            )
             return df  # ✅ وجدنا نتيجة بالاسم الكامل مثل "وكالة الحرمين"
     
         # --- 2️⃣ بحث دقيق بعد تنظيف الاسم ---
         if cleaned_term and cleaned_term != original_term:
             df, error = self.execute_query(exact_query, {"term": cleaned_term})
             if df is not None and not df.empty:
+               row = df.iloc[0]
+               # حفظ اسم الشركة في الذاكرة (عربي إن وجد، وإلا إنجليزي)
+                st.session_state["last_company_name"] = (
+                    row["hajj_company_ar"].strip() if pd.notna(row["hajj_company_ar"]) and row["hajj_company_ar"].strip()
+                    else row["hajj_company_en"].strip()
+                )
                 return df  # ✅ وجدنا نتيجة بعد التنظيف
     
         # --- 3️⃣ بحث غامض (جزئي) ---
@@ -228,5 +241,13 @@ class DatabaseManager:
         LIMIT 50
         """
         df, error = self.execute_query(fuzzy_query, {"term": f"%{cleaned_term or original_term}%"})
-        return df if df is not None else pd.DataFrame()
+        if df is not None and not df.empty:
+            row = df.iloc[0]
+            st.session_state["last_company_name"] = (
+                row["hajj_company_ar"].strip() if pd.notna(row["hajj_company_ar"]) and row["hajj_company_ar"].strip()
+                else row["hajj_company_en"].strip()
+            )
+            return df
 
+    # 🔴 ما وجدنا شيء
+    return pd.DataFrame()
