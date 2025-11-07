@@ -194,84 +194,47 @@ st.markdown(f"""
   direction: {'rtl' if is_arabic else 'ltr'};
 }}
 
-
-.fixed-controls-container {{
-    position: fixed;
-    top: 15px; /* Position the whole group 15px from the top */
-    /* Use the variable to handle RTL/LTR positioning */
-    {'left' if is_arabic else 'right'}: 15px; 
-    
-    display: flex; /* Use Flexbox to arrange children side-by-side */
-    gap: 10px; /* Space between the items */
-    
-    /* Ensure the order is logical (e.g., status, then memory, then clear button) */
-    flex-direction: {'row-reverse' if is_arabic else 'row'}; 
-    
-    z-index: 1000;
-}}
-
-/* --- Status Indicator (Header Item) --- */
-.status-indicator {{
-    /* Removed 'position: fixed' and 'top/right/left' */
-    padding: 0.6rem 1.25rem;
-    background: rgba(0, 0, 0, 0.75);
-    border-radius: 2rem;
-    color: white;
-    font-weight: 600;
-    font-size: 0.85rem;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    direction: {'rtl' if is_arabic else 'ltr'};
-}}
-
-.status-dot {{
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #22c55e;
-    animation: dot-pulse 1.5s infinite;
-}}
-
-/* --- Memory Badge (Middle Item) --- */
+/* Memory Badge */
 .memory-badge {{
-    /* Removed 'position: fixed' and 'top/right/left' */
-    padding: 0.5rem 1rem;
-    background: rgba(167, 139, 250, 0.15);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(167, 139, 250, 0.3);
-    border-radius: 1rem;
-    color: #a78bfa;
-    font-weight: 600;
-    font-size: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  position: fixed;
+  top: 70px;
+  {'left' if is_arabic else 'right'}: 15px;
+  padding: 0.5rem 1rem;
+  background: rgba(167, 139, 250, 0.15);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 1rem;
+  color: #a78bfa;
+  font-weight: 600;
+  font-size: 0.75rem;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }}
 
-/* --- Clear Memory Button (Last Item) --- */
+/* Clear Memory Button */
 .clear-memory-btn {{
-    /* Removed 'position: fixed' and 'top/right/left' */
-    padding: 0.4rem 0.8rem;
-    background: rgba(239, 68, 68, 0.15);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 0.8rem;
-    color: #ef4444;
-    font-weight: 600;
-    font-size: 0.7rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    /* Ensure text aligns in the center */
-    display: flex; 
-    align-items: center;
+  position: fixed;
+  top: 115px;
+  {'left' if is_arabic else 'right'}: 15px;
+  padding: 0.4rem 0.8rem;
+  background: rgba(239, 68, 68, 0.15);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 0.8rem;
+  color: #ef4444;
+  font-weight: 600;
+  font-size: 0.7rem;
+  z-index: 1000;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }}
 .clear-memory-btn:hover {{
-    background: rgba(239, 68, 68, 0.25);
-    border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
 }}
+
 /* Return Button Styles */
 .return-button-container {{
   position: fixed;
@@ -454,7 +417,31 @@ st.markdown(f"""
   margin-{'left' if is_arabic else 'right'}: 0.5rem;
 }}
 
-
+.status-indicator{{
+  position: fixed;
+  top: 15px;
+  {'left' if is_arabic else 'right'}: 15px;
+  padding: 0.6rem 1.25rem;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 2rem;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  direction: {'rtl' if is_arabic else 'ltr'};
+}}
+.status-dot{{
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: dot-pulse 1.5s infinite;
+}}
 .status-dot.listening{{background: #ef4444;}}
 .status-dot.speaking{{background: #a78bfa;}}
 @keyframes dot-pulse{{0%,100%{{opacity:1;}}50%{{opacity:0.4;}}}}
