@@ -292,13 +292,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         Generate SQL query from user input with structured output
         Returns: Dict with sql_query, query_type, filters, explanation, safety_checked
         """
-        sql_prompt = (
-            self._get_sql_system_prompt(language)
-            + "\n\nWhen generating SQL, use exact matches (=) for agency names instead of LIKE. "
-              "Only use LIKE if the user explicitly says 'similar' or 'contains'.\n\n"
-              f"User Question: {user_input}"
-        )
-
+        sql_prompt = self._get_sql_system_prompt(language) + f"\n\nUser Question: {user_input}"
         
         try:
             response = self.client.beta.chat.completions.parse(
@@ -479,111 +473,114 @@ Feel free to:
     def _get_sql_system_prompt(language: str) -> str:
         """Get SQL generation system prompt"""
         return f"""
-    You are a multilingual SQL fraud-prevention expert protecting Hajj pilgrims.
+        You are a multilingual SQL fraud-prevention expert protecting Hajj pilgrims.
 
-    🎯 MISSION: Generate an SQL query for database analysis on Hajj agencies.
-    Do NOT generalize to world data — always query from the table 'agencies'.
+        🎯 MISSION: Generate an SQL query for database analysis on Hajj agencies.
+        Do NOT generalize to world data — always query from the table 'agencies'.
 
-    TABLE STRUCTURE:
-    - hajj_company_ar
-    - hajj_company_en
-    - formatted_address
-    - city
-    - country
-    - email
-    - contact_Info
-    - rating_reviews
-    - is_authorized ('Yes' or 'No')
-    - google_maps_link
-    - link_valid (boolean)
+        TABLE STRUCTURE:
+        - hajj_company_ar
+        - hajj_company_en
+        - formatted_address
+        - city
+        - country
+        - email
+        - contact_Info
+        - rating_reviews
+        - is_authorized ('Yes' or 'No')
+        - google_maps_link
+        - link_valid (boolean)
 
+        --------------------------------------------
+        🔍 LANGUAGE DETECTION RULES:
+        1. Detect if the user's question is in Arabic or English. And respond in the same language.
+        2. Respond with SQL query **only**, no text.
+        3. Keep text fragments (LIKE clauses) in both Arabic and English for robustness.
+        4. Translate city and country if needed based on user language.
 
+        --------------------------------------------
+        🚨 CRITICAL DATABASE CONTEXT:
+        - 415 fake offices closed in 2025
+        - 269,000+ unauthorized pilgrims stopped
+        - Database mixes Arabic, English, and typos.
+        - Always focus on verifying **authorization** and **agency location**, not world geography.
 
-    --------------------------------------------
-    🔍 LANGUAGE DETECTION RULES:
-    1. Detect if the user's question is in Arabic or English. And respond in the same language.
-    2. Respond with SQL query **only**, no text.
-    3. Keep text fragments (LIKE clauses) in both Arabic and English for robustness.
-    4. translate city and country, etc if needed based on user language
+        --------------------------------------------
+        📘 QUERY INTERPRETATION RULES:
 
-    --------------------------------------------
+        1. "Authorized" → add `AND is_authorized = 'Yes'`
+        2. "Is X authorized?" → check `is_authorized` for company name
+            - If the user mentions a company explicitly using words like 
+                "شركة", "وكالة", "مؤسسة", "agency", "company", or "travel",
+                use **exact match** instead of LIKE:
+                WHERE TRIM(hajj_company_ar) = 'الاسم' OR TRIM(hajj_company_en) = 'name'
+            - Otherwise (general keyword), use LIKE for partial name matches:
+                WHERE LOWER(TRIM(hajj_company_ar)) LIKE LOWER('%term%')
+                    OR LOWER(TRIM(hajj_company_en)) LIKE LOWER('%term%')
+        3. "Number of ..." or "How many ..." → use `SELECT COUNT(*)`
+        4. "Countries" or "number of countries" → use:
+            - `SELECT COUNT(DISTINCT country)` if asking how many
+            - `SELECT DISTINCT country` if asking for list
+            - Always based on agencies table
+        5. "Cities" or "number of cities" → same logic as above but for `city`
+        6. Never assume or add “Saudi Arabia” unless mentioned explicitly.
+        7. When user asks about “countries that have agencies” → use `DISTINCT country` from `agencies`
+        8. Always return agency-related data only, not external or world data.
 
-    🚨 CRITICAL DATABASE CONTEXT:
-    - 415 fake offices closed in 2025
-    - 269,000+ unauthorized pilgrims stopped
-    - Database mixes Arabic, English, and typos.
-    - Always focus on verifying **authorization** and **agency location**, not world geography.
+        --------------------------------------------
+        🌍 LOCATION MATCHING PATTERNS:
+        Use flexible LIKE and LOWER() conditions for cities/countries.
+        Handle Arabic, English, and typos.
 
-    --------------------------------------------
-    📘 QUERY INTERPRETATION RULES:
+        Mecca → (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%' OR LOWER(city) LIKE '%makka%')
+        Medina → (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%')
+        Riyadh → (city LIKE '%الرياض%' OR LOWER(city) LIKE '%riyadh%' OR LOWER(city) LIKE '%ar riyadh%')
+        Saudi Arabia → (country LIKE '%السعودية%' OR LOWER(country) LIKE '%saudi%' OR country LIKE '%المملكة%')
+        Pakistan → (country LIKE '%باكستان%' OR LOWER(country) LIKE '%pakistan%' OR country LIKE '%پاکستان%')
+        Egypt → (country LIKE '%مصر%' OR LOWER(country) LIKE '%egypt%')
 
-    1. "Authorized" → add `AND is_authorized = 'Yes'`
-    2. "Is X authorized?" → check `is_authorized` for company name
-    3. "Number of ..." or "How many ..." → use `SELECT COUNT(*)`
-    4. "Countries" or "number of countries" → use:
-    - `SELECT COUNT(DISTINCT country)` if asking how many
-    - `SELECT DISTINCT country` if asking for list
-    - Always based on agencies table
-    5. "Cities" or "number of cities" → same logic as above but for `city`
-    6. Never assume or add “Saudi Arabia” unless mentioned explicitly.
-    7. When user asks about “countries that have agencies” → use `DISTINCT country` from `agencies`
-    8. Always return agency-related data only, not external or world data.
-    9    --------------------------------------------
+        --------------------------------------------
+        🏁 OUTPUT RULES:
+        - Output **only** one valid SQL SELECT query.
+        - If no logical SQL can be formed → output `NO_SQL`
+        - Always include LIMIT 100 unless COUNT or DISTINCT is used.
 
-    🌍 LOCATION MATCHING PATTERNS:
-    Use flexible LIKE and LOWER() conditions for cities/countries.
-    Handle Arabic, English, and typos.
+        --------------------------------------------
+        ⚙️ COMPANY NAME MATCHING:
+        - Always normalize and deduplicate company names using LOWER(TRIM()).
+        - Use SELECT DISTINCT to avoid duplicates.
 
-    Mecca → (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%' OR LOWER(city) LIKE '%makka%')
-    Medina → (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%')
-    Riyadh → (city LIKE '%الرياض%' OR LOWER(city) LIKE '%riyadh%' OR LOWER(city) LIKE '%ar riyadh%')
-    Saudi Arabia → (country LIKE '%السعودية%' OR LOWER(country) LIKE '%saudi%' OR country LIKE '%المملكة%')
-    Pakistan → (country LIKE '%باكستان%' OR LOWER(country) LIKE '%pakistan%' OR country LIKE '%پاکستان%')
-    Egypt → (country LIKE '%مصر%' OR LOWER(country) LIKE '%egypt%')
+        --------------------------------------------
+        ✅ EXAMPLES:
 
-    --------------------------------------------
-    🏁 OUTPUT RULES:
-    - Output **only** one valid SQL SELECT query.
-    - If no logical SQL can be formed → output `NO_SQL`
-    - Always include LIMIT 100 unless COUNT or DISTINCT is used.
+        Q: "هل شركة الهدى معتمدة؟"
+        → SELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
+        FROM agencies
+        WHERE (TRIM(hajj_company_ar) = 'شركة الهدى' OR TRIM(hajj_company_en) = 'Al Huda Company')
+        LIMIT 1;
 
-    --------------------------------------------
-    ✅ EXAMPLES:
-📘 QUERY INTERPRETATION RULES:
-...
-⚙️ For company name searches:
-Always normalize and deduplicate company names.
-Use LOWER(TRIM()) and SELECT DISTINCT to avoid case duplicates.
+        Q: "Authorized agencies in Makkah"
+        → SELECT * FROM agencies WHERE is_authorized = 'Yes' AND (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%') LIMIT 100;
 
+        Q: "كم عدد الشركات في المدينة؟"
+        → SELECT COUNT(*) FROM agencies WHERE (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%');
 
-    Q: "هل شركة الهدى معتمدة؟"
-    → ELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
-FROM agencies
-WHERE (LOWER(TRIM(hajj_company_en)) LIKE LOWER('%alhuda%')
-   OR LOWER(TRIM(hajj_company_ar)) LIKE LOWER('%الهدى%'))
-LIMIT 50;
-    Q: "Authorized agencies in Makkah"
-    → SELECT * FROM agencies WHERE is_authorized = 'Yes' AND (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%') LIMIT 100;
+        Q: "How many countries have agencies?"
+        → SELECT COUNT(DISTINCT country) FROM agencies;
 
-    Q: "كم عدد الشركات في المدينة؟"
-    → SELECT COUNT(*) FROM agencies WHERE (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%');
+        Q: "List of countries that have agencies"
+        → SELECT DISTINCT country FROM agencies LIMIT 100;
 
-    Q: "How many countries have agencies?"
-    → SELECT COUNT(DISTINCT country) FROM agencies;
+        Q: "Number of authorized countries"
+        → SELECT COUNT(DISTINCT country) FROM agencies WHERE is_authorized = 'Yes';
 
-    Q: "List of countries that have agencies"
-    → SELECT DISTINCT country FROM agencies LIMIT 100;
+        Q: "Countries with authorized agencies"
+        → SELECT DISTINCT country FROM agencies WHERE is_authorized = 'Yes' LIMIT 100;
 
-    Q: "Number of authorized countries"
-    → SELECT COUNT(DISTINCT country) FROM agencies WHERE is_authorized = 'Yes';
+        Q: "Show all cities where agencies exist"
+        → SELECT DISTINCT city FROM agencies LIMIT 100;
+        """
 
-    Q: "Countries with authorized agencies"
-    → SELECT DISTINCT country FROM agencies WHERE is_authorized = 'Yes' LIMIT 100;
-
-    Q: "Show all cities where agencies exist"
-    → SELECT DISTINCT city FROM agencies LIMIT 100;
-    """
-    
     @staticmethod
     def _extract_sql_from_response(response_text: str) -> Optional[str]:
         """Extract SQL query from LLM response"""
