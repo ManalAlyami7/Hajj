@@ -141,6 +141,29 @@ class ConversationMemory:
 if 'language' not in st.session_state:
     st.session_state.language = 'en'
 
+# ---------------------------
+# Centralized State Initialization
+# ---------------------------
+def initialize_session_state():
+    """Initialize all required session states"""
+    defaults = {
+        "last_audio_hash": None,
+        "is_processing": False,
+        "is_speaking": False,
+        "pending_audio": None,
+        "pending_audio_bytes": None,
+        "current_transcript": "",
+        "current_response": "",
+        "current_metadata": {},
+        "status": t('voice_status_ready', st.session_state.language),
+    }
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
+
+# Initialize states
+initialize_session_state()
+
 # Initialize memory
 memory = ConversationMemory(max_turns=10)
 
@@ -164,6 +187,26 @@ def is_arabic_code(code):
     return code in ('ar', 'arabic', 'العربية')
 
 is_arabic = is_arabic_code(st.session_state.language)
+
+# ---------------------------
+# Handle Clear Memory Button
+# ---------------------------
+def handle_clear_memory():
+    """Clear memory and reset states"""
+    memory.clear_memory()
+    st.session_state.current_transcript = ""
+    st.session_state.current_response = ""
+    st.session_state.current_metadata = {}
+    st.session_state.last_audio_hash = None
+    st.session_state.pending_audio = None
+    st.session_state.pending_audio_bytes = None
+    logger.info("Memory and states cleared successfully")
+
+# Check if clear memory button was clicked
+if st.session_state.get('clear_memory_clicked', False):
+    handle_clear_memory()
+    st.session_state.clear_memory_clicked = False
+    st.rerun()
 
 # ---------------------------
 # Styles (RTL support for Arabic)
@@ -211,28 +254,6 @@ st.markdown(f"""
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}}
-
-/* Clear Memory Button */
-.clear-memory-btn {{
-  position: fixed;
-  top: 15px;
-  {'left' if is_arabic else 'right'}: 15px;
-  padding: 0.6rem 1.25rem;
-  background: rgba(239, 68, 68, 0.15);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 2rem;
-  color: #ef4444;
-  font-weight: 600;
-  font-size: 0.7rem;
-  z-index: 1000;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}}
-.clear-memory-btn:hover {{
-  background: rgba(239, 68, 68, 0.25);
-  border-color: rgba(239, 68, 68, 0.5);
 }}
 
 /* Return Button Styles */
@@ -476,25 +497,6 @@ def _hash_bytes(b):
     return hashlib.sha256(b).hexdigest()
 
 # ---------------------------
-# Default session state keys
-# ---------------------------
-defaults = {
-    "voice_messages": [],
-    "last_audio_hash": None,
-    "is_recording": False,
-    "is_processing": False,
-    "is_speaking": False,
-    "pending_audio": None,
-    "current_transcript": "",
-    "current_response": "",
-    "current_metadata": {},
-    "status": t('voice_status_ready', st.session_state.language),
-}
-for k, v in defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
-
-# ---------------------------
 # UI Elements
 # ---------------------------
 
@@ -507,44 +509,42 @@ st.markdown(f"""
   </a>
 </div>
 """, unsafe_allow_html=True)
+
 # Compact top bar
 st.markdown('<div style="margin-bottom: 1rem;"></div>', unsafe_allow_html=True)
 
-# --- Memory, Clear Button & Status beside each other ---
+# --- Memory Badge, Clear Button & Status ---
 memory_summary = memory.get_memory_summary()
 
 status_class = (
-    "listening" if st.session_state.is_recording
-    else "speaking" if st.session_state.is_speaking
+    "speaking" if st.session_state.is_speaking
+    else "listening" if st.session_state.is_processing
     else ""
 )
 status_text = st.session_state.status or "Ready"
 
-st.markdown(f"""
-<div class="top-controls" style="
-    position: fixed;
-    top: 15px;
-    {'left' if is_arabic else 'right'}: 15px;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    z-index: 1500;
-    direction: {'rtl' if is_arabic else 'ltr'};
-">
-  <div class="memory-badge">
-    🧠 {memory_summary['total_messages']} messages  | ⏱️ {memory_summary['session_duration']}
-  </div>
+# Create columns for top controls
+col_mem, col_clear, col_status = st.columns([3, 2, 3])
 
-  <div class="clear-memory-btn" onclick="fetch('?clear_memory=true', {{method:'POST'}})">
-    🗑️ Clear memory 
-  </div>
+with col_mem:
+    st.markdown(f"""
+    <div class="memory-badge">
+        🧠 {memory_summary['total_messages']} messages | ⏱️ {memory_summary['session_duration']}
+    </div>
+    """, unsafe_allow_html=True)
 
-  <div class="status-indicator">
-    <div class="status-dot {status_class}"></div>
-    {status_text}
-  </div>
-</div>
-""", unsafe_allow_html=True)
+with col_clear:
+    if st.button("🗑️ Clear Memory", key="clear_memory_btn", use_container_width=True):
+        st.session_state.clear_memory_clicked = True
+        st.rerun()
+
+with col_status:
+    st.markdown(f"""
+    <div class="status-indicator">
+        <div class="status-dot {status_class}"></div>
+        {status_text}
+    </div>
+    """, unsafe_allow_html=True)
 
 st.markdown(f"""
 <div class="voice-header">
@@ -553,30 +553,21 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-if st.query_params.get("clear_memory") == "true":
-    memory.clear_memory()
-    st.session_state.voice_messages = []
-    st.rerun()
-
-
-# Status indicator
-
-
 # ---------------------------
 # Main UI layout
 # ---------------------------
 st.markdown('<div class="voice-container">', unsafe_allow_html=True)
 col_left, col_right = st.columns(2)
+
 with col_left:
     avatar_class = (
-        "listening" if st.session_state.is_recording
-        else "speaking" if st.session_state.is_speaking
-        else "processing" if st.session_state.is_processing
+        "speaking" if st.session_state.is_speaking
+        else "listening" if st.session_state.is_processing
         else ""
     )
 
     waveform_html = ""
-    if st.session_state.is_recording:
+    if st.session_state.is_processing:
         waveform_html = """
         <div class="waveform">
             <div class="waveform-bar"></div>
@@ -586,8 +577,6 @@ with col_left:
             <div class="waveform-bar"></div>
         </div>
         """
-
-    recording_label = f"🔴 {t('voice_recording', st.session_state.language)}" if st.session_state.is_recording else f"🎤 {t('voice_press_to_speak', st.session_state.language)}"
 
     # Wrap everything in a flex column container
     st.markdown(f"""
@@ -599,8 +588,6 @@ with col_left:
         <div class="voice-avatar {avatar_class}">🕋</div>
       </div>
       {waveform_html}
-
-      
     </div>
     """, unsafe_allow_html=True)
 
@@ -615,9 +602,9 @@ with col_right:
     transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
     response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
 
-    import html, time
+    import html
     clean_transcript = html.escape(transcript)
-    clean_response = response_text
+    clean_response = html.escape(response_text)
 
     # ✅ Transcript panel first
     st.markdown(f"""
@@ -627,7 +614,7 @@ with col_right:
         <h3 class="panel-title">Live Transcript</h3>
         <div class="panel-badge">
             {'● ' + (t('voice_status_listening', st.session_state.language)
-            if st.session_state.is_recording
+            if st.session_state.is_processing
             else t('voice_status_ready', st.session_state.language))}
         </div>
       </div>
@@ -635,24 +622,23 @@ with col_right:
     </div>
     """, unsafe_allow_html=True)
 
-    # ✅ Response container (CLOSED properly)
+    # ✅ Response container
     st.markdown(f"""
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
-        <div class="panel-icon">🤖</div>
-        <h3 class="panel-title">AI Response</h3>
+        <div class="panel-icon">🕋</div>
+        <h3 class="panel-title">Assistant Response</h3>
         <div class="panel-badge">
             {'● ' + (t('voice_status_speaking', st.session_state.language)
             if st.session_state.is_speaking
             else t('voice_status_ready', st.session_state.language))}
         </div>
       </div>
-      <div class='response-content'>{html.escape(clean_response)}</div> 
+      <div class='response-content'>{clean_response}</div> 
     </div>
     """, unsafe_allow_html=True)
-# ----------------------
 
-    # ✅ Now close the container
+st.markdown('</div>', unsafe_allow_html=True)
 
 # Play pending audio
 # ---------------------------
@@ -663,7 +649,6 @@ if st.session_state.get('pending_audio'):
         st.markdown("<div style='display:none'>", unsafe_allow_html=True)
         st.audio(st.session_state.pending_audio, format="audio/mp3", autoplay=True)
         st.markdown("</div>", unsafe_allow_html=True)
-
     except Exception as e:
         logger.warning("Failed to play pending audio: %s", e)
     
