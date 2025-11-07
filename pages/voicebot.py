@@ -701,7 +701,6 @@ with col_right:
       <div class="panel-header">
         <div class="panel-icon">🕋</div>
         <h3 class="panel-title">Assistant Response</h3>
-        {f'<button class="stop" style="background-color:#e74c3c;color:white;border:none;padding:0.25rem 0.5rem;border-radius:4px;cursor:pointer;" onclick="window.dispatchEvent(new Event(\'stopSpeaking\'));">{t("stop", st.session_state.language)}</button>' if st.session_state.is_speaking else ''}
         <div class="panel-badge">
             {'● ' + (t('voice_status_speaking', st.session_state.language)
             if st.session_state.is_speaking
