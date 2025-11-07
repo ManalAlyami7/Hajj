@@ -569,7 +569,7 @@ st.markdown("""
 <div class="voice-container" style="display: flex; align-items: flex-end; gap: 2rem;">
 """, unsafe_allow_html=True)
 
-col_left, col_right = st.columns([1, 2])  # optional: adjust widths
+col_left, col_right = st.columns([1, 1])  # optional: adjust widths
 
 with col_left:
     avatar_class = (
