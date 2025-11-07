@@ -634,11 +634,7 @@ with col_right:
 
     # ✅ Placeholder MUST be inside the container
     response_placeholder = st.empty()
-
-    # ✅ Now close the container
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # ✅ Streaming effect AFTER placeholder exists
+        # ✅ Streaming effect AFTER placeholder exists
     streamed_text = ""
     if clean_response:
         for word in clean_response.split():
@@ -655,7 +651,11 @@ with col_right:
         )
 
 
-# ---------------------------
+# ----------------------
+
+    # ✅ Now close the container
+    st.markdown("</div>", unsafe_allow_html=True)
+
 # Play pending audio
 # ---------------------------
 if st.session_state.get('pending_audio'):
