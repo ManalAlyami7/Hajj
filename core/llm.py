@@ -556,7 +556,7 @@ Feel free to:
         Q: "هل شركة الهدى معتمدة؟"
         → SELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
         FROM agencies
-        WHERE (TRIM(hajj_company_ar) = 'شركة الهدى' OR TRIM(hajj_company_en) = 'Al Huda Company')
+        WHERE (TRIM(hajj_company_ar) = 'الهدى' OR TRIM(hajj_company_en) = 'AL HOUDA')
         LIMIT 1;
 
         Q: "Authorized agencies in Makkah"
