@@ -484,7 +484,7 @@ st.markdown(f"""
 .status-indicator{{
   position: fixed;
   top: 15px;
-  {'left' if is_arabic else 'right'}: 430px;
+  {'left' if is_arabic else 'right'}: 440px;
   padding: 0.6rem 1.25rem;
   background: rgba(0, 0, 0, 0.15);
   border-radius: 2rem;
