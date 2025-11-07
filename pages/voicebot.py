@@ -266,6 +266,7 @@ st.markdown(f"""
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  text-decoration: none
   padding: 0.6rem 1.25rem;
   background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(20px);
@@ -285,6 +286,7 @@ st.markdown(f"""
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.35);
   transform: {transform_direction};
+  text-decoration: none
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
   color: #ffffff;
 }}
