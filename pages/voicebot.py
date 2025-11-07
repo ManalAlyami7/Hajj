@@ -241,7 +241,7 @@ st.markdown(f"""
 .memory-badge {{
   position: fixed;
   top: 15px;
-  {'left' if is_arabic else 'right'}: 155px;
+  {'left' if is_arabic else 'right'}: 170px;
   padding: 0.6rem 1.25rem;
   background: rgba(167, 139, 250, 0.15);
   backdrop-filter: blur(20px);
@@ -438,16 +438,17 @@ st.markdown(f"""
   margin-{'left' if is_arabic else 'right'}: 0.5rem;
 }}
 /* Clear Memory Button */ 
+./* Clear Memory / New Conversation Button */ 
 .clear-memory-btn {{
     position: fixed;
     top: 15px;
     {'left' if is_arabic else 'right'}: 15px;
     padding: 0.6rem 1.25rem;
-    background: rgba(239, 68, 68, 0.75); 
+    background: rgba(255, 255, 255, 0.9);  /* White */
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: #1e293b;  /* Dark text for contrast */
     font-weight: 600;
     font-size: 0.75rem;
     z-index: 1000;
@@ -457,30 +458,31 @@ st.markdown(f"""
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
 }}
 
 .clear-memory-btn:hover {{
-    background: rgba(239, 68, 68, 0.9);
-    border-color: rgba(239, 68, 68, 0.6);
+    background: rgba(255, 255, 255, 1);
+    border-color: rgba(255, 255, 255, 0.8);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    color: #0f172a;
 }}
 
 .clear-memory-btn:active {{
     transform: translateY(0);
-    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.3);
-    background: rgba(220, 38, 38, 0.85);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    background: rgba(248, 250, 252, 0.95);
 }}
 
 .clear-memory-btn:focus {{
-    outline: 2px solid rgba(239, 68, 68, 0.5);
+    outline: 2px solid rgba(96, 165, 250, 0.5);
     outline-offset: 2px;
 }}
 .status-indicator{{
   position: fixed;
   top: 15px;
-  {'left' if is_arabic else 'right'}: 365px;
+  {'left' if is_arabic else 'right'}: 390px;
   padding: 0.6rem 1.25rem;
   background: rgba(0, 0, 0, 0.15);
   border-radius: 2rem;
@@ -589,7 +591,7 @@ with col_clear:
     st.markdown(f"""
     <button class="clear-memory-btn" 
         onclick="document.querySelector('[data-testid=\\'stButton-clear_memory_btn\\'] button').click()">
-        {t('voice_clear_memory', st.session_state.language)}
+        + {t('voice_clear_memory', st.session_state.language)}
     </button>
     """, unsafe_allow_html=True)
 
@@ -726,7 +728,7 @@ if st.session_state.get('pending_audio'):
     
     # Optional: Reset to "Ready" after a brief delay
     time.sleep(2)
-    st.rerun()
+    
     st.session_state.status = t('voice_status_ready', st.session_state.language)
 
 # ---------------------------
