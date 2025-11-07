@@ -586,10 +586,10 @@ with col_mem:
 
 with col_clear:
     # 2️⃣ Visible custom button triggering the hidden Streamlit button
-    st.markdown("""
+    st.markdown(f"""
     <button class="clear-memory-btn" 
         onclick="document.querySelector('[data-testid=\\'stButton-clear_memory_btn\\'] button').click()">
-        🗑️ Clear Memory
+        {t('voice_clear_memory', st.session_state.language)}
     </button>
     """, unsafe_allow_html=True)
 
@@ -725,7 +725,8 @@ if st.session_state.get('pending_audio'):
     st.session_state.status = t('voice_status_completed', st.session_state.language)
     
     # Optional: Reset to "Ready" after a brief delay
-    time.sleep(2)  # Show "Completed" for 2 seconds
+    time.sleep(2)
+    st.rerun()
     st.session_state.status = t('voice_status_ready', st.session_state.language)
 
 # ---------------------------
