@@ -68,12 +68,25 @@ class VoiceProcessor:
 
             # Context prompt to guide Whisper transcription
             # This helps with domain-specific terms and reduces errors
-            context_prompt = (
-                "Hajj pilgrimage, authorized agencies, Ministry of Hajj and Umrah, "
-                "verifying agencies, fraud prevention, scam protection, authorized offices, "
-                "Umrah, Makkah, Medina, Saudi Arabia, pilgrims, "
-                "agency verification, company authorization, travel agencies"
-            )
+            context_prompt = """
+The user is asking about Hajj and Umrah travel agencies and authorized offices.
+Transcribe carefully, focusing on names of agencies and cities that might appear in our database.
+
+The database contains thousands of official Hajj agencies across Saudi Arabia
+and worldwide — especially major cities like those in the GCC, Asia, Europe, and Africa.
+
+If a word sounds like a city or an agency name, preserve its exact pronunciation
+and do not try to normalize or anglicize it. Avoid converting Arabic names
+into English variants, and keep Arabic pronunciation accurate (e.g. 'Riyadh',
+'Makkah', 'Al Rahma', 'Dar Al Eman').
+
+Focus on accurate recognition of:
+- Agency names related to Hajj and Umrah
+- City names from Saudi Arabia or international locations
+- Keywords such as "authorized", "licensed", "registered", "verify", "booking"
+
+The recording may mix Arabic and English words — transcribe both naturally.
+"""
 
             # OPTIMIZATION: Use text format instead of verbose_json (faster)
             # OPTIMIZATION: Set temperature to 0 for faster, deterministic results
@@ -92,11 +105,7 @@ class VoiceProcessor:
             language = "arabic" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "english"
             
             # Fix common transcription errors for "Hajj" (keep as fallback)
-            # The prompt should reduce these errors, but we keep this as backup
-            words_like_hajj = ['hatch', 'hatching', 'head', 'hadj', 'haj', 'hajji', 'haji', 'hajje', 'hajjeh']
-            for word in words_like_hajj:
-                text = text.replace(word, 'Hajj')
-                text = text.replace(word.capitalize(), 'Hajj')
+            
 
             result = {
                 "text": text.strip(),
