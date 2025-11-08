@@ -21,6 +21,9 @@ TRANSLATIONS = {
         "examples_title": "💡 Quick Examples",
         "clear_chat": "🧹 Clear Chat History",
         "features_title": "ℹ️ Features",
+        "language_en": "English",
+        "language_ar": "Arabic",
+        "language_ur":"Urdu",
         
         # Mode Navigation
         "mode_title": "🔀 Mode",
@@ -138,6 +141,9 @@ TRANSLATIONS = {
         "examples_title": "💡 أمثلة سريعة",
         "clear_chat": "🧹 مسح سجل المحادثة",
         "features_title": "ℹ️ المميزات",
+        "language_en": "الإنجليزية",
+        "language_ar": "العربية",
+        "language_ur":"أردو",
         
         # Mode Navigation
         "mode_title": "🔀 الوضع",
@@ -255,7 +261,11 @@ TRANSLATIONS = {
         "examples_title": "💡 فوری مثالیں",
         "clear_chat": "🧹 چیٹ کی تاریخ صاف کریں",
         "features_title": "ℹ️ خصوصیات",
-        
+        "language_en": "انگریزی",
+        "language_ar": "عربی",
+        "language_ur": "اردو",
+
+
         # Mode Navigation
         "mode_title": "🔀 موڈ",
         "mode_chatbot": "چیٹ بوٹ",
