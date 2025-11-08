@@ -11,7 +11,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from core.graph import ChatGraph
-from core.voice_processor import VoiceProcessor
+from core.voice_processor import VoiceProcessor, VoiceQueryProcessor
 from core.voice_llm import LLMManager
 from core.database import DatabaseManager
 
@@ -103,6 +103,7 @@ class VoiceGraphBuilder:
         self.voice_llm = LLMManager()
         self.db_manager = DatabaseManager()
         self.graph = ChatGraph(self.db_manager, self.voice_llm)
+        self.query_proc = VoiceQueryProcessor(self.db_manager, self.voice_llm)
 
     # -----------------------------
     # Node Functions
@@ -170,8 +171,20 @@ class VoiceGraphBuilder:
         state['user_input'] = state.get('transcript', '')
         state['language'] = state.get('detected_language', 'en')
         context_string = state['conversation_context'] if 'conversation_context' in state else ""
+        agency_names = self.query_proc.get_agency_names()
+        matched_names = self.query_proc.correct_transcript(state['user_input'], agency_names)
+        if len(matched_names) == 1:
+                cleaned_text = matched_names[0]
+        else:
+                # multiple possible matches
+                cleaned_text = ", ".join(matched_names)
+
+
+
+        
+
         sql_result = self.voice_llm.generate_sql(
-            state["user_input"],
+            cleaned_text,
             state["language"],
             context_string
         )
