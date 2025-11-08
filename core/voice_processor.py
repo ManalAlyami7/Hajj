@@ -25,6 +25,44 @@ from core.voice_llm import LLMManager
 # Configure logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+from difflib import get_close_matches
+from sqlalchemy import text
+import openai
+
+class VoiceQueryProcessor:
+    def __init__(self, db, api_key):
+        self.db = db
+        openai.api_key = api_key
+
+    def get_agency_names(self):
+        # Get agency names from DB (Arabic + English)
+        engine = self.db._create_engine()
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT agency_name_ar, agency_name_en FROM agencies"))
+            return [ar or en for ar, en in result.fetchall() if ar or en]
+
+    def correct_transcript(self, raw_text, agency_names):
+        # Step 1️⃣ – Clean text and fix typos but keep real names intact
+        prompt = f"""
+        Fix any transcription or spacing errors in this Arabic-English text.
+        Keep agency or company names unchanged if they appear similar to any of these:
+        {agency_names}
+        Text: {raw_text}
+        """
+        response = openai.ChatCompletion.create(
+            model="gpt-4-turbo",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        cleaned = response.choices[0].message.content.strip()
+
+        # Step 2️⃣ – Fuzzy match to existing agency names (Arabic or English)
+        match = get_close_matches(cleaned.lower(), [n.lower() for n in agency_names], n=1, cutoff=0.6)
+        if match:
+            for n in agency_names:
+                if n.lower() == match[0]:
+                    return n  # Return matched official name
+
+        return cleaned  # If no close match, return as is
 
 
 class VoiceProcessor:
@@ -62,59 +100,6 @@ class VoiceProcessor:
         return AsyncOpenAI(api_key=api_key)
 
 
-    def get_agency_names(self):
-        engine = self.db._create_engine()
-        with engine.connect() as conn:
-            result = conn.execute(text("SELECT  hajj_company_ar, hajj_company_en FROM agencies"))
-            names = [f"{ar} ({en})" if ar and en else ar or en for ar, en in result.fetchall()]
-        return names
-    
-    def clean_transcript_with_db(self, raw_text, agency_names):
-        # Normalize text for better matching
-        text_lower = raw_text.lower()
-
-        # Try to find partial matches (Arabic or English)
-        matched_agency = None
-        for name in agency_names:
-            name_lower = name.lower()
-            # Check if a substring of the correct name appears in the transcript
-            if any(part in text_lower for part in name_lower.split()):
-                matched_agency = name
-                break
-
-            # Or use fuzzy partial ratio
-            similarity = difflib.SequenceMatcher(None, text_lower, name_lower).ratio()
-            if similarity > 0.6:  # adjustable threshold
-                matched_agency = name
-                break
-
-        # Construct system prompt with context
-        if matched_agency:
-            prompt = f"""
-            Fix transcription errors in this Arabic-English sentence, 
-            but keep this agency name exactly as written: "{matched_agency}".
-            Text: {raw_text}
-            """
-        else:
-            prompt = f"""
-            Fix transcription errors in this Arabic-English sentence, especially for proper nouns and company names.
-            Text: {raw_text}
-            """
-
-        response =  self.client.beta.chat.completions.parse(
-            model="gpt-4-turbo",
-            messages=[{"role": "user", "content": prompt}]
-        )
-
-        cleaned = response.choices[0].message.content.strip()
-
-        # If we detected an existing agency, ensure it's in the final text
-        if matched_agency and matched_agency.lower() not in cleaned.lower():
-            cleaned += f" ({matched_agency})"
-
-        return cleaned
-
-
 
     # --- Audio Transcription (OPTIMIZED) --------------------------------------
     def transcribe_audio(self, audio_bytes: bytes) -> Dict:
@@ -145,15 +130,19 @@ class VoiceProcessor:
             language = "arabic" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "english"
             
             # Fix common transcription errors for "Hajj" (keep as fallback)
-            names = self.get_agency_names()
+            proc = VoiceQueryProcessor()
 
-            corrected_text = self.clean_transcript_with_db(text, names)
+            agency_names = proc.get_agency_names()
+
+
+            cleaned_text = proc.correct_transcript(text, agency_names)
+
 
 
            
 
             result = {
-                "text": corrected_text.strip(),
+                "text": cleaned_text.strip(),
                 "language": language,
                 "confidence": 1.0,
                 "duration": 0  # Not available in text format
