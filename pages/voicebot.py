@@ -684,7 +684,7 @@ with col_right:
     <div class="transcript-container">
       <div class="panel-header">
         <div class="panel-icon">🗣️</div>
-        <h3 class="panel-title">Spoken Request</h3>
+        <h3 class="panel-title">{t('voice_transcript_title', st.session_state.language)}</h3>
         <div class="panel-badge">
             {'● ' + (t('voice_status_listening', st.session_state.language)
             if st.session_state.is_speaking
@@ -700,7 +700,7 @@ with col_right:
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
         <div class="panel-icon">🕋</div>
-        <h3 class="panel-title">Assistant Response</h3>
+        <h3 class="panel-title">{t('voice_response_title', st.session_state.language)}</h3>
         <div class="panel-badge">
             {'● ' + (t('voice_status_speaking', st.session_state.language)
             if st.session_state.is_speaking
