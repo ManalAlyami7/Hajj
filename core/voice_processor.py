@@ -163,20 +163,10 @@ class VoiceProcessor:
                 "error": str(e)
             }
         
+
     def preprocess_arabic(text):
-            """
-            Reshape Arabic text and optionally add diacritics for TTS.
-            """
-            # Step 1: Reshape text for proper rendering
-            reshaped_text = arabic_reshaper.reshape(text)
+        return arabic_reshaper.reshape(text)
 
-            # Step 2: Add diacritics (optional but improves TTS pronunciation)
-            try:
-                diacritized_text = diacritize(reshaped_text)
-            except Exception:
-                diacritized_text = reshaped_text  # fallback if diacritization fails
-
-            return diacritized_text
 
     # --- Text-to-Speech (OPTIMIZED WITH CHUNKING) -----------------------------
     def text_to_speech(self, text: str, language: str = "en") -> Optional[bytes]:
