@@ -1,6 +1,6 @@
 """
-Hajj Voice Assistant - 
-Uses the existing translation system from utils.translations
+Hajj Voice Assistant - Enhanced Version
+Features: Elegant sidebar, language selection, accessibility options, improved UX
 """
 import time
 import re
@@ -132,21 +132,18 @@ class ConversationMemory:
         start = datetime.fromisoformat(st.session_state.voice_memory['session_start'])
         duration = datetime.now() - start
         minutes = int(duration.total_seconds() / 60)
-        return f"{minutes} minutes"
+        return f"{minutes} min"
 
 
 # ---------------------------
-# Language Detection / Session defaults
-# ---------------------------
-if 'language' not in st.session_state:
-    st.session_state.language = 'en'
-
-# ---------------------------
-# Centralized State Initialization
+# Session State Initialization
 # ---------------------------
 def initialize_session_state():
     """Initialize all required session states"""
     defaults = {
+        "language": 'en',
+        "font_size": 'normal',  # normal, large, extra-large
+        "high_contrast": False,
         "last_audio_hash": None,
         "is_processing": False,
         "is_speaking": False,
@@ -155,7 +152,8 @@ def initialize_session_state():
         "current_transcript": "",
         "current_response": "",
         "current_metadata": {},
-        "status": t('voice_status_ready', st.session_state.language),
+        "status": "Ready",
+        "sidebar_state": "expanded",  # expanded or collapsed
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -167,14 +165,15 @@ initialize_session_state()
 # Initialize memory
 memory = ConversationMemory(max_turns=10)
 
-lang_code = st.session_state.language
+# Page config
 st.set_page_config(
-    page_title=t('voice_page_title', st.session_state.language),
+    page_title="🕋 Hajj Voice Assistant",
     page_icon="🕋",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
+# Initialize voice processor
 def init_voice_graph():
     voice_processor = VoiceProcessor()
     graph_builder = VoiceGraphBuilder(voice_processor)
@@ -183,51 +182,206 @@ def init_voice_graph():
 
 voice_processor, workflow = init_voice_graph()
 
+# Language settings
 def is_arabic_code(code):
     return code in ('ar', 'arabic', 'العربية')
 
 is_arabic = is_arabic_code(st.session_state.language)
 
 # ---------------------------
-# Handle Clear Memory Button
+# Sidebar
 # ---------------------------
-def handle_clear_memory():
-    """Clear memory and reset states"""
-    memory.clear_memory()
-    st.session_state.current_transcript = ""
-    st.session_state.current_response = ""
-    st.session_state.current_metadata = {}
-    st.session_state.last_audio_hash = None
-    st.session_state.pending_audio = None
-    st.session_state.pending_audio_bytes = None
-    logger.info("Memory and states cleared successfully")
+with st.sidebar:
+    st.markdown("""
+    <div style="text-align: center; padding: 1rem 0 1.5rem 0;">
+        <div style="font-size: 3rem; margin-bottom: 0.5rem;">🕋</div>
+        <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700; 
+                   background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+                   -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Voice Assistant
+        </h2>
+        <p style="color: #64748b; font-size: 0.85rem; margin-top: 0.25rem;">
+            Settings & Controls
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Language Selection
+    st.markdown("### 🌐 Language")
+    language_options = {
+        'English': 'en',
+        'العربية': 'ar',
+        'اردو': 'ur'
+    }
+    
+    current_lang_display = [k for k, v in language_options.items() if v == st.session_state.language][0]
+    
+    selected_language = st.selectbox(
+        "Choose your language",
+        options=list(language_options.keys()),
+        index=list(language_options.keys()).index(current_lang_display),
+        label_visibility="collapsed"
+    )
+    
+    if language_options[selected_language] != st.session_state.language:
+        st.session_state.language = language_options[selected_language]
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # Accessibility Options
+    st.markdown("### ♿ Accessibility")
+    
+    # Font Size
+    font_size_options = {
+        'Normal': 'normal',
+        'Large': 'large',
+        'Extra Large': 'extra-large'
+    }
+    
+    current_font_display = [k for k, v in font_size_options.items() if v == st.session_state.font_size][0]
+    
+    selected_font = st.selectbox(
+        "Font Size",
+        options=list(font_size_options.keys()),
+        index=list(font_size_options.keys()).index(current_font_display)
+    )
+    
+    if font_size_options[selected_font] != st.session_state.font_size:
+        st.session_state.font_size = font_size_options[selected_font]
+        st.rerun()
+    
+    # High Contrast Mode
+    high_contrast = st.checkbox(
+        "High Contrast Mode",
+        value=st.session_state.high_contrast
+    )
+    
+    if high_contrast != st.session_state.high_contrast:
+        st.session_state.high_contrast = high_contrast
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # Memory Stats
+    st.markdown("### 🧠 Memory Status")
+    memory_summary = memory.get_memory_summary()
+    
+    st.markdown(f"""
+    <div style="background: rgba(96, 165, 250, 0.1); padding: 1rem; border-radius: 0.75rem; 
+                border-left: 3px solid #60a5fa;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="color: #64748b; font-size: 0.85rem;">Messages</span>
+            <strong style="color: #1e293b;">{memory_summary['total_messages']}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+            <span style="color: #64748b; font-size: 0.85rem;">Duration</span>
+            <strong style="color: #1e293b;">{memory_summary['session_duration']}</strong>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Clear Memory Button
+    if st.button("🗑️ Clear Memory", use_container_width=True, type="secondary"):
+        memory.clear_memory()
+        st.session_state.current_transcript = ""
+        st.session_state.current_response = ""
+        st.session_state.current_metadata = {}
+        st.session_state.last_audio_hash = None
+        st.session_state.pending_audio = None
+        st.session_state.pending_audio_bytes = None
+        st.success("Memory cleared!")
+        time.sleep(1)
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # Sample Questions
+    st.markdown("### 💡 Sample Questions")
+    
+    sample_questions = {
+        'en': [
+            "What are the Hajj requirements?",
+            "Find affordable packages",
+            "When should I book?",
+            "Tell me about Mina"
+        ],
+        'ar': [
+            "ما هي متطلبات الحج؟",
+            "ابحث عن باقات ميسورة",
+            "متى يجب أن أحجز؟",
+            "أخبرني عن منى"
+        ],
+        'ur': [
+            "حج کے تقاضے کیا ہیں؟",
+            "سستے پیکجز تلاش کریں",
+            "مجھے کب بک کرنا چاہیے؟",
+            "منیٰ کے بارے میں بتائیں"
+        ]
+    }
+    
+    current_samples = sample_questions.get(st.session_state.language, sample_questions['en'])
+    
+    for question in current_samples:
+        st.markdown(f"""
+        <div style="background: rgba(255, 255, 255, 0.05); padding: 0.5rem 0.75rem; 
+                    border-radius: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;
+                    border: 1px solid rgba(255, 255, 255, 0.1); color: #94a3b8;">
+            💬 {question}
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Navigation
+    st.markdown("### 🏠 Navigation")
+    if st.button("← Back to Chat", use_container_width=True, type="primary"):
+        st.switch_page("pages/chat.py")  # Adjust path as needed
 
-# Check if clear memory button was clicked
-if st.session_state.get('clear_memory_clicked', False):
-    handle_clear_memory()
-    st.session_state.clear_memory_clicked = False
-    st.rerun()
+# ---------------------------
+# Dynamic Styling
+# ---------------------------
+# Font size mapping
+font_sizes = {
+    'normal': {'base': '1rem', 'title': '2.2rem', 'transcript': '1.1rem', 'panel': '1.2rem'},
+    'large': {'base': '1.15rem', 'title': '2.5rem', 'transcript': '1.25rem', 'panel': '1.35rem'},
+    'extra-large': {'base': '1.3rem', 'title': '2.8rem', 'transcript': '1.4rem', 'panel': '1.5rem'}
+}
 
-# ---------------------------
-# Styles (RTL support for Arabic)
-# ---------------------------
-rtl_class = 'rtl' if is_arabic else ''
+current_sizes = font_sizes[st.session_state.font_size]
+
+# Color scheme
+if st.session_state.high_contrast:
+    bg_gradient = "linear-gradient(135deg, #000000 0%, #1a1a1a 100%)"
+    panel_bg = "rgba(255, 255, 255, 0.98)"
+    text_primary = "#000000"
+    text_secondary = "#333333"
+    border_color = "rgba(0, 0, 0, 0.3)"
+else:
+    bg_gradient = "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)"
+    panel_bg = "rgba(248, 250, 252, 0.95)"
+    text_primary = "#1e293b"
+    text_secondary = "#64748b"
+    border_color = "rgba(15, 23, 42, 0.1)"
+
+# RTL support
 text_align = 'right' if is_arabic else 'left'
 flex_direction = 'row-reverse' if is_arabic else 'row'
-return_position = 'right: 20px;' if is_arabic else 'left: 20px;'
-transform_direction = 'translateX(5px)' if is_arabic else 'translateX(-5px)'
-icon_transform = 'translateX(3px)' if is_arabic else 'translateX(-3px)'
-arrow_icon = '←' if not is_arabic else '→'
 
 st.markdown(f"""
 <style>
+/* Global Styles */
 .stApp {{
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  background: {bg_gradient};
   background-attachment: fixed;
   overflow: hidden !important;
   height: 100vh;
 }}
+
 #MainMenu, footer, header {{visibility: hidden;}}
+
 .main .block-container {{
   padding: 0.75rem 1rem;
   max-width: 1400px;
@@ -237,116 +391,147 @@ st.markdown(f"""
   direction: {'rtl' if is_arabic else 'ltr'};
 }}
 
-/* Memory Badge */
-.memory-badge {{
-  position: fixed;
-  top: 15px;
-  {'left' if is_arabic else 'right'}: 225px;
-  padding: 0.6rem 1.25rem;
-  background: rgba(167, 139, 250, 0.15);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(167, 139, 250, 0.3);
+/* Sidebar Styling */
+[data-testid="stSidebar"] {{
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}}
+
+[data-testid="stSidebar"] .stMarkdown {{
+  color: #e2e8f0;
+}}
+
+/* Voice Header */
+.voice-header {{
+  text-align: center;
+  padding: 0.75rem 0;
+  margin-bottom: 2rem;
+}}
+
+.voice-title {{
+  font-size: {current_sizes['title']};
+  font-weight: 800;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.25rem;
+}}
+
+.voice-subtitle {{
+  color: rgba(255, 255, 255, 0.85);
+  font-size: {current_sizes['base']};
+}}
+
+/* Main Container */
+.voice-container {{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  padding: 0 1rem;
+}}
+
+/* Left Panel - Avatar */
+.voice-left {{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 2rem;
-  color: #a78bfa;
-  font-weight: 600;
-  font-size: 0.75rem;
-  z-index: 1000;
+  padding: 1.5rem;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  position: relative;
+}}
+
+.voice-avatar {{
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-}}
-/* Return Button Styles */
-.return-button-container {{
-  position: fixed;
-  top: 15px;
-  {return_position}
-  z-index: 2000;
-}}
-.return-button {{
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1.25rem;
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 2rem;
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 600;
-  font-size: 0.9rem;
-  text-decoration: none !important; /* Ensure no underline */
+  justify-content: center;
+  font-size: 90px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  box-shadow: 0 20px 60px rgba(251, 191, 36, 0.4);
+  border: 6px solid rgba(255, 255, 255, 0.15);
+  animation: float 3s ease-in-out infinite;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  direction: {'rtl' if is_arabic else 'ltr'};
 }}
 
-.return-button:hover {{
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.35);
-  transform: {transform_direction};
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  color: #ffffff;
-  text-decoration: none !important; 
+.voice-avatar.listening {{
+  animation: pulse-listening 0.8s infinite;
+  box-shadow: 0 0 80px rgba(251, 191, 36, 0.8);
 }}
 
-.return-button .icon {{
-  font-size: 1.2rem;
-  transition: transform 0.3s ease;
+.voice-avatar.speaking {{
+  animation: pulse-speaking 0.6s infinite;
+  box-shadow: 0 0 80px rgba(245, 158, 11, 0.8);
 }}
 
-.return-button:hover .icon {{
-  transform: {icon_transform};
+.voice-ring {{
+  position: absolute;
+  border: 3px solid rgba(251, 191, 36, 0.3);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: expand 3s ease-out infinite;
 }}
-.voice-header{{text-align:center;padding:0.75rem 0;margin-bottom:3.5rem;}}
-.voice-title{{
-  font-size:2.2rem;font-weight:800;letter-spacing:2px;
-  background:linear-gradient(135deg,#60a5fa 0%,#a78bfa 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-  margin-bottom:0.25rem;
-}}
-.voice-subtitle{{color:rgba(255,255,255,0.85);font-size:0.95rem;}}
-.voice-container{{
-  display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;
-  flex:1;min-height:0;padding:0 1rem;
-}}
-.voice-left{{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(255,255,255,0.03);border-radius:2rem;padding:1.5rem;
-  backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);
-  box-shadow:0 8px 32px rgba(0,0,0,0.25);overflow:hidden;
-}}
-.voice-avatar{{width:180px;height:180px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;font-size:90px;
-  background:linear-gradient(135deg,#60a5fa 0%,#a78bfa 100%);
-  box-shadow:0 20px 60px rgba(96,165,250,0.35);
-  border:6px solid rgba(255,255,255,0.15);
-  animation:float 3s ease-in-out infinite;
-}}
-.voice-avatar.listening{{animation:pulse-listening 0.8s infinite;box-shadow:0 0 80px rgba(96,165,250,0.8);}}
-.voice-avatar.speaking{{animation:pulse-speaking 0.6s infinite;box-shadow:0 0 80px rgba(167,139,250,0.8);}}
-.voice-ring{{position:absolute;border:3px solid rgba(96,165,250,0.3);
-  border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);
-  animation:expand 3s ease-out infinite;
-}}
-.voice-ring-1{{width:200px;height:200px;animation-delay:0s;}}
-.voice-ring-2{{width:240px;height:240px;animation-delay:1s;}}
-.voice-ring-3{{width:280px;height:280px;animation-delay:2s;}}
-@keyframes float{{0%,100%{{transform:translateY(0);}}50%{{transform:translateY(-15px);}}}}
-@keyframes pulse-listening{{0%,100%{{transform:scale(1);}}50%{{transform:scale(1.1);}}}}
-@keyframes pulse-speaking{{0%,100%{{transform:scale(1);}}50%{{transform:scale(1.15);}}}}
-@keyframes expand{{0%{{transform:translate(-50%,-50%) scale(0.8);opacity:0.8;}}100%{{transform:translate(-50%,-50%) scale(1.5);opacity:0;}}}}
-.record-label{{margin-top:1rem;color:white;font-weight:600;letter-spacing:1.5px;}}
-.voice-right{{display:flex;flex-direction:column;gap:1rem;height:100%;min-height:0;overflow:hidden;}}
 
-/* LIGHTER, CLEARER PANELS */
-.transcript-container,.response-container{{
-  background: rgba(248, 250, 252, 0.95);
+.voice-ring-1 {{width: 200px; height: 200px; animation-delay: 0s;}}
+.voice-ring-2 {{width: 240px; height: 240px; animation-delay: 1s;}}
+.voice-ring-3 {{width: 280px; height: 280px; animation-delay: 2s;}}
+
+@keyframes float {{
+  0%, 100% {{transform: translateY(0);}}
+  50% {{transform: translateY(-15px);}}
+}}
+
+@keyframes pulse-listening {{
+  0%, 100% {{transform: scale(1);}}
+  50% {{transform: scale(1.1);}}
+}}
+
+@keyframes pulse-speaking {{
+  0%, 100% {{transform: scale(1);}}
+  50% {{transform: scale(1.15);}}
+}}
+
+@keyframes expand {{
+  0% {{transform: translate(-50%, -50%) scale(0.8); opacity: 0.8;}}
+  100% {{transform: translate(-50%, -50%) scale(1.5); opacity: 0;}}
+}}
+
+.record-label {{
+  margin-top: 1.5rem;
+  color: white;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  font-size: {current_sizes['base']};
+}}
+
+/* Right Panel - Transcript/Response */
+.voice-right {{
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}}
+
+.transcript-container, .response-container {{
+  background: {panel_bg};
   border-radius: 1.5rem;
   padding: 1.25rem;
   backdrop-filter: blur(18px);
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid {border_color};
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   flex: 1;
   min-height: 0;
@@ -355,43 +540,68 @@ st.markdown(f"""
   overflow: hidden;
 }}
 
-.panel-header{{
+.panel-header {{
   display: flex;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid rgba(15, 23, 42, 0.1);
+  border-bottom: 2px solid {border_color};
   flex-direction: {flex_direction};
 }}
-.panel-icon{{font-size:1.75rem;}}
-.panel-title{{
-  font-size: 1.2rem;
+
+.panel-icon {{
+  font-size: 1.75rem;
+  animation: icon-glow 2s ease-in-out infinite;
+}}
+
+.panel-icon.active {{
+  animation: icon-bounce 0.6s ease-in-out infinite;
+}}
+
+@keyframes icon-glow {{
+  0%, 100% {{opacity: 1;}}
+  50% {{opacity: 0.6;}}
+}}
+
+@keyframes icon-bounce {{
+  0%, 100% {{transform: translateY(0);}}
+  50% {{transform: translateY(-5px);}}
+}}
+
+.panel-title {{
+  font-size: {current_sizes['panel']};
   font-weight: 700;
-  color: #0f172a;
+  color: {text_primary};
   margin: 0;
 }}
-.panel-badge{{
+
+.panel-badge {{
   margin-{'right' if is_arabic else 'left'}: auto;
   padding: 0.3rem 0.8rem;
   border-radius: 1rem;
   font-weight: 600;
   font-size: 0.75rem;
-  background: rgba(96, 165, 250, 0.2);
-  color: #1e40af;
-  border: 1px solid rgba(96, 165, 250, 0.3);
+  background: rgba(251, 191, 36, 0.2);
+  color: #92400e;
+  border: 1px solid rgba(251, 191, 36, 0.3);
 }}
-.panel-badge.active{{
+
+.panel-badge.active {{
   background: rgba(34, 197, 94, 0.2);
   color: #166534;
   border-color: rgba(34, 197, 94, 0.3);
   animation: badge-pulse 1s infinite;
 }}
-@keyframes badge-pulse{{0%,100%{{opacity:1;}}50%{{opacity:0.6;}}}}
 
-.transcript-text, .response-content{{
-  color: #1e293b;
-  font-size: 1.1rem;
+@keyframes badge-pulse {{
+  0%, 100% {{opacity: 1;}}
+  50% {{opacity: 0.6;}}
+}}
+
+.transcript-text, .response-content {{
+  color: {text_primary};
+  font-size: {current_sizes['transcript']};
   line-height: 1.6;
   flex: 1;
   overflow-y: auto;
@@ -400,91 +610,18 @@ st.markdown(f"""
   font-weight: 500;
 }}
 
-.transcript-text.empty, .response-content.empty{{
-  color: #64748b;
+.transcript-text.empty, .response-content.empty {{
+  color: {text_secondary};
   font-style: italic;
   overflow: hidden;
   font-weight: normal;
 }}
 
-.metadata-card{{
-  background: rgba(248, 250, 252, 0.9);
-  border-radius: 1rem;
-  padding: 0.9rem;
-  margin-top: 0.75rem;
-  border-{'right' if is_arabic else 'left'}: 4px solid #60a5fa;
-  text-align: {text_align};
-  border: 1px solid rgba(15, 23, 42, 0.1);
-}}
-.metadata-title{{
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #1e40af;
-  margin-bottom: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}}
-.metadata-list{{
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}}
-.metadata-list li{{
-  padding: 0.25rem 0;
-  color: #374151;
-  font-weight: 500;
-}}
-.metadata-list li:before{{
-  content: "→ ";
-  color: #60a5fa;
-  font-weight: bold;
-  margin-{'left' if is_arabic else 'right'}: 0.5rem;
-}}
-/* Clear Memory Button */ 
-/* Clear Memory / New Conversation Button */ 
-.clear-memory-btn {{
-    position: fixed;
-    top: 15px;
-    {'left' if is_arabic else 'right'}: 15px;
-    padding: 0.6rem 1.25rem;
-    background: rgba(255, 255, 255, 0.75); 
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #1e293b;
-    font-weight: 600;
-  font-size: 0.85rem;
-    z-index: 1000;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border-radius: 2rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
-}}
-
-.clear-memory-btn:hover {{
-    background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(255, 255, 255, 0.6);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.35);
-}}
-
-.clear-memory-btn:active {{
-    transform: translateY(0);
-    box-shadow: 0 2px 10px rgba(255, 255, 255, 0.3);
-    background: rgba(248, 250, 252, 0.85);
-}}
-
-.clear-memory-btn:focus {{
-    outline: 2px solid rgba(255, 255, 255, 0.5);
-    outline-offset: 2px;
-}}
-.status-indicator{{
+/* Status Indicator */
+.status-indicator {{
   position: fixed;
   top: 15px;
-  {'left' if is_arabic else 'right'}: 440px;
+  {'left' if is_arabic else 'right'}: 15px;
   padding: 0.6rem 1.25rem;
   background: rgba(0, 0, 0, 0.15);
   border-radius: 2rem;
@@ -499,47 +636,56 @@ st.markdown(f"""
   gap: 0.5rem;
   direction: {'rtl' if is_arabic else 'ltr'};
 }}
-.status-dot{{
+
+.status-dot {{
   width: 10px;
   height: 10px;
   border-radius: 50%;
   background: #22c55e;
   animation: dot-pulse 1.5s infinite;
 }}
-.status-dot.listening{{background: #ef4444;}}
-.status-dot.speaking{{background: #a78bfa;}}
-@keyframes dot-pulse{{0%,100%{{opacity:1;}}50%{{opacity:0.4;}}}}
-@media (max-width:1024px){{
-  .voice-container{{grid-template-columns:1fr;gap:1rem;}}
-  .voice-avatar{{width:140px;height:140px;font-size:70px;}}
-  .return-button-container {{top: 10px;{'right' if is_arabic else 'left'}: 10px;}}
-  .return-button {{padding: 0.6rem 1.2rem;font-size: 0.85rem;}}
-}}
-audio {{display: none !important;visibility: hidden !important;height: 0 !important;
-  width: 0 !important;overflow: hidden !important;
+
+.status-dot.listening {{background: #ef4444;}}
+.status-dot.speaking {{background: #f59e0b;}}
+
+@keyframes dot-pulse {{
+  0%, 100% {{opacity: 1;}}
+  50% {{opacity: 0.4;}}
 }}
 
-button:hover {{
-    opacity: 0.9;
+/* Responsive Design */
+@media (max-width: 1024px) {{
+  .voice-container {{
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }}
+  
+  .voice-avatar {{
+    width: 140px;
+    height: 140px;
+    font-size: 70px;
+  }}
 }}
-.audio-recorder-container {{display: flex;justify-content: center;align-items: center;}}
 
-[data-testid="stButton-clear_memory_btn"] {{
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    width: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
+/* Hide audio element */
+audio {{
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
 }}
 
-
+.audio-recorder-container {{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}}
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------
-# Initialize components
+# Helper Functions
 # ---------------------------
 def _hash_bytes(b):
     if b is None:
@@ -552,25 +698,8 @@ def _hash_bytes(b):
     return hashlib.sha256(b).hexdigest()
 
 # ---------------------------
-# UI Elements
+# Status Indicator
 # ---------------------------
-
-# Return button
-# Return button
-st.markdown(f"""
-<div class="return-button-container" style="pointer-events: auto;">
-  <a href="/" class="return-button" target="_self" style="pointer-events: auto; text-decoration: none;">
-    <span class="icon" style="pointer-events: none;">{arrow_icon}</span>
-    <span style="pointer-events: none;">{t('voice_return_button', st.session_state.language)}</span>
-  </a>
-</div>
-""", unsafe_allow_html=True)
-# Compact top bar
-st.markdown('<div style="margin-bottom: 1rem;"></div>', unsafe_allow_html=True)
-
-# --- Memory Badge, Clear Button & Status ---
-memory_summary = memory.get_memory_summary()
-
 status_class = (
     "speaking" if st.session_state.is_speaking
     else "listening" if st.session_state.is_processing
@@ -578,80 +707,44 @@ status_class = (
 )
 status_text = st.session_state.status or "Ready"
 
-# Create columns for top controls
-col_mem, col_clear, col_status = st.columns(3)
+st.markdown(f"""
+<div class="status-indicator">
+    <div class="status-dot {status_class}"></div>
+    {status_text}
+</div>
+""", unsafe_allow_html=True)
 
-with col_mem:
-    st.markdown(f"""
-    <div class="memory-badge">
-        🧠 {memory_summary['total_messages']} messages | ⏱️ {memory_summary['session_duration']}
-    </div>
-    """, unsafe_allow_html=True)
-
-with col_clear:
-    # 2️⃣ Visible custom button triggering the hidden Streamlit button
-  st.markdown(f"""
-  <button class="clear-memory-btn">
-      <a href="/" style="pointer-events: auto; text-decoration: none;">
-      {t('voice_clear_memory', st.session_state.language)}
-      </a>
-  </button>
-  """, unsafe_allow_html=True)
-
-    # # 3️⃣ Hidden actual button (logic intact)
-    # if st.button("", key="clear_memory_btn", use_container_width=False):
-    #     st.session_state.clear_memory_clicked = True
-    #     st.rerun()
-
-with col_status:
-    st.markdown(f"""
-    <div class="status-indicator">
-        <div class="status-dot {status_class}"></div>
-        {status_text}
-    </div>
-    """, unsafe_allow_html=True)
-
+# ---------------------------
+# Header
+# ---------------------------
 st.markdown(f"""
 <div class="voice-header">
-  <div>🕋<span class="voice-title"> {t('voice_main_title', st.session_state.language)}</span></div>
+  <div>🕋<span class="voice-title">{t('voice_main_title', st.session_state.language)}</span></div>
   <div class="voice-subtitle">{t('voice_subtitle', st.session_state.language)}</div>
 </div>
 """, unsafe_allow_html=True)
 
 # ---------------------------
-# Main UI layout
+# Main UI Layout
 # ---------------------------
 st.markdown('<div class="voice-container">', unsafe_allow_html=True)
 col_left, col_right = st.columns(2)
+
 with col_left:
     avatar_class = (
         "speaking" if st.session_state.is_speaking
-        else "processing" if st.session_state.is_processing
+        else "listening" if st.session_state.is_processing
         else ""
     )
     
-    # 1. Define waveform HTML based on state (now uses is_speaking)
-    waveform_html = ""
-    if st.session_state.is_speaking:
-        waveform_html = """
-        <div class="waveform">
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-            <div class="waveform-bar"></div>
-        </div>
-        """
+    icon_class = "active" if st.session_state.is_processing or st.session_state.is_speaking else ""
     
-    # 2. Define the user-facing status label
     recording_label = (
         f"🔊 {t('voice_speaking', st.session_state.language)}" if st.session_state.is_speaking
         else f"🎤 {t('voice_press_to_speak', st.session_state.language)}"
     )
 
-    # 3. Build the complete HTML string
-    # Note: The CSS class 'voice-left' already defines the flex properties
-    html_content = f"""
+    st.markdown(f"""
     <div class="voice-left" style="position:relative;"> 
       <div style="position:relative;">
         <div class="voice-ring voice-ring-1"></div>
@@ -661,16 +754,14 @@ with col_left:
       </div>
       <div class="record-label">{recording_label}</div>
     </div>
-    """
-    
-    st.markdown(html_content, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-    # Render audio_input right after inside the same column
     audio_bytes = st.audio_input(
         label="",
         key="audio_recorder",
         help="Click to start recording, click again to stop"
     )
+
 with col_right:
     transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
     response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
@@ -679,15 +770,21 @@ with col_right:
     clean_transcript = html.escape(transcript)
     clean_response = html.escape(response_text)
 
-    # ✅ Transcript panel first
+    transcript_icon_class = "active" if st.session_state.is_processing else ""
+    response_icon_class = "active" if st.session_state.is_speaking else ""
+    
+    transcript_badge_class = "active" if st.session_state.is_processing else ""
+    response_badge_class = "active" if st.session_state.is_speaking else ""
+
+    # Transcript panel
     st.markdown(f"""
     <div class="transcript-container">
       <div class="panel-header">
-        <div class="panel-icon">🗣️</div>
+        <div class="panel-icon {transcript_icon_class}">🗣️</div>
         <h3 class="panel-title">{t('voice_transcript_title', st.session_state.language)}</h3>
-        <div class="panel-badge">
+        <div class="panel-badge {transcript_badge_class}">
             {'● ' + (t('voice_status_listening', st.session_state.language)
-            if st.session_state.is_speaking
+            if st.session_state.is_processing
             else t('voice_status_ready', st.session_state.language))}
         </div>
       </div>
@@ -695,13 +792,13 @@ with col_right:
     </div>
     """, unsafe_allow_html=True)
 
-    # ✅ Response container
+    # Response panel
     st.markdown(f"""
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
-        <div class="panel-icon">🕋</div>
+        <div class="panel-icon {response_icon_class}">🕋</div>
         <h3 class="panel-title">{t('voice_response_title', st.session_state.language)}</h3>
-        <div class="panel-badge">
+        <div class="panel-badge {response_badge_class}">
             {'● ' + (t('voice_status_speaking', st.session_state.language)
             if st.session_state.is_speaking
             else t('voice_status_ready', st.session_state.language))}
@@ -713,6 +810,7 @@ with col_right:
 
 st.markdown('</div>', unsafe_allow_html=True)
 
+# ---------------------------
 # Play pending audio
 # ---------------------------
 if st.session_state.get('pending_audio'):
@@ -729,9 +827,7 @@ if st.session_state.get('pending_audio'):
     st.session_state.is_speaking = False
     st.session_state.status = t('voice_status_completed', st.session_state.language)
     
-    # Optional: Reset to "Ready" after a brief delay
     time.sleep(2)
-    
     st.session_state.status = t('voice_status_ready', st.session_state.language)
 
 # ---------------------------
@@ -799,8 +895,8 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
             "official_sources": [],
             "response_audio": b"",
             "error": "",
-            "messages_history": memory.get_conversation_history(limit=5),  # Pass memory to workflow
-            "conversation_context": conversation_history  # Formatted history string
+            "messages_history": memory.get_conversation_history(limit=5),
+            "conversation_context": conversation_history
         }
 
         result = workflow.invoke(initial_state)
@@ -827,17 +923,17 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         else:
             st.session_state.status = t('voice_status_ready', st.session_state.language)
 
-        # ADD TO MEMORY
+        # Add to memory
         if transcript:
             memory.add_message('user', transcript)
-            memory.extract_entities(transcript)  # Extract entities for context
+            memory.extract_entities(transcript)
         if response_text:
             memory.add_message('assistant', response_text)
 
     except Exception as e:
         logger.exception("Error during voice processing: %s", e)
         st.session_state.current_transcript = f"❌ Error: {str(e)}"
-        st.session_state.current_response = t('voice_error_processing', st.session_state.language) if 'voice_error_processing' in globals() else "An error occurred during processing."
+        st.session_state.current_response = t('voice_error_processing', st.session_state.language)
         st.session_state.status = t('voice_status_error', st.session_state.language)
         st.session_state.pending_audio = None
     
