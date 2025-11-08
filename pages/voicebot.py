@@ -1101,66 +1101,66 @@ audio {{
 # ✅ Precompute dynamic values safely in Python
 is_arabic = st.session_state.get("language") == "ar"
 
-lang = st.session_state.get("language", "en")
-font_size = st.session_state.get("font_size", "normal")
-high_contrast = st.session_state.get("high_contrast", False)
 
+# --- Session defaults ---
+if "language" not in st.session_state:
+    st.session_state.language = "en"
+if "font_size" not in st.session_state:
+    st.session_state.font_size = "normal"
+if "high_contrast" not in st.session_state:
+    st.session_state.high_contrast = False
+
+# --- Settings ---
+is_arabic = st.session_state.language == "ar"
 tooltip_lang = "اختر اللغة" if is_arabic else "Select Language"
 tooltip_font = "حجم الخط" if is_arabic else "Font Size"
 tooltip_contrast = "تباين عالي" if is_arabic else "High Contrast"
 tooltip_export = "تصدير الجلسة" if is_arabic else "Export Session"
 
-# Active states
-active_en = "active" if lang == "en" else ""
-active_ar = "active" if lang == "ar" else ""
-active_ur = "active" if lang == "ur" else ""
-active_font = "active" if font_size != "normal" else ""
-active_contrast = "active" if high_contrast else ""
+# --- Layout container ---
+with st.container():
+    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
 
-# Button symbols
-font_icon = "🔤" if font_size == "normal" else "🔠"
-font_label = "أ" if is_arabic else "Aa"
-contrast_icon = "◐" if not high_contrast else "◑"
+    # 🌐 Language selector
+    with col1:
+        st.markdown(f"**🌐 {'اللغة' if is_arabic else 'Language'}**")
+        lang = st.radio(
+            "",
+            ["English", "العربية", "اردو"],
+            horizontal=True,
+            index={"en": 0, "ar": 1, "ur": 2}[st.session_state.language],
+            label_visibility="collapsed"
+        )
+        if lang == "English":
+            st.session_state.language = "en"
+        elif lang == "العربية":
+            st.session_state.language = "ar"
+        else:
+            st.session_state.language = "ur"
 
-# ✅ Clean, conflict-free HTML
-st.markdown(f"""
-<div class="accessibility-controls">
-    <div class="language-selector">
-        <div class="control-btn" data-tooltip="{tooltip_lang}">
-            🌐 {'اللغة' if is_arabic else 'Language'}
-        </div>
-        <div class="language-dropdown">
-            <div class="lang-option {active_en}" onclick="window.location.href='?lang=en'">
-                🇬🇧 English
-            </div>
-            <div class="lang-option {active_ar}" onclick="window.location.href='?lang=ar'">
-                🇸🇦 العربية
-            </div>
-            <div class="lang-option {active_ur}" onclick="window.location.href='?lang=ur'">
-                🇵🇰 اردو
-            </div>
-        </div>
-    </div>
-    
-    <div class="control-btn {active_font}" 
-         onclick="document.getElementById('font_size_btn').click()"
-         data-tooltip="{tooltip_font}">
-        {font_icon} {font_label}
-    </div>
-    
-    <div class="control-btn {active_contrast}"
-         onclick="document.getElementById('contrast_btn').click()"
-         data-tooltip="{tooltip_contrast}">
-        {contrast_icon}
-    </div>
-    
-    <div class="control-btn"
-         onclick="document.getElementById('export_btn').click()"
-         data-tooltip="{tooltip_export}">
-        📥
-    </div>
-</div>
-""", unsafe_allow_html=True)
+    # 🔤 Font size toggle
+    with col2:
+        if st.button(f"{'🔠' if st.session_state.font_size != 'normal' else '🔤'}"):
+            st.session_state.font_size = (
+                "normal" if st.session_state.font_size != "normal" else "large"
+            )
+        st.caption(tooltip_font)
+
+    # ◑ High contrast toggle
+    with col3:
+        if st.button(f"{'◑' if st.session_state.high_contrast else '◐'}"):
+            st.session_state.high_contrast = not st.session_state.high_contrast
+        st.caption(tooltip_contrast)
+
+    # 📥 Export session
+    with col4:
+        st.download_button(
+            label="📥",
+            data="Exported session content here",  # replace with your JSON export
+            file_name="session.json",
+            mime="application/json",
+            help=tooltip_export,
+        )
 
 
 # Hidden control buttons
