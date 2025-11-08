@@ -706,14 +706,14 @@ button[kind="header"] {{
 # ---------------------------
 
 # Return button
-st.markdown(f"""
-<div class="return-button-container">
-    <a href="/" class="return-button" target="_self">
-        <span class="icon">{arrow_icon}</span>
-        <span>{t('voice_return_button', st.session_state.language)}</span>
-    </a>
-</div>
-""", unsafe_allow_html=True)
+# st.markdown(f"""
+# <div class="return-button-container">
+#     <a href="/" class="return-button" target="_self">
+#         <span class="icon">{arrow_icon}</span>
+#         <span>{t('voice_return_button', st.session_state.language)}</span>
+#     </a>
+# </div>
+# """, unsafe_allow_html=True)
 
 # Status indicator
 status_class = (
