@@ -205,7 +205,6 @@ TRANSLATIONS = {
         "language_en": "الإنجليزية",
         "language_ar": "العربية",
         "language_ur":"أردو",
-        "accessibility_title": "إمكانيةالوصول",
         
         # Mode Navigation
         "mode_title": "🔀 الوضع",
