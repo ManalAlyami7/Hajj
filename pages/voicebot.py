@@ -34,7 +34,7 @@ def initialize_session_state():
     defaults = {
         "language": 'English',
         "font_size": 'normal',  # normal, large, extra-large
-        "high_contrast": False, # This will be ignored for the new light theme
+        "high_contrast": False,
         "last_audio_hash": None,
         "is_processing": False,
         "is_speaking": False,
@@ -92,7 +92,7 @@ is_urdus = is_urdu(st.session_state.language)
 render_sidebar(memory, st.session_state.language)
 
 # ---------------------------
-# Dynamic Styling - Desert Sand / Light Earth Tones Theme
+# Dynamic Styling
 # ---------------------------
 # Font size mapping
 font_sizes = {
@@ -103,14 +103,19 @@ font_sizes = {
 
 current_sizes = font_sizes[st.session_state.font_size]
 
-# --- NEW COLOR SCHEME: Desert Sand / Light Earth Tones ---
-accent_color = "#f59e0b"                                         # Golden official accent
-bg_gradient = "linear-gradient(135deg, #fef9f4 0%, #fcefe3 100%)" # Light earth/sand background
-panel_bg = "#ffffff"                                             # Pure white panels
-text_primary = "#1e293b"                                         # Dark slate gray
-text_secondary = "#64748b"                                       # Grayish
-border_color = "rgba(0, 0, 0, 0.08)"                             # Soft border
-alert_color = "#ef4444"                                          # Standard red for urgency/speaking
+# Color scheme
+if st.session_state.high_contrast:
+    bg_gradient = "linear-gradient(135deg, #000000 0%, #1a1a1a 100%)"
+    panel_bg = "rgba(255, 255, 255, 0.98)"
+    text_primary = "#000000"
+    text_secondary = "#333333"
+    border_color = "rgba(0, 0, 0, 0.3)"
+else:
+    bg_gradient = "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)"
+    panel_bg = "rgba(248, 250, 252, 0.95)"
+    text_primary = "#1e293b"
+    text_secondary = "#64748b"
+    border_color = "rgba(15, 23, 42, 0.1)"
 
 # RTL support
 text_align = 'right' if is_arabic or is_urdus else 'left'
@@ -120,151 +125,148 @@ st.markdown(f"""
 <style>
 /* Global Styles */
 .stApp {{
-    background: {bg_gradient};
-    background-attachment: fixed;
-    overflow: hidden !important;
-    height: 100vh;
+  background: {bg_gradient};
+  background-attachment: fixed;
+  overflow: hidden !important;
+  height: 100vh;
 }}
 
 #MainMenu, footer {{visibility: hidden;}}
 header {{visibility: visible !important;}}
 
 button[kind="header"] {{
-    visibility: visible !important;
-    display: flex !important;
+  visibility: visible !important;
+  display: flex !important;
 }}
 
 .main .block-container {{
-    padding: 0.75rem 1rem;
-    max-width: 1400px;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    direction: {'rtl' if is_arabic or is_urdus else 'ltr'};
+  padding: 0.75rem 1rem;
+  max-width: 1400px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  direction: {'rtl' if is_arabic or is_urdus else 'ltr'};
 }}
 
 /* Sidebar Styling */
 [data-testid="stSidebar"] {{
-    background: linear-gradient(180deg, #fcefe3 0%, #fcf8f2 100%); /* Light earth gradient for sidebar */
-    border-right: 1px solid rgba(0, 0, 0, 0.1);
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }}
 
 [data-testid="stSidebar"] .stMarkdown {{
-    color: {text_primary};
+  color: #e2e8f0;
 }}
 
 [data-testid="collapsedControl"] {{
-    visibility: visible !important;
-    display: flex !important;
-    background: {accent_color} !important; /* Golden accent */
-    color: white !important;
-    border-radius: 0.5rem !important;
-    padding: 0.5rem !important;
-    margin: 0.5rem !important;
-    transition: all 0.3s ease !important;
-    z-index: 9999 !important;
+  visibility: visible !important;
+  display: flex !important;
+  background: rgba(251, 191, 36, 0.9) !important;
+  color: white !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem !important;
+  margin: 0.5rem !important;
+  transition: all 0.3s ease !important;
+  z-index: 9999 !important;
 }}
 
 [data-testid="collapsedControl"]:hover {{
-    background: #eab308 !important; /* Darker Gold on hover */
-    transform: scale(1.05) !important;
+  background: rgba(245, 158, 11, 1) !important;
+  transform: scale(1.05) !important;
 }}
 
 header[data-testid="stHeader"] {{
-    visibility: visible !important;
-    display: block !important;
-    background: transparent !important;
+  visibility: visible !important;
+  display: block !important;
+  background: transparent !important;
 }}
 
 header[data-testid="stHeader"] button {{
-    visibility: visible !important;
-    display: flex !important;
+  visibility: visible !important;
+  display: flex !important;
 }}
 
 /* Voice Header */
 .voice-header {{
-    text-align: center;
-    padding: 0.75rem 0;
-    margin-bottom: 2rem;
+  text-align: center;
+  padding: 0.75rem 0;
+  margin-bottom: 2rem;
 }}
 
 .voice-title {{
-    font-size: {current_sizes['title']};
-    font-weight: 800;
-    letter-spacing: 2px;
-    background: linear-gradient(135deg, #fbbf24 0%, {accent_color} 100%); /* Golden Gradient Title */
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin-bottom: 0.25rem;
+  font-size: {current_sizes['title']};
+  font-weight: 800;
+  letter-spacing: 2px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.25rem;
 }}
 
 .voice-subtitle {{
-    color: {text_secondary};
-    font-size: {current_sizes['base']};
+  color: rgba(255, 255, 255, 0.85);
+  font-size: {current_sizes['base']};
 }}
 
 /* Main Container */
 .voice-container {{
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    flex: 1;
-    min-height: 0;
-    padding: 0 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  padding: 0 1rem;
 }}
 
 /* Left Panel - Avatar */
 .voice-left {{
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: {panel_bg}; /* White panel */
-    border-radius: 2rem;
-    padding: 1.5rem;
-    backdrop-filter: blur(20px);
-    border: 1px solid {border_color};
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-    overflow: hidden;
-    position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 2rem;
+  padding: 1.5rem;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  position: relative;
 }}
 
 .voice-avatar {{
-    width: 180px;
-    height: 180px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 90px;
-    background: {accent_color}; /* Golden accent */
-    color: white;
-    box-shadow: 0 10px 40px rgba(245, 158, 11, 0.3);
-    border: 6px solid #fcefe3; /* Light border */
-    animation: float 3s ease-in-out infinite;
-    transition: all 0.3s ease;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 90px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  box-shadow: 0 20px 60px rgba(251, 191, 36, 0.4);
+  border: 6px solid rgba(255, 255, 255, 0.15);
+  animation: float 3s ease-in-out infinite;
+  transition: all 0.3s ease;
 }}
 
 .voice-avatar.listening {{
-    animation: pulse-listening 0.8s infinite;
-    background: #eab308;
-    box-shadow: 0 0 80px rgba(245, 158, 11, 0.8);
+  animation: pulse-listening 0.8s infinite;
+  box-shadow: 0 0 80px rgba(251, 191, 36, 0.8);
 }}
 
 .voice-avatar.speaking {{
-    animation: pulse-speaking 0.6s infinite;
-    background: {alert_color}; /* Red for speaking/alert */
-    box-shadow: 0 0 80px rgba(239, 68, 68, 0.8); 
+  animation: pulse-speaking 0.6s infinite;
+  box-shadow: 0 0 80px rgba(245, 158, 11, 0.8);
 }}
 
 .voice-ring {{
-    position: absolute;
-    border: 3px solid rgba(245, 158, 11, 0.3); /* Golden ring */
-    border-radius: 50%;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    animation: expand 3s ease-out infinite;
+  position: absolute;
+  border: 3px solid rgba(251, 191, 36, 0.3);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: expand 3s ease-out infinite;
 }}
 
 .voice-ring-1 {{width: 200px; height: 200px; animation-delay: 0s;}}
@@ -272,191 +274,188 @@ header[data-testid="stHeader"] button {{
 .voice-ring-3 {{width: 280px; height: 280px; animation-delay: 2s;}}
 
 @keyframes float {{
-    0%, 100% {{transform: translateY(0);}}
-    50% {{transform: translateY(-15px);}}
+  0%, 100% {{transform: translateY(0);}}
+  50% {{transform: translateY(-15px);}}
 }}
 
 @keyframes pulse-listening {{
-    0%, 100% {{transform: scale(1);}}
-    50% {{transform: scale(1.1);}}
+  0%, 100% {{transform: scale(1);}}
+  50% {{transform: scale(1.1);}}
 }}
 
 @keyframes pulse-speaking {{
-    0%, 100% {{transform: scale(1);}}
-    50% {{transform: scale(1.15);}}
+  0%, 100% {{transform: scale(1);}}
+  50% {{transform: scale(1.15);}}
 }}
 
 @keyframes expand {{
-    0% {{transform: translate(-50%, -50%) scale(0.8); opacity: 0.8;}}
-    100% {{transform: translate(-50%, -50%) scale(1.5); opacity: 0;}}
+  0% {{transform: translate(-50%, -50%) scale(0.8); opacity: 0.8;}}
+  100% {{transform: translate(-50%, -50%) scale(1.5); opacity: 0;}}
 }}
 
 .record-label {{
-    margin-top: 1.5rem;
-    color: {text_primary};
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    font-size: {current_sizes['base']};
+  margin-top: 1.5rem;
+  color: white;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  font-size: {current_sizes['base']};
 }}
 
 /* Right Panel - Transcript/Response */
 .transcript-container, .response-container {{
-    background: {panel_bg};
-    border-radius: 1.5rem;
-    padding: 1.25rem;
-    backdrop-filter: blur(18px);
-    border: 1px solid {border_color};
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+  background: {panel_bg};
+  border-radius: 1.5rem;
+  padding: 1.25rem;
+  backdrop-filter: blur(18px);
+  border: 1px solid {border_color};
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }}
 
 .panel-header {{
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 2px solid {border_color};
-    flex-direction: {flex_direction};
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid {border_color};
+  flex-direction: {flex_direction};
 }}
 
 .panel-icon {{
-    font-size: 1.75rem;
-    color: {accent_color};
-    animation: icon-glow 2s ease-in-out infinite;
+  font-size: 1.75rem;
+  animation: icon-glow 2s ease-in-out infinite;
 }}
 
 .panel-icon.active {{
-    color: {alert_color}; /* Red for active speaking/processing */
-    animation: icon-bounce 0.6s ease-in-out infinite;
+  animation: icon-bounce 0.6s ease-in-out infinite;
 }}
 
 @keyframes icon-glow {{
-    0%, 100% {{opacity: 1;}}
-    50% {{opacity: 0.8;}}
+  0%, 100% {{opacity: 1;}}
+  50% {{opacity: 0.6;}}
 }}
 
 @keyframes icon-bounce {{
-    0%, 100% {{transform: translateY(0);}}
-    50% {{transform: translateY(-5px);}}
+  0%, 100% {{transform: translateY(0);}}
+  50% {{transform: translateY(-5px);}}
 }}
 
 .panel-title {{
-    font-size: {current_sizes['panel']};
-    font-weight: 700;
-    color: {text_primary};
-    margin: 0;
+  font-size: {current_sizes['panel']};
+  font-weight: 700;
+  color: {text_primary};
+  margin: 0;
 }}
 
 .panel-badge {{
-    margin-{'right' if is_arabic or is_urdus else 'left'}: auto;
-    padding: 0.3rem 0.8rem;
-    border-radius: 1rem;
-    font-weight: 600;
-    font-size: 0.75rem;
-    background: rgba(245, 158, 11, 0.1); /* Light Gold BG */
-    color: {accent_color}; /* Golden Text */
-    border: 1px solid rgba(245, 158, 11, 0.2);
+  margin-{'right' if is_arabic or is_urdus else 'left'}: auto;
+  padding: 0.3rem 0.8rem;
+  border-radius: 1rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+  background: rgba(251, 191, 36, 0.2);
+  color: #92400e;
+  border: 1px solid rgba(251, 191, 36, 0.3);
 }}
 
 .panel-badge.active {{
-    background: rgba(239, 68, 68, 0.1); /* Light Red for active state */
-    color: #b91c1c; /* Darker Red Text */
-    border-color: rgba(239, 68, 68, 0.2);
-    animation: badge-pulse 1s infinite;
+  background: rgba(34, 197, 94, 0.2);
+  color: #166534;
+  border-color: rgba(34, 197, 94, 0.3);
+  animation: badge-pulse 1s infinite;
 }}
 
 @keyframes badge-pulse {{
-    0%, 100% {{opacity: 1;}}
-    50% {{opacity: 0.6;}}
+  0%, 100% {{opacity: 1;}}
+  50% {{opacity: 0.6;}}
 }}
 
 .transcript-text, .response-content {{
-    color: {text_primary};
-    font-size: {current_sizes['transcript']};
-    line-height: 1.6;
-    flex: 1;
-    overflow-y: auto;
-    padding-{'left' if is_arabic or is_urdus else 'right'}: 0.5rem;
-    text-align: {text_align};
-    font-weight: 500;
+  color: {text_primary};
+  font-size: {current_sizes['transcript']};
+  line-height: 1.6;
+  flex: 1;
+  overflow-y: auto;
+  padding-{'left' if is_arabic or is_urdus else 'right'}: 0.5rem;
+  text-align: {text_align};
+  font-weight: 500;
 }}
 
 .transcript-text.empty, .response-content.empty {{
-    color: {text_secondary};
-    font-style: italic;
-    overflow: hidden;
-    font-weight: normal;
+  color: {text_secondary};
+  font-style: italic;
+  overflow: hidden;
+  font-weight: normal;
 }}
 
 /* Status Indicator */
 .status-indicator {{
-    position: fixed;
-    top: 15px;
-    {'left' if is_arabic or is_urdus else 'right'}: 15px;
-    padding: 0.6rem 1.25rem;
-    background: {panel_bg};
-    border-radius: 2rem;
-    color: {text_primary};
-    font-weight: 600;
-    font-size: 0.85rem;
-    backdrop-filter: blur(10px);
-    border: 1px solid {border_color};
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    direction: {'rtl' if is_arabic or is_urdus else 'ltr'};
+  position: fixed;
+  top: 15px;
+  {'left' if is_arabic or is_urdus else 'right'}: 15px;
+  padding: 0.6rem 1.25rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 2rem;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  direction: {'rtl' if is_arabic or is_urdus else 'ltr'};
 }}
 
 .status-dot {{
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #22c55e; /* Green for ready */
-    animation: dot-pulse 1.5s infinite;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: dot-pulse 1.5s infinite;
 }}
 
-.status-dot.listening {{background: {accent_color};}} /* Golden for processing */
-.status-dot.speaking {{background: {alert_color};}} /* Red for speaking */
+.status-dot.listening {{background: #ef4444;}}
+.status-dot.speaking {{background: #f59e0b;}}
 
 @keyframes dot-pulse {{
-    0%, 100% {{opacity: 1;}}
-    50% {{opacity: 0.4;}}
+  0%, 100% {{opacity: 1;}}
+  50% {{opacity: 0.4;}}
 }}
 
 /* Responsive Design */
 @media (max-width: 1024px) {{
-    .voice-container {{
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }}
-    
-    .voice-avatar {{
-        width: 140px;
-        height: 140px;
-        font-size: 70px;
-    }}
+  .voice-container {{
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }}
+  
+  .voice-avatar {{
+    width: 140px;
+    height: 140px;
+    font-size: 70px;
+  }}
 }}
 
 /* Hide audio element */
 audio {{
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    width: 0 !important;
-    overflow: hidden !important;
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
 }}
 
 .audio-recorder-container {{
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -498,8 +497,8 @@ st.markdown(f"""
 # ---------------------------
 st.markdown(f"""
 <div class="voice-header">
-    <div><span class="voice-title">{t('voice_main_title', st.session_state.language)}</span></div>
-    <div class="voice-subtitle">{t('voice_subtitle', st.session_state.language)}</div>
+  <div><span class="voice-title">{t('voice_main_title', st.session_state.language)}</span></div>
+  <div class="voice-subtitle">{t('voice_subtitle', st.session_state.language)}</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -550,6 +549,7 @@ with col_right:
     transcript_icon_class = "active" if st.session_state.is_processing else ""
     response_icon_class = "active" if st.session_state.is_speaking else ""
     
+    transcript_badge_class = "active" if st.session_state.is_processing else ""
     response_badge_class = "active" if st.session_state.is_speaking else ""
 
     # Transcript panel
