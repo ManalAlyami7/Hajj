@@ -123,7 +123,7 @@ TRANSLATIONS = {
         
         # Voice Bot Page
         "voice_page_title": "Hajj Voice Verification Assistant",
-        "voice_main_title": "Hajj Guardian Voice Assistant",
+        "voice_main_title": "Hajj Voice Assistant",
         "voice_subtitle": "Your trusted companion for verifying authorized Hajj agencies and protecting pilgrims",
         "voice_return_button": "Back to Chat",
         "voice_recording": "Listening to your voice...",
@@ -272,7 +272,7 @@ TRANSLATIONS = {
         
         # Voice Bot Page
         "voice_page_title": "مساعد الحج الصوتي للتحقق",
-        "voice_main_title": "مساعد حارس الحج الصوتي",
+        "voice_main_title": "مساعد الحج الصوتي",
         "voice_subtitle": "رفيقك الموثوق للتحقق من وكالات الحج المعتمدة وحماية الحجاج",
         "voice_return_button": "العودة للمحادثة",
         "voice_recording": "جاري الاستماع لصوتك...",
@@ -425,7 +425,7 @@ TRANSLATIONS = {
         
         # Voice Bot Page - Urdu
         "voice_page_title": "حج صوتی تصدیق معاون",
-        "voice_main_title": "حج گارڈین صوتی معاون",
+        "voice_main_title": "حج صوتی معاون",
         "voice_subtitle": "مجاز حج ایجنسیوں کی تصدیق اور حجاج کی حفاظت کے لیے آپ کا قابل اعتماد ساتھی",
         "voice_return_button": "چیٹ پر واپس جائیں",
         "voice_recording": "آپ کی آواز سن رہا ہوں...",
