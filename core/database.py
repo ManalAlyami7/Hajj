@@ -273,4 +273,4 @@ class DatabaseManager:
             return df
 
     # 🔴 ما وجدنا شيء
-    # return pd.DataFrame()
+         return pd.DataFrame()
