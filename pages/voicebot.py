@@ -103,22 +103,19 @@ font_sizes = {
 
 current_sizes = font_sizes[st.session_state.font_size]
 
-# Color scheme - Official Saudi Light Theme
+# Color scheme
 if st.session_state.high_contrast:
-    bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)"
+    bg_gradient = "linear-gradient(135deg, #000000 0%, #1a1a1a 100%)"
     panel_bg = "rgba(255, 255, 255, 0.98)"
     text_primary = "#000000"
     text_secondary = "#333333"
-    border_color = "rgba(0, 0, 0, 0.2)"
-    accent_gradient = "linear-gradient(135deg, #006C35 0%, #004d26 100%)"
+    border_color = "rgba(0, 0, 0, 0.3)"
 else:
-    # Light, clean Saudi official theme
-    bg_gradient = "linear-gradient(135deg, #f8faf9 0%, #e8f5e9 50%, #ffffff 100%)"
-    panel_bg = "rgba(255, 255, 255, 0.95)"
-    text_primary = "#1a4d2e"
-    text_secondary = "#4a7c59"
-    border_color = "rgba(0, 108, 53, 0.15)"
-    accent_gradient = "linear-gradient(135deg, #006C35 0%, #127549 100%)"
+    bg_gradient = "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)"
+    panel_bg = "rgba(248, 250, 252, 0.95)"
+    text_primary = "#1e293b"
+    text_secondary = "#64748b"
+    border_color = "rgba(15, 23, 42, 0.1)"
 
 # RTL support
 text_align = 'right' if is_arabic or is_urdus else 'left'
@@ -152,34 +149,31 @@ button[kind="header"] {{
   direction: {'rtl' if is_arabic or is_urdus else 'ltr'};
 }}
 
-/* Sidebar Styling - Saudi Green Theme */
+/* Sidebar Styling */
 [data-testid="stSidebar"] {{
-  background: linear-gradient(180deg, #006C35 0%, #004d26 100%);
-  border-right: 2px solid rgba(212, 175, 55, 0.3);
-  box-shadow: 2px 0 10px rgba(0, 108, 53, 0.1);
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
 }}
 
 [data-testid="stSidebar"] .stMarkdown {{
-  color: #ffffff;
+  color: #e2e8f0;
 }}
 
 [data-testid="collapsedControl"] {{
   visibility: visible !important;
   display: flex !important;
-  background: {accent_gradient} !important;
+  background: rgba(251, 191, 36, 0.9) !important;
   color: white !important;
   border-radius: 0.5rem !important;
   padding: 0.5rem !important;
   margin: 0.5rem !important;
   transition: all 0.3s ease !important;
   z-index: 9999 !important;
-  box-shadow: 0 2px 8px rgba(0, 108, 53, 0.3);
 }}
 
 [data-testid="collapsedControl"]:hover {{
-  background: linear-gradient(135deg, #127549 0%, #006C35 100%) !important;
+  background: rgba(245, 158, 11, 1) !important;
   transform: scale(1.05) !important;
-  box-shadow: 0 4px 12px rgba(0, 108, 53, 0.4);
 }}
 
 header[data-testid="stHeader"] {{
@@ -204,17 +198,15 @@ header[data-testid="stHeader"] button {{
   font-size: {current_sizes['title']};
   font-weight: 800;
   letter-spacing: 2px;
-  background: linear-gradient(135deg, #006C35 0%, #D4AF37 100%);
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 0.25rem;
-  text-shadow: 0 2px 4px rgba(0, 108, 53, 0.1);
 }}
 
 .voice-subtitle {{
-  color: {text_secondary};
+  color: rgba(255, 255, 255, 0.85);
   font-size: {current_sizes['base']};
-  font-weight: 500;
 }}
 
 /* Main Container */
@@ -233,12 +225,12 @@ header[data-testid="stHeader"] button {{
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.03);
   border-radius: 2rem;
   padding: 1.5rem;
   backdrop-filter: blur(20px);
-  border: 2px solid rgba(0, 108, 53, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 108, 53, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
   overflow: hidden;
   position: relative;
 }}
@@ -251,28 +243,26 @@ header[data-testid="stHeader"] button {{
   align-items: center;
   justify-content: center;
   font-size: 90px;
-  background: linear-gradient(135deg, #006C35 0%, #127549 100%);
-  box-shadow: 0 20px 60px rgba(0, 108, 53, 0.3);
-  border: 6px solid rgba(212, 175, 55, 0.4);
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  box-shadow: 0 20px 60px rgba(251, 191, 36, 0.4);
+  border: 6px solid rgba(255, 255, 255, 0.15);
   animation: float 3s ease-in-out infinite;
   transition: all 0.3s ease;
 }}
 
 .voice-avatar.listening {{
   animation: pulse-listening 0.8s infinite;
-  box-shadow: 0 0 80px rgba(0, 108, 53, 0.6);
-  border-color: rgba(212, 175, 55, 0.7);
+  box-shadow: 0 0 80px rgba(251, 191, 36, 0.8);
 }}
 
 .voice-avatar.speaking {{
   animation: pulse-speaking 0.6s infinite;
-  box-shadow: 0 0 80px rgba(212, 175, 55, 0.7);
-  border-color: rgba(0, 108, 53, 0.7);
+  box-shadow: 0 0 80px rgba(245, 158, 11, 0.8);
 }}
 
 .voice-ring {{
   position: absolute;
-  border: 3px solid rgba(0, 108, 53, 0.25);
+  border: 3px solid rgba(251, 191, 36, 0.3);
   border-radius: 50%;
   top: 50%;
   left: 50%;
@@ -306,7 +296,7 @@ header[data-testid="stHeader"] button {{
 
 .record-label {{
   margin-top: 1.5rem;
-  color: {text_primary};
+  color: white;
   font-weight: 600;
   letter-spacing: 1.5px;
   font-size: {current_sizes['base']};
@@ -369,15 +359,15 @@ header[data-testid="stHeader"] button {{
   border-radius: 1rem;
   font-weight: 600;
   font-size: 0.75rem;
-  background: rgba(0, 108, 53, 0.15);
-  color: #004d26;
-  border: 1px solid rgba(0, 108, 53, 0.3);
+  background: rgba(251, 191, 36, 0.2);
+  color: #92400e;
+  border: 1px solid rgba(251, 191, 36, 0.3);
 }}
 
 .panel-badge.active {{
-  background: rgba(212, 175, 55, 0.2);
-  color: #8b7220;
-  border-color: rgba(212, 175, 55, 0.4);
+  background: rgba(34, 197, 94, 0.2);
+  color: #166534;
+  border-color: rgba(34, 197, 94, 0.3);
   animation: badge-pulse 1s infinite;
 }}
 
@@ -410,14 +400,13 @@ header[data-testid="stHeader"] button {{
   top: 15px;
   {'left' if is_arabic or is_urdus else 'right'}: 15px;
   padding: 0.6rem 1.25rem;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(0, 0, 0, 0.15);
   border-radius: 2rem;
-  color: {text_primary};
+  color: white;
   font-weight: 600;
   font-size: 0.85rem;
   backdrop-filter: blur(10px);
-  border: 2px solid rgba(0, 108, 53, 0.3);
-  box-shadow: 0 4px 12px rgba(0, 108, 53, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -429,12 +418,12 @@ header[data-testid="stHeader"] button {{
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #006C35;
+  background: #22c55e;
   animation: dot-pulse 1.5s infinite;
 }}
 
-.status-dot.listening {{background: #D4AF37;}}
-.status-dot.speaking {{background: #127549;}}
+.status-dot.listening {{background: #ef4444;}}
+.status-dot.speaking {{background: #f59e0b;}}
 
 @keyframes dot-pulse {{
   0%, 100% {{opacity: 1;}}
