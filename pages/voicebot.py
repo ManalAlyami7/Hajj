@@ -92,7 +92,7 @@ is_urdus = is_urdu(st.session_state.language)
 render_sidebar(memory, st.session_state.language)
 
 # ---------------------------
-# Dynamic Styling - Soft Official Blues Theme
+# Dynamic Styling - Soft Green + White Theme
 # ---------------------------
 # Font size mapping
 font_sizes = {
@@ -103,13 +103,14 @@ font_sizes = {
 
 current_sizes = font_sizes[st.session_state.font_size]
 
-# --- NEW COLOR SCHEME: Soft Official Blues ---
-bg_gradient = "linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%)" # Light sky/official tone
+# --- NEW COLOR SCHEME: Soft Green + White (Official "Safety" Tone) ---
+green_accent = "#16a34a"                                         # Official Green
+bg_gradient = "linear-gradient(135deg, #f6faf6 0%, #e6f4ea 100%)" # Light Green/White background
 panel_bg = "#ffffff"                                             # White, clean
 text_primary = "#1f2937"                                         # Dark slate gray
 text_secondary = "#4b5563"                                       # Gray-blue
-accent_color = "#2563eb"                                         # Official Blue
 border_color = "rgba(0, 0, 0, 0.08)"                             # Soft border
+alert_color = "#ef4444"                                          # Use a standard red for urgency/speaking
 
 # RTL support
 text_align = 'right' if is_arabic or is_urdus else 'left'
@@ -144,7 +145,7 @@ button[kind="header"] {{
 
 /* Sidebar Styling */
 [data-testid="stSidebar"] {{
-    background: linear-gradient(180deg, #e0e7ef 0%, #cfd8e5 100%); /* Light/soft blue gradient for sidebar */
+    background: linear-gradient(180deg, #e6f4ea 0%, #d5e9db 100%); /* Light green gradient for sidebar */
     border-right: 1px solid rgba(0, 0, 0, 0.1);
 }}
 
@@ -155,7 +156,7 @@ button[kind="header"] {{
 [data-testid="collapsedControl"] {{
     visibility: visible !important;
     display: flex !important;
-    background: {accent_color} !important; /* Official Blue accent */
+    background: {green_accent} !important; /* Official Green accent */
     color: white !important;
     border-radius: 0.5rem !important;
     padding: 0.5rem !important;
@@ -165,7 +166,7 @@ button[kind="header"] {{
 }}
 
 [data-testid="collapsedControl"]:hover {{
-    background: #1e40af !important; /* Darker Blue on hover */
+    background: #0f8038 !important; /* Darker Green on hover */
     transform: scale(1.05) !important;
 }}
 
@@ -191,7 +192,7 @@ header[data-testid="stHeader"] button {{
     font-size: {current_sizes['title']};
     font-weight: 800;
     letter-spacing: 2px;
-    background: linear-gradient(135deg, {accent_color} 0%, #1e40af 100%); /* Blue Gradient Title */
+    background: linear-gradient(135deg, {green_accent} 0%, #0f8038 100%); /* Green Gradient Title */
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 0.25rem;
@@ -236,9 +237,9 @@ header[data-testid="stHeader"] button {{
     align-items: center;
     justify-content: center;
     font-size: 90px;
-    background: {accent_color}; /* Official Blue */
+    background: {green_accent}; /* Official Green */
     color: white;
-    box-shadow: 0 10px 40px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 10px 40px rgba(22, 163, 74, 0.3);
     border: 6px solid rgba(255, 255, 255, 0.5);
     animation: float 3s ease-in-out infinite;
     transition: all 0.3s ease;
@@ -246,17 +247,19 @@ header[data-testid="stHeader"] button {{
 
 .voice-avatar.listening {{
     animation: pulse-listening 0.8s infinite;
-    box-shadow: 0 0 80px rgba(37, 99, 235, 0.8);
+    background: #0f8038;
+    box-shadow: 0 0 80px rgba(22, 163, 74, 0.8);
 }}
 
 .voice-avatar.speaking {{
     animation: pulse-speaking 0.6s infinite;
-    box-shadow: 0 0 80px rgba(239, 68, 68, 0.8); /* Red/Urgency color for speaking */
+    background: {alert_color}; /* Red for speaking/alert */
+    box-shadow: 0 0 80px rgba(239, 68, 68, 0.8); 
 }}
 
 .voice-ring {{
     position: absolute;
-    border: 3px solid rgba(37, 99, 235, 0.3);
+    border: 3px solid rgba(22, 163, 74, 0.3); /* Green ring */
     border-radius: 50%;
     top: 50%;
     left: 50%;
@@ -323,12 +326,12 @@ header[data-testid="stHeader"] button {{
 
 .panel-icon {{
     font-size: 1.75rem;
-    color: {accent_color};
+    color: {green_accent};
     animation: icon-glow 2s ease-in-out infinite;
 }}
 
 .panel-icon.active {{
-    color: #ef4444; /* Red for active speaking/processing */
+    color: {alert_color}; /* Red for active speaking/processing */
     animation: icon-bounce 0.6s ease-in-out infinite;
 }}
 
@@ -355,9 +358,9 @@ header[data-testid="stHeader"] button {{
     border-radius: 1rem;
     font-weight: 600;
     font-size: 0.75rem;
-    background: rgba(37, 99, 235, 0.1); /* Light Blue BG */
-    color: {accent_color}; /* Official Blue Text */
-    border: 1px solid rgba(37, 99, 235, 0.2);
+    background: rgba(22, 163, 74, 0.1); /* Light Green BG */
+    color: {green_accent}; /* Official Green Text */
+    border: 1px solid rgba(22, 163, 74, 0.2);
 }}
 
 .panel-badge.active {{
@@ -415,12 +418,12 @@ header[data-testid="stHeader"] button {{
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background: #22c55e; /* Green for ready */
+    background: {green_accent}; /* Green for ready */
     animation: dot-pulse 1.5s infinite;
 }}
 
-.status-dot.listening {{background: {accent_color};}} /* Blue for processing */
-.status-dot.speaking {{background: #ef4444;}} /* Red for speaking */
+.status-dot.listening {{background: #0f8038;}} /* Darker green for processing */
+.status-dot.speaking {{background: {alert_color};}} /* Red for speaking */
 
 @keyframes dot-pulse {{
     0%, 100% {{opacity: 1;}}
@@ -547,7 +550,6 @@ with col_right:
     transcript_icon_class = "active" if st.session_state.is_processing else ""
     response_icon_class = "active" if st.session_state.is_speaking else ""
     
-    transcript_badge_class = "active" if st.session_state.is_processing else ""
     response_badge_class = "active" if st.session_state.is_speaking else ""
 
     # Transcript panel
