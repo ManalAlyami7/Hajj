@@ -115,27 +115,31 @@ class LLMManager:
             st.stop()
         return OpenAI(api_key=api_key)
     
-    def build_chat_context(self, limit: int = 6) -> List[Dict[str, str]]:
+    def build_chat_context(self, limit: Optional[int] = 20) -> List[Dict[str, str]]:
         """
         Build chat context from recent messages
-        Excludes messages with dataframes
+        - limit: max number of messages to include, None = all
         """
         if "chat_memory" not in st.session_state:
             return []
-        
+    
+        recent = st.session_state.chat_memory if limit is None else st.session_state.chat_memory[-limit:]
+    
         context = []
-        recent = st.session_state.chat_memory[-limit:] if len(st.session_state.chat_memory) > limit else st.session_state.chat_memory
-        
         for msg in recent:
             if "dataframe" in msg or "result_data" in msg:
                 continue
-            context.append({
-                "role": msg["role"],
-                "content": msg["content"]
-            })
-        
-        return context
+            context.append({"role": msg["role"], "content": msg["content"]})
     
+        return context
+        
+    def update_last_agency(self, user_input: str, extracted_company: Optional[str]):
+        """Keep track of last mentioned agency"""
+        if "last_agency_name" not in st.session_state:
+            st.session_state["last_agency_name"] = None
+        if extracted_company:
+            st.session_state["last_agency_name"] = extracted_company
+
     def detect_intent(self, user_input: str, language: str) -> Dict:
         """
         Detect user intent using LLM with structured output
@@ -145,9 +149,14 @@ class LLMManager:
         if "last_company_name" in st.session_state and len(user_input.strip().split()) <= 4:
             user_input = f"{user_input.strip()} لشركة {st.session_state['last_company_name']}"
             logger.info(f"Context auto-filled with last company: {st.session_state['last_company_name']}")
-        
+            last_company = st.session_state.get("last_company_name", "")
+
         intent_prompt = f"""
-        You are a fraud-prevention assistant for Hajj pilgrims. you need to understand user and use the context in addition to the message, Classify this message into ONE of four categories:
+        You are a fraud-prevention assistant for Hajj pilgrims. 
+         Use the full conversation context and any previously mentioned company.
+        Last company mentioned: {last_company if last_company else 'None'}
+        
+        You need to understand user and use the context in addition to the message, Classify this message into ONE of four categories:
 
         1️⃣ GREETING: greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا. 
         - No specific agency information is provided.
@@ -190,7 +199,7 @@ class LLMManager:
                 messages=[
                     {"role": "system", "content": "You classify user intents for a Hajj agency verification system."},
                     {"role": "user", "content": intent_prompt},
-                    *self.build_chat_context()
+                    *self.build_chat_context(limit=None)
                 ],
                 response_format=IntentClassification,
                 temperature=0
@@ -383,10 +392,6 @@ Language-specific content rules:
 - If the user question is in **Arabic**, output `city`, `country`, `is_authorized` in Arabic.  
 - If the user question is in **English**, output `city`, `country`, `is_authorized` in English.  
 - Column names in the output can also be translated to match user language.
-
-Behavior based on user question:
-- If the user asks about a **specific column**, provide only that column's data.
-- If the user asks for **all information** or does not specify, provide all default columns.
 
 Behavior based on user question:
 - If the user asks about a **specific column**, provide only that column's data.
@@ -615,6 +620,11 @@ Feel free to:
     def ask_for_more_info(self, user_input: str, language: str) -> Dict:
         """Generate structured response asking user for more specific information"""
         is_arabic = language == "العربية"
+        last_company = st.session_state.get("last_company_name", "")
+        
+        if last_company and "agency" not in user_input.lower() and "شركة" not in user_input:
+            user_input += f" (referring to {last_company})"
+            
         prompt = f"""You are a helpful Hajj verification assistant.
     The user's question: "{user_input}" needs more details to provide accurate information.
     Examples of vague questions:
