@@ -49,6 +49,8 @@ class VoiceQueryProcessor:
         # Step 1: Fix transcription errors with LLM (without sending all 7k names)
         prompt = f"""
         Fix any transcription or spacing errors in this Arabic-English text.
+        Return only the corrected text, no explanations.
+        If no names keeps the same text.
         Do NOT change names that look like proper nouns.
         Text: {raw_text}
         """
