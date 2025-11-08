@@ -363,7 +363,7 @@ with st.sidebar:
     st.caption("Return to the main assistant chat interface.")
 
     if st.button("← Back to Chat", use_container_width=True, type="primary"):
-        st.switch_page("./app.py")
+        st.switch_page("app.py")
 
 
 # ---------------------------
