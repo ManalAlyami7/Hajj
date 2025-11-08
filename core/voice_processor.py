@@ -9,6 +9,8 @@ from openai import AsyncOpenAI, OpenAI
 import io
 from typing import Dict, Optional, AsyncGenerator
 import logging
+import arabic_reshaper
+from pyarabic.araby import diacritize
 import difflib
 from sqlalchemy import text
 
@@ -160,6 +162,21 @@ class VoiceProcessor:
                 "confidence": 0.0,
                 "error": str(e)
             }
+        
+    def preprocess_arabic(text):
+            """
+            Reshape Arabic text and optionally add diacritics for TTS.
+            """
+            # Step 1: Reshape text for proper rendering
+            reshaped_text = arabic_reshaper.reshape(text)
+
+            # Step 2: Add diacritics (optional but improves TTS pronunciation)
+            try:
+                diacritized_text = diacritize(reshaped_text)
+            except Exception:
+                diacritized_text = reshaped_text  # fallback if diacritization fails
+
+            return diacritized_text
 
     # --- Text-to-Speech (OPTIMIZED WITH CHUNKING) -----------------------------
     def text_to_speech(self, text: str, language: str = "en") -> Optional[bytes]:
@@ -167,25 +184,24 @@ class VoiceProcessor:
         Convert text to speech and return MP3 bytes (OPTIMIZED).
         For long text, consider using text_to_speech_chunked() instead.
         """
+
+        
+
         if not text or not text.strip():
             logger.warning("⚠️ Empty text provided to TTS.")
             return None
 
         # Voice mapping based on language
-        voice_map = {
-            "ar": "onyx",   # Arabic - deep, formal tone
-            "arabic": "onyx",
-            "en": "alloy",  # English - neutral tone
-            "english": "alloy",
-            "ur": "alloy",
-            "urdu": "alloy",
-            "id": "alloy",
-            "indonesian": "alloy",
-            "tr": "alloy",
-            "turkish": "alloy"
-        }
 
-        voice = voice_map.get(language, "alloy")
+        lang = language.lower()
+        if lang in ["ar", "arabic"]:
+            voice = "echo"
+            text = self.preprocess_arabic(text)
+        elif lang in ["en", "english"]:
+            voice = "alloy"
+        else:
+            voice = "alloy"
+
 
         try:
             # OPTIMIZATION: Use tts-1 instead of tts-1-hd (2x faster)
