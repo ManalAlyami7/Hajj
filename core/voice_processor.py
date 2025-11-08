@@ -28,6 +28,8 @@ logger.setLevel(logging.INFO)
 from difflib import get_close_matches
 from sqlalchemy import text
 import openai
+from rapidfuzz import process, fuzz
+
 
 class VoiceQueryProcessor:
     def __init__(self, db, voice_llm):
@@ -42,28 +44,33 @@ class VoiceQueryProcessor:
             result = conn.execute(text("SELECT hajj_company_ar, hajj_company_en FROM agencies"))
             return [ar or en for ar, en in result.fetchall() if ar or en]
 
-    def correct_transcript(self, raw_text, agency_names):
-        # Step 1️⃣ – Clean text and fix typos but keep real names intact
+
+    def correct_transcript(self, raw_text, agency_names, threshold=80):
+        # Step 1: Fix transcription errors with LLM (without sending all 7k names)
         prompt = f"""
         Fix any transcription or spacing errors in this Arabic-English text.
-        Keep agency or company names unchanged if they appear similar to any of these:
-        {agency_names}
+        Do NOT change names that look like proper nouns.
         Text: {raw_text}
         """
         response = self.client.beta.chat.completions.parse(
             model="gpt-4-turbo",
             messages=[{"role": "user", "content": prompt}]
         )
-        cleaned = response.choices[0].message.content.strip()
+        cleaned_text = response.choices[0].message.content.strip()
 
-        # Step 2️⃣ – Fuzzy match to existing agency names (Arabic or English)
-        match = get_close_matches(cleaned.lower(), [n.lower() for n in agency_names], n=1, cutoff=0.6)
-        if match:
-            for n in agency_names:
-                if n.lower() == match[0]:
-                    return n  # Return matched official name
+        # Step 2: Fuzzy match to all agency names locally
+        matches = process.extract(
+            cleaned_text,            # text to match
+            agency_names,            # list of names
+            scorer=fuzz.token_sort_ratio,
+            score_cutoff=threshold   # only matches above threshold
+        )
 
-        return cleaned  # If no close match, return as is
+        # Return all matched names (official names)
+        matched_names = [match[0] for match in matches]
+        return matched_names if matched_names else [cleaned_text]
+
+
 
 
 class VoiceProcessor:
@@ -136,7 +143,14 @@ class VoiceProcessor:
             agency_names = proc.get_agency_names()
 
 
-            cleaned_text = proc.correct_transcript(text, agency_names)
+            matched_names = proc.correct_transcript(text, agency_names)
+
+            if len(matched_names) == 1:
+                cleaned_text = matched_names[0]
+            else:
+                # multiple possible matches
+                cleaned_text = ", ".join(matched_names)
+
 
 
             result = {
