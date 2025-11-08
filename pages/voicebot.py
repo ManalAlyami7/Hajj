@@ -192,98 +192,115 @@ is_arabic = is_arabic_code(st.session_state.language)
 # Sidebar
 # ---------------------------
 with st.sidebar:
+    # -----------------------------
+    # Header Section
+    # -----------------------------
     st.markdown("""
-    <div style="text-align: center; padding: 1rem 0 1.5rem 0;">
-        <div style="font-size: 3rem; margin-bottom: 0.5rem;">🕋</div>
-        <h2 style="margin: 0; font-size: 1.5rem; font-weight: 700; 
+    <div style="text-align: center; padding: 1.5rem 0 2rem 0;">
+        <div style="font-size: 3rem; margin-bottom: 0.75rem;">🕋</div>
+        <h2 style="margin: 0; font-size: 1.7rem; font-weight: 700; 
                    background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
                    -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
             Voice Assistant
         </h2>
-        <p style="color: #64748b; font-size: 0.85rem; margin-top: 0.25rem;">
-            Settings & Controls
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.25rem;">
+            Settings, Language & Accessibility Controls
         </p>
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("---")
-    
+    st.markdown("<hr style='margin-top:-0.5rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
+
+    # -----------------------------
     # Language Selection
+    # -----------------------------
     st.markdown("### 🌐 Language")
+    st.caption("Choose the language for your assistant responses and interface text.")
+    
     language_options = {
         'English': 'en',
         'العربية': 'ar',
         'اردو': 'ur'
     }
-    
+
     current_lang_display = [k for k, v in language_options.items() if v == st.session_state.language][0]
-    
     selected_language = st.selectbox(
         "Choose your language",
         options=list(language_options.keys()),
         index=list(language_options.keys()).index(current_lang_display),
         label_visibility="collapsed"
     )
-    
+
     if language_options[selected_language] != st.session_state.language:
         st.session_state.language = language_options[selected_language]
+        st.toast(f"Language switched to {selected_language}", icon="🌐")
         st.rerun()
-    
-    st.markdown("---")
-    
+
+    st.markdown("<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
+
+    # -----------------------------
     # Accessibility Options
+    # -----------------------------
     st.markdown("### ♿ Accessibility")
-    
+    st.caption("Adjust font size or contrast for better visibility and comfort.")
+
     # Font Size
     font_size_options = {
         'Normal': 'normal',
         'Large': 'large',
         'Extra Large': 'extra-large'
     }
-    
+
     current_font_display = [k for k, v in font_size_options.items() if v == st.session_state.font_size][0]
-    
     selected_font = st.selectbox(
         "Font Size",
         options=list(font_size_options.keys()),
         index=list(font_size_options.keys()).index(current_font_display)
     )
-    
+
     if font_size_options[selected_font] != st.session_state.font_size:
         st.session_state.font_size = font_size_options[selected_font]
+        st.toast(f"Font size set to {selected_font}", icon="🔠")
         st.rerun()
-    
+
     # High Contrast Mode
+    st.markdown("")
     high_contrast = st.checkbox(
-        "High Contrast Mode",
-        value=st.session_state.high_contrast
+        "Enable High Contrast Mode",
+        value=st.session_state.high_contrast,
+        help="Improves text and button visibility for users with low vision."
     )
-    
+
     if high_contrast != st.session_state.high_contrast:
         st.session_state.high_contrast = high_contrast
+        st.toast("High contrast mode updated", icon="🌓")
         st.rerun()
-    
-    st.markdown("---")
-    
-    # Memory Stats
+
+    st.markdown("<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
+
+    # -----------------------------
+    # Memory Status Section
+    # -----------------------------
     st.markdown("### 🧠 Memory Status")
+    st.caption("Review your current session’s progress and data usage.")
+    
     memory_summary = memory.get_memory_summary()
     
     st.markdown(f"""
     <div style="background: rgba(96, 165, 250, 0.1); padding: 1rem; border-radius: 0.75rem; 
-                border-left: 3px solid #60a5fa;">
+                border-left: 4px solid #60a5fa; margin-top: 0.5rem;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-            <span style="color: #64748b; font-size: 0.85rem;">Messages</span>
+            <span style="color: #64748b; font-size: 0.85rem;">Total Messages</span>
             <strong style="color: #1e293b;">{memory_summary['total_messages']}</strong>
         </div>
         <div style="display: flex; justify-content: space-between;">
-            <span style="color: #64748b; font-size: 0.85rem;">Duration</span>
+            <span style="color: #64748b; font-size: 0.85rem;">Session Duration</span>
             <strong style="color: #1e293b;">{memory_summary['session_duration']}</strong>
         </div>
     </div>
     """, unsafe_allow_html=True)
-    
-    # Clear Memory Button
+
+    st.markdown("")
     if st.button("🗑️ Clear Memory", use_container_width=True, type="secondary"):
         memory.clear_memory()
         st.session_state.current_transcript = ""
@@ -292,15 +309,18 @@ with st.sidebar:
         st.session_state.last_audio_hash = None
         st.session_state.pending_audio = None
         st.session_state.pending_audio_bytes = None
-        st.success("Memory cleared!")
+        st.success("Memory cleared successfully!")
         time.sleep(1)
         st.rerun()
-    
-    st.markdown("---")
-    
+
+    st.markdown("<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
+
+    # -----------------------------
     # Sample Questions
+    # -----------------------------
     st.markdown("### 💡 Sample Questions")
-    
+    st.caption("Try one of these to get started quickly:")
+
     sample_questions = {
         'en': [
             "What are the Hajj requirements?",
@@ -321,24 +341,30 @@ with st.sidebar:
             "منیٰ کے بارے میں بتائیں"
         ]
     }
-    
+
     current_samples = sample_questions.get(st.session_state.language, sample_questions['en'])
-    
+
     for question in current_samples:
         st.markdown(f"""
-        <div style="background: rgba(255, 255, 255, 0.05); padding: 0.5rem 0.75rem; 
-                    border-radius: 0.5rem; margin-bottom: 0.5rem; font-size: 0.85rem;
-                    border: 1px solid rgba(255, 255, 255, 0.1); color: #94a3b8;">
+        <div style="background: rgba(255, 255, 255, 0.05); padding: 0.6rem 0.9rem; 
+                    border-radius: 0.6rem; margin-bottom: 0.6rem; font-size: 0.9rem;
+                    border: 1px solid rgba(255, 255, 255, 0.08); color: #cbd5e1; 
+                    transition: all 0.3s ease;">
             💬 {question}
         </div>
         """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
+
+    st.markdown("<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
+
+    # -----------------------------
     # Navigation
+    # -----------------------------
     st.markdown("### 🏠 Navigation")
+    st.caption("Return to the main assistant chat interface.")
+
     if st.button("← Back to Chat", use_container_width=True, type="primary"):
-        st.switch_page("pages/chat.py")  # Adjust path as needed
+        st.switch_page("pages/chat.py")
+
 
 # ---------------------------
 # Dynamic Styling
