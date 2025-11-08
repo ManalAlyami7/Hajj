@@ -1,11 +1,11 @@
 """
-Hajj Voice Assistant - Enhanced Version
+Hajj Voice Assistant - Production Ready Version
 Features:
-- Warmer, more welcoming color palette
-- Smooth animations for active states
-- Language selector (Arabic, English, Urdu)
-- Accessibility options (font size, high contrast)
-- Improved icon animations
+- Warmer, welcoming color palette
+- Smooth icon animations when active
+- Sidebar settings (Language, Font Size, High Contrast)
+- Conversation memory management
+- Professional and accessible design
 """
 import time
 import re
@@ -32,7 +32,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ---------------------------
-# Memory Management (unchanged)
+# Memory Management
 # ---------------------------
 class ConversationMemory:
     """Manages conversation memory for voice assistant"""
@@ -121,7 +121,7 @@ class ConversationMemory:
 # Session State Initialization
 # ---------------------------
 def initialize_session_state():
-    """Initialize all required session states including accessibility"""
+    """Initialize all required session states"""
     defaults = {
         "last_audio_hash": None,
         "is_processing": False,
@@ -133,7 +133,7 @@ def initialize_session_state():
         "current_metadata": {},
         "status": "Ready",
         "language": "en",
-        "font_size": "normal",  # normal, large, xlarge
+        "font_size": "normal",
         "high_contrast": False,
     }
     for k, v in defaults.items():
@@ -148,7 +148,7 @@ st.set_page_config(
     page_title="🕋 Voice Assistant - Hajj & Umrah",
     page_icon="🕋",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="auto",
 )
 
 def init_voice_graph():
@@ -178,13 +178,75 @@ def handle_clear_memory():
     st.session_state.pending_audio_bytes = None
     logger.info("Memory and states cleared successfully")
 
-if st.session_state.get('clear_memory_clicked', False):
-    handle_clear_memory()
-    st.session_state.clear_memory_clicked = False
-    st.rerun()
+# ---------------------------
+# Sidebar Settings
+# ---------------------------
+with st.sidebar:
+    st.markdown("### ⚙️ Settings")
+    
+    # Language selector
+    lang_options = {
+        "en": "🇬🇧 English",
+        "ar": "🇸🇦 العربية", 
+        "ur": "🇵🇰 اردو"
+    }
+    selected_lang = st.selectbox(
+        "Language / اللغة",
+        options=list(lang_options.keys()),
+        format_func=lambda x: lang_options[x],
+        index=list(lang_options.keys()).index(st.session_state.language),
+        key="lang_select"
+    )
+    if selected_lang != st.session_state.language:
+        st.session_state.language = selected_lang
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # Font size
+    font_options = {"normal": "📝 Normal", "large": "📄 Large", "xlarge": "📰 Extra Large"}
+    selected_font = st.radio(
+        "Font Size",
+        options=list(font_options.keys()),
+        format_func=lambda x: font_options[x],
+        index=list(font_options.keys()).index(st.session_state.font_size),
+        key="font_select"
+    )
+    if selected_font != st.session_state.font_size:
+        st.session_state.font_size = selected_font
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # High contrast toggle
+    contrast_toggle = st.toggle(
+        "🌗 High Contrast Mode",
+        value=st.session_state.high_contrast,
+        key="contrast_toggle"
+    )
+    if contrast_toggle != st.session_state.high_contrast:
+        st.session_state.high_contrast = contrast_toggle
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # Memory info
+    memory_summary = memory.get_memory_summary()
+    st.info(f"""
+    **Conversation Stats**
+    
+    💬 Messages: {memory_summary['total_messages']}
+    
+    ⏱️ Duration: {memory_summary['session_duration']}
+    """)
+    
+    # Clear memory button
+    if st.button("🗑️ Clear Conversation", use_container_width=True, type="secondary"):
+        handle_clear_memory()
+        st.rerun()
 
 # ---------------------------
-# Dynamic Styles with Accessibility
+# Dynamic Styles
 # ---------------------------
 rtl_class = 'rtl' if is_arabic else ''
 text_align = 'right' if is_arabic else 'left'
@@ -197,44 +259,35 @@ arrow_icon = '←' if not is_arabic else '→'
 # Font size multipliers
 font_sizes = {
     "normal": 1.0,
-    "large": 1.2,
-    "xlarge": 1.4
+    "large": 1.15,
+    "xlarge": 1.3
 }
 font_multiplier = font_sizes[st.session_state.font_size]
 
-# Color scheme (warmer palette)
+# Color scheme
 if st.session_state.high_contrast:
-    # High contrast mode
     bg_gradient = "linear-gradient(135deg, #000000 0%, #1a1a1a 100%)"
     text_color = "#FFFFFF"
-    panel_bg = "rgba(255, 255, 255, 0.95)"
+    panel_bg = "rgba(255, 255, 255, 0.98)"
     panel_text = "#000000"
     accent_primary = "#FFD700"
     accent_secondary = "#FFA500"
 else:
-    # Normal warm mode
     bg_gradient = "linear-gradient(135deg, #2D1B4E 0%, #4A2C6D 50%, #6B4891 100%)"
     text_color = "rgba(255, 255, 255, 0.95)"
-    panel_bg = "rgba(255, 248, 245, 0.95)"
+    panel_bg = "rgba(255, 248, 245, 0.96)"
     panel_text = "#2D1B4E"
     accent_primary = "#FF8C42"
     accent_secondary = "#FFA07A"
 
 st.markdown(f"""
 <style>
-/* Root variables for easy theming */
 :root {{
     --font-multiplier: {font_multiplier};
-    --bg-gradient: {bg_gradient};
-    --text-color: {text_color};
-    --panel-bg: {panel_bg};
-    --panel-text: {panel_text};
-    --accent-primary: {accent_primary};
-    --accent-secondary: {accent_secondary};
 }}
 
 .stApp {{
-    background: var(--bg-gradient);
+    background: {bg_gradient};
     background-attachment: fixed;
     overflow: hidden !important;
     height: 100vh;
@@ -249,120 +302,6 @@ st.markdown(f"""
     display: flex;
     flex-direction: column;
     direction: {'rtl' if is_arabic else 'ltr'};
-}}
-
-/* ========================================
-   TOP BAR CONTROLS WITH ANIMATIONS
-   ======================================== */
-
-/* Accessibility Controls - Top Right */
-.accessibility-controls {{
-    position: fixed;
-    top: 15px;
-    {'left' if is_arabic else 'right'}: 15px;
-    display: flex;
-    gap: 0.75rem;
-    z-index: 2000;
-    direction: {'rtl' if is_arabic else 'ltr'};
-}}
-
-.control-btn {{
-    padding: 0.6rem 1rem;
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 2rem;
-    color: white;
-    font-weight: 600;
-    font-size: calc(0.85rem * var(--font-multiplier));
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}}
-
-.control-btn:hover {{
-    background: rgba(255, 140, 66, 0.25);
-    border-color: var(--accent-primary);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 140, 66, 0.3);
-}}
-
-.control-btn.active {{
-    background: var(--accent-primary);
-    border-color: var(--accent-primary);
-    color: #2D1B4E;
-}}
-
-/* Language Selector Dropdown */
-.language-selector {{
-    position: relative;
-}}
-
-.language-dropdown {{
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    {'left' if is_arabic else 'right'}: 0;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(20px);
-    border-radius: 1rem;
-    padding: 0.5rem;
-    min-width: 150px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: all 0.3s ease;
-}}
-
-.language-selector:hover .language-dropdown {{
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-}}
-
-.lang-option {{
-    padding: 0.75rem 1rem;
-    color: #2D1B4E;
-    cursor: pointer;
-    border-radius: 0.5rem;
-    transition: all 0.2s ease;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}}
-
-.lang-option:hover {{
-    background: var(--accent-primary);
-    color: white;
-}}
-
-.lang-option.active {{
-    background: rgba(255, 140, 66, 0.2);
-    color: var(--accent-primary);
-}}
-
-/* Memory Badge */
-.memory-badge {{
-    position: fixed;
-    top: 80px;
-    {'left' if is_arabic else 'right'}: 15px;
-    padding: 0.6rem 1.25rem;
-    background: rgba(255, 140, 66, 0.2);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 140, 66, 0.4);
-    border-radius: 2rem;
-    color: var(--accent-primary);
-    font-weight: 600;
-    font-size: calc(0.75rem * var(--font-multiplier));
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    animation: slideInRight 0.5s ease;
 }}
 
 /* Return Button */
@@ -412,7 +351,7 @@ st.markdown(f"""
 .status-indicator {{
     position: fixed;
     top: 15px;
-    {'left' if is_arabic else 'right'}: 440px;
+    {'left' if is_arabic else 'right'}: 15px;
     padding: 0.6rem 1.25rem;
     background: rgba(0, 0, 0, 0.2);
     border-radius: 2rem;
@@ -436,19 +375,16 @@ st.markdown(f"""
 }}
 
 .status-dot.listening {{
-    background: var(--accent-primary);
-    box-shadow: 0 0 15px var(--accent-primary);
+    background: {accent_primary};
+    box-shadow: 0 0 15px {accent_primary};
 }}
 
 .status-dot.speaking {{
-    background: var(--accent-secondary);
-    box-shadow: 0 0 15px var(--accent-secondary);
+    background: {accent_secondary};
+    box-shadow: 0 0 15px {accent_secondary};
 }}
 
-/* ========================================
-   HEADER
-   ======================================== */
-
+/* Header */
 .voice-header {{
     text-align: center;
     padding: 0.75rem 0;
@@ -460,22 +396,19 @@ st.markdown(f"""
     font-size: calc(2.2rem * var(--font-multiplier));
     font-weight: 800;
     letter-spacing: 2px;
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    background: linear-gradient(135deg, {accent_primary} 0%, {accent_secondary} 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 0.25rem;
 }}
 
 .voice-subtitle {{
-    color: var(--text-color);
+    color: {text_color};
     font-size: calc(0.95rem * var(--font-multiplier));
     opacity: 0.9;
 }}
 
-/* ========================================
-   MAIN LAYOUT
-   ======================================== */
-
+/* Main Layout */
 .voice-container {{
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -485,10 +418,7 @@ st.markdown(f"""
     padding: 0 1rem;
 }}
 
-/* ========================================
-   LEFT PANEL - AVATAR & RECORDER
-   ======================================== */
-
+/* Avatar Panel */
 .voice-left {{
     display: flex;
     flex-direction: column;
@@ -513,7 +443,7 @@ st.markdown(f"""
     align-items: center;
     justify-content: center;
     font-size: 90px;
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    background: linear-gradient(135deg, {accent_primary} 0%, {accent_secondary} 100%);
     box-shadow: 0 20px 60px rgba(255, 140, 66, 0.4);
     border: 6px solid rgba(255, 255, 255, 0.2);
     animation: float 3s ease-in-out infinite;
@@ -523,14 +453,14 @@ st.markdown(f"""
 }}
 
 .voice-avatar.listening {{
-    animation: pulse-listening 0.8s infinite, float 3s ease-in-out infinite;
-    box-shadow: 0 0 80px var(--accent-primary);
+    animation: pulse-listening 0.8s infinite, float 3s ease-in-out infinite, icon-glow 1.5s infinite;
+    box-shadow: 0 0 80px {accent_primary};
     transform: scale(1.05);
 }}
 
 .voice-avatar.speaking {{
-    animation: pulse-speaking 0.6s infinite, float 3s ease-in-out infinite;
-    box-shadow: 0 0 80px var(--accent-secondary);
+    animation: pulse-speaking 0.6s infinite, float 3s ease-in-out infinite, icon-glow-alt 1.5s infinite;
+    box-shadow: 0 0 80px {accent_secondary};
     transform: scale(1.1);
 }}
 
@@ -546,38 +476,9 @@ st.markdown(f"""
     z-index: 1;
 }}
 
-.voice-ring-1 {{
-    width: 200px;
-    height: 200px;
-    animation-delay: 0s;
-}}
-
-.voice-ring-2 {{
-    width: 240px;
-    height: 240px;
-    animation-delay: 1s;
-}}
-
-.voice-ring-3 {{
-    width: 280px;
-    height: 280px;
-    animation-delay: 2s;
-}}
-
-/* Glowing Icon Animation */
-@keyframes icon-glow {{
-    0%, 100% {{
-        filter: drop-shadow(0 0 5px var(--accent-primary));
-    }}
-    50% {{
-        filter: drop-shadow(0 0 20px var(--accent-primary));
-    }}
-}}
-
-.voice-avatar.listening,
-.voice-avatar.speaking {{
-    animation: icon-glow 1s infinite, float 3s ease-in-out infinite;
-}}
+.voice-ring-1 {{ width: 200px; height: 200px; animation-delay: 0s; }}
+.voice-ring-2 {{ width: 240px; height: 240px; animation-delay: 1s; }}
+.voice-ring-3 {{ width: 280px; height: 280px; animation-delay: 2s; }}
 
 .record-label {{
     margin-top: 1.5rem;
@@ -588,10 +489,7 @@ st.markdown(f"""
     text-align: center;
 }}
 
-/* ========================================
-   RIGHT PANEL - TRANSCRIPT & RESPONSE
-   ======================================== */
-
+/* Transcript & Response Panels */
 .voice-right {{
     display: flex;
     flex-direction: column;
@@ -604,7 +502,7 @@ st.markdown(f"""
 
 .transcript-container,
 .response-container {{
-    background: var(--panel-bg);
+    background: {panel_bg};
     border-radius: 1.5rem;
     padding: 1.25rem;
     backdrop-filter: blur(18px);
@@ -621,7 +519,7 @@ st.markdown(f"""
 .transcript-container:hover,
 .response-container:hover {{
     box-shadow: 0 12px 40px rgba(255, 140, 66, 0.2);
-    border-color: var(--accent-primary);
+    border-color: {accent_primary};
 }}
 
 .panel-header {{
@@ -636,11 +534,9 @@ st.markdown(f"""
 
 .panel-icon {{
     font-size: calc(1.75rem * var(--font-multiplier));
-    animation: none;
     transition: transform 0.3s ease;
 }}
 
-/* Animated Icon on Active State */
 .panel-header.active .panel-icon {{
     animation: bounce 1s infinite;
 }}
@@ -648,7 +544,7 @@ st.markdown(f"""
 .panel-title {{
     font-size: calc(1.2rem * var(--font-multiplier));
     font-weight: 700;
-    color: var(--panel-text);
+    color: {panel_text};
     margin: 0;
 }}
 
@@ -666,14 +562,14 @@ st.markdown(f"""
 
 .panel-badge.active {{
     background: rgba(255, 140, 66, 0.3);
-    color: var(--accent-primary);
-    border-color: var(--accent-primary);
+    color: {accent_primary};
+    border-color: {accent_primary};
     animation: badge-pulse 1s infinite;
 }}
 
 .transcript-text,
 .response-content {{
-    color: var(--panel-text);
+    color: {panel_text};
     font-size: calc(1.1rem * var(--font-multiplier));
     line-height: 1.6;
     flex: 1;
@@ -690,123 +586,68 @@ st.markdown(f"""
     font-weight: normal;
 }}
 
-/* ========================================
-   ANIMATIONS
-   ======================================== */
-
+/* Animations */
 @keyframes fadeInDown {{
-    from {{
-        opacity: 0;
-        transform: translateY(-20px);
-    }}
-    to {{
-        opacity: 1;
-        transform: translateY(0);
-    }}
+    from {{ opacity: 0; transform: translateY(-20px); }}
+    to {{ opacity: 1; transform: translateY(0); }}
 }}
 
 @keyframes fadeInLeft {{
-    from {{
-        opacity: 0;
-        transform: translateX(-30px);
-    }}
-    to {{
-        opacity: 1;
-        transform: translateX(0);
-    }}
+    from {{ opacity: 0; transform: translateX(-30px); }}
+    to {{ opacity: 1; transform: translateX(0); }}
 }}
 
 @keyframes fadeInRight {{
-    from {{
-        opacity: 0;
-        transform: translateX(30px);
-    }}
-    to {{
-        opacity: 1;
-        transform: translateX(0);
-    }}
-}}
-
-@keyframes slideInRight {{
-    from {{
-        opacity: 0;
-        transform: translateX(20px);
-    }}
-    to {{
-        opacity: 1;
-        transform: translateX(0);
-    }}
+    from {{ opacity: 0; transform: translateX(30px); }}
+    to {{ opacity: 1; transform: translateX(0); }}
 }}
 
 @keyframes float {{
-    0%, 100% {{
-        transform: translateY(0);
-    }}
-    50% {{
-        transform: translateY(-15px);
-    }}
+    0%, 100% {{ transform: translateY(0); }}
+    50% {{ transform: translateY(-15px); }}
 }}
 
 @keyframes pulse-listening {{
-    0%, 100% {{
-        transform: scale(1);
-    }}
-    50% {{
-        transform: scale(1.1);
-    }}
+    0%, 100% {{ transform: scale(1); }}
+    50% {{ transform: scale(1.1); }}
 }}
 
 @keyframes pulse-speaking {{
-    0%, 100% {{
-        transform: scale(1);
-    }}
-    50% {{
-        transform: scale(1.15);
-    }}
+    0%, 100% {{ transform: scale(1); }}
+    50% {{ transform: scale(1.15); }}
 }}
 
 @keyframes expand {{
-    0% {{
-        transform: translate(-50%, -50%) scale(0.8);
-        opacity: 0.8;
-    }}
-    100% {{
-        transform: translate(-50%, -50%) scale(1.5);
-        opacity: 0;
-    }}
+    0% {{ transform: translate(-50%, -50%) scale(0.8); opacity: 0.8; }}
+    100% {{ transform: translate(-50%, -50%) scale(1.5); opacity: 0; }}
 }}
 
 @keyframes bounce {{
-    0%, 100% {{
-        transform: translateY(0);
-    }}
-    50% {{
-        transform: translateY(-10px);
-    }}
+    0%, 100% {{ transform: translateY(0); }}
+    50% {{ transform: translateY(-10px); }}
+}}
+
+@keyframes icon-glow {{
+    0%, 100% {{ filter: drop-shadow(0 0 10px {accent_primary}); }}
+    50% {{ filter: drop-shadow(0 0 25px {accent_primary}); }}
+}}
+
+@keyframes icon-glow-alt {{
+    0%, 100% {{ filter: drop-shadow(0 0 10px {accent_secondary}); }}
+    50% {{ filter: drop-shadow(0 0 25px {accent_secondary}); }}
 }}
 
 @keyframes dot-pulse {{
-    0%, 100% {{
-        opacity: 1;
-    }}
-    50% {{
-        opacity: 0.4;
-    }}
+    0%, 100% {{ opacity: 1; }}
+    50% {{ opacity: 0.4; }}
 }}
 
 @keyframes badge-pulse {{
-    0%, 100% {{
-        opacity: 1;
-    }}
-    50% {{
-        opacity: 0.6;
-    }}
+    0%, 100% {{ opacity: 1; }}
+    50% {{ opacity: 0.6; }}
 }}
 
-/* ========================================
-   RESPONSIVE DESIGN
-   ======================================== */
-
+/* Responsive */
 @media (max-width: 1024px) {{
     .voice-container {{
         grid-template-columns: 1fr;
@@ -818,21 +659,6 @@ st.markdown(f"""
         height: 140px;
         font-size: 70px;
     }}
-    
-    .accessibility-controls {{
-        flex-wrap: wrap;
-        gap: 0.5rem;
-    }}
-    
-    .return-button-container {{
-        top: 10px;
-        {'right' if is_arabic else 'left'}: 10px;
-    }}
-    
-    .memory-badge {{
-        top: 70px;
-        font-size: calc(0.7rem * var(--font-multiplier));
-    }}
 }}
 
 /* Hide audio element */
@@ -841,62 +667,27 @@ audio {{
     visibility: hidden !important;
 }}
 
+/* Sidebar styling */
+[data-testid="stSidebar"] {{
+    background: linear-gradient(180deg, rgba(45, 27, 78, 0.95) 0%, rgba(107, 72, 145, 0.95) 100%);
+    backdrop-filter: blur(20px);
+}}
+
+[data-testid="stSidebar"] .stMarkdown {{
+    color: white;
+}}
+
+[data-testid="stSidebar"] .stSelectbox label,
+[data-testid="stSidebar"] .stRadio label {{
+    color: white !important;
+    font-weight: 600;
+}}
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------
-# UI COMPONENTS
+# UI Components
 # ---------------------------
-
-# Accessibility Controls (Top Right)
-st.markdown(f"""
-<div class="accessibility-controls">
-    <!-- Language Selector -->
-    <div class="language-selector">
-        <div class="control-btn">
-            🌐 {'اللغة' if is_arabic else 'Language'}
-        </div>
-        <div class="language-dropdown">
-            <div class="lang-option {'active' if st.session_state.language == 'en' else ''}" onclick="window.location.href='?lang=en'">
-                🇬🇧 English
-            </div>
-            <div class="lang-option {'active' if st.session_state.language == 'ar' else ''}" onclick="window.location.href='?lang=ar'">
-                🇸🇦 العربية
-            </div>
-            <div class="lang-option {'active' if st.session_state.language == 'ur' else ''}" onclick="window.location.href='?lang=ur'">
-                🇵🇰 اردو
-            </div>
-        </div>
-    </div>
-    
-    <!-- Font Size Toggle -->
-    <div class="control-btn {'active' if st.session_state.font_size != 'normal' else ''}" 
-         onclick="document.getElementById('font_size_btn').click()">
-        {'🔤' if st.session_state.font_size == 'normal' else '🔠'}
-        {'Aa' if not is_arabic else 'أ'}
-    </div>
-    
-    <!-- High Contrast Toggle -->
-    <div class="control-btn {'active' if st.session_state.high_contrast else ''}"
-         onclick="document.getElementById('contrast_btn').click()">
-        {'◐' if not st.session_state.high_contrast else '◑'}
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# Hidden buttons for functionality
-col1, col2 = st.columns(2)
-with col1:
-    if st.button("", key="font_size_btn"):
-        sizes = ["normal", "large", "xlarge"]
-        current_idx = sizes.index(st.session_state.font_size)
-        st.session_state.font_size = sizes[(current_idx + 1) % len(sizes)]
-        st.rerun()
-
-with col2:
-    if st.button("", key="contrast_btn"):
-        st.session_state.high_contrast = not st.session_state.high_contrast
-        st.rerun()
 
 # Return button
 st.markdown(f"""
@@ -908,14 +699,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Memory Badge & Status
-memory_summary = memory.get_memory_summary()
-st.markdown(f"""
-<div class="memory-badge">
-    🧠 {memory_summary['total_messages']} messages | ⏱️ {memory_summary['session_duration']}
-</div>
-""", unsafe_allow_html=True)
-
+# Status indicator
 status_class = (
     "speaking" if st.session_state.is_speaking
     else "listening" if st.session_state.is_processing
@@ -982,7 +766,6 @@ with col_right:
     clean_transcript = html.escape(transcript)
     clean_response = html.escape(response_text)
     
-    # Determine if panels are active
     transcript_active = "active" if st.session_state.is_processing else ""
     response_active = "active" if st.session_state.is_speaking else ""
     
@@ -1019,7 +802,7 @@ with col_right:
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------
-# Audio Processing Logic (unchanged from original)
+# Audio Processing Logic
 # ---------------------------
 def _hash_bytes(b):
     if b is None:
