@@ -79,9 +79,12 @@ voice_processor, workflow = init_voice_graph()
 # Language settings
 def is_arabic_code(code):
     return code in ('ar', 'arabic', 'العربية')
+def is_urdu(code):
+    return code in ('ur', 'اردو')
 
 
 is_arabic = is_arabic_code(st.session_state.language)
+is_urdus = is_urdu(st.session_state.language)
 
 # ---------------------------
 # Render Sidebar
@@ -115,8 +118,8 @@ else:
     border_color = "rgba(15, 23, 42, 0.1)"
 
 # RTL support
-text_align = 'right' if is_arabic else 'left'
-flex_direction = 'row-reverse' if is_arabic else 'row'
+text_align = 'right' if is_arabic or is_urdus else 'left'
+flex_direction = 'row-reverse' if is_arabic or is_urdus else 'row'
 
 st.markdown(f"""
 <style>
@@ -142,7 +145,7 @@ button[kind="header"] {{
   height: 100vh;
   display: flex;
   flex-direction: column;
-  direction: {'rtl' if is_arabic else 'ltr'};
+  direction: {'rtl' if is_arabic or is_urdus else 'ltr'};
 }}
 
 /* Sidebar Styling */
@@ -350,7 +353,7 @@ header[data-testid="stHeader"] button {{
 }}
 
 .panel-badge {{
-  margin-{'right' if is_arabic else 'left'}: auto;
+  margin-{'right' if is_arabic or is_urdus else 'left'}: auto;
   padding: 0.3rem 0.8rem;
   border-radius: 1rem;
   font-weight: 600;
@@ -378,7 +381,7 @@ header[data-testid="stHeader"] button {{
   line-height: 1.6;
   flex: 1;
   overflow-y: auto;
-  padding-{'left' if is_arabic else 'right'}: 0.5rem;
+  padding-{'left' if is_arabic or is_urdus else 'right'}: 0.5rem;
   text-align: {text_align};
   font-weight: 500;
 }}
@@ -394,7 +397,7 @@ header[data-testid="stHeader"] button {{
 .status-indicator {{
   position: fixed;
   top: 15px;
-  {'left' if is_arabic else 'right'}: 15px;
+  {'left' if is_arabic or is_urdus else 'right'}: 15px;
   padding: 0.6rem 1.25rem;
   background: rgba(0, 0, 0, 0.15);
   border-radius: 2rem;
@@ -407,7 +410,7 @@ header[data-testid="stHeader"] button {{
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  direction: {'rtl' if is_arabic else 'ltr'};
+  direction: {'rtl' if is_arabic or is_urdus else 'ltr'};
 }}
 
 .status-dot {{
