@@ -124,20 +124,9 @@ flex_direction = 'row-reverse' if is_arabic or is_urdus else 'row'
 st.markdown(f"""
 <style>
             
-    :root {{
-    --primary-color: #2fab99;       /* main action color */
-    --primary-color-light: #2fab9945; 
-    --accent-color: #57cefb;        /* highlights, badges */
-    --bg-color: #ffffff;             /* panel and background */
-    --bg-gradient: linear-gradient(135deg, #f6faf6 0%, #e6f4ea 100%);
-    --text-primary: #1f2937;        /* main text */
-    --text-secondary: #4b5563;      /* secondary info */
-    --border-color: rgba(0,0,0,0.1);
-}}
-
 /* Global Styles */
 .stApp {{
-  background: var(--bg-gradient);
+  background: {bg_gradient};
   background-attachment: fixed;
   overflow: hidden !important;
   height: 100vh;
@@ -315,11 +304,11 @@ header[data-testid="stHeader"] button {{
 
 /* Right Panel - Transcript/Response */
 .transcript-container, .response-container {{
-  background: var(--bg-color);
+  background: {panel_bg};
   border-radius: 1.5rem;
   padding: 1.25rem;
   backdrop-filter: blur(18px);
-  border: 1px solid var(--border-color);
+  border: 1px solid {border_color};
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   flex: 1;
   min-height: 0;
@@ -334,7 +323,7 @@ header[data-testid="stHeader"] button {{
   gap: 0.75rem;
   margin-bottom: 0.75rem;
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 2px solid {border_color};
   flex-direction: {flex_direction};
 }}
 
@@ -360,7 +349,7 @@ header[data-testid="stHeader"] button {{
 .panel-title {{
   font-size: {current_sizes['panel']};
   font-weight: 700;
-  color: var(--text-primary);
+  color: {text_primary};
   margin: 0;
 }}
 
@@ -388,7 +377,7 @@ header[data-testid="stHeader"] button {{
 }}
 
 .transcript-text, .response-content {{
-  color: var(--text-primary);
+  color: {text_primary};
   font-size: {current_sizes['transcript']};
   line-height: 1.6;
   flex: 1;
@@ -399,7 +388,7 @@ header[data-testid="stHeader"] button {{
 }}
 
 .transcript-text.empty, .response-content.empty {{
-  color: var(--text-secondary);
+  color: {text_secondary};
   font-style: italic;
   overflow: hidden;
   font-weight: normal;
