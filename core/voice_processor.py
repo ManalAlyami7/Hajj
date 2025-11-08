@@ -130,7 +130,7 @@ class VoiceProcessor:
             language = "arabic" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "english"
             
             # Fix common transcription errors for "Hajj" (keep as fallback)
-            proc = VoiceQueryProcessor()
+            proc = VoiceQueryProcessor(self.db, api_key=st.secrets.get('key'))
 
             agency_names = proc.get_agency_names()
 
