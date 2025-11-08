@@ -11,6 +11,10 @@ from typing import Dict, Optional, AsyncGenerator
 import logging
 import difflib
 from sqlalchemy import text
+from num2words import num2words
+import re
+
+
 
 import asyncio
 
@@ -160,6 +164,27 @@ class VoiceProcessor:
                 "confidence": 0.0,
                 "error": str(e)
             }
+        
+
+    def preprocess_phone_numbers(text):
+        """
+        Detect phone numbers in various formats and make them TTS-friendly.
+        Example: 
+        +966551234567 -> + 9 6 6 5 5 1 2 3 4 5 6 7
+        0551234567 -> 0 5 5 1 2 3 4 5 6 7
+        """
+        # Pattern matches:
+        # Optional +, digits, optional spaces, dashes
+        phone_pattern = r'(\+?\d[\d\s\-]{6,20}\d)'
+
+        def repl(match):
+            number = match.group(0)
+            # Keep "+" as-is, separate digits
+            formatted = ''.join([c + ' ' if c.isdigit() else c for c in number])
+            return formatted.strip()
+
+        return re.sub(phone_pattern, repl, text)
+
 
     # --- Text-to-Speech (OPTIMIZED WITH CHUNKING) -----------------------------
     def text_to_speech(self, text: str, language: str = "en") -> Optional[bytes]:
@@ -186,6 +211,16 @@ class VoiceProcessor:
         }
 
         voice = voice_map.get(language, "alloy")
+        text = self.preprocess_phone_numbers(text)
+
+    # Step 2: Convert remaining numbers to words
+        def repl(match):
+            # Skip numbers that are part of phone numbers (they have spaces or + now)
+            if ' ' in match.group(0) or '+' in match.group(0):
+                return match.group(0)
+            return num2words(int(match.group(0)), lang='ar')
+
+        text = re.sub(r'\b\d+\b', repl, text)
 
         try:
             # OPTIMIZATION: Use tts-1 instead of tts-1-hd (2x faster)
@@ -216,7 +251,6 @@ class VoiceProcessor:
             return []
         
         # Split text into sentences
-        import re
         sentences = re.split(r'(?<=[.!?])\s+', text.strip())
         
         audio_chunks = []
