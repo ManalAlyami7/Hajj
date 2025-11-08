@@ -92,7 +92,7 @@ is_urdus = is_urdu(st.session_state.language)
 render_sidebar(memory, st.session_state.language)
 
 # ---------------------------
-# Dynamic Styling - Minimal White & Gray Theme
+# Dynamic Styling - Desert Sand / Light Earth Tones Theme
 # ---------------------------
 # Font size mapping
 font_sizes = {
@@ -103,13 +103,13 @@ font_sizes = {
 
 current_sizes = font_sizes[st.session_state.font_size]
 
-# --- NEW COLOR SCHEME: Minimal White & Gray ---
-accent_color = "#2563eb"                                         # Blue accent
-bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)" # Near-white background
-panel_bg = "#f8fafc"                                             # Off-white panel (subtle differentiation)
-text_primary = "#111827"                                         # Very dark gray/black
-text_secondary = "#6b7280"                                       # Medium gray
-border_color = "rgba(0, 0, 0, 0.05)"                             # Ultra-soft border
+# --- NEW COLOR SCHEME: Desert Sand / Light Earth Tones ---
+accent_color = "#f59e0b"                                         # Golden official accent
+bg_gradient = "linear-gradient(135deg, #fef9f4 0%, #fcefe3 100%)" # Light earth/sand background
+panel_bg = "#ffffff"                                             # Pure white panels
+text_primary = "#1e293b"                                         # Dark slate gray
+text_secondary = "#64748b"                                       # Grayish
+border_color = "rgba(0, 0, 0, 0.08)"                             # Soft border
 alert_color = "#ef4444"                                          # Standard red for urgency/speaking
 
 # RTL support
@@ -145,7 +145,7 @@ button[kind="header"] {{
 
 /* Sidebar Styling */
 [data-testid="stSidebar"] {{
-    background: #ffffff; /* Pure white sidebar */
+    background: linear-gradient(180deg, #fcefe3 0%, #fcf8f2 100%); /* Light earth gradient for sidebar */
     border-right: 1px solid rgba(0, 0, 0, 0.1);
 }}
 
@@ -156,7 +156,7 @@ button[kind="header"] {{
 [data-testid="collapsedControl"] {{
     visibility: visible !important;
     display: flex !important;
-    background: {accent_color} !important; /* Blue accent */
+    background: {accent_color} !important; /* Golden accent */
     color: white !important;
     border-radius: 0.5rem !important;
     padding: 0.5rem !important;
@@ -166,7 +166,7 @@ button[kind="header"] {{
 }}
 
 [data-testid="collapsedControl"]:hover {{
-    background: #1e40af !important; /* Darker Blue on hover */
+    background: #eab308 !important; /* Darker Gold on hover */
     transform: scale(1.05) !important;
 }}
 
@@ -192,7 +192,9 @@ header[data-testid="stHeader"] button {{
     font-size: {current_sizes['title']};
     font-weight: 800;
     letter-spacing: 2px;
-    color: {text_primary}; /* Use text primary, no gradient, for minimal look */
+    background: linear-gradient(135deg, #fbbf24 0%, {accent_color} 100%); /* Golden Gradient Title */
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     margin-bottom: 0.25rem;
 }}
 
@@ -217,12 +219,12 @@ header[data-testid="stHeader"] button {{
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: {panel_bg}; 
+    background: {panel_bg}; /* White panel */
     border-radius: 2rem;
     padding: 1.5rem;
     backdrop-filter: blur(20px);
     border: 1px solid {border_color};
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
     overflow: hidden;
     position: relative;
 }}
@@ -235,28 +237,29 @@ header[data-testid="stHeader"] button {{
     align-items: center;
     justify-content: center;
     font-size: 90px;
-    background: {accent_color}; /* Blue accent */
+    background: {accent_color}; /* Golden accent */
     color: white;
-    box-shadow: 0 10px 40px rgba(37, 99, 235, 0.2);
-    border: 6px solid #e5e7eb; /* Light gray border */
+    box-shadow: 0 10px 40px rgba(245, 158, 11, 0.3);
+    border: 6px solid #fcefe3; /* Light border */
     animation: float 3s ease-in-out infinite;
     transition: all 0.3s ease;
 }}
 
 .voice-avatar.listening {{
     animation: pulse-listening 0.8s infinite;
-    box-shadow: 0 0 80px rgba(37, 99, 235, 0.5);
+    background: #eab308;
+    box-shadow: 0 0 80px rgba(245, 158, 11, 0.8);
 }}
 
 .voice-avatar.speaking {{
     animation: pulse-speaking 0.6s infinite;
     background: {alert_color}; /* Red for speaking/alert */
-    box-shadow: 0 0 80px rgba(239, 68, 68, 0.5); 
+    box-shadow: 0 0 80px rgba(239, 68, 68, 0.8); 
 }}
 
 .voice-ring {{
     position: absolute;
-    border: 3px solid rgba(37, 99, 235, 0.15); /* Light blue ring */
+    border: 3px solid rgba(245, 158, 11, 0.3); /* Golden ring */
     border-radius: 50%;
     top: 50%;
     left: 50%;
@@ -303,7 +306,7 @@ header[data-testid="stHeader"] button {{
     padding: 1.25rem;
     backdrop-filter: blur(18px);
     border: 1px solid {border_color};
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
     flex: 1;
     min-height: 0;
     display: flex;
@@ -355,9 +358,9 @@ header[data-testid="stHeader"] button {{
     border-radius: 1rem;
     font-weight: 600;
     font-size: 0.75rem;
-    background: rgba(37, 99, 235, 0.1); /* Light Blue BG */
-    color: {accent_color}; /* Blue Text */
-    border: 1px solid rgba(37, 99, 235, 0.2);
+    background: rgba(245, 158, 11, 0.1); /* Light Gold BG */
+    color: {accent_color}; /* Golden Text */
+    border: 1px solid rgba(245, 158, 11, 0.2);
 }}
 
 .panel-badge.active {{
@@ -419,7 +422,7 @@ header[data-testid="stHeader"] button {{
     animation: dot-pulse 1.5s infinite;
 }}
 
-.status-dot.listening {{background: {accent_color};}} /* Blue for processing */
+.status-dot.listening {{background: {accent_color};}} /* Golden for processing */
 .status-dot.speaking {{background: {alert_color};}} /* Red for speaking */
 
 @keyframes dot-pulse {{
