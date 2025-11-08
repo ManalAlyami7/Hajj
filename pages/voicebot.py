@@ -1,9 +1,9 @@
 """
-Hajj Voice Assistant - Production Ready Version
+Hajj Voice Assistant - Clean Top Controls Version
 Features:
+- Floating top-right controls (no sidebar)
 - Warmer, welcoming color palette
 - Smooth icon animations when active
-- Sidebar settings (Language, Font Size, High Contrast)
 - Conversation memory management
 - Professional and accessible design
 """
@@ -148,7 +148,7 @@ st.set_page_config(
     page_title="🕋 Voice Assistant - Hajj & Umrah",
     page_icon="🕋",
     layout="wide",
-    initial_sidebar_state="auto",
+    initial_sidebar_state="collapsed",
 )
 
 def init_voice_graph():
@@ -179,73 +179,6 @@ def handle_clear_memory():
     logger.info("Memory and states cleared successfully")
 
 # ---------------------------
-# Sidebar Settings
-# ---------------------------
-with st.sidebar:
-    st.markdown("### ⚙️ Settings")
-    
-    # Language selector
-    lang_options = {
-        "en": "🇬🇧 English",
-        "ar": "🇸🇦 العربية", 
-        "ur": "🇵🇰 اردو"
-    }
-    selected_lang = st.selectbox(
-        "Language / اللغة",
-        options=list(lang_options.keys()),
-        format_func=lambda x: lang_options[x],
-        index=list(lang_options.keys()).index(st.session_state.language),
-        key="lang_select"
-    )
-    if selected_lang != st.session_state.language:
-        st.session_state.language = selected_lang
-        st.rerun()
-    
-    st.markdown("---")
-    
-    # Font size
-    font_options = {"normal": "📝 Normal", "large": "📄 Large", "xlarge": "📰 Extra Large"}
-    selected_font = st.radio(
-        "Font Size",
-        options=list(font_options.keys()),
-        format_func=lambda x: font_options[x],
-        index=list(font_options.keys()).index(st.session_state.font_size),
-        key="font_select"
-    )
-    if selected_font != st.session_state.font_size:
-        st.session_state.font_size = selected_font
-        st.rerun()
-    
-    st.markdown("---")
-    
-    # High contrast toggle
-    contrast_toggle = st.toggle(
-        "🌗 High Contrast Mode",
-        value=st.session_state.high_contrast,
-        key="contrast_toggle"
-    )
-    if contrast_toggle != st.session_state.high_contrast:
-        st.session_state.high_contrast = contrast_toggle
-        st.rerun()
-    
-    st.markdown("---")
-    
-    # Memory info
-    memory_summary = memory.get_memory_summary()
-    st.info(f"""
-    **Conversation Stats**
-    
-    💬 Messages: {memory_summary['total_messages']}
-    
-    ⏱️ Duration: {memory_summary['session_duration']}
-    """)
-    
-    # Clear memory button
-    if st.button("🗑️ Clear Conversation", use_container_width=True, type="secondary"):
-        handle_clear_memory()
-        st.rerun()
-
-# ---------------------------
 # Dynamic Styles
 # ---------------------------
 rtl_class = 'rtl' if is_arabic else ''
@@ -272,6 +205,8 @@ if st.session_state.high_contrast:
     panel_text = "#000000"
     accent_primary = "#FFD700"
     accent_secondary = "#FFA500"
+    control_bg = "rgba(255, 255, 255, 0.25)"
+    control_hover = "rgba(255, 215, 0, 0.3)"
 else:
     bg_gradient = "linear-gradient(135deg, #2D1B4E 0%, #4A2C6D 50%, #6B4891 100%)"
     text_color = "rgba(255, 255, 255, 0.95)"
@@ -279,6 +214,8 @@ else:
     panel_text = "#2D1B4E"
     accent_primary = "#FF8C42"
     accent_secondary = "#FFA07A"
+    control_bg = "rgba(255, 255, 255, 0.15)"
+    control_hover = "rgba(255, 140, 66, 0.25)"
 
 st.markdown(f"""
 <style>
@@ -304,6 +241,49 @@ st.markdown(f"""
     direction: {'rtl' if is_arabic else 'ltr'};
 }}
 
+/* Top Right Controls Container */
+.top-controls {{
+    position: fixed;
+    top: 15px;
+    {'left' if is_arabic else 'right'}: 15px;
+    display: flex;
+    gap: 0.75rem;
+    z-index: 2000;
+    flex-direction: {'row-reverse' if is_arabic else 'row'};
+}}
+
+.control-card {{
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 0.6rem 1rem;
+    background: {control_bg};
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 2rem;
+    color: white;
+    font-weight: 600;
+    font-size: calc(0.85rem * var(--font-multiplier));
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    animation: slideInDown 0.5s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}}
+
+.control-card:hover {{
+    background: {control_hover};
+    border-color: {accent_primary};
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 140, 66, 0.3);
+}}
+
+.control-divider {{
+    width: 1px;
+    height: 20px;
+    background: rgba(255, 255, 255, 0.3);
+    margin: 0 0.25rem;
+}}
+
 /* Return Button */
 .return-button-container {{
     position: fixed;
@@ -317,7 +297,7 @@ st.markdown(f"""
     align-items: center;
     gap: 0.5rem;
     padding: 0.6rem 1.25rem;
-    background: rgba(255, 255, 255, 0.15);
+    background: {control_bg};
     backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 2rem;
@@ -331,8 +311,8 @@ st.markdown(f"""
 }}
 
 .return-button:hover {{
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: {control_hover};
+    border-color: {accent_primary};
     transform: {transform_direction};
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
     text-decoration: none !important;
@@ -347,20 +327,22 @@ st.markdown(f"""
     transform: {icon_transform};
 }}
 
+/* Memory Badge */
+.memory-info {{
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: calc(0.8rem * var(--font-multiplier));
+}}
+
+.memory-stat {{
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}}
+
 /* Status Indicator */
-.status-indicator {{
-    position: fixed;
-    top: 15px;
-    {'left' if is_arabic else 'right'}: 15px;
-    padding: 0.6rem 1.25rem;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 2rem;
-    color: white;
-    font-weight: 600;
-    font-size: calc(0.85rem * var(--font-multiplier));
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    z-index: 1000;
+.status-box {{
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -389,6 +371,7 @@ st.markdown(f"""
     text-align: center;
     padding: 0.75rem 0;
     margin-bottom: 2rem;
+    margin-top: 3rem;
     animation: fadeInDown 0.6s ease;
 }}
 
@@ -587,6 +570,11 @@ st.markdown(f"""
 }}
 
 /* Animations */
+@keyframes slideInDown {{
+    from {{ opacity: 0; transform: translateY(-20px); }}
+    to {{ opacity: 1; transform: translateY(0); }}
+}}
+
 @keyframes fadeInDown {{
     from {{ opacity: 0; transform: translateY(-20px); }}
     to {{ opacity: 1; transform: translateY(0); }}
@@ -659,6 +647,11 @@ st.markdown(f"""
         height: 140px;
         font-size: 70px;
     }}
+    
+    .top-controls {{
+        flex-direction: column;
+        gap: 0.5rem;
+    }}
 }}
 
 /* Hide audio element */
@@ -667,23 +660,45 @@ audio {{
     visibility: hidden !important;
 }}
 
-/* Sidebar styling */
-[data-testid="stSidebar"] {{
-    background: linear-gradient(180deg, rgba(45, 27, 78, 0.95) 0%, rgba(107, 72, 145, 0.95) 100%);
-    backdrop-filter: blur(20px);
-}}
-
-[data-testid="stSidebar"] .stMarkdown {{
-    color: white;
-}}
-
-[data-testid="stSidebar"] .stSelectbox label,
-[data-testid="stSidebar"] .stRadio label {{
-    color: white !important;
-    font-weight: 600;
+/* Hide Streamlit buttons */
+.stButton > button {{
+    display: none !important;
 }}
 </style>
 """, unsafe_allow_html=True)
+
+# ---------------------------
+# Hidden Control Buttons
+# ---------------------------
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    if st.button("lang_en", key="btn_lang_en"):
+        st.session_state.language = "en"
+        st.rerun()
+    if st.button("lang_ar", key="btn_lang_ar"):
+        st.session_state.language = "ar"
+        st.rerun()
+    if st.button("lang_ur", key="btn_lang_ur"):
+        st.session_state.language = "ur"
+        st.rerun()
+
+with col2:
+    if st.button("font_toggle", key="btn_font"):
+        sizes = ["normal", "large", "xlarge"]
+        current_idx = sizes.index(st.session_state.font_size)
+        st.session_state.font_size = sizes[(current_idx + 1) % len(sizes)]
+        st.rerun()
+
+with col3:
+    if st.button("contrast_toggle", key="btn_contrast"):
+        st.session_state.high_contrast = not st.session_state.high_contrast
+        st.rerun()
+
+with col4:
+    if st.button("clear_memory", key="btn_clear"):
+        handle_clear_memory()
+        st.rerun()
 
 # ---------------------------
 # UI Components
@@ -699,7 +714,8 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# Status indicator
+# Top controls
+memory_summary = memory.get_memory_summary()
 status_class = (
     "speaking" if st.session_state.is_speaking
     else "listening" if st.session_state.is_processing
@@ -707,10 +723,64 @@ status_class = (
 )
 status_text = st.session_state.status or "Ready"
 
+# Language flags
+lang_flags = {"en": "🇬🇧", "ar": "🇸🇦", "ur": "🇵🇰"}
+current_lang_flag = lang_flags.get(st.session_state.language, "🌐")
+
+# Font size icons
+font_icons = {"normal": "Aa", "large": "AA", "xlarge": "𝐀𝐀"}
+current_font_icon = font_icons.get(st.session_state.font_size, "Aa")
+
+# Language-specific text for new conversation button
+new_conv_text = {
+    'en': 'New',
+    'ar': 'جديد',
+    'ur': 'نیا'
+}.get(st.session_state.language, 'New')
+
 st.markdown(f"""
-<div class="status-indicator">
-    <div class="status-dot {status_class}"></div>
-    {status_text}
+<div class="top-controls">
+    <div class="control-card">
+        <div class="memory-info">
+            <div class="memory-stat">
+                <span>💬</span>
+                <span>{memory_summary['total_messages']}</span>
+            </div>
+            <div class="control-divider"></div>
+            <div class="memory-stat">
+                <span>⏱️</span>
+                <span>{memory_summary['session_duration']}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="control-card">
+        <div class="status-box">
+            <div class="status-dot {status_class}"></div>
+            <span>{status_text}</span>
+        </div>
+    </div>
+    
+    <div class="control-card" style="cursor: pointer;" onclick="document.getElementById('btn_lang_{st.session_state.language}').click(); 
+         setTimeout(() => {{
+             const next = {{'en':'ar','ar':'ur','ur':'en'}}['{st.session_state.language}'];
+             document.getElementById('btn_lang_' + next).click();
+         }}, 100);">
+        <span>{current_lang_flag}</span>
+    </div>
+    
+    <div class="control-card" style="cursor: pointer;" onclick="document.getElementById('btn_font').click();">
+        <span>{current_font_icon}</span>
+    </div>
+    
+    <div class="control-card" style="cursor: pointer;" onclick="document.getElementById('btn_contrast').click();">
+        <span>{'◑' if st.session_state.high_contrast else '◐'}</span>
+    </div>
+    
+    <div class="control-card" style="cursor: pointer;" onclick="document.getElementById('btn_clear').click();">
+        <span>🔄</span>
+        <span style="font-size: calc(0.8rem * var(--font-multiplier));">{new_conv_text}</span>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
