@@ -1,7 +1,8 @@
 """
 Sidebar Component Module
-Handles sidebar rendering with language selection, accessibility, and navigation
+Handles sidebar rendering with language selection, accessibility, memory, sample questions, and navigation.
 """
+
 import time
 import streamlit as st
 from utils.translations import t
@@ -9,6 +10,14 @@ from utils.translations import t
 
 def render_sidebar(memory, language_code: str):
     """Render the complete sidebar with all controls"""
+    theme = st.get_option("theme.base")  # 'light' or 'dark'
+
+    # Define theme-aware colors
+    text_color = "#1e293b" if theme == "light" else "#e2e8f0"
+    subtitle_color = "#64748b" if theme == "light" else "#94a3b8"
+    card_bg = "rgba(96,165,250,0.1)" if theme == "light" else "rgba(96,165,250,0.15)"
+    border_color = "#60a5fa"
+
     with st.sidebar:
         # -----------------------------
         # Header Section
@@ -16,41 +25,41 @@ def render_sidebar(memory, language_code: str):
         st.markdown(f"""
         <div style="text-align: center; padding: 1.5rem 0 2rem 0;">
             <div style="font-size: 3rem; margin-bottom: 0.75rem;">🕋</div>
-            <h2 style="margin: 0; font-size: 1.7rem; font-weight: 700; 
-                       background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
-                       -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            <h2 style="margin: 0; font-size: 1.7rem; font-weight: 700;
+                        background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+                        -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                 {t('assistant_title', language_code).replace('🕋 ', '')}
             </h2>
-            <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.25rem;">
+            <p style="color: {subtitle_color}; font-size: 0.95rem; margin-top: 0.25rem; line-height: 1.4;">
                 {t('assistant_subtitle', language_code)}
             </p>
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown("<hr style='margin-top:-0.5rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
+        st.markdown(f"<hr style='margin-top:-0.5rem; border-color:rgba(255,255,255,0.15);'>", unsafe_allow_html=True)
 
         # Language Selection
         _render_language_section(language_code)
-        st.markdown("<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
+        st.markdown(f"<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.15);'>", unsafe_allow_html=True)
 
         # Accessibility
         _render_accessibility_section(language_code)
-        st.markdown("<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
+        st.markdown(f"<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.15);'>", unsafe_allow_html=True)
 
         # Memory
-        _render_memory_section(memory, language_code)
-        st.markdown("<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
+        _render_memory_section(memory, language_code, card_bg, border_color, text_color, subtitle_color)
+        st.markdown(f"<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.15);'>", unsafe_allow_html=True)
 
         # Sample Questions
-        _render_sample_questions(language_code)
-        st.markdown("<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
+        _render_sample_questions(language_code, theme)
+        st.markdown(f"<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.15);'>", unsafe_allow_html=True)
 
         # Navigation
         _render_navigation(language_code)
 
 
 # -----------------------------
-# LANGUAGE SELECTION
+# LANGUAGE SECTION
 # -----------------------------
 def _render_language_section(language_code: str):
     st.markdown(f"### {t('language_title', language_code)}")
@@ -116,21 +125,21 @@ def _render_accessibility_section(language_code: str):
 # -----------------------------
 # MEMORY SECTION
 # -----------------------------
-def _render_memory_section(memory, language_code: str):
+def _render_memory_section(memory, language_code: str, card_bg, border_color, text_color, subtitle_color):
     st.markdown(f"### {t('memory_status_title', language_code)}")
     st.caption(t('memory_status_desc', language_code))
 
     memory_summary = memory.get_memory_summary()
     st.markdown(f"""
-    <div style="background: rgba(96,165,250,0.1); padding: 1rem; border-radius: 0.75rem; 
-                border-left: 4px solid #60a5fa; margin-top: 0.5rem;">
+    <div style="background: {card_bg}; padding: 1rem; border-radius: 0.75rem;
+                border-left: 4px solid {border_color}; margin-top: 0.5rem;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-            <span style="color: #64748b; font-size: 0.85rem;">{t('voice_memory_messages', language_code)}</span>
-            <strong style="color: #1e293b;">{memory_summary['total_messages']}</strong>
+            <span style="color: {subtitle_color}; font-size: 0.85rem;">{t('voice_memory_messages', language_code)}</span>
+            <strong style="color: {text_color};">{memory_summary['total_messages']}</strong>
         </div>
         <div style="display: flex; justify-content: space-between;">
-            <span style="color: #64748b; font-size: 0.85rem;">{t('voice_session_duration', language_code)}</span>
-            <strong style="color: #1e293b;">{memory_summary['session_duration']}</strong>
+            <span style="color: {subtitle_color}; font-size: 0.85rem;">{t('voice_session_duration', language_code)}</span>
+            <strong style="color: {text_color};">{memory_summary['session_duration']}</strong>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -148,15 +157,18 @@ def _render_memory_section(memory, language_code: str):
 # -----------------------------
 # SAMPLE QUESTIONS
 # -----------------------------
-def _render_sample_questions(language_code: str):
+def _render_sample_questions(language_code: str, theme: str):
     st.markdown(f"### {t('examples_title', language_code)}")
     st.caption(t('examples_caption', language_code))
 
+    card_bg = "rgba(255,255,255,0.05)" if theme == "dark" else "rgba(0,0,0,0.03)"
+    text_color = "#cbd5e1" if theme == "dark" else "#1e293b"
+
     for question in t('sample_questions', language_code):
         st.markdown(f"""
-        <div style="background: rgba(255,255,255,0.05); padding: 0.6rem 0.9rem; 
+        <div style="background: {card_bg}; padding: 0.6rem 0.9rem;
                     border-radius: 0.6rem; margin-bottom: 0.6rem; font-size: 0.9rem;
-                    border: 1px solid rgba(255,255,255,0.08); color: #cbd5e1; 
+                    border: 1px solid rgba(255,255,255,0.08); color: {text_color};
                     transition: all 0.3s ease;">
             💬 {question}
         </div>
