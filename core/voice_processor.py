@@ -9,6 +9,8 @@ from openai import AsyncOpenAI, OpenAI
 import io
 from typing import Dict, Optional, AsyncGenerator
 import logging
+import difflib
+
 import asyncio
 
 from core.voice_models import (
@@ -58,6 +60,62 @@ class VoiceProcessor:
             st.stop()
         return AsyncOpenAI(api_key=api_key)
 
+
+    def get_agency_names(self):
+        conn = self.db._create_engine().connect()
+        cursor = conn.cursor()
+        cursor.execute("SELECT agency_name_ar, agency_name_en FROM agencies")
+        names = [f"{ar} ({en})" if ar and en else ar or en for ar, en in cursor.fetchall()]
+        conn.close()
+        return names
+    
+    def clean_transcript_with_db(self, raw_text, agency_names):
+        # Normalize text for better matching
+        text_lower = raw_text.lower()
+
+        # Try to find partial matches (Arabic or English)
+        matched_agency = None
+        for name in agency_names:
+            name_lower = name.lower()
+            # Check if a substring of the correct name appears in the transcript
+            if any(part in text_lower for part in name_lower.split()):
+                matched_agency = name
+                break
+
+            # Or use fuzzy partial ratio
+            similarity = difflib.SequenceMatcher(None, text_lower, name_lower).ratio()
+            if similarity > 0.6:  # adjustable threshold
+                matched_agency = name
+                break
+
+        # Construct system prompt with context
+        if matched_agency:
+            prompt = f"""
+            Fix transcription errors in this Arabic-English sentence, 
+            but keep this agency name exactly as written: "{matched_agency}".
+            Text: {raw_text}
+            """
+        else:
+            prompt = f"""
+            Fix transcription errors in this Arabic-English sentence, especially for proper nouns and company names.
+            Text: {raw_text}
+            """
+
+        response =  self.client.beta.chat.completions.parse(
+            model="gpt-4-turbo",
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        cleaned = response.choices[0].message.content.strip()
+
+        # If we detected an existing agency, ensure it's in the final text
+        if matched_agency and matched_agency.lower() not in cleaned.lower():
+            cleaned += f" ({matched_agency})"
+
+        return cleaned
+
+
+
     # --- Audio Transcription (OPTIMIZED) --------------------------------------
     def transcribe_audio(self, audio_bytes: bytes) -> Dict:
         """Transcribe recorded audio into text and detect language (OPTIMIZED)."""
@@ -68,25 +126,7 @@ class VoiceProcessor:
 
             # Context prompt to guide Whisper transcription
             # This helps with domain-specific terms and reduces errors
-            context_prompt = """
-The user is asking about Hajj and Umrah travel agencies and authorized offices.
-Transcribe carefully, focusing on names of agencies and cities that might appear in our database.
 
-The database contains thousands of official Hajj agencies across Saudi Arabia
-and worldwide — especially major cities like those in the GCC, Asia, Europe, and Africa.
-
-If a word sounds like a city or an agency name, preserve its exact pronunciation
-and do not try to normalize or anglicize it. Avoid converting Arabic names
-into English variants, and keep Arabic pronunciation accurate (e.g. 'Riyadh',
-'Makkah', 'Al Rahma', 'Dar Al Eman').
-
-Focus on accurate recognition of:
-- Agency names related to Hajj and Umrah
-- City names from Saudi Arabia or international locations
-- Keywords such as "authorized", "licensed", "registered", "verify", "booking"
-
-The recording may mix Arabic and English words — transcribe both naturally.
-"""
 
             # OPTIMIZATION: Use text format instead of verbose_json (faster)
             # OPTIMIZATION: Set temperature to 0 for faster, deterministic results
@@ -105,10 +145,15 @@ The recording may mix Arabic and English words — transcribe both naturally.
             language = "arabic" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "english"
             
             # Fix common transcription errors for "Hajj" (keep as fallback)
-            
+            names = self.get_agency_names()
+
+            corrected_text = self.clean_transcript_with_db(text, names)
+
+
+           
 
             result = {
-                "text": text.strip(),
+                "text": corrected_text.strip(),
                 "language": language,
                 "confidence": 1.0,
                 "duration": 0  # Not available in text format
