@@ -232,7 +232,6 @@ TRANSLATIONS = {
         "feat_ai": "بحث ذكي",
         "feat_ai_desc": "استعلامات باللغة الطبيعية",
         "feat_multilingual": "متعدد اللغات",
-        "feat_multilingual_desc": "دعم العربية والإنجليزية",
         "feat_viz": "تصور البيانات",
         "feat_viz_desc": "جداول تفاعلية",
         "feat_secure": "آمن",
