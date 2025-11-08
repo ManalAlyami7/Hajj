@@ -73,7 +73,7 @@ def _render_language_section(language_code: str):
     if language_options[selected_language] != language_code:
         st.session_state.language = language_options[selected_language]
         st.session_state.is_rtl = (language_options[selected_language] == 'العربية')  # RTL flag
-        st.toast(f"{t('language_switched', language_code, lang=selected_language)} 🌐")
+        st.toast(f"{t('language_switched',lang=selected_language)} 🌐")
         st.rerun()
 
 
@@ -97,7 +97,7 @@ def _render_accessibility_section(language_code: str):
     selected_index = font_labels.index(selected_font)
     if font_values[selected_index] != st.session_state.font_size:
         st.session_state.font_size = font_values[selected_index]
-        st.toast(f"{t('font_size_updated', language_code, size=selected_font)} 🔠")
+        st.toast(f"{t('font_size_updated', lang=language_code, size=selected_font)} 🔠")
         st.rerun()
 
     st.markdown("")
