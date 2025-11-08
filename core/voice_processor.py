@@ -30,9 +30,10 @@ from sqlalchemy import text
 import openai
 
 class VoiceQueryProcessor:
-    def __init__(self, db, api_key):
+    def __init__(self, db, voice_llm):
         self.db = db
-        openai.api_key = api_key
+        self.voice_llm = voice_llm
+        self.client = self.voice_llm._get_client()
 
     def get_agency_names(self):
         # Get agency names from DB (Arabic + English)
@@ -49,7 +50,7 @@ class VoiceQueryProcessor:
         {agency_names}
         Text: {raw_text}
         """
-        response = openai.ChatCompletion.create(
+        response = self.client.beta.chat.completions.parse(
             model="gpt-4-turbo",
             messages=[{"role": "user", "content": prompt}]
         )
@@ -130,7 +131,7 @@ class VoiceProcessor:
             language = "arabic" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "english"
             
             # Fix common transcription errors for "Hajj" (keep as fallback)
-            proc = VoiceQueryProcessor(self.db, api_key=st.secrets.get('key'))
+            proc = VoiceQueryProcessor(self.db, self.voice_llm)
 
             agency_names = proc.get_agency_names()
 
