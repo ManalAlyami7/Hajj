@@ -9,4 +9,4 @@ langgraph>=0.0.26
 langchain-core>=0.1.0
 audio-recorder-streamlit>=0.0.8
 rapidfuzz
-arabic_reshaper
+num2words
