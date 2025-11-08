@@ -143,7 +143,7 @@ class VoiceProcessor:
 
 
             result = {
-                "text": cleaned_text.strip(),
+                "text": text.strip(),
                 "language": language,
                 "confidence": 1.0,
                 "duration": 0  # Not available in text format
@@ -160,30 +160,6 @@ class VoiceProcessor:
                 "confidence": 0.0,
                 "error": str(e)
             }
-    # --- LLM Integration (SAME AS BEFORE) -------------------------------------
-    def detect_voice_intent(self, user_input: str, language: str) -> Dict:
-        """Detect the user's intent from spoken input."""
-        return self.voice_llm.detect_intent(user_input, language)
-
-    def generate_voice_greeting(self, user_input: str, language: str) -> Dict:
-        """Generate a contextual voice greeting."""
-        return self.voice_llm.generate_greeting(user_input, language)
-
-    def generate_sql_response(self, user_input: str, language: str) -> Dict:
-        """Generate an SQL query and its result for voice queries."""
-        return self.voice_llm.generate_sql(user_input, language)
-
-    def generate_general_response(self, user_input: str, language: str) -> Dict:
-        """Generate a general conversational AI response."""
-        return self.voice_llm.generate_general_answer(user_input, language)
-
-    def generate_summary(self, user_input: str, language: str, row_count: int, sample_rows) -> Dict:
-        """Summarize a piece of text."""
-        return self.voice_llm.generate_summary(user_input, language, row_count, sample_rows)
-    
-    def ask_for_more_info(self, user_input: str, language: str) -> Dict:
-        """Generate a request for more information from the user."""
-        return self.voice_llm.ask_for_more_info(user_input, language)
 
     # --- Text-to-Speech (OPTIMIZED WITH CHUNKING) -----------------------------
     def text_to_speech(self, text: str, language: str = "en") -> Optional[bytes]:
