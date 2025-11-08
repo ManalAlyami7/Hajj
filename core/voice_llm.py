@@ -436,6 +436,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
   - "Warning: [Agency Name] is not authorized. Using their services may involve risk."
 - Never soften the warning with "however" or "it's important to note"; the message should be direct and protective.
 - Keep the tone professional but firm, prioritizing user safety.
+- Don't mention their contact details or ratings
 
 
         EXAMPLES OF CORRECT OUTPUT:
