@@ -10,7 +10,6 @@ import io
 from typing import Dict, Optional, AsyncGenerator
 import logging
 import arabic_reshaper
-from pyarabic.araby import diacritize
 import difflib
 from sqlalchemy import text
 
