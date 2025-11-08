@@ -10,6 +10,7 @@ import io
 from typing import Dict, Optional, AsyncGenerator
 import logging
 import difflib
+from sqlalchemy import text
 
 import asyncio
 
@@ -62,11 +63,10 @@ class VoiceProcessor:
 
 
     def get_agency_names(self):
-        conn = self.db._create_engine().connect()
-        cursor = conn.cursor()
-        cursor.execute("SELECT agency_name_ar, agency_name_en FROM agencies")
-        names = [f"{ar} ({en})" if ar and en else ar or en for ar, en in cursor.fetchall()]
-        conn.close()
+        engine = self.db._create_engine()
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT agency_name_ar, agency_name_en FROM agencies"))
+            names = [f"{ar} ({en})" if ar and en else ar or en for ar, en in result.fetchall()]
         return names
     
     def clean_transcript_with_db(self, raw_text, agency_names):
