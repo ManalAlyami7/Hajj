@@ -151,7 +151,6 @@ TRANSLATIONS = {
         "voice_error_processing": "I'm having trouble processing that request",
 
         # Additional helpful labels
-        "voice_clear_memory": "Start New Conversation",
         "voice_stop_speaking": "Stop",
         "voice_memory_messages": "messages",
         "voice_session_duration": "Session time",
@@ -300,7 +299,6 @@ TRANSLATIONS = {
         "voice_error_processing": "أواجه صعوبة في معالجة هذا الطلب",
 
         # Additional helpful labels in Arabic
-        "voice_clear_memory": "بدء محادثة جديدة",
         "voice_stop_speaking": "إيقاف",
         "voice_memory_messages": "رسائل",
         "voice_session_duration": "مدة الجلسة",
@@ -453,7 +451,6 @@ TRANSLATIONS = {
         "voice_error_processing": "مجھے اس درخواست پر کارروائی کرنے میں دشواری ہو رہی ہے",
 
         # Additional helpful labels in Urdu
-        "voice_clear_memory": "نئی گفتگو شروع کریں",
         "voice_stop_speaking": "رکیں",
         "voice_memory_messages": "پیغامات",
         "voice_session_duration": "سیشن کا وقت",
