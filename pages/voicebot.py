@@ -555,11 +555,6 @@ with col_right:
       <div class="panel-header">
         <div class="panel-icon {transcript_icon_class}">🗣️</div>
         <h3 class="panel-title">{t('voice_transcript_title', st.session_state.language)}</h3>
-        <div class="panel-badge {transcript_badge_class}">
-            {'● ' + (t('voice_status_listening', st.session_state.language)
-            if st.session_state.is_processing
-            else t('voice_status_ready', st.session_state.language))}
-        </div>
       </div>
       <div class="transcript-text">{clean_transcript}</div>
     </div>
