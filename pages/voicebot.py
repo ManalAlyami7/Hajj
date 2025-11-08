@@ -380,7 +380,14 @@ st.markdown(f"""
   height: 100vh;
 }}
 
-#MainMenu, footer, header {{visibility: hidden;}}
+#MainMenu, footer {{visibility: hidden;}}
+header {{visibility: visible !important;}}
+
+/* Ensure sidebar toggle is always visible and styled */
+button[kind="header"] {{
+  visibility: visible !important;
+  display: flex !important;
+}}
 
 .main .block-container {{
   padding: 0.75rem 1rem;
@@ -399,6 +406,36 @@ st.markdown(f"""
 
 [data-testid="stSidebar"] .stMarkdown {{
   color: #e2e8f0;
+}}
+
+/* Ensure Streamlit's sidebar controls are visible */
+[data-testid="collapsedControl"] {{
+  visibility: visible !important;
+  display: flex !important;
+  background: rgba(251, 191, 36, 0.9) !important;
+  color: white !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem !important;
+  margin: 0.5rem !important;
+  transition: all 0.3s ease !important;
+  z-index: 9999 !important;
+}}
+
+[data-testid="collapsedControl"]:hover {{
+  background: rgba(245, 158, 11, 1) !important;
+  transform: scale(1.05) !important;
+}}
+
+/* Make header area visible for sidebar toggle */
+header[data-testid="stHeader"] {{
+  visibility: visible !important;
+  display: block !important;
+  background: transparent !important;
+}}
+
+header[data-testid="stHeader"] button {{
+  visibility: visible !important;
+  display: flex !important;
 }}
 
 /* Voice Header */
