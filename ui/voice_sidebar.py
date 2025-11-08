@@ -26,6 +26,15 @@ def render_sidebar(memory, language_code: str):
         # Inject sidebar-specific RTL styling
         st.markdown(f"""
         <style>
+        /* Sidebar Position - Right side for RTL languages */
+        [data-testid="stSidebar"] {{
+            {'left: auto !important; right: 0 !important;' if is_rtl else ''}
+        }}
+        
+        [data-testid="stSidebar"] > div:first-child {{
+            {'transform: translateX(0) !important;' if is_rtl else ''}
+        }}
+        
         /* Sidebar RTL Support */
         [data-testid="stSidebar"] .block-container {{
             direction: {'rtl' if is_rtl else 'ltr'};
@@ -103,6 +112,11 @@ def render_sidebar(memory, language_code: str):
             border-color: rgba(239, 68, 68, 0.5) !important;
         }}
         
+        /* Collapsed Control Button - Position for RTL */
+        [data-testid="collapsedControl"] {{
+            {'left: auto !important; right: 0.5rem !important;' if is_rtl else ''}
+        }}
+        
         /* Memory Panel Styling */
         .memory-panel {{
             background: rgba(251, 191, 36, 0.1);
@@ -150,13 +164,23 @@ def render_sidebar(memory, language_code: str):
         .sample-question:hover {{
             background: rgba(251, 191, 36, 0.15);
             border-color: rgba(251, 191, 36, 0.3);
-            transform: translateX({'5px' if is_rtl else '-5px'});
+            transform: translateX({'-5px' if is_rtl else '5px'});
         }}
         
         /* Divider Styling */
         [data-testid="stSidebar"] hr {{
             border-color: rgba(251, 191, 36, 0.2) !important;
             margin: 1rem 0;
+        }}
+        
+        /* Main content adjustment for RTL sidebar */
+        .main .block-container {{
+            {'margin-right: 21rem !important; margin-left: 1rem !important;' if is_rtl else ''}
+        }}
+        
+        /* Adjust main content when sidebar is collapsed in RTL */
+        [data-testid="stSidebar"][aria-expanded="false"] ~ .main .block-container {{
+            {'margin-right: 1rem !important;' if is_rtl else ''}
         }}
         </style>
         """, unsafe_allow_html=True)
