@@ -57,9 +57,9 @@ def _render_language_section(language_code: str):
     st.caption(t('feat_multilingual_desc', language_code))
 
     language_options = {
-        t('language_en', language_code): 'English',
-        t('language_ar', language_code): 'العربية',
-        t('language_ur', language_code): 'اردو'
+        "English": 'English',
+        "العربية": 'العربية',
+        "اردو": 'اردو'
     }
 
     current_lang_display = [k for k, v in language_options.items() if v == language_code][0]
