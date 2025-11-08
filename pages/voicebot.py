@@ -251,7 +251,7 @@ with st.sidebar:
 rtl_class = 'rtl' if is_arabic else ''
 text_align = 'right' if is_arabic else 'left'
 flex_direction = 'row-reverse' if is_arabic else 'row'
-return_position = 'right: 80px;' if is_arabic else 'left: 80px;'
+return_position = 'right: 20px;' if is_arabic else 'left: 20px;'
 transform_direction = 'translateX(5px)' if is_arabic else 'translateX(-5px)'
 icon_transform = 'translateX(3px)' if is_arabic else 'translateX(-3px)'
 arrow_icon = '←' if not is_arabic else '→'
@@ -309,7 +309,7 @@ st.markdown(f"""
 /* Return Button */
 .return-button-container {{
     position: fixed;
-    top: 15px;
+    top: 70px;
     {return_position}
     z-index: 1500;
 }}
@@ -683,6 +683,20 @@ audio {{
 [data-testid="stSidebar"] .stRadio label {{
     color: white !important;
     font-weight: 600;
+}}
+
+/* Ensure sidebar toggle is always visible and on top */
+button[kind="header"] {{
+    z-index: 999999 !important;
+    position: relative !important;
+}}
+
+[data-testid="collapsedControl"] {{
+    z-index: 999999 !important;
+    position: fixed !important;
+    top: 0.5rem !important;
+    {'right' if not is_arabic else 'left'}: auto !important;
+    {'left' if not is_arabic else 'right'}: 0.5rem !important;
 }}
 </style>
 """, unsafe_allow_html=True)
