@@ -46,23 +46,10 @@ class VoiceQueryProcessor:
 
 
     def correct_transcript(self, raw_text, agency_names, threshold=80):
-        # Step 1: Fix transcription errors with LLM (without sending all 7k names)
-        prompt = f"""
-        Fix any transcription or spacing errors in this Arabic-English text.
-        Return only the corrected text, no explanations.
-        If no names keeps the same text.
-        Do NOT change names that look like proper nouns.
-        Text: {raw_text}
-        """
-        response = self.client.beta.chat.completions.parse(
-            model="gpt-4-turbo",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        cleaned_text = response.choices[0].message.content.strip()
-
+        
         # Step 2: Fuzzy match to all agency names locally
         matches = process.extract(
-            cleaned_text,            # text to match
+            raw_text,            # text to match
             agency_names,            # list of names
             scorer=fuzz.token_sort_ratio,
             score_cutoff=threshold   # only matches above threshold
@@ -70,7 +57,7 @@ class VoiceQueryProcessor:
 
         # Return all matched names (official names)
         matched_names = [match[0] for match in matches]
-        return matched_names if matched_names else [cleaned_text]
+        return matched_names if matched_names else [raw_text]
 
 
 
