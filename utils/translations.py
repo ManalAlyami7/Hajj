@@ -73,6 +73,7 @@ TRANSLATIONS = {
         "sql_error": "A database error occurred. Try rephrasing your question.",
         "general_error": "Sorry, I encountered an error processing your request.",
         "hint_rephrase": "💡 Try rephrasing your question or use different keywords",
+        "accessibility_title": "Accessibility",
         
         # Voice
         "voice_assistant": "Go to Voice Assistant",
@@ -88,6 +89,37 @@ TRANSLATIONS = {
         "show_stats": "Show Statistics",
         "find_by_country": "Search by Country",
         "general_help": "General Help",
+        "font_normal": "Normal", 
+                "feat_multilingual_desc": "Supports Arabic, English, and Urdu for better accessibility.",
+        "language_switched": "Language switched to {lang}",
+        "accessibility_title": "♿ Accessibility",
+        "accessibility_desc": "Adjust font size or contrast for better visibility.",
+        "font_size_label": "Font Size",
+        "font_normal": "Normal",
+        "font_large": "Large",
+        "font_extra_large": "Extra Large",
+        "font_size_updated": "Font size changed to {size}",
+        "contrast_label": "Enable High Contrast Mode",
+        "contrast_help": "Improves visibility for users with low vision.",
+        "contrast_updated": "High contrast mode updated.",
+        "memory_status_title": "🧠 Memory Status",
+        "memory_status_desc": "Review your current session progress.",
+        "voice_memory_messages": "Messages",
+        "voice_session_duration": "Duration",
+        "voice_clear_memory": "Clear Memory",
+        "memory_cleared": "Memory cleared successfully!",
+        "examples_title": "💡 Example Questions",
+        "examples_caption": "Try one of these to get started quickly:",
+        "sample_questions": [
+            "What are the Hajj requirements?",
+            "Find affordable packages",
+            "When should I book?",
+            "Tell me about Mina"
+        ],
+        "nav_title": "🏠 Navigation",
+        "nav_caption": "Return to the main chat interface.",
+        "voice_return_button": "Return",
+
         
         # Voice Bot Page
         "voice_page_title": "Hajj Voice Verification Assistant",
@@ -134,6 +166,35 @@ TRANSLATIONS = {
         # Assistant
         "assistant_title": "🕋 مساعد الحج",
         "assistant_subtitle": "دليلك الذكي المدعوم بالذكاء الاصطناعي",
+          "feat_multilingual_desc": "يدعم العربية والإنجليزية والأردية لتحسين الوصول.",
+    "language_switched": "تم تغيير اللغة إلى {lang}",
+    "accessibility_title": "♿ سهولة الوصول",
+    "accessibility_desc": "قم بتعديل حجم الخط أو التباين لتحسين الرؤية.",
+    "font_size_label": "حجم الخط",
+    "font_normal": "عادي",
+    "font_large": "كبير",
+    "font_extra_large": "كبير جدًا",
+    "font_size_updated": "تم تغيير حجم الخط إلى {size}",
+    "contrast_label": "تفعيل وضع التباين العالي",
+    "contrast_help": "يحسن الرؤية للمستخدمين ضعيفي النظر.",
+    "contrast_updated": "تم تحديث وضع التباين العالي.",
+    "memory_status_title": "🧠 حالة الذاكرة",
+    "memory_status_desc": "راجع تقدم الجلسة الحالية.",
+    "voice_memory_messages": "الرسائل",
+    "voice_session_duration": "المدة",
+    "voice_clear_memory": "مسح الذاكرة",
+    "memory_cleared": "تم مسح الذاكرة بنجاح!",
+    "examples_title": "💡 أسئلة نموذجية",
+    "examples_caption": "جرّب أحد هذه الأسئلة للبدء بسرعة:",
+    "sample_questions": [
+        "ما هي متطلبات الحج؟",
+        "ابحث عن باقات بأسعار معقولة",
+        "متى يجب أن أحجز؟",
+        "أخبرني عن منى"
+    ],
+    "nav_title": "🏠 التنقل",
+    "nav_caption": "العودة إلى واجهة الدردشة الرئيسية.",
+    "voice_return_button": "عودة",
         
         # Sidebar
         "language_title": "🌐 اللغة",
@@ -144,6 +205,7 @@ TRANSLATIONS = {
         "language_en": "الإنجليزية",
         "language_ar": "العربية",
         "language_ur":"أردو",
+        "accessibility_title": "إمكانيةالوصول",
         
         # Mode Navigation
         "mode_title": "🔀 الوضع",
@@ -176,6 +238,7 @@ TRANSLATIONS = {
         "feat_viz_desc": "جداول تفاعلية",
         "feat_secure": "آمن",
         "feat_secure_desc": "حماية من هجمات SQL",
+        "font_normal": "عادي",
         
         # Messages
         "welcome_msg": "السلام عليكم ورحمة الله وبركاته! 🌙\n\nأهلاً بك في مساعد معلومات الحج الذكي. كيف يمكنني مساعدتك اليوم؟",
@@ -264,6 +327,38 @@ TRANSLATIONS = {
         "language_en": "انگریزی",
         "language_ar": "عربی",
         "language_ur": "اردو",
+        "font_normal": "عام",
+        "feat_multilingual_desc": "بہتر رسائی کے لیے عربی، انگریزی اور اردو کی حمایت کرتا ہے۔",
+    "language_switched": "زبان تبدیل کر دی گئی: {lang}",
+    "accessibility_title": "♿ رسائی",
+    "accessibility_desc": "بہتر نظر کے لیے فونٹ کا سائز یا فرق ترتیب دیں۔",
+    "font_size_label": "فونٹ کا سائز",
+    "font_normal": "عام",
+    "font_large": "بڑا",
+    "font_extra_large": "زبردست بڑا",
+    "font_size_updated": "فونٹ کا سائز تبدیل کر دیا گیا: {size}",
+    "contrast_label": "ہائی کانٹراسٹ موڈ فعال کریں",
+    "contrast_help": "کمزور نظر والے صارفین کے لیے نظر بہتر بناتا ہے۔",
+    "contrast_updated": "ہائی کانٹراسٹ موڈ اپ ڈیٹ ہو گیا۔",
+    "memory_status_title": "🧠 یادداشت کی حالت",
+    "memory_status_desc": "اپنے موجودہ سیشن کی پیش رفت دیکھیں۔",
+    "voice_memory_messages": "پیغامات",
+    "voice_session_duration": "دورانیہ",
+    "voice_clear_memory": "یادداشت صاف کریں",
+    "memory_cleared": "یادداشت کامیابی سے صاف ہو گئی!",
+    "examples_title": "💡 مثال کے سوالات",
+    "examples_caption": "شروع کرنے کے لیے ان میں سے کوئی ایک آزمائیں:",
+    "sample_questions": [
+        "حج کی ضروریات کیا ہیں؟",
+        "سستے پیکجز تلاش کریں",
+        "میں کب بکنگ کروں؟",
+        "منا کے بارے میں بتائیں"
+    ],
+    "nav_title": "🏠 نیویگیشن",
+    "nav_caption": "مین چیٹ انٹرفیس پر واپس جائیں۔",
+    "voice_return_button": "واپس",
+        
+
 
 
         # Mode Navigation
