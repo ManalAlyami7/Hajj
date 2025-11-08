@@ -38,7 +38,7 @@ class VoiceQueryProcessor:
         # Get agency names from DB (Arabic + English)
         engine = self.db._create_engine()
         with engine.connect() as conn:
-            result = conn.execute(text("SELECT agency_name_ar, agency_name_en FROM agencies"))
+            result = conn.execute(text("SELECT hajj_company_ar, hajj_company_en FROM agencies"))
             return [ar or en for ar, en in result.fetchall() if ar or en]
 
     def correct_transcript(self, raw_text, agency_names):
@@ -137,9 +137,6 @@ class VoiceProcessor:
 
             cleaned_text = proc.correct_transcript(text, agency_names)
 
-
-
-           
 
             result = {
                 "text": cleaned_text.strip(),
