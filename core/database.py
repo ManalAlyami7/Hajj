@@ -177,14 +177,15 @@ class DatabaseManager:
     
     def search_agency_fuzzy(self, search_term: str) -> pd.DataFrame:
         """
-        Smart search:
-        1. Try exact match (as entered)
-        2. Try exact match (after cleaning)
-        3. If nothing found, fallback to fuzzy match
+        Advanced smart search:
+        1. Exact match as entered
+        2. Exact match after cleaning
+        3. Fuzzy match: partial match per word across name, city, country
+           - Combines AND/OR logic for best results
         """
         original_term = search_term.strip().lower()
-        
-        # نسخة منقّاة (في حال كتب المستخدم كلمات عامة)
+    
+        # تنظيف الكلمات العامة
         cleaned_term = (
             original_term
             .replace("شركة", "")
@@ -194,33 +195,15 @@ class DatabaseManager:
             .replace("travel", "")
             .strip()
         )
-        
-        # --- 🔍 تحقق من طول الاسم وعدد الكلمات ---
-        too_long = len(original_term.split()) > 5
-        multiple_company_words = original_term.count("شركة") > 1 or original_term.count("وكالة") > 1
     
-        # إذا الجملة طويلة جدًا أو فيها أكثر من كلمة "شركة"، نستخدم البحث الغامض مباشرة
-        if too_long or multiple_company_words:
-            logger.info("Detected complex or noisy company name → switching to fuzzy search mode")
-            fuzzy_query = """
-            SELECT DISTINCT 
-                hajj_company_en, hajj_company_ar, formatted_address,
-                city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
-            FROM agencies
-            WHERE LOWER(TRIM(hajj_company_en)) LIKE LOWER(:term)
-               OR LOWER(TRIM(hajj_company_ar)) LIKE LOWER(:term)
-               OR LOWER(city) LIKE LOWER(:term)
-               OR LOWER(country) LIKE LOWER(:term)
-            LIMIT 50
-            """
-            df, error = self.execute_query(fuzzy_query, {"term": f"%{cleaned_term or original_term}%"})
+        # --- Helper: update last company name ---
+        def set_last_company(df):
             if df is not None and not df.empty:
                 row = df.iloc[0]
                 st.session_state["last_company_name"] = (
                     row["hajj_company_ar"].strip() if pd.notna(row["hajj_company_ar"]) and row["hajj_company_ar"].strip()
                     else row["hajj_company_en"].strip()
                 )
-            return df if df is not None else pd.DataFrame()
     
         # --- 1️⃣ البحث الدقيق بالاسم كما هو ---
         exact_query = """
@@ -232,46 +215,49 @@ class DatabaseManager:
            OR LOWER(TRIM(hajj_company_ar)) = LOWER(:term)
         LIMIT 10
         """
-        df, error = self.execute_query(exact_query, {"term": original_term})
+        df, _ = self.execute_query(exact_query, {"term": original_term})
         if df is not None and not df.empty:
-            row = df.iloc[0]
-            st.session_state["last_company_name"] = (
-                row["hajj_company_ar"].strip() if pd.notna(row["hajj_company_ar"]) and row["hajj_company_ar"].strip()
-                else row["hajj_company_en"].strip()
-            )
+            set_last_company(df)
             return df
     
-        # --- 2️⃣ بحث دقيق بعد تنظيف الاسم ---
+        # --- 2️⃣ البحث الدقيق بعد تنظيف الاسم ---
         if cleaned_term and cleaned_term != original_term:
-            df, error = self.execute_query(exact_query, {"term": cleaned_term})
+            df, _ = self.execute_query(exact_query, {"term": cleaned_term})
             if df is not None and not df.empty:
-                row = df.iloc[0]
-                st.session_state["last_company_name"] = (
-                    row["hajj_company_ar"].strip() if pd.notna(row["hajj_company_ar"]) and row["hajj_company_ar"].strip()
-                    else row["hajj_company_en"].strip()
-                )
+                set_last_company(df)
                 return df
     
-        # --- 3️⃣ بحث غامض (جزئي) ---
-        fuzzy_query = """
+        # --- 3️⃣ البحث الغامض (جزئي) ---
+        term_to_use = cleaned_term if cleaned_term else original_term
+        words = [w for w in term_to_use.split() if w]
+        if not words:
+            return pd.DataFrame()
+    
+        # إذا الكلمات كثيرة (>4)، نستخدم OR لتجنب تفويت النتائج
+        if len(words) > 4:
+            word_logic = " OR "
+        else:
+            word_logic = " AND "
+    
+        # تكوين شروط البحث لكل كلمة عبر الأعمدة
+        conditions = word_logic.join(
+            "(" + " OR ".join(
+                f"LOWER({col}) LIKE '%{word}%'" 
+                for col in ["hajj_company_ar", "hajj_company_en", "city", "country"]
+            ) + ")"
+            for word in words
+        )
+    
+        fuzzy_query = f"""
         SELECT DISTINCT 
             hajj_company_en, hajj_company_ar, formatted_address,
             city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
         FROM agencies
-        WHERE LOWER(TRIM(hajj_company_en)) LIKE LOWER(:term)
-           OR LOWER(TRIM(hajj_company_ar)) LIKE LOWER(:term)
-           OR LOWER(city) LIKE LOWER(:term)
-           OR LOWER(country) LIKE LOWER(:term)
+        WHERE {conditions}
         LIMIT 50
         """
-        df, error = self.execute_query(fuzzy_query, {"term": f"%{cleaned_term or original_term}%"})
-        if df is not None and not df.empty:
-            row = df.iloc[0]
-            st.session_state["last_company_name"] = (
-                row["hajj_company_ar"].strip() if pd.notna(row["hajj_company_ar"]) and row["hajj_company_ar"].strip()
-                else row["hajj_company_en"].strip()
-            )
-            return df
     
-        # 🔴 ما وجدنا شيء
-        return pd.DataFrame()
+        df, _ = self.execute_query(fuzzy_query)
+        set_last_company(df)
+        return df if df is not None else pd.DataFrame()
+
