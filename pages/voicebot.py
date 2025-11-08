@@ -83,17 +83,10 @@ def is_arabic_code(code):
 
 is_arabic = is_arabic_code(st.session_state.language)
 
-if is_arabic:
-    col_main, col_side = st.columns([4, 1])  # Sidebar on right
-else:
-    col_side, col_main = st.columns([1, 4])  # Sidebar on left
-
-
 # ---------------------------
 # Render Sidebar
 # ---------------------------
-with col_side:
-  render_sidebar(memory, st.session_state.language)
+render_sidebar(memory, st.session_state.language)
 
 # ---------------------------
 # Dynamic Styling
@@ -478,243 +471,243 @@ def _hash_bytes(b):
             raise TypeError(f"Unsupported type for hashing: {type(b)}")
     return hashlib.sha256(b).hexdigest()
 
-with col_main:
+
 # ---------------------------
-  # Status Indicator
-  # ---------------------------
-  status_class = (
-      "speaking" if st.session_state.is_speaking
-      else "listening" if st.session_state.is_processing
-      else ""
-  )
-  status_text = st.session_state.status or t('voice_status_ready', st.session_state.language)
+# Status Indicator
+# ---------------------------
+status_class = (
+    "speaking" if st.session_state.is_speaking
+    else "listening" if st.session_state.is_processing
+    else ""
+)
+status_text = st.session_state.status or t('voice_status_ready', st.session_state.language)
 
-  st.markdown(f"""
-  <div class="status-indicator">
-      <div class="status-dot {status_class}"></div>
-      {status_text}
-  </div>
-  """, unsafe_allow_html=True)
+st.markdown(f"""
+<div class="status-indicator">
+    <div class="status-dot {status_class}"></div>
+    {status_text}
+</div>
+""", unsafe_allow_html=True)
 
-  # ---------------------------
-  # Header
-  # ---------------------------
-  st.markdown(f"""
-  <div class="voice-header">
-    <div><span class="voice-title">{t('voice_main_title', st.session_state.language)}</span></div>
-    <div class="voice-subtitle">{t('voice_subtitle', st.session_state.language)}</div>
-  </div>
-  """, unsafe_allow_html=True)
+# ---------------------------
+# Header
+# ---------------------------
+st.markdown(f"""
+<div class="voice-header">
+  <div><span class="voice-title">{t('voice_main_title', st.session_state.language)}</span></div>
+  <div class="voice-subtitle">{t('voice_subtitle', st.session_state.language)}</div>
+</div>
+""", unsafe_allow_html=True)
 
-  # ---------------------------
-  # Main UI Layout
-  # ---------------------------
-  st.markdown('<div class="voice-container">', unsafe_allow_html=True)
-  col_left, col_right = st.columns(2)
+# ---------------------------
+# Main UI Layout
+# ---------------------------
+st.markdown('<div class="voice-container">', unsafe_allow_html=True)
+col_left, col_right = st.columns(2)
 
-  with col_left:
-      avatar_class = (
-          "speaking" if st.session_state.is_speaking
-          else "listening" if st.session_state.is_processing
-          else ""
-      )
-      
-      recording_label = (
-          f"🔊 {t('voice_speaking', st.session_state.language)}" if st.session_state.is_speaking
-          else f"🎤 {t('voice_press_to_speak', st.session_state.language)}"
-      )
+with col_left:
+    avatar_class = (
+        "speaking" if st.session_state.is_speaking
+        else "listening" if st.session_state.is_processing
+        else ""
+    )
+    
+    recording_label = (
+        f"🔊 {t('voice_speaking', st.session_state.language)}" if st.session_state.is_speaking
+        else f"🎤 {t('voice_press_to_speak', st.session_state.language)}"
+    )
 
-      st.markdown(f"""
-      <div class="voice-left" style="position:relative;"> 
-        <div style="position:relative;">
-          <div class="voice-ring voice-ring-1"></div>
-          <div class="voice-ring voice-ring-2"></div>
-          <div class="voice-ring voice-ring-3"></div>
-          <div class="voice-avatar {avatar_class}">🕋</div>
-        </div>
-        <div class="record-label">{recording_label}</div>
+    st.markdown(f"""
+    <div class="voice-left" style="position:relative;"> 
+      <div style="position:relative;">
+        <div class="voice-ring voice-ring-1"></div>
+        <div class="voice-ring voice-ring-2"></div>
+        <div class="voice-ring voice-ring-3"></div>
+        <div class="voice-avatar {avatar_class}">🕋</div>
       </div>
-      """, unsafe_allow_html=True)
+      <div class="record-label">{recording_label}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-      audio_bytes = st.audio_input(
-          label="",
-          key="audio_recorder",
-          help=t('voice_press_to_speak', st.session_state.language)
-      )
+    audio_bytes = st.audio_input(
+        label="",
+        key="audio_recorder",
+        help=t('voice_press_to_speak', st.session_state.language)
+    )
 
-  with col_right:
-      transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
-      response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
+with col_right:
+    transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
+    response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
 
-      import html
-      clean_transcript = html.escape(transcript)
-      clean_response = html.escape(response_text)
+    import html
+    clean_transcript = html.escape(transcript)
+    clean_response = html.escape(response_text)
 
-      transcript_icon_class = "active" if st.session_state.is_processing else ""
-      response_icon_class = "active" if st.session_state.is_speaking else ""
-      
-      transcript_badge_class = "active" if st.session_state.is_processing else ""
-      response_badge_class = "active" if st.session_state.is_speaking else ""
+    transcript_icon_class = "active" if st.session_state.is_processing else ""
+    response_icon_class = "active" if st.session_state.is_speaking else ""
+    
+    transcript_badge_class = "active" if st.session_state.is_processing else ""
+    response_badge_class = "active" if st.session_state.is_speaking else ""
 
-      # Transcript panel
-      st.markdown(f"""
-      <div class="transcript-container">
-        <div class="panel-header">
-          <div class="panel-icon {transcript_icon_class}">🗣️</div>
-          <h3 class="panel-title">{t('voice_transcript_title', st.session_state.language)}</h3>
-          <div class="panel-badge {transcript_badge_class}">
-              {'● ' + (t('voice_status_listening', st.session_state.language)
-              if st.session_state.is_processing
-              else t('voice_status_ready', st.session_state.language))}
-          </div>
+    # Transcript panel
+    st.markdown(f"""
+    <div class="transcript-container">
+      <div class="panel-header">
+        <div class="panel-icon {transcript_icon_class}">🗣️</div>
+        <h3 class="panel-title">{t('voice_transcript_title', st.session_state.language)}</h3>
+        <div class="panel-badge {transcript_badge_class}">
+            {'● ' + (t('voice_status_listening', st.session_state.language)
+            if st.session_state.is_processing
+            else t('voice_status_ready', st.session_state.language))}
         </div>
-        <div class="transcript-text">{clean_transcript}</div>
       </div>
-      """, unsafe_allow_html=True)
+      <div class="transcript-text">{clean_transcript}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-      # Response panel
-      st.markdown(f"""
-      <div class="response-container" style="margin-top:1rem;">
-        <div class="panel-header">
-          <div class="panel-icon {response_icon_class}">🕋</div>
-          <h3 class="panel-title">{t('voice_response_title', st.session_state.language)}</h3>
-          <div class="panel-badge {response_badge_class}">
-              {'● ' + (t('voice_status_speaking', st.session_state.language)
-              if st.session_state.is_speaking
-              else t('voice_status_ready', st.session_state.language))}
-          </div>
+    # Response panel
+    st.markdown(f"""
+    <div class="response-container" style="margin-top:1rem;">
+      <div class="panel-header">
+        <div class="panel-icon {response_icon_class}">🕋</div>
+        <h3 class="panel-title">{t('voice_response_title', st.session_state.language)}</h3>
+        <div class="panel-badge {response_badge_class}">
+            {'● ' + (t('voice_status_speaking', st.session_state.language)
+            if st.session_state.is_speaking
+            else t('voice_status_ready', st.session_state.language))}
         </div>
-        <div class='response-content'>{clean_response}</div> 
       </div>
-      """, unsafe_allow_html=True)
+      <div class='response-content'>{clean_response}</div> 
+    </div>
+    """, unsafe_allow_html=True)
 
-  st.markdown('</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-  # ---------------------------
-  # Play pending audio
-  # ---------------------------
-  if st.session_state.get('pending_audio'):
-      logger.info("Playing pending audio response...")
-      
-      try:
-          st.markdown("<div style='display:none'>", unsafe_allow_html=True)
-          st.audio(st.session_state.pending_audio, format="audio/mp3", autoplay=True)
-          st.markdown("</div>", unsafe_allow_html=True)
-      except Exception as e:
-          logger.warning("Failed to play pending audio: %s", e)
-      
-      st.session_state.pending_audio = None
-      st.session_state.is_speaking = False
-      st.session_state.status = t('voice_status_completed', st.session_state.language)
-      
-      time.sleep(2)
-      st.session_state.status = t('voice_status_ready', st.session_state.language)
+# ---------------------------
+# Play pending audio
+# ---------------------------
+if st.session_state.get('pending_audio'):
+    logger.info("Playing pending audio response...")
+    
+    try:
+        st.markdown("<div style='display:none'>", unsafe_allow_html=True)
+        st.audio(st.session_state.pending_audio, format="audio/mp3", autoplay=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+    except Exception as e:
+        logger.warning("Failed to play pending audio: %s", e)
+    
+    st.session_state.pending_audio = None
+    st.session_state.is_speaking = False
+    st.session_state.status = t('voice_status_completed', st.session_state.language)
+    
+    time.sleep(2)
+    st.session_state.status = t('voice_status_ready', st.session_state.language)
 
-  # ---------------------------
-  # Handle new audio input
-  # ---------------------------
-  if audio_bytes and not st.session_state.is_processing:
-      if hasattr(audio_bytes, 'read'):
-          audio = audio_bytes.read()
-          audio_bytes.seek(0)
-      else:
-          audio = audio_bytes
-      
-      audio_hash = _hash_bytes(audio)
-      
-      if audio_hash != st.session_state.last_audio_hash:
-          st.session_state.last_audio_hash = audio_hash
-          st.session_state.pending_audio_bytes = audio
-          st.session_state.is_processing = True
-          st.session_state.status = t('voice_status_analyzing', st.session_state.language)
-          st.rerun()
+# ---------------------------
+# Handle new audio input
+# ---------------------------
+if audio_bytes and not st.session_state.is_processing:
+    if hasattr(audio_bytes, 'read'):
+        audio = audio_bytes.read()
+        audio_bytes.seek(0)
+    else:
+        audio = audio_bytes
+    
+    audio_hash = _hash_bytes(audio)
+    
+    if audio_hash != st.session_state.last_audio_hash:
+        st.session_state.last_audio_hash = audio_hash
+        st.session_state.pending_audio_bytes = audio
+        st.session_state.is_processing = True
+        st.session_state.status = t('voice_status_analyzing', st.session_state.language)
+        st.rerun()
 
-  # ---------------------------
-  # Process pending audio
-  # ---------------------------
-  elif st.session_state.is_processing and st.session_state.get("pending_audio_bytes"):
-      try:
-          logger.info("Running LangGraph workflow on pending audio...")
+# ---------------------------
+# Process pending audio
+# ---------------------------
+elif st.session_state.is_processing and st.session_state.get("pending_audio_bytes"):
+    try:
+        logger.info("Running LangGraph workflow on pending audio...")
 
-          pending_audio_bytes = st.session_state.pending_audio_bytes
-          conversation_history = memory.get_formatted_history(limit=5)
+        pending_audio_bytes = st.session_state.pending_audio_bytes
+        conversation_history = memory.get_formatted_history(limit=5)
 
-          initial_state = {
-              "audio_bytes": pending_audio_bytes,
-              "transcript": "",
-              "detected_language": "",
-              "transcription_confidence": 0.0,
-              "user_input": "",
-              "language": "",
-              "intent": "",
-              "intent_confidence": 0.0,
-              "intent_reasoning": "",
-              "is_vague": False,
-              "is_arabic": False,
-              "urgency": "",
-              "sql_query": "",
-              "sql_params": {},
-              "sql_query_type": "",
-              "sql_filters": [],
-              "sql_explanation": "",
-              "sql_error": "",
-              "result_rows": [],
-              "columns": [],
-              "row_count": 0,
-              "summary": "",
-              "greeting_text": "",
-              "general_answer": "",
-              "response": "",
-              "response_tone": "",
-              "key_points": [],
-              "suggested_actions": [],
-              "includes_warning": False,
-              "verification_steps": [],
-              "official_sources": [],
-              "response_audio": b"",
-              "error": "",
-              "messages_history": memory.get_conversation_history(limit=5),
-              "conversation_context": conversation_history
-          }
+        initial_state = {
+            "audio_bytes": pending_audio_bytes,
+            "transcript": "",
+            "detected_language": "",
+            "transcription_confidence": 0.0,
+            "user_input": "",
+            "language": "",
+            "intent": "",
+            "intent_confidence": 0.0,
+            "intent_reasoning": "",
+            "is_vague": False,
+            "is_arabic": False,
+            "urgency": "",
+            "sql_query": "",
+            "sql_params": {},
+            "sql_query_type": "",
+            "sql_filters": [],
+            "sql_explanation": "",
+            "sql_error": "",
+            "result_rows": [],
+            "columns": [],
+            "row_count": 0,
+            "summary": "",
+            "greeting_text": "",
+            "general_answer": "",
+            "response": "",
+            "response_tone": "",
+            "key_points": [],
+            "suggested_actions": [],
+            "includes_warning": False,
+            "verification_steps": [],
+            "official_sources": [],
+            "response_audio": b"",
+            "error": "",
+            "messages_history": memory.get_conversation_history(limit=5),
+            "conversation_context": conversation_history
+        }
 
-          result = workflow.invoke(initial_state)
-          
-          transcript = result.get("transcript", "")
-          response_text = result.get("response", "")
-          response_audio = result.get("response_audio", None)
+        result = workflow.invoke(initial_state)
+        
+        transcript = result.get("transcript", "")
+        response_text = result.get("response", "")
+        response_audio = result.get("response_audio", None)
 
-          st.session_state.current_transcript = transcript or t('voice_no_speech', st.session_state.language)
-          st.session_state.current_response = response_text or t('voice_could_not_understand', st.session_state.language)
-          
-          st.session_state.current_metadata = {
-              "key_points": result.get("key_points", []),
-              "suggested_actions": result.get("suggested_actions", []),
-              "verification_steps": result.get("verification_steps", []),
-              "official_sources": result.get("official_sources", []),
-          }
-          
-          if response_audio:
-              st.session_state.pending_audio = response_audio
-              st.session_state.is_speaking = True
-              st.session_state.status = t('voice_status_speaking', st.session_state.language)
-          else:
-              st.session_state.status = t('voice_status_ready', st.session_state.language)
+        st.session_state.current_transcript = transcript or t('voice_no_speech', st.session_state.language)
+        st.session_state.current_response = response_text or t('voice_could_not_understand', st.session_state.language)
+        
+        st.session_state.current_metadata = {
+            "key_points": result.get("key_points", []),
+            "suggested_actions": result.get("suggested_actions", []),
+            "verification_steps": result.get("verification_steps", []),
+            "official_sources": result.get("official_sources", []),
+        }
+        
+        if response_audio:
+            st.session_state.pending_audio = response_audio
+            st.session_state.is_speaking = True
+            st.session_state.status = t('voice_status_speaking', st.session_state.language)
+        else:
+            st.session_state.status = t('voice_status_ready', st.session_state.language)
 
-          if transcript:
-              memory.add_message('user', transcript)
-              memory.extract_entities(transcript)
-          if response_text:
-              memory.add_message('assistant', response_text)
+        if transcript:
+            memory.add_message('user', transcript)
+            memory.extract_entities(transcript)
+        if response_text:
+            memory.add_message('assistant', response_text)
 
-      except Exception as e:
-          logger.exception("Error during voice processing: %s", e)
-          st.session_state.current_transcript = f"❌ Error: {str(e)}"
-          st.session_state.current_response = t('voice_error_processing', st.session_state.language)
-          st.session_state.status = t('voice_status_error', st.session_state.language)
-          st.session_state.pending_audio = None
-      
-      finally:
-          st.session_state.is_processing = False
-          st.session_state.status = t('voice_status_ready', st.session_state.language)
-          st.session_state.pending_audio_bytes = None
-          st.rerun()
+    except Exception as e:
+        logger.exception("Error during voice processing: %s", e)
+        st.session_state.current_transcript = f"❌ Error: {str(e)}"
+        st.session_state.current_response = t('voice_error_processing', st.session_state.language)
+        st.session_state.status = t('voice_status_error', st.session_state.language)
+        st.session_state.pending_audio = None
+    
+    finally:
+        st.session_state.is_processing = False
+        st.session_state.status = t('voice_status_ready', st.session_state.language)
+        st.session_state.pending_audio_bytes = None
+        st.rerun()
