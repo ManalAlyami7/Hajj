@@ -494,7 +494,7 @@ st.markdown(f"""
 # ---------------------------
 st.markdown(f"""
 <div class="voice-header">
-  <div>🕋<span class="voice-title">{t('voice_main_title', st.session_state.language)}</span></div>
+  <div><span class="voice-title">{t('voice_main_title', st.session_state.language)}</span></div>
   <div class="voice-subtitle">{t('voice_subtitle', st.session_state.language)}</div>
 </div>
 """, unsafe_allow_html=True)
