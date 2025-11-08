@@ -173,21 +173,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Add sidebar toggle button
-st.markdown("""
-<script>
-// Function to toggle sidebar
-function toggleSidebar() {
-    const sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
-    if (sidebar) {
-        const isCollapsed = sidebar.getAttribute('aria-expanded') === 'false';
-        const button = window.parent.document.querySelector('[data-testid="collapsedControl"]');
-        if (button) button.click();
-    }
-}
-</script>
-""", unsafe_allow_html=True)
-
 # Initialize voice processor
 def init_voice_graph():
     voice_processor = VoiceProcessor()
@@ -682,37 +667,6 @@ st.markdown(f"""
   }}
 }}
 
-/* Sidebar Toggle Button */
-.sidebar-toggle {{
-  position: fixed;
-  top: 15px;
-  {'right' if is_arabic else 'left'}: 15px;
-  width: 48px;
-  height: 48px;
-  background: rgba(251, 191, 36, 0.9);
-  backdrop-filter: blur(20px);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 9999;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4);
-  transition: all 0.3s ease;
-  font-size: 1.5rem;
-}}
-
-.sidebar-toggle:hover {{
-  background: rgba(245, 158, 11, 1);
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(251, 191, 36, 0.6);
-}}
-
-.sidebar-toggle:active {{
-  transform: scale(0.95);
-}}
-
 /* Hide audio element */
 audio {{
   display: none !important;
@@ -742,15 +696,6 @@ def _hash_bytes(b):
         except Exception:
             raise TypeError(f"Unsupported type for hashing: {type(b)}")
     return hashlib.sha256(b).hexdigest()
-
-# ---------------------------
-# Sidebar Toggle Button
-# ---------------------------
-st.markdown(f"""
-<div class="sidebar-toggle" onclick="window.parent.document.querySelector('[data-testid=\\'collapsedControl\\']')?.click()">
-    {'◄' if not is_arabic else '►'}
-</div>
-""", unsafe_allow_html=True)
 
 # ---------------------------
 # Status Indicator
