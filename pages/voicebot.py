@@ -1098,45 +1098,70 @@ audio {{
 # ---------------------------
 
 # Accessibility Controls
+# ✅ Precompute dynamic values safely in Python
+is_arabic = st.session_state.get("language") == "ar"
+
+lang = st.session_state.get("language", "en")
+font_size = st.session_state.get("font_size", "normal")
+high_contrast = st.session_state.get("high_contrast", False)
+
+tooltip_lang = "اختر اللغة" if is_arabic else "Select Language"
+tooltip_font = "حجم الخط" if is_arabic else "Font Size"
+tooltip_contrast = "تباين عالي" if is_arabic else "High Contrast"
+tooltip_export = "تصدير الجلسة" if is_arabic else "Export Session"
+
+# Active states
+active_en = "active" if lang == "en" else ""
+active_ar = "active" if lang == "ar" else ""
+active_ur = "active" if lang == "ur" else ""
+active_font = "active" if font_size != "normal" else ""
+active_contrast = "active" if high_contrast else ""
+
+# Button symbols
+font_icon = "🔤" if font_size == "normal" else "🔠"
+font_label = "أ" if is_arabic else "Aa"
+contrast_icon = "◐" if not high_contrast else "◑"
+
+# ✅ Clean, conflict-free HTML
 st.markdown(f"""
 <div class="accessibility-controls">
     <div class="language-selector">
-        <div class="control-btn" data-tooltip="{'اختر اللغة' if is_arabic else 'Select Language'}">
+        <div class="control-btn" data-tooltip="{tooltip_lang}">
             🌐 {'اللغة' if is_arabic else 'Language'}
         </div>
         <div class="language-dropdown">
-            <div class="lang-option {'active' if st.session_state.language == 'en' else ''}" onclick="window.location.href='?lang=en'">
+            <div class="lang-option {active_en}" onclick="window.location.href='?lang=en'">
                 🇬🇧 English
             </div>
-            <div class="lang-option {'active' if st.session_state.language == 'ar' else ''}" onclick="window.location.href='?lang=ar'">
+            <div class="lang-option {active_ar}" onclick="window.location.href='?lang=ar'">
                 🇸🇦 العربية
             </div>
-            <div class="lang-option {'active' if st.session_state.language == 'ur' else ''}" onclick="window.location.href='?lang=ur'">
+            <div class="lang-option {active_ur}" onclick="window.location.href='?lang=ur'">
                 🇵🇰 اردو
             </div>
         </div>
     </div>
     
-    <div class="control-btn {'active' if st.session_state.font_size != 'normal' else ''}" 
+    <div class="control-btn {active_font}" 
          onclick="document.getElementById('font_size_btn').click()"
-         data-tooltip="{'حجم الخط' if is_arabic else 'Font Size'}">
-        {'🔤' if st.session_state.font_size == 'normal' else '🔠'}
-        {'Aa' if not is_arabic else 'أ'}
+         data-tooltip="{tooltip_font}">
+        {font_icon} {font_label}
     </div>
     
-    <div class="control-btn {'active' if st.session_state.high_contrast else ''}"
+    <div class="control-btn {active_contrast}"
          onclick="document.getElementById('contrast_btn').click()"
-         data-tooltip="{'تباين عالي' if is_arabic else 'High Contrast'}">
-        {'◐' if not st.session_state.high_contrast else '◑'}
+         data-tooltip="{tooltip_contrast}">
+        {contrast_icon}
     </div>
     
     <div class="control-btn"
          onclick="document.getElementById('export_btn').click()"
-         data-tooltip="{'تصدير الجلسة' if is_arabic else 'Export Session'}">
+         data-tooltip="{tooltip_export}">
         📥
     </div>
 </div>
 """, unsafe_allow_html=True)
+
 
 # Hidden control buttons
 col1, col2, col3 = st.columns(3)
