@@ -166,41 +166,34 @@ class VoiceProcessor:
             }
         
 
-    def preprocess_phone_numbers(text):
+    def preprocess_phone_numbers(self, text: str) -> str:
         """
-        Detect phone numbers in various formats and make them TTS-friendly.
-        Example: 
-        +966551234567 -> + 9 6 6 5 5 1 2 3 4 5 6 7
-        0551234567 -> 0 5 5 1 2 3 4 5 6 7
+        Detect phone numbers in any format and make them TTS-friendly.
+        Example: +966551234567 -> + 9 6 6 5 5 1 2 3 4 5 6 7
         """
-        # Pattern matches:
-        # Optional +, digits, optional spaces, dashes
         phone_pattern = r'(\+?\d[\d\s\-]{6,20}\d)'
 
-        def repl(match):
+        def repl(match: re.Match):
             number = match.group(0)
-            # Keep "+" as-is, separate digits
             formatted = ''.join([c + ' ' if c.isdigit() else c for c in number])
             return formatted.strip()
 
         return re.sub(phone_pattern, repl, text)
 
-
-    # --- Text-to-Speech (OPTIMIZED WITH CHUNKING) -----------------------------
-    def text_to_speech(self, text: str, language: str = "en") -> Optional[bytes]:
+    def text_to_speech(self, text: str, language: str = "en") -> bytes | None:
         """
-        Convert text to speech and return MP3 bytes (OPTIMIZED).
-        For long text, consider using text_to_speech_chunked() instead.
+        Convert text to speech and return MP3 bytes.
+        Only preprocesses numbers and phone numbers.
         """
         if not text or not text.strip():
             logger.warning("⚠️ Empty text provided to TTS.")
             return None
 
-        # Voice mapping based on language
+        # Voice mapping
         voice_map = {
-            "ar": "echo",   # Arabic - deep, formal tone
+            "ar": "echo",
             "arabic": "echo",
-            "en": "alloy",  # English - neutral tone
+            "en": "alloy",
             "english": "alloy",
             "ur": "alloy",
             "urdu": "alloy",
@@ -209,30 +202,31 @@ class VoiceProcessor:
             "tr": "alloy",
             "turkish": "alloy"
         }
+        voice = voice_map.get(language.lower(), "alloy")
 
-        voice = voice_map.get(language, "alloy")
+        # --- Preprocess numbers only ---
         text = self.preprocess_phone_numbers(text)
 
-    # Step 2: Convert remaining numbers to words
-        def repl(match):
-            # Skip numbers that are part of phone numbers (they have spaces or + now)
-            if ' ' in match.group(0) or '+' in match.group(0):
-                return match.group(0)
-            return num2words(int(match.group(0)), lang='ar')
+        if language.lower() in ["ar", "arabic"]:
+            # Convert normal numbers (not phone numbers) to Arabic words
+            def number_to_words(match: re.Match):
+                if ' ' in match.group(0) or '+' in match.group(0):
+                    return match.group(0)  # phone numbers remain as digits
+                return num2words(int(match.group(0)), lang='ar')
 
-        text = re.sub(r'\b\d+\b', repl, text)
+            text = re.sub(r'\b\d+\b', number_to_words, text)
+            speed = 1.0
+        else:
+            speed = 1.1
 
         try:
-            # OPTIMIZATION: Use tts-1 instead of tts-1-hd (2x faster)
-            # OPTIMIZATION: Increase speed to 1.1 (10% faster speech)
             response = self.client.audio.speech.create(
-                model="tts-1",  # FASTER than tts-1-hd
+                model="tts-1",
                 voice=voice,
-                input=text.strip()[:4096],  # Limit to 4096 chars for speed
-                speed=1.1,  # 10% faster speech
+                input=text.strip()[:4096],
+                speed=speed,
                 response_format="mp3"
             )
-
             audio_bytes = response.read()
             logger.info(f"🔊 TTS generated for: '{text[:60]}...' (lang: {language})")
             return audio_bytes
