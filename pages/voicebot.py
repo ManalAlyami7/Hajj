@@ -1,18 +1,15 @@
 """
-Hajj Voice Assistant - Enhanced Version
+Hajj Voice Assistant - Modularized Version
 Features: Elegant sidebar, language selection, accessibility options, improved UX
+Uses modular components and translation system
 """
 import time
-import re
 import logging
-import base64
 import hashlib
 from pathlib import Path
 import sys
-from datetime import datetime
 
 import streamlit as st
-from audio_recorder_streamlit import audio_recorder
 
 # Ensure project root is on sys.path
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,119 +17,13 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from core.voice_processor import VoiceProcessor
-from utils.translations import t  # existing translation function
+from utils.translations import t
 from core.voice_graph import VoiceGraphBuilder
+from utils.voice_memory import ConversationMemory
+from ui.voice_sidebar import render_sidebar
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# ---------------------------
-# Memory Management
-# ---------------------------
-class ConversationMemory:
-    """Manages conversation memory for voice assistant"""
-    
-    def __init__(self, max_turns=10):
-        """
-        Initialize memory
-        max_turns: Maximum number of conversation turns to remember (user+assistant = 1 turn)
-        """
-        self.max_turns = max_turns
-        if 'voice_memory' not in st.session_state:
-            st.session_state.voice_memory = {
-                'messages': [],  # List of {role, content, timestamp}
-                'user_context': {},  # Persistent user context (agencies mentioned, locations, etc.)
-                'session_start': datetime.now().isoformat()
-            }
-    
-    def add_message(self, role: str, content: str):
-        """Add a message to memory"""
-        message = {
-            'role': role,  # 'user' or 'assistant'
-            'content': content,
-            'timestamp': datetime.now().isoformat()
-        }
-        st.session_state.voice_memory['messages'].append(message)
-        
-        # Trim to max_turns (keep most recent)
-        # Each turn = user message + assistant message = 2 messages
-        max_messages = self.max_turns * 2
-        if len(st.session_state.voice_memory['messages']) > max_messages:
-            st.session_state.voice_memory['messages'] = \
-                st.session_state.voice_memory['messages'][-max_messages:]
-        
-        logger.info(f"Added {role} message to memory. Total messages: {len(st.session_state.voice_memory['messages'])}")
-    
-    def get_conversation_history(self, limit=None):
-        """
-        Get conversation history
-        limit: Number of recent turns to retrieve (None = all)
-        """
-        messages = st.session_state.voice_memory['messages']
-        if limit:
-            messages = messages[-(limit * 2):]  # limit turns * 2 messages per turn
-        return messages
-    
-    def get_formatted_history(self, limit=5):
-        """Get formatted history string for LLM context"""
-        messages = self.get_conversation_history(limit)
-        if not messages:
-            return "No previous conversation."
-        
-        formatted = []
-        for msg in messages:
-            role_label = "User" if msg['role'] == 'user' else "Assistant"
-            formatted.append(f"{role_label}: {msg['content']}")
-        
-        return "\n".join(formatted)
-    
-    def update_context(self, key: str, value: any):
-        """Update persistent user context"""
-        st.session_state.voice_memory['user_context'][key] = value
-        logger.info(f"Updated context: {key} = {value}")
-    
-    def get_context(self, key: str, default=None):
-        """Get value from persistent context"""
-        return st.session_state.voice_memory['user_context'].get(key, default)
-    
-    def extract_entities(self, text: str):
-        """
-        Extract and store important entities from user input
-        (agencies mentioned, locations, etc.)
-        """
-        # Extract agency names (simple pattern - improve as needed)
-        agencies = re.findall(r'(?:agency|company|office)\s+([A-Z][A-Za-z\s]+)', text, re.IGNORECASE)
-        if agencies:
-            self.update_context('last_agency_mentioned', agencies[0].strip())
-        
-        # Extract locations (simple pattern)
-        locations = re.findall(r'(?:in|at|from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)', text)
-        if locations:
-            self.update_context('last_location_mentioned', locations[0].strip())
-    
-    def clear_memory(self):
-        """Clear all memory (useful for new session)"""
-        st.session_state.voice_memory = {
-            'messages': [],
-            'user_context': {},
-            'session_start': datetime.now().isoformat()
-        }
-        logger.info("Memory cleared")
-    
-    def get_memory_summary(self):
-        """Get a summary of current memory state"""
-        return {
-            'total_messages': len(st.session_state.voice_memory['messages']),
-            'session_duration': self._get_session_duration(),
-            'context': st.session_state.voice_memory['user_context']
-        }
-    
-    def _get_session_duration(self):
-        """Calculate session duration"""
-        start = datetime.fromisoformat(st.session_state.voice_memory['session_start'])
-        duration = datetime.now() - start
-        minutes = int(duration.total_seconds() / 60)
-        return f"{minutes} min"
 
 
 # ---------------------------
@@ -153,11 +44,12 @@ def initialize_session_state():
         "current_response": "",
         "current_metadata": {},
         "status": "Ready",
-        "sidebar_state": "expanded",  # expanded or collapsed
+        "sidebar_state": "expanded",
     }
     for k, v in defaults.items():
         if k not in st.session_state:
             st.session_state[k] = v
+
 
 # Initialize states
 initialize_session_state()
@@ -167,18 +59,20 @@ memory = ConversationMemory(max_turns=10)
 
 # Page config
 st.set_page_config(
-    page_title="🕋 Hajj Voice Assistant",
+    page_title=t('voice_page_title', st.session_state.language),
     page_icon="🕋",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 # Initialize voice processor
+@st.cache_resource
 def init_voice_graph():
     voice_processor = VoiceProcessor()
     graph_builder = VoiceGraphBuilder(voice_processor)
     workflow = graph_builder.build()
     return voice_processor, workflow
+
 
 voice_processor, workflow = init_voice_graph()
 
@@ -186,185 +80,13 @@ voice_processor, workflow = init_voice_graph()
 def is_arabic_code(code):
     return code in ('ar', 'arabic', 'العربية')
 
+
 is_arabic = is_arabic_code(st.session_state.language)
 
 # ---------------------------
-# Sidebar
+# Render Sidebar
 # ---------------------------
-with st.sidebar:
-    # -----------------------------
-    # Header Section
-    # -----------------------------
-    st.markdown("""
-    <div style="text-align: center; padding: 1.5rem 0 2rem 0;">
-        <div style="font-size: 3rem; margin-bottom: 0.75rem;">🕋</div>
-        <h2 style="margin: 0; font-size: 1.7rem; font-weight: 700; 
-                   background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
-                   -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-            Voice Assistant
-        </h2>
-        <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.25rem;">
-            Settings, Language & Accessibility Controls
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("<hr style='margin-top:-0.5rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
-
-    # -----------------------------
-    # Language Selection
-    # -----------------------------
-    st.markdown("### 🌐 Language")
-    st.caption("Choose the language for your assistant responses and interface text.")
-    
-    language_options = {
-        'English': 'en',
-        'العربية': 'ar',
-        'اردو': 'ur'
-    }
-
-    current_lang_display = [k for k, v in language_options.items() if v == st.session_state.language][0]
-    selected_language = st.selectbox(
-        "Choose your language",
-        options=list(language_options.keys()),
-        index=list(language_options.keys()).index(current_lang_display),
-        label_visibility="collapsed"
-    )
-
-    if language_options[selected_language] != st.session_state.language:
-        st.session_state.language = language_options[selected_language]
-        st.toast(f"Language switched to {selected_language}", icon="🌐")
-        st.rerun()
-
-    st.markdown("<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
-
-    # -----------------------------
-    # Accessibility Options
-    # -----------------------------
-    st.markdown("### ♿ Accessibility")
-    st.caption("Adjust font size or contrast for better visibility and comfort.")
-
-    # Font Size
-    font_size_options = {
-        'Normal': 'normal',
-        'Large': 'large',
-        'Extra Large': 'extra-large'
-    }
-
-    current_font_display = [k for k, v in font_size_options.items() if v == st.session_state.font_size][0]
-    selected_font = st.selectbox(
-        "Font Size",
-        options=list(font_size_options.keys()),
-        index=list(font_size_options.keys()).index(current_font_display)
-    )
-
-    if font_size_options[selected_font] != st.session_state.font_size:
-        st.session_state.font_size = font_size_options[selected_font]
-        st.toast(f"Font size set to {selected_font}", icon="🔠")
-        st.rerun()
-
-    # High Contrast Mode
-    st.markdown("")
-    high_contrast = st.checkbox(
-        "Enable High Contrast Mode",
-        value=st.session_state.high_contrast,
-        help="Improves text and button visibility for users with low vision."
-    )
-
-    if high_contrast != st.session_state.high_contrast:
-        st.session_state.high_contrast = high_contrast
-        st.toast("High contrast mode updated", icon="🌓")
-        st.rerun()
-
-    st.markdown("<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
-
-    # -----------------------------
-    # Memory Status Section
-    # -----------------------------
-    st.markdown("### 🧠 Memory Status")
-    st.caption("Review your current session’s progress and data usage.")
-    
-    memory_summary = memory.get_memory_summary()
-    
-    st.markdown(f"""
-    <div style="background: rgba(96, 165, 250, 0.1); padding: 1rem; border-radius: 0.75rem; 
-                border-left: 4px solid #60a5fa; margin-top: 0.5rem;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-            <span style="color: #64748b; font-size: 0.85rem;">Total Messages</span>
-            <strong style="color: #1e293b;">{memory_summary['total_messages']}</strong>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-            <span style="color: #64748b; font-size: 0.85rem;">Session Duration</span>
-            <strong style="color: #1e293b;">{memory_summary['session_duration']}</strong>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown("")
-    if st.button("🗑️ Clear Memory", use_container_width=True, type="secondary"):
-        memory.clear_memory()
-        st.session_state.current_transcript = ""
-        st.session_state.current_response = ""
-        st.session_state.current_metadata = {}
-        st.session_state.last_audio_hash = None
-        st.session_state.pending_audio = None
-        st.session_state.pending_audio_bytes = None
-        st.success("Memory cleared successfully!")
-        time.sleep(1)
-        st.rerun()
-
-    st.markdown("<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
-
-    # -----------------------------
-    # Sample Questions
-    # -----------------------------
-    st.markdown("### 💡 Sample Questions")
-    st.caption("Try one of these to get started quickly:")
-
-    sample_questions = {
-        'en': [
-            "What are the Hajj requirements?",
-            "Find affordable packages",
-            "When should I book?",
-            "Tell me about Mina"
-        ],
-        'ar': [
-            "ما هي متطلبات الحج؟",
-            "ابحث عن باقات ميسورة",
-            "متى يجب أن أحجز؟",
-            "أخبرني عن منى"
-        ],
-        'ur': [
-            "حج کے تقاضے کیا ہیں؟",
-            "سستے پیکجز تلاش کریں",
-            "مجھے کب بک کرنا چاہیے؟",
-            "منیٰ کے بارے میں بتائیں"
-        ]
-    }
-
-    current_samples = sample_questions.get(st.session_state.language, sample_questions['en'])
-
-    for question in current_samples:
-        st.markdown(f"""
-        <div style="background: rgba(255, 255, 255, 0.05); padding: 0.6rem 0.9rem; 
-                    border-radius: 0.6rem; margin-bottom: 0.6rem; font-size: 0.9rem;
-                    border: 1px solid rgba(255, 255, 255, 0.08); color: #cbd5e1; 
-                    transition: all 0.3s ease;">
-            💬 {question}
-        </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<hr style='margin-top:1rem; border-color:rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
-
-    # -----------------------------
-    # Navigation
-    # -----------------------------
-    st.markdown("### 🏠 Navigation")
-    st.caption("Return to the main assistant chat interface.")
-
-    if st.button("← Back to Chat", use_container_width=True, type="primary"):
-        st.switch_page("./app.py")
-
+render_sidebar(memory, st.session_state.language)
 
 # ---------------------------
 # Dynamic Styling
@@ -409,7 +131,6 @@ st.markdown(f"""
 #MainMenu, footer {{visibility: hidden;}}
 header {{visibility: visible !important;}}
 
-/* Ensure sidebar toggle is always visible and styled */
 button[kind="header"] {{
   visibility: visible !important;
   display: flex !important;
@@ -434,7 +155,6 @@ button[kind="header"] {{
   color: #e2e8f0;
 }}
 
-/* Ensure Streamlit's sidebar controls are visible */
 [data-testid="collapsedControl"] {{
   visibility: visible !important;
   display: flex !important;
@@ -452,7 +172,6 @@ button[kind="header"] {{
   transform: scale(1.05) !important;
 }}
 
-/* Make header area visible for sidebar toggle */
 header[data-testid="stHeader"] {{
   visibility: visible !important;
   display: block !important;
@@ -580,15 +299,6 @@ header[data-testid="stHeader"] button {{
 }}
 
 /* Right Panel - Transcript/Response */
-.voice-right {{
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}}
-
 .transcript-container, .response-container {{
   background: {panel_bg};
   border-radius: 1.5rem;
@@ -747,6 +457,7 @@ audio {{
 </style>
 """, unsafe_allow_html=True)
 
+
 # ---------------------------
 # Helper Functions
 # ---------------------------
@@ -760,6 +471,7 @@ def _hash_bytes(b):
             raise TypeError(f"Unsupported type for hashing: {type(b)}")
     return hashlib.sha256(b).hexdigest()
 
+
 # ---------------------------
 # Status Indicator
 # ---------------------------
@@ -768,7 +480,7 @@ status_class = (
     else "listening" if st.session_state.is_processing
     else ""
 )
-status_text = st.session_state.status or "Ready"
+status_text = st.session_state.status or t('voice_status_ready', st.session_state.language)
 
 st.markdown(f"""
 <div class="status-indicator">
@@ -800,8 +512,6 @@ with col_left:
         else ""
     )
     
-    icon_class = "active" if st.session_state.is_processing or st.session_state.is_speaking else ""
-    
     recording_label = (
         f"🔊 {t('voice_speaking', st.session_state.language)}" if st.session_state.is_speaking
         else f"🎤 {t('voice_press_to_speak', st.session_state.language)}"
@@ -822,7 +532,7 @@ with col_left:
     audio_bytes = st.audio_input(
         label="",
         key="audio_recorder",
-        help="Click to start recording, click again to stop"
+        help=t('voice_press_to_speak', st.session_state.language)
     )
 
 with col_right:
@@ -920,8 +630,6 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         logger.info("Running LangGraph workflow on pending audio...")
 
         pending_audio_bytes = st.session_state.pending_audio_bytes
-
-        # Get conversation history for context
         conversation_history = memory.get_formatted_history(limit=5)
 
         initial_state = {
@@ -968,7 +676,6 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         response_text = result.get("response", "")
         response_audio = result.get("response_audio", None)
 
-        # Update session state
         st.session_state.current_transcript = transcript or t('voice_no_speech', st.session_state.language)
         st.session_state.current_response = response_text or t('voice_could_not_understand', st.session_state.language)
         
@@ -986,7 +693,6 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         else:
             st.session_state.status = t('voice_status_ready', st.session_state.language)
 
-        # Add to memory
         if transcript:
             memory.add_message('user', transcript)
             memory.extract_entities(transcript)
