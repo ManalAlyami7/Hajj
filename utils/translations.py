@@ -1,6 +1,7 @@
 """
-Translation Manager Module
+Translation Manager Module - Enhanced
 Handles all text translations for multilingual support
+Includes: English, Arabic, and Urdu
 """
 
 TRANSLATIONS = {
@@ -21,7 +22,7 @@ TRANSLATIONS = {
         "clear_chat": "🧹 Clear Chat History",
         "features_title": "ℹ️ Features",
         
-        # Mode Navigation (NEW)
+        # Mode Navigation
         "mode_title": "🔀 Mode",
         "mode_chatbot": "Chatbot",
         "mode_voicebot": "Voicebot",
@@ -85,40 +86,40 @@ TRANSLATIONS = {
         "find_by_country": "Search by Country",
         "general_help": "General Help",
         
-       # Voice Bot Page - Enhanced Naming
-"voice_page_title": "Hajj Voice Verification Assistant",
-"voice_main_title": "Hajj Guardian Voice Assistant",
-"voice_subtitle": "Your trusted companion for verifying authorized Hajj agencies and protecting pilgrims",
-"voice_return_button": "Back to Chat",
-"voice_recording": "Listening to your voice...",
-"voice_press_to_speak": "Tap to Ask a Question",
-"voice_speaking": "Assistant Responding...",
-"voice_status_ready": "Ready",
-"voice_status_processing": "Understanding your request...",
-"voice_status_listening": "Listening",
-"voice_status_completed": "Response Complete",
-"voice_status_speaking": "Speaking",
-"voice_status_analyzing": "Processing your query...",
-"voice_status_error": "Please Try Again",
+        # Voice Bot Page
+        "voice_page_title": "Hajj Voice Verification Assistant",
+        "voice_main_title": "Hajj Guardian Voice Assistant",
+        "voice_subtitle": "Your trusted companion for verifying authorized Hajj agencies and protecting pilgrims",
+        "voice_return_button": "Back to Chat",
+        "voice_recording": "Listening to your voice...",
+        "voice_press_to_speak": "Tap to Ask a Question",
+        "voice_speaking": "Assistant Responding...",
+        "voice_status_ready": "Ready",
+        "voice_status_processing": "Understanding your request...",
+        "voice_status_listening": "Listening",
+        "voice_status_completed": "Response Complete",
+        "voice_status_speaking": "Speaking",
+        "voice_status_analyzing": "Processing your query...",
+        "voice_status_error": "Please Try Again",
 
-"voice_transcript_title": "Your Question",
-"voice_response_title": "Guardian's Response",
-"voice_speak_now": "Ask me anything about Hajj agencies...",
-"voice_response_placeholder": "Your answer will appear here...",
-"voice_key_points": "Important Information",
-"voice_suggested_actions": "Recommended Next Steps",
-"voice_verification_steps": "How to Verify",
-"voice_no_speech": "I couldn't hear you clearly",
-"voice_try_again": "Please speak clearly and try again",
-"voice_error_occurred": "Something went wrong. Let's try that again.",
-"voice_could_not_understand": "I couldn't understand that. Could you rephrase?",
-"voice_error_processing": "I'm having trouble processing that request",
+        "voice_transcript_title": "Your Question",
+        "voice_response_title": "Assistant Response",
+        "voice_speak_now": "Ask me anything about Hajj agencies...",
+        "voice_response_placeholder": "Your answer will appear here...",
+        "voice_key_points": "Important Information",
+        "voice_suggested_actions": "Recommended Next Steps",
+        "voice_verification_steps": "How to Verify",
+        "voice_no_speech": "I couldn't hear you clearly",
+        "voice_try_again": "Please speak clearly and try again",
+        "voice_error_occurred": "Something went wrong. Let's try that again.",
+        "voice_could_not_understand": "I couldn't understand that. Could you rephrase?",
+        "voice_error_processing": "I'm having trouble processing that request",
 
-# Additional helpful labels
-"voice_clear_memory": " + Start New Conversation",
-"voice_stop_speaking": "Stop",
-"voice_memory_messages": "messages",
-"voice_session_duration": "Session time",
+        # Additional helpful labels
+        "voice_clear_memory": "Start New Conversation",
+        "voice_stop_speaking": "Stop",
+        "voice_memory_messages": "messages",
+        "voice_session_duration": "Session time",
     },
     
     "العربية": {
@@ -138,7 +139,7 @@ TRANSLATIONS = {
         "clear_chat": "🧹 مسح سجل المحادثة",
         "features_title": "ℹ️ المميزات",
         
-        # Mode Navigation (NEW)
+        # Mode Navigation
         "mode_title": "🔀 الوضع",
         "mode_chatbot": "المحادثة",
         "mode_voicebot": "المساعد الصوتي",
@@ -201,40 +202,158 @@ TRANSLATIONS = {
         "show_stats": "عرض الإحصائيات",
         "find_by_country": "البحث حسب الدولة",
         "general_help": "مساعدة عامة",
-      # Voice Bot Page - Enhanced Arabic Naming
-"voice_page_title": "مساعد الحج الصوتي للتحقق",
-"voice_main_title": "مساعد حارس الحج الصوتي",
-"voice_subtitle": "رفيقك الموثوق للتحقق من وكالات الحج المعتمدة وحماية الحجاج",
-"voice_return_button": "العودة للمحادثة",
-"voice_recording": "جاري الاستماع لصوتك...",
-"voice_press_to_speak": "اضغط لطرح سؤال",
-"voice_speaking": "المساعد يجيب...",
-"voice_status_ready": "جاهز للمساعدة",
-"voice_status_processing": "جاري فهم طلبك...",
-"voice_status_listening": "أستمع بإنتباه",
-"voice_status_completed": "اكتمل الرد",
-"voice_status_speaking": "المساعد يتحدث",
-"voice_status_analyzing": "جاري معالجة استفسارك...",
-"voice_status_error": "يرجى المحاولة مرة أخرى",
+        
+        # Voice Bot Page
+        "voice_page_title": "مساعد الحج الصوتي للتحقق",
+        "voice_main_title": "مساعد حارس الحج الصوتي",
+        "voice_subtitle": "رفيقك الموثوق للتحقق من وكالات الحج المعتمدة وحماية الحجاج",
+        "voice_return_button": "العودة للمحادثة",
+        "voice_recording": "جاري الاستماع لصوتك...",
+        "voice_press_to_speak": "اضغط لطرح سؤال",
+        "voice_speaking": "المساعد يجيب...",
+        "voice_status_ready": "جاهز للمساعدة",
+        "voice_status_processing": "جاري فهم طلبك...",
+        "voice_status_listening": "أستمع بإنتباه",
+        "voice_status_completed": "اكتمل الرد",
+        "voice_status_speaking": "المساعد يتحدث",
+        "voice_status_analyzing": "جاري معالجة استفسارك...",
+        "voice_status_error": "يرجى المحاولة مرة أخرى",
 
-"voice_transcript_title": "سؤالك",
-"voice_response_title": "رد الحارس",
-"voice_speak_now": "اسألني أي شيء عن وكالات الحج...",
-"voice_response_placeholder": "ستظهر الإجابة هنا...",
-"voice_key_points": "معلومات مهمة",
-"voice_suggested_actions": "الخطوات الموصى بها",
-"voice_verification_steps": "كيفية التحقق",
-"voice_no_speech": "لم أتمكن من سماعك بوضوح",
-"voice_try_again": "يرجى التحدث بوضوح والمحاولة مرة أخرى",
-"voice_error_occurred": "حدث خطأ. دعنا نحاول مرة أخرى",
-"voice_could_not_understand": "لم أتمكن من فهم ذلك. هل يمكنك إعادة صياغة السؤال؟",
-"voice_error_processing": "أواجه صعوبة في معالجة هذا الطلب",
+        "voice_transcript_title": "سؤالك",
+        "voice_response_title": "رد المساعد",
+        "voice_speak_now": "اسألني أي شيء عن وكالات الحج...",
+        "voice_response_placeholder": "ستظهر الإجابة هنا...",
+        "voice_key_points": "معلومات مهمة",
+        "voice_suggested_actions": "الخطوات الموصى بها",
+        "voice_verification_steps": "كيفية التحقق",
+        "voice_no_speech": "لم أتمكن من سماعك بوضوح",
+        "voice_try_again": "يرجى التحدث بوضوح والمحاولة مرة أخرى",
+        "voice_error_occurred": "حدث خطأ. دعنا نحاول مرة أخرى",
+        "voice_could_not_understand": "لم أتمكن من فهم ذلك. هل يمكنك إعادة صياغة السؤال؟",
+        "voice_error_processing": "أواجه صعوبة في معالجة هذا الطلب",
 
-# Additional helpful labels in Arabic
-"voice_clear_memory": "بدء محادثة جديدة",
-"voice_stop_speaking": "إيقاف",
-"voice_memory_messages": "رسائل",
-"voice_session_duration": "مدة الجلسة",
+        # Additional helpful labels in Arabic
+        "voice_clear_memory": "بدء محادثة جديدة",
+        "voice_stop_speaking": "إيقاف",
+        "voice_memory_messages": "رسائل",
+        "voice_session_duration": "مدة الجلسة",
+    },
+    
+    "اردو": {
+        # Page
+        "page_title": "حج چیٹ بوٹ",
+        "main_title": "حج ڈیٹا انٹیلیجنس",
+        "subtitle": "دنیا بھر کی حج کمپنیوں کے بارے میں کچھ بھی پوچھیں • AI سے چلنے والا • حقیقی وقت کا ڈیٹا",
+        
+        # Assistant
+        "assistant_title": "🕋 حج معاون",
+        "assistant_subtitle": "آپ کا AI سے چلنے والا رہنما",
+        
+        # Sidebar
+        "language_title": "🌐 زبان",
+        "stats_title": "📊 براہ راست شماریات",
+        "examples_title": "💡 فوری مثالیں",
+        "clear_chat": "🧹 چیٹ کی تاریخ صاف کریں",
+        "features_title": "ℹ️ خصوصیات",
+        
+        # Mode Navigation
+        "mode_title": "🔀 موڈ",
+        "mode_chatbot": "چیٹ بوٹ",
+        "mode_voicebot": "وائس بوٹ",
+        "voicebot_unavailable": "صوتی معاون کا صفحہ دستیاب نہیں ہے",
+        
+        # Stats
+        "total_agencies": "کل ایجنسیاں",
+        "authorized": "مجاز",
+        "countries": "ممالک",
+        "cities": "شہر",
+        
+        # Examples
+        "ex_all_auth": "🔍 تمام مجاز کمپنیاں",
+        "ex_all_auth_q": "مجھے تمام مجاز حج کمپنیاں دکھائیں",
+        "ex_saudi": "🇸🇦 سعودی عرب میں کمپنیاں",
+        "ex_saudi_q": "سعودی عرب میں کمپنیوں کی فہرست بنائیں",
+        "ex_by_country": "📊 ملک کے لحاظ سے ایجنسیاں",
+        "ex_by_country_q": "ہر ملک میں کتنی ایجنسیاں ہیں؟",
+        "ex_emails": "📧 ای میل والی کمپنیاں",
+        "ex_emails_q": "ای میل ایڈریس والی کمپنیاں تلاش کریں",
+        
+        # Features
+        "feat_ai": "AI سے چلنے والی تلاش",
+        "feat_ai_desc": "قدرتی زبان کے سوالات",
+        "feat_multilingual": "کثیر لسانی",
+        "feat_multilingual_desc": "عربی اور انگریزی کی معاونت",
+        "feat_viz": "ڈیٹا کی تصویر کشی",
+        "feat_viz_desc": "انٹرایکٹو ٹیبلز",
+        "feat_secure": "محفوظ",
+        "feat_secure_desc": "SQL انجیکشن تحفظ",
+        
+        # Messages
+        "welcome_msg": "خوش آمدید! 👋\n\nمیں آپ کا حج ڈیٹا معاون ہوں۔ حج کمپنیوں، مقامات، یا اجازت کی حیثیت کے بارے میں مجھ سے کچھ بھی پوچھیں!",
+        "input_placeholder": "یہاں اپنا سوال پوچھیں... 💬",
+        "thinking": "🤔 آپ کے سوال کا تجزیہ کر رہا ہوں...",
+        "searching": "🔍 ڈیٹا بیس تلاش کر رہا ہوں...",
+        "found_results": "✅ {count} نتائج ملے",
+        "results_badge": "{count} نتائج",
+        "authorized_badge": "{count} مجاز",
+        "download_results": "نتائج ڈاؤن لوڈ کریں",
+        
+        # Responses
+        "greeting": "السلام علیکم! 👋\n\nمیں بہت اچھا ہوں، شکریہ! میں یہاں حج کمپنیوں کے بارے میں معلومات تلاش کرنے میں آپ کی مدد کے لیے ہوں۔ آپ کیا جانا چاہتے ہیں؟",
+        "no_results": "کوئی نتائج نہیں ملے۔ سوال کو دوبارہ لکھنے یا تلاش کو وسیع کرنے کی کوشش کریں۔",
+        "sql_error": "ڈیٹا بیس میں خرابی پیش آئی۔ اپنا سوال دوبارہ لکھنے کی کوشش کریں۔",
+        "general_error": "معذرت، آپ کی درخواست پر کارروائی کرتے وقت مجھے ایک خرابی کا سامنا ہوا۔",
+        "hint_rephrase": "💡 اپنے سوال کو دوبارہ لکھنے یا مختلف مطلوبہ الفاظ استعمال کرنے کی کوشش کریں",
+        
+        # Voice
+        "voice_assistant": "صوتی معاون پر جائیں",
+        "voice_not_available": "صوتی معاون کا صفحہ نہیں ملا",
+        
+        # Validation
+        "input_empty": "براہ کرم ایک سوال درج کریں",
+        "input_too_long": "سوال بہت لمبا ہے (زیادہ سے زیادہ 500 حروف)",
+        "input_invalid": "آپ کے سوال میں غلط حروف کا پتہ چلا",
+
+        # Quick Actions
+        "find_authorized": "مجاز ایجنسیاں تلاش کریں",
+        "show_stats": "شماریات دکھائیں",
+        "find_by_country": "ملک کے لحاظ سے تلاش کریں",
+        "general_help": "عمومی مدد",
+        
+        # Voice Bot Page - Urdu
+        "voice_page_title": "حج صوتی تصدیق معاون",
+        "voice_main_title": "حج گارڈین صوتی معاون",
+        "voice_subtitle": "مجاز حج ایجنسیوں کی تصدیق اور حجاج کی حفاظت کے لیے آپ کا قابل اعتماد ساتھی",
+        "voice_return_button": "چیٹ پر واپس جائیں",
+        "voice_recording": "آپ کی آواز سن رہا ہوں...",
+        "voice_press_to_speak": "سوال پوچھنے کے لیے ٹیپ کریں",
+        "voice_speaking": "معاون جواب دے رہا ہے...",
+        "voice_status_ready": "تیار",
+        "voice_status_processing": "آپ کی درخواست سمجھ رہا ہوں...",
+        "voice_status_listening": "سن رہا ہوں",
+        "voice_status_completed": "جواب مکمل",
+        "voice_status_speaking": "بول رہا ہوں",
+        "voice_status_analyzing": "آپ کے سوال پر کارروائی کر رہا ہوں...",
+        "voice_status_error": "براہ کرم دوبارہ کوشش کریں",
+
+        "voice_transcript_title": "آپ کا سوال",
+        "voice_response_title": "معاون کا جواب",
+        "voice_speak_now": "حج ایجنسیوں کے بارے میں مجھ سے کچھ بھی پوچھیں...",
+        "voice_response_placeholder": "آپ کا جواب یہاں ظاہر ہوگا...",
+        "voice_key_points": "اہم معلومات",
+        "voice_suggested_actions": "تجویز کردہ اگلے اقدامات",
+        "voice_verification_steps": "تصدیق کیسے کریں",
+        "voice_no_speech": "میں آپ کو واضح طور پر نہیں سن سکا",
+        "voice_try_again": "براہ کرم واضح طور پر بولیں اور دوبارہ کوشش کریں",
+        "voice_error_occurred": "کچھ غلط ہو گیا۔ آئیے دوبارہ کوشش کریں۔",
+        "voice_could_not_understand": "میں یہ نہیں سمجھ سکا۔ کیا آپ دوبارہ کہہ سکتے ہیں؟",
+        "voice_error_processing": "مجھے اس درخواست پر کارروائی کرنے میں دشواری ہو رہی ہے",
+
+        # Additional helpful labels in Urdu
+        "voice_clear_memory": "نئی گفتگو شروع کریں",
+        "voice_stop_speaking": "رکیں",
+        "voice_memory_messages": "پیغامات",
+        "voice_session_duration": "سیشن کا وقت",
     }
 }
 
@@ -245,7 +364,7 @@ def t(key: str, lang: str = "English", **kwargs) -> str:
     
     Args:
         key: Translation key
-        lang: Language (English or العربية)
+        lang: Language (English, العربية, or اردو)
         **kwargs: Format arguments for string interpolation
     
     Returns:
@@ -260,3 +379,21 @@ def t(key: str, lang: str = "English", **kwargs) -> str:
             return text
     
     return text
+
+
+# Language mapping for easier lookup
+LANGUAGE_MAP = {
+    'en': 'English',
+    'english': 'English',
+    'ar': 'العربية',
+    'arabic': 'العربية',
+    'العربية': 'العربية',
+    'ur': 'اردو',
+    'urdu': 'اردو',
+    'اردو': 'اردو'
+}
+
+
+def get_language_name(code: str) -> str:
+    """Convert language code to full language name"""
+    return LANGUAGE_MAP.get(code.lower(), 'English')
