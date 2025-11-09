@@ -10,7 +10,7 @@ import io
 import re
 from typing import Optional, List, Dict, Literal
 from pydantic import BaseModel, Field
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.prompts.chat import ChatPromptTemplate, MessagesPlaceholder
 from langchain.schema import HumanMessage, AIMessage
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationChain
