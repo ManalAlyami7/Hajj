@@ -1,6 +1,7 @@
 """
 LLM Manager Module
 Handles OpenAI API interactions for chat and TTS with structured outputs
+Enhanced with company memory tracking for context-aware conversations
 """
 
 import random
@@ -32,6 +33,10 @@ class IntentClassification(BaseModel):
     reasoning: str = Field(
         description="Brief explanation of why this intent was chosen"
     )
+    extracted_company: Optional[str] = Field(
+        None,
+        description="Company name mentioned in user input (if any). Extract Arabic or English name."
+    )
 
 
 class SQLQueryGeneration(BaseModel):
@@ -52,6 +57,10 @@ class SQLQueryGeneration(BaseModel):
     )
     safety_checked: bool = Field(
         description="Whether the query passed safety validation"
+    )
+    extracted_company: Optional[str] = Field(
+        None,
+        description="Company name extracted from query context"
     )
 
 
@@ -97,23 +106,15 @@ class NEEDSInfoResponse(BaseModel):
 
 
 class LLMManager:
-    """Manages OpenAI API calls with error handling and rate limiting"""
+    """Manages OpenAI API calls with error handling, rate limiting, and context memory"""
     
     def __init__(self):
-        """Initialize OpenAI client"""
+        """Initialize OpenAI client and company memory"""
         self.client = self._get_client()
         self.voice_map = {
             "العربية": "onyx",
             "English": "alloy"
         }
-    
-        # ✅ Initialize chat memory if it doesn't exist
-        if "chat_memory" not in st.session_state:
-            st.session_state.chat_memory = []
-    
-        if "last_company_name" not in st.session_state:
-            st.session_state["last_company_name"] = None
-
     
     @st.cache_resource
     def _get_client(_self):
@@ -143,14 +144,6 @@ class LLMManager:
     
         return context
         
-    def add_user_message(self, user_input: str):
-        """Add user message to memory"""
-        st.session_state.chat_memory.append({"role": "user", "content": user_input})
-
-    def add_assistant_message(self, assistant_reply: str):
-        """Add assistant reply to memory"""
-        st.session_state.chat_memory.append({"role": "assistant", "content": assistant_reply})
-        
     def update_last_agency(self, user_input: str, extracted_company: Optional[str]):
         """Keep track of last mentioned agency"""
         if "last_agency_name" not in st.session_state:
@@ -160,78 +153,116 @@ class LLMManager:
 
     def detect_intent(self, user_input: str, language: str) -> Dict:
         """
-        Detect user intent using LLM with structured output
-        Returns: Dict with intent, confidence, and reasoning
+        Detect user intent using LLM with structured output and company extraction
+        Automatically enriches follow-up questions with company context
+        Returns: Dict with intent, confidence, reasoning, and extracted_company
         """
         
-        # FIXED: Initialize last_company at the beginning
         last_company = st.session_state.get("last_company_name", "")
-
-        if "last_company_name" in st.session_state and len(user_input.strip().split()) <= 4:
-            user_input = f"{user_input.strip()} لشركة {st.session_state['last_company_name']}"
-            logger.info(f"Context auto-filled with last company: {st.session_state['last_company_name']}")
+        original_input = user_input
+        
+        # Auto-enrich vague follow-up questions with last company context
+        if last_company and self._is_followup_question(user_input):
+            if language == "العربية":
+                user_input = f"{user_input.strip()} (للشركة: {last_company})"
+            else:
+                user_input = f"{user_input.strip()} (about {last_company})"
+            logger.info(f"🔗 Context auto-enriched: '{original_input}' → '{user_input}'")
 
         intent_prompt = f"""
-        You are a fraud-prevention assistant for Hajj pilgrims. 
-         Use the full conversation context and any previously mentioned company.
-        Last company mentioned: {last_company if last_company else 'None'}
-        
-        You need to understand user and use the context in addition to the message, Classify this message into ONE of four categories:
+You are a fraud-prevention assistant for Hajj pilgrims. 
+Use the full conversation context and any previously mentioned company.
 
-        1️⃣ GREETING: greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا. 
-        - No specific agency information is provided.
-        - if user asks about your capabilities or services or what can you provide or do.
-        - User just wants to chat or start conversation.
+🧠 CONTEXT MEMORY:
+Last company mentioned in conversation: {last_company if last_company else 'None'}
 
-        2️⃣ DATABASE: questions about verifying specific Hajj agencies, checking authorization, company details, locations, contacts, etc. 
-        - User mentions agency names, locations, or asks for authorized agencies.
-        - Focus on database-related queries.
-        - Respond in the same language as the user message.
-        - count of agencies, list of countries/cities with agencies, is X authorized, details about Y agency, etc.
-        - asking for an agency's address, email, phone, location, or contact info
-        - checking if an agency is authorized or not
-        - asking about Hajj offices in a specific city or country
-        - mentioning or asking about a company name (like "Royal City", "Al-Safa", etc.)
+🎯 CRITICAL FOLLOW-UP DETECTION:
+If user asks a follow-up question like:
+- Arabic: "وين موقعها؟" / "هل هي معتمدة؟" / "أعطني التفاصيل" / "رقم التواصل؟"
+- English: "Where is it located?" / "Is it authorized?" / "Give me details" / "Contact number?"
 
-        3️⃣ GENERAL_HAJJ: general Hajj-related questions (rituals, requirements, documents, safety, procedures).
+AND there's a last_company in memory, then:
+1. Classify as DATABASE
+2. Extract that last_company as the company name
+3. Set high confidence (0.95+)
+4. Reasoning should mention "follow-up question about [company name]"
 
-        4️⃣ NEEDS_INFO: message is too vague or lacks details needed to provide accurate information, such as:
-        - "I want to verify an agency" (which agency?)
-        - "Tell me about Hajj companies" (what specifically?)
-        - "Is this authorized?" (which company?)
-        - "Check this company" (need company name)
+📋 Classify this message into ONE of four categories:
 
-        CRITICAL CONTEXT:
-        - 415 fake Hajj offices closed in 2025
-        - 269,000+ unauthorized pilgrims stopped
-        - Mission: prevent fraud, protect pilgrims
-        - For DATABASE questions, we need specific agency names or clear location criteria
-        - Mark as NEEDS_INFO if user should provide more details
+1️⃣ GREETING: 
+- Greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا
+- No specific agency information is provided
+- User asks about your capabilities or services
+- User just wants to chat or start conversation
 
-        Message: {user_input}
+2️⃣ DATABASE: 
+- Questions about verifying specific Hajj agencies
+- Checking authorization, company details, locations, contacts
+- User mentions agency names, locations, or asks for authorized agencies
+- Count of agencies, list of countries/cities with agencies
+- Is X authorized, details about Y agency
+- Asking for an agency's address, email, phone, location, contact info
+- Checking if an agency is authorized or not
+- Asking about Hajj offices in a specific city or country
+- Mentioning or asking about a company name
 
-        Classify the intent, provide confidence score, and explain your reasoning.
-        """
+3️⃣ GENERAL_HAJJ: 
+- General Hajj-related questions (rituals, requirements, documents, safety, procedures)
+- Not about specific agencies
+
+4️⃣ NEEDS_INFO: 
+- Message is too vague or lacks details needed to provide accurate information
+- Examples: "I want to verify an agency" (which agency?)
+- "Tell me about Hajj companies" (what specifically?)
+- "Is this authorized?" (which company? - unless last_company exists)
+- "Check this company" (need company name - unless last_company exists)
+
+🔍 COMPANY EXTRACTION:
+Extract any company name mentioned in the user's message and return it in 'extracted_company'.
+
+Examples of company mentions:
+- "شركة جبل عمر" → extracted_company: "جبل عمر"
+- "Royal City Agency" → extracted_company: "Royal City"
+- "وكالة الهدى" → extracted_company: "الهدى"
+- "Al Safa Travel" → extracted_company: "Al Safa"
+
+🚨 CRITICAL CONTEXT:
+- 415 fake Hajj offices closed in 2025
+- 269,000+ unauthorized pilgrims stopped
+- Mission: prevent fraud, protect pilgrims
+- For DATABASE questions, we need specific agency names or clear location criteria
+
+Message: {user_input}
+
+Classify the intent, extract company name if mentioned, provide confidence score, and explain your reasoning.
+"""
         
         try:
             response = self.client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You classify user intents for a Hajj agency verification system."},
+                    {"role": "system", "content": "You classify user intents and extract company names for a Hajj agency verification system. Pay special attention to follow-up questions that reference previously mentioned companies."},
                     {"role": "user", "content": intent_prompt},
-                    *self.build_chat_context(limit=None)
+                    *self.build_chat_context(limit=5)  # Include recent context for better understanding
                 ],
                 response_format=IntentClassification,
                 temperature=0
             )
             
             intent_data = response.choices[0].message.parsed
-            logger.info(f"Intent detected: {intent_data.intent} (confidence: {intent_data.confidence})")
+            
+            # Update company memory if new company detected
+            if intent_data.extracted_company:
+                self.update_last_company(intent_data.extracted_company)
+            
+            logger.info(f"Intent: {intent_data.intent} | Confidence: {intent_data.confidence} | Company: {intent_data.extracted_company or 'None'}")
+            logger.info(f"Reasoning: {intent_data.reasoning}")
             
             return {
                 "intent": intent_data.intent,
                 "confidence": intent_data.confidence,
-                "reasoning": intent_data.reasoning
+                "reasoning": intent_data.reasoning,
+                "extracted_company": intent_data.extracted_company
             }
             
         except Exception as e:
@@ -240,7 +271,7 @@ class LLMManager:
             return self._fallback_intent_detection(user_input)
     
     def _fallback_intent_detection(self, user_input: str) -> Dict:
-        """Fallback intent detection using heuristics"""
+        """Fallback intent detection using heuristics when API fails"""
         ui = user_input.lower()
         
         if any(g in ui for g in ["hello", "hi", "salam", "السلام", "مرحبا"]):
@@ -257,21 +288,22 @@ class LLMManager:
         return {
             "intent": intent,
             "confidence": 0.7,
-            "reasoning": "Determined by keyword matching (fallback)"
+            "reasoning": "Determined by keyword matching (fallback)",
+            "extracted_company": None
         }
         
     def generate_greeting(self, user_input: str, language: str) -> str:
         """Generate natural greeting response with structured output"""
         is_arabic = language == "العربية"
         
-        system_prompt = """You are a friendly Hajj and fraud prevention assistant designed to protect pilgrims form scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah. 
+        system_prompt = """You are a friendly Hajj and fraud prevention assistant designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah. 
 Generate a short, warm, natural greeting (max 3 sentences) that:
 - Acknowledges the user's greeting
 - Expresses willingness to help
 - Mentions you can help verify Hajj companies
 - Uses emojis appropriately
 - Respond in Arabic **if the user input contains any Arabic text**, otherwise respond in English
-explain your reasoning and what you provide briefly.
+Explain your reasoning and what you provide briefly.
 
 Keep the response concise, friendly, and professional."""
 
@@ -301,7 +333,7 @@ Keep the response concise, friendly, and professional."""
         system_prompt = """You are a helpful assistant specialized in Hajj information. 
 Be concise, factual, and helpful. Focus on practical information.
 Detect if the user's question is in Arabic or English, and respond in the same language.
-you designed to protect pilgrims form scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
+You are designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
 Avoid religious rulings or fatwa - stick to practical guidance."""
         
         try:
@@ -323,16 +355,26 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
     
     def generate_sql(self, user_input: str, language: str) -> Optional[Dict]:
         """
-        Generate SQL query from user input with structured output
+        Generate SQL query from user input with structured output and context awareness
+        Automatically includes company context for follow-up questions
         Returns: Dict with sql_query, query_type, filters, explanation, safety_checked
         """
-        sql_prompt = self._get_sql_system_prompt(language) + f"\n\nUser Question: {user_input}"
+        
+        last_company = st.session_state.get("last_company_name", "")
+        
+        # If user asks follow-up without mentioning company, inject context note
+        if last_company and self._is_followup_question(user_input):
+            context_note = f"\n\n⚠️ IMPORTANT CONTEXT: User is asking a follow-up question about '{last_company}' (mentioned previously in conversation). Generate SQL query specifically for this company."
+        else:
+            context_note = ""
+        
+        sql_prompt = self._get_sql_system_prompt(language) + f"\n\nUser Question: {user_input}{context_note}"
         
         try:
             response = self.client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are a SQL expert that generates safe queries for a Hajj agency database."},
+                    {"role": "system", "content": "You are a SQL expert that generates safe queries for a Hajj agency database. Pay special attention to context notes about previously mentioned companies."},
                     {"role": "user", "content": sql_prompt},
                     *self.build_chat_context()
                 ],
@@ -341,6 +383,10 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             )
             
             sql_data = response.choices[0].message.parsed
+            
+            # Update company memory if extracted from SQL context
+            if sql_data.extracted_company:
+                self.update_last_company(sql_data.extracted_company)
             
             logger.info(f"SQL generated - Type: {sql_data.query_type}, Safety: {sql_data.safety_checked}")
             logger.info(f"Explanation: {sql_data.explanation}")
@@ -396,16 +442,16 @@ Language: {language}
 Data: {data_preview}
 
 Instructions:
-- Always Acknowledge the user's question
-- use setences like "Here are the results I found for you:" or "Based on the data, here's what I found:"
-- be concise and clear
+- Always acknowledge the user's question
+- Use sentences like "Here are the results I found for you:" or "Based on the data, here's what I found:"
+- Be concise and clear
 - Highlight number of matching records
 - Provide actionable advice if relevant
 - Use emojis sparingly to enhance friendliness
-- use a mix of sentences and bullet points
+- Use a mix of sentences and bullet points
 
 Behavior:
-1️⃣ If the user mentions the word "agency" in their question:
+1️⃣ If the user mentions the word "agency" or "company" or "شركة" or "وكالة" in their question:
    - Extract and summarize all available data for the agency/agencies that match the name mentioned.
    - Use all default columns if they request "all information".
    - Always include Google Maps Link.
@@ -427,16 +473,17 @@ Language-specific content rules:
 
 Behavior based on user question:
 - If the user asks about a **specific column**, provide only that column's data.
-- If the user asks for **all information** or does not specify, provide all default columns.city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
-- translate city and country, is_authorized if needed based on user language
+- If the user asks for **all information** or does not specify, provide all default columns.
+- Translate city and country, is_authorized if needed based on user language
 - Include contact info and Google Maps link if available
 - Respond in the same language as the user's question
-- translate the column names if needed based on user language
+- Translate the column names if needed based on user language
 - Detect the user language from user question and respond in the same language.
 - Ensure the response is complete and readable, no truncated or missing information
-- you  are designed to protect pilgrims form scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah.
+- You are designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah.
 
 - Always include Google Maps Link exactly as it appears in the column `google_maps_link`.
+
 Output format (per agency) when showing all columns:
 - Name (Arabic / English):
 - City:
@@ -451,7 +498,7 @@ Output format (per agency) when showing all columns:
 - Mix sentences and bullets; add small friendly phrases if appropriate.
 
 - Do NOT invent any data.
-- if rows count more than 1, list the names and important details of up to 10 agencies, use numbers or bullets. and emojies if appropriate.
+- If rows count more than 1, list the names and important details of up to 10 agencies, use numbers or bullets and emojis if appropriate.
 
 Feel free to:
 - Mix sentences and bullet points
@@ -459,7 +506,6 @@ Feel free to:
 - Vary sentence structure per agency
 - Keep summary concise and readable
 """
-
 
         try:
             response = self.client.beta.chat.completions.parse(
@@ -476,7 +522,6 @@ Feel free to:
 
             final_summary = f"{summary_data.summary}"
             logger.info("Summary generated successfully.")
-
 
             return {
                 "summary": final_summary,
@@ -513,118 +558,135 @@ Feel free to:
     
     @staticmethod
     def _get_sql_system_prompt(language: str) -> str:
-        """Get SQL generation system prompt"""
+        """Get SQL generation system prompt with context awareness"""
         return f"""
-        You are a multilingual SQL fraud-prevention expert protecting Hajj pilgrims.
+You are a multilingual SQL fraud-prevention expert protecting Hajj pilgrims.
 
-        🎯 MISSION: Generate an SQL query for database analysis on Hajj agencies.
-        Do NOT generalize to world data — always query from the table 'agencies'.
+🎯 MISSION: Generate an SQL query for database analysis on Hajj agencies.
+Do NOT generalize to world data — always query from the table 'agencies'.
 
-        TABLE STRUCTURE:
-        - hajj_company_ar
-        - hajj_company_en
-        - formatted_address
-        - city
-        - country
-        - email
-        - contact_Info
-        - rating_reviews
-        - is_authorized ('Yes' or 'No')
-        - google_maps_link
-        - link_valid (boolean)
+TABLE STRUCTURE:
+- hajj_company_ar
+- hajj_company_en
+- formatted_address
+- city
+- country
+- email
+- contact_Info
+- rating_reviews
+- is_authorized ('Yes' or 'No')
+- google_maps_link
+- link_valid (boolean)
 
-        --------------------------------------------
-        🔍 LANGUAGE DETECTION RULES:
-        1. Detect if the user's question is in Arabic or English. And respond in the same language.
-        2. Respond with SQL query **only**, no text.
-        3. Keep text fragments (LIKE clauses) in both Arabic and English for robustness.
-        4. Translate city and country if needed based on user language.
+--------------------------------------------
+🔍 LANGUAGE DETECTION RULES:
+1. Detect if the user's question is in Arabic or English. And respond in the same language.
+2. Respond with SQL query **only**, no text.
+3. Keep text fragments (LIKE clauses) in both Arabic and English for robustness.
+4. Translate city and country if needed based on user language.
 
-        --------------------------------------------
-        🚨 CRITICAL DATABASE CONTEXT:
-        - 415 fake offices closed in 2025
-        - 269,000+ unauthorized pilgrims stopped
-        - Database mixes Arabic, English, and typos.
-        - Always focus on verifying **authorization** and **agency location**, not world geography.
+--------------------------------------------
+🚨 CRITICAL DATABASE CONTEXT:
+- 415 fake offices closed in 2025
+- 269,000+ unauthorized pilgrims stopped
+- Database mixes Arabic, English, and typos.
+- Always focus on verifying **authorization** and **agency location**, not world geography.
 
-        --------------------------------------------
-        📘 QUERY INTERPRETATION RULES:
+--------------------------------------------
+📘 QUERY INTERPRETATION RULES:
 
-        1. "Authorized" → add `AND is_authorized = 'Yes'`
-        2. "Is X authorized?" → check `is_authorized` for company name
-           - If the user explicitly mentions a company or agency using any of these words:
-               ["شركة", "وكالة", "مؤسسة", "agency", "company", "travel", "tour", "establishment"]
-               then treat it as an exact company name request.
-               Use **exact match** instead of LIKE:
-               WHERE TRIM(hajj_company_ar) = 'الاسم' OR TRIM(hajj_company_en) = 'name'
-               Do NOT use LIKE in this case.
-           - Otherwise (for general keywords like "الحرمين" or "الهدى" without context),
-               use LIKE for partial matches:
-               WHERE LOWER(TRIM(hajj_company_ar)) LIKE LOWER('%term%')
-                   OR LOWER(TRIM(hajj_company_en)) LIKE LOWER('%term%')
-        3. "Number of ..." or "How many ..." → use `SELECT COUNT(*)`
-        4. "Countries" or "number of countries" → use:
-            - `SELECT COUNT(DISTINCT country)` if asking how many
-            - `SELECT DISTINCT country` if asking for list
-            - Always based on agencies table
-        5. "Cities" or "number of cities" → same logic as above but for `city`
-        6. Never assume or add "Saudi Arabia" unless mentioned explicitly.
-        7. When user asks about "countries that have agencies" → use `DISTINCT country` from `agencies`
-        8. Always return agency-related data only, not external or world data.
+1. "Authorized" → add `AND is_authorized = 'Yes'`
+2. "Is X authorized?" → check `is_authorized` for company name
+   - If the user explicitly mentions a company or agency using any of these words:
+       ["شركة", "وكالة", "مؤسسة", "agency", "company", "travel", "tour", "establishment"]
+       then treat it as an exact company name request.
+       Use **flexible LIKE matching** with LOWER(TRIM()):
+       WHERE (LOWER(TRIM(hajj_company_ar)) LIKE LOWER('%الاسم%') 
+              OR LOWER(TRIM(hajj_company_en)) LIKE LOWER('%name%'))
+   - Otherwise (for general keywords like "الحرمين" or "الهدى" without context),
+       use LIKE for partial matches.
+3. "Number of ..." or "How many ..." → use `SELECT COUNT(*)`
+4. "Countries" or "number of countries" → use:
+    - `SELECT COUNT(DISTINCT country)` if asking how many
+    - `SELECT DISTINCT country` if asking for list
+    - Always based on agencies table
+5. "Cities" or "number of cities" → same logic as above but for `city`
+6. Never assume or add "Saudi Arabia" unless mentioned explicitly.
+7. When user asks about "countries that have agencies" → use `DISTINCT country` from `agencies`
+8. Always return agency-related data only, not external or world data.
 
-        --------------------------------------------
-        🌍 LOCATION MATCHING PATTERNS:
-        Use flexible LIKE and LOWER() conditions for cities/countries.
-        Handle Arabic, English, and typos.
+--------------------------------------------
+🔗 FOLLOW-UP QUESTION HANDLING:
+- If a context note mentions a previously mentioned company, focus the query on that company
+- Use flexible LIKE matching to find the company in both Arabic and English columns
+- Example: If context says "about جبل عمر", include:
+  WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%' 
+         OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
 
-        Mecca → (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%' OR LOWER(city) LIKE '%makka%')
-        Medina → (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%')
-        Riyadh → (city LIKE '%الرياض%' OR LOWER(city) LIKE '%riyadh%' OR LOWER(city) LIKE '%ar riyadh%')
-        Saudi Arabia → (country LIKE '%السعودية%' OR LOWER(country) LIKE '%saudi%' OR country LIKE '%المملكة%')
-        Pakistan → (country LIKE '%باكستان%' OR LOWER(country) LIKE '%pakistan%' OR country LIKE '%پاکستان%')
-        Egypt → (country LIKE '%مصر%' OR LOWER(country) LIKE '%egypt%')
+--------------------------------------------
+🌍 LOCATION MATCHING PATTERNS:
+Use flexible LIKE and LOWER() conditions for cities/countries.
+Handle Arabic, English, and typos.
 
-        --------------------------------------------
-        🏁 OUTPUT RULES:
-        - Output **only** one valid SQL SELECT query.
-        - If no logical SQL can be formed → output `NO_SQL`
-        - Always include LIMIT 100 unless COUNT or DISTINCT is used.
+Mecca → (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%' OR LOWER(city) LIKE '%makka%')
+Medina → (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%')
+Riyadh → (city LIKE '%الرياض%' OR LOWER(city) LIKE '%riyadh%' OR LOWER(city) LIKE '%ar riyadh%')
+Saudi Arabia → (country LIKE '%السعودية%' OR LOWER(country) LIKE '%saudi%' OR country LIKE '%المملكة%')
+Pakistan → (country LIKE '%باكستان%' OR LOWER(country) LIKE '%pakistan%' OR country LIKE '%پاکستان%')
+Egypt → (country LIKE '%مصر%' OR LOWER(country) LIKE '%egypt%')
 
-        --------------------------------------------
-        ⚙️ COMPANY NAME MATCHING:
-        - Always normalize and deduplicate company names using LOWER(TRIM()).
-        - Use SELECT DISTINCT to avoid duplicates.
+--------------------------------------------
+🏁 OUTPUT RULES:
+- Output **only** one valid SQL SELECT query.
+- If no logical SQL can be formed → output `NO_SQL`
+- Always include LIMIT 100 unless COUNT or DISTINCT is used.
 
-        --------------------------------------------
-        ✅ EXAMPLES:
+--------------------------------------------
+⚙️ COMPANY NAME MATCHING:
+- Always normalize and deduplicate company names using LOWER(TRIM()).
+- Use SELECT DISTINCT to avoid duplicates.
+- Use flexible LIKE matching with wildcards: LIKE '%term%'
 
-        Q: "هل شركة الهدى معتمدة؟"
-        → SELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
-        FROM agencies
-        WHERE (TRIM(hajj_company_ar) = 'شركة الهدى' OR TRIM(hajj_company_en) = 'Al Huda Company')
-        LIMIT 1;
+--------------------------------------------
+✅ EXAMPLES:
 
-        Q: "Authorized agencies in Makkah"
-        → SELECT * FROM agencies WHERE is_authorized = 'Yes' AND (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%') LIMIT 100;
+Q: "هل شركة جبل عمر معتمدة؟"
+→ SELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
+FROM agencies
+WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%' 
+       OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
+LIMIT 1;
 
-        Q: "كم عدد الشركات في المدينة؟"
-        → SELECT COUNT(*) FROM agencies WHERE (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%');
+Q: "وين موقعها؟" (with context: about "جبل عمر")
+→ SELECT formatted_address, city, country, google_maps_link 
+FROM agencies 
+WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%'
+       OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
+LIMIT 1;
 
-        Q: "How many countries have agencies?"
-        → SELECT COUNT(DISTINCT country) FROM agencies;
+Q: "Authorized agencies in Makkah"
+→ SELECT * FROM agencies 
+WHERE is_authorized = 'Yes' 
+  AND (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%') 
+LIMIT 100;
 
-        Q: "List of countries that have agencies"
-        → SELECT DISTINCT country FROM agencies LIMIT 100;
+Q: "كم عدد الشركات في المدينة؟"
+→ SELECT COUNT(*) FROM agencies 
+WHERE (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%');
 
-        Q: "Number of authorized countries"
-        → SELECT COUNT(DISTINCT country) FROM agencies WHERE is_authorized = 'Yes';
+Q: "How many countries have agencies?"
+→ SELECT COUNT(DISTINCT country) FROM agencies;
 
-        Q: "Countries with authorized agencies"
-        → SELECT DISTINCT country FROM agencies WHERE is_authorized = 'Yes' LIMIT 100;
+Q: "List of countries that have agencies"
+→ SELECT DISTINCT country FROM agencies LIMIT 100;
 
-        Q: "Show all cities where agencies exist"
-        → SELECT DISTINCT city FROM agencies LIMIT 100;
-        """
+Q: "رقم التواصل؟" (with context: about "الهدى")
+→ SELECT contact_Info, hajj_company_ar, hajj_company_en 
+FROM agencies 
+WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%الهدى%'
+       OR LOWER(TRIM(hajj_company_en)) LIKE '%huda%')
+LIMIT 1;
+"""
 
     @staticmethod
     def _extract_sql_from_response(response_text: str) -> Optional[str]:
@@ -653,29 +715,32 @@ Feel free to:
         """Generate structured response asking user for more specific information"""
         is_arabic = language == "العربية"
         
-        # FIXED: Initialize last_company at the beginning
         last_company = st.session_state.get("last_company_name", "")
         
-        if last_company and "agency" not in user_input.lower() and "شركة" not in user_input:
-            user_input += f" (referring to {last_company})"
+        # If there's a company in memory but user didn't mention it, add context
+        if last_company and "agency" not in user_input.lower() and "شركة" not in user_input and "وكالة" not in user_input:
+            user_input += f" (Note: User was previously asking about '{last_company}')"
             
         prompt = f"""You are a helpful Hajj verification assistant.
-    The user's question: "{user_input}" needs more details to provide accurate information.
-    Examples of vague questions:
-    - "I want to verify an agency" (which agency?)
-    - "Tell me about Hajj companies" (what specifically?)
-    - "Is this authorized?" (which company?)
-    - "Check this company" (need company name)
+The user's question: "{user_input}" needs more details to provide accurate information.
 
-    Ask for specific details in a friendly way. Focus on:
-    1. Agency name (if verifying a company)
-    2. Location (city/country)
-    3. What specifically they want to know
+Examples of vague questions:
+- "I want to verify an agency" (which agency?)
+- "Tell me about Hajj companies" (what specifically?)
+- "Is this authorized?" (which company?)
+- "Check this company" (need company name)
+- "وين موقعها؟" without context (which company's location?)
 
-    Use Arabic if user input is Arabic, otherwise English.
-    Keep it brief but friendly.
-    Add a simple example of a more specific question.
-    """
+Ask for specific details in a friendly way. Focus on:
+1. Agency name (if verifying a company)
+2. Location (city/country)
+3. What specifically they want to know
+
+Use Arabic if user input is Arabic, otherwise English.
+Keep it brief but friendly (2-3 sentences max).
+Add a simple example of a more specific question.
+"""
+        
         try:
             response = self.client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
@@ -700,15 +765,15 @@ Feel free to:
             # Fallback with minimal structured response
             if is_arabic:
                 return {
-                    "needs_info": "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔",
-                    "suggestions": ["هل شركة الهدى للحج معتمدة؟", "أريد التحقق من وكالات الحج في مكة"],
-                    "missing_info": ["اسم الوكالة", "الموقع"],
+                    "needs_info": "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔 على سبيل المثال، ما اسم الشركة التي تريد التحقق منها؟",
+                    "suggestions": ["هل شركة الهدى للحج معتمدة؟", "أريد التحقق من وكالات الحج في مكة", "ما هو عنوان شركة جبل عمر؟"],
+                    "missing_info": ["اسم الوكالة", "الموقع", "التفاصيل المحددة"],
                     "sample_query": "هل شركة الهدى للحج معتمدة؟"
                 }
             else:
                 return {
-                    "needs_info": "Could you provide more details? 🤔",
-                    "suggestions": ["Is Al Huda Hajj Agency authorized?", "Show me authorized agencies in Makkah"],
-                    "missing_info": ["agency name", "location"],
+                    "needs_info": "Could you provide more details? 🤔 For example, which company would you like to verify?",
+                    "suggestions": ["Is Al Huda Hajj Agency authorized?", "Show me authorized agencies in Makkah", "What is the address of Jabal Omar Agency?"],
+                    "missing_info": ["agency name", "location", "specific details"],
                     "sample_query": "Is Al Huda Hajj Agency authorized?"
                 }
