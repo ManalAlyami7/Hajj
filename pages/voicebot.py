@@ -469,9 +469,9 @@ audio {{
 
 /* Enhanced stop button styling */
 div[data-testid="stButton"] > button[kind="primary"] {{
-    background: linear-gradient(135deg, #ff4b4b 0%, #cc0000 100%) !important;
+    background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
     border: none !important;
-    box-shadow: 0 4px 15px rgba(255, 75, 75, 0.4) !important;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4) !important;
     transition: all 0.3s ease !important;
     font-weight: 600 !important;
     animation: pulse-stop 2s infinite !important;
@@ -483,18 +483,18 @@ div[data-testid="stButton"] > button[kind="primary"] {{
 
 div[data-testid="stButton"] > button[kind="primary"]:hover {{
     transform: translateY(-2px) !important;
-    box-shadow: 0 6px 20px rgba(255, 75, 75, 0.6) !important;
-    background: linear-gradient(135deg, #ff5555 0%, #dd1111 100%) !important;
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6) !important;
+    background: linear-gradient(135deg, #e6c345 0%, #c9a527 100%) !important;
 }}
 
 div[data-testid="stButton"] > button[kind="primary"]:active {{
     transform: translateY(0) !important;
-    box-shadow: 0 2px 10px rgba(255, 75, 75, 0.5) !important;
+    box-shadow: 0 2px 10px rgba(212, 175, 55, 0.5) !important;
 }}
 
 @keyframes pulse-stop {{
-    0%, 100% {{ box-shadow: 0 4px 15px rgba(255, 75, 75, 0.4); }}
-    50% {{ box-shadow: 0 4px 25px rgba(255, 75, 75, 0.8); }}
+    0%, 100% {{ box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4); }}
+    50% {{ box-shadow: 0 4px 25px rgba(212, 175, 55, 0.8); }}
 }}
 </style>
 """, unsafe_allow_html=True)
