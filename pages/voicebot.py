@@ -623,7 +623,9 @@ with col_right:
       <div class='response-content'>{clean_response}</div> 
     </div>
     """, unsafe_allow_html=True)
-    if st.session_state.is_speaking:
+
+st.markdown('</div>', unsafe_allow_html=True)
+if st.session_state.is_speaking:
         if st.button(
             f"🚫 {t('voice_stop_speaking', st.session_state.language)}",
             use_container_width=False,
@@ -636,8 +638,6 @@ with col_right:
             st.session_state.is_speaking = False
             st.session_state.status = t('voice_status_interrupted', st.session_state.language)
             st.rerun()
-
-st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------
 # Play pending audio
