@@ -467,7 +467,13 @@ audio {{
   align-items: center;
 }}
 
-/* Enhanced stop button styling - Below header, inside container */
+/* Button wrapper inside response container */
+.button-wrapper {{
+  padding: 0.5rem 0;
+  margin: 0;
+}}
+
+/* Enhanced stop button styling */
 div[data-testid="stButton"] > button[kind="primary"] {{
     background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
     border: none !important;
@@ -475,7 +481,7 @@ div[data-testid="stButton"] > button[kind="primary"] {{
     transition: all 0.3s ease !important;
     font-weight: 600 !important;
     animation: pulse-stop 2s infinite !important;
-    margin: 0.75rem 0 !important;
+    margin: 0 !important;
     border-radius: 8px !important;
     padding: 0.6rem 1rem !important;
     font-size: 0.95rem !important;
@@ -613,9 +619,10 @@ with col_right:
             else t('voice_status_ready', st.session_state.language))}
         </div>
       </div>
+      <div class="button-wrapper">
     """, unsafe_allow_html=True)
     
-    # Stop button right after header - Only show when speaking
+    # Stop button - Only show when speaking
     if st.session_state.is_speaking:
         if st.button(
             f"⏹️ {t('voice_stop_speaking', st.session_state.language)}",
@@ -629,8 +636,9 @@ with col_right:
             st.session_state.status = t('voice_status_interrupted', st.session_state.language)
             st.rerun()
     
-    # Response content and close container
+    # Close wrapper and add response content
     st.markdown(f"""
+      </div>
       <div class='response-content'>{clean_response}</div> 
     </div>
     """, unsafe_allow_html=True)
