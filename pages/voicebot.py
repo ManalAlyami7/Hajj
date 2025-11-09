@@ -540,7 +540,7 @@ with col_left:
     if st.session_state.is_speaking:
         if st.button(
             f"🚫 {t('voice_stop_speaking', st.session_state.language)}",
-            use_container_width=True,
+            use_container_width=False,
             type="primary",
             key="stop_button"
         ):
