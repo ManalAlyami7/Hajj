@@ -10,4 +10,4 @@ langchain-core>=0.1.0
 audio-recorder-streamlit>=0.0.8
 rapidfuzz
 num2words
-mutageng
+mutagen>=1.45.1
