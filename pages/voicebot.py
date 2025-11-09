@@ -327,14 +327,14 @@ header[data-testid="stHeader"] button {{
   padding-bottom: 0.75rem;
   border-bottom: 2px solid {border_color};
   flex-direction: {flex_direction};
-  position: relative; /* Add this for absolute positioning of children */
-  width: 100%; /* Ensure full width */
+  position: relative;
+  width: 100%;
 }}
 
 .panel-icon {{
   font-size: 1.75rem;
   animation: icon-glow 2s ease-in-out infinite;
-  flex-shrink: 0; /* Prevent icon from shrinking */
+  flex-shrink: 0;
 }}
 
 .panel-title {{
@@ -343,8 +343,8 @@ header[data-testid="stHeader"] button {{
   color: {text_primary};
   margin: 0;
   flex-shrink: 0;
-  margin-right: auto; /* Pushes everything after it to the right */
 }}
+
 .panel-badge {{
   padding: 0.3rem 0.8rem;
   border-radius: 1rem;
@@ -353,10 +353,11 @@ header[data-testid="stHeader"] button {{
   background: rgba(251, 191, 36, 0.2);
   color: #92400e;
   border: 1px solid rgba(251, 191, 36, 0.3);
-  margin-left: auto; /* pushes badge to the right end */
-  flex-shrink: 0; /* Prevent badge from shrinking */
-  white-space: nowrap; /* Prevent text wrapping */
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
 }}
+
 .panel-icon.active {{
   animation: icon-bounce 0.6s ease-in-out infinite;
 }}
@@ -370,8 +371,6 @@ header[data-testid="stHeader"] button {{
   0%, 100% {{transform: translateY(0);}}
   50% {{transform: translateY(-5px);}}
 }}
-
-
 
 .panel-badge.active {{
   background: rgba(34, 197, 94, 0.2);
@@ -467,38 +466,35 @@ audio {{
   justify-content: center;
   align-items: center;
 }}
-/* New Style for Stop Button Container */
-.stop-button-header-container {{
-    /* Set the button container to absolute positioning relative to the panel-header */
-    position: absolute;
-    /* Position it between the title and the badge */
-    top: 50%;
-    transform: translateY(-50%);
-    /* Use the RTL/LTR setting to place it correctly */
-    {'right' if is_arabic else 'left'}: 50%; /* Start roughly in the middle */
-    margin-left: -50px; /* Adjust left/right to move it closer to the badge/title based on expected size */
-    z-index: 10;
-    /* Hide it when not speaking (optional, based on your state logic) */
-    /* display: none; */ 
+
+/* Enhanced stop button styling */
+div[data-testid="stButton"] > button[kind="primary"] {{
+    background: linear-gradient(135deg, #ff4b4b 0%, #cc0000 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(255, 75, 75, 0.4) !important;
+    transition: all 0.3s ease !important;
+    font-weight: 600 !important;
+    animation: pulse-stop 2s infinite !important;
+    margin-top: 0.75rem !important;
+    border-radius: 8px !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 1rem !important;
 }}
 
-/* Modify panel-header to be the positioning reference */
-.response-container .panel-header {{
-    position: relative; /* Crucial for absolute positioning of children */
-    /* Add padding/margin to account for the button's presence */
-    padding-left: 20px; /* Example adjustment */
-    padding-right: 120px; /* Example adjustment to make space for the badge */
+div[data-testid="stButton"] > button[kind="primary"]:hover {{
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(255, 75, 75, 0.6) !important;
+    background: linear-gradient(135deg, #ff5555 0%, #dd1111 100%) !important;
 }}
 
-/* Style the Streamlit button inside the container */
-.stop-button-header-container button {{
-    padding: 0.2rem 0.6rem;
-    font-size: 0.8rem;
-    background: #ef4444 !important; /* Red background for "Stop" */
-    color: white !important;
-    border: none;
-    border-radius: 0.5rem;
-    line-height: 1;
+div[data-testid="stButton"] > button[kind="primary"]:active {{
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 10px rgba(255, 75, 75, 0.5) !important;
+}}
+
+@keyframes pulse-stop {{
+    0%, 100% {{ box-shadow: 0 4px 15px rgba(255, 75, 75, 0.4); }}
+    50% {{ box-shadow: 0 4px 25px rgba(255, 75, 75, 0.8); }}
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -517,11 +513,6 @@ def _hash_bytes(b):
             raise TypeError(f"Unsupported type for hashing: {type(b)}")
     return hashlib.sha256(b).hexdigest()
 
-# ---------------------------
-# Interaction Handlers
-# ---------------------------
-
-    # The response text remains, but the audio is stopped.
 # ---------------------------
 # Status Indicator
 # ---------------------------
@@ -579,10 +570,6 @@ with col_left:
     </div>
     """, unsafe_allow_html=True)
 
-    
-            
-            
-
     audio_bytes = st.audio_input(
         label="",
         key="audio_recorder",
@@ -614,7 +601,6 @@ with col_right:
     </div>
     """, unsafe_allow_html=True)
   
-
     # Response panel
     st.markdown(f"""
     <div class="response-container" style="margin-top:1rem;">
@@ -630,15 +616,16 @@ with col_right:
       <div class='response-content'>{clean_response}</div> 
     </div>
     """, unsafe_allow_html=True)
+    
+    # Stop button - Enhanced and properly positioned
     if st.session_state.is_speaking:
         if st.button(
-            f"🚫 {t('voice_stop_speaking', st.session_state.language)}",
-            use_container_width=False,
+            f"⏹️ {t('voice_stop_speaking', st.session_state.language)}",
+            use_container_width=True,
             type="primary",
             key="stop_button"
         ):
             logger.info("Stop button pressed. Halting speech.")
-            # Clear the audio bytes so the playback block doesn't run
             st.session_state.pending_audio = None
             st.session_state.is_speaking = False
             st.session_state.status = t('voice_status_interrupted', st.session_state.language)
@@ -680,8 +667,9 @@ if st.session_state.get('pending_audio'):
     st.session_state.status = t('voice_status_completed', st.session_state.language)
     st.session_state.pending_audio = None
 
-    # ⚠️ Force re-render so Streamlit sees new state
+    # Force re-render so Streamlit sees new state
     st.rerun()
+
 # ---------------------------
 # Handle new audio input
 # ---------------------------
@@ -705,88 +693,88 @@ if audio_bytes and not st.session_state.is_processing:
 # Process pending audio
 # ---------------------------
 elif st.session_state.is_processing and st.session_state.get("pending_audio_bytes"):
-  try:
-      logger.info("Running LangGraph workflow on pending audio...")
+    try:
+        logger.info("Running LangGraph workflow on pending audio...")
 
-      pending_audio_bytes = st.session_state.pending_audio_bytes
-      conversation_history = memory.get_formatted_history(limit=5)
+        pending_audio_bytes = st.session_state.pending_audio_bytes
+        conversation_history = memory.get_formatted_history(limit=5)
 
-      initial_state = {
-          "audio_bytes": pending_audio_bytes,
-          "transcript": "",
-          "detected_language": "",
-          "transcription_confidence": 0.0,
-          "user_input": "",
-          "language": "",
-          "intent": "",
-          "intent_confidence": 0.0,
-          "intent_reasoning": "",
-          "is_vague": False,
-          "is_arabic": False,
-          "urgency": "",
-          "sql_query": "",
-          "sql_params": {},
-          "sql_query_type": "",
-          "sql_filters": [],
-          "sql_explanation": "",
-          "sql_error": "",
-          "result_rows": [],
-          "columns": [],
-          "row_count": 0,
-          "summary": "",
-          "greeting_text": "",
-          "general_answer": "",
-          "response": "",
-          "response_tone": "",
-          "key_points": [],
-          "suggested_actions": [],
-          "includes_warning": False,
-          "verification_steps": [],
-          "official_sources": [],
-          "response_audio": b"",
-          "error": "",
-          "messages_history": memory.get_conversation_history(limit=5),
-          "conversation_context": conversation_history
-      }
+        initial_state = {
+            "audio_bytes": pending_audio_bytes,
+            "transcript": "",
+            "detected_language": "",
+            "transcription_confidence": 0.0,
+            "user_input": "",
+            "language": "",
+            "intent": "",
+            "intent_confidence": 0.0,
+            "intent_reasoning": "",
+            "is_vague": False,
+            "is_arabic": False,
+            "urgency": "",
+            "sql_query": "",
+            "sql_params": {},
+            "sql_query_type": "",
+            "sql_filters": [],
+            "sql_explanation": "",
+            "sql_error": "",
+            "result_rows": [],
+            "columns": [],
+            "row_count": 0,
+            "summary": "",
+            "greeting_text": "",
+            "general_answer": "",
+            "response": "",
+            "response_tone": "",
+            "key_points": [],
+            "suggested_actions": [],
+            "includes_warning": False,
+            "verification_steps": [],
+            "official_sources": [],
+            "response_audio": b"",
+            "error": "",
+            "messages_history": memory.get_conversation_history(limit=5),
+            "conversation_context": conversation_history
+        }
 
-      result = workflow.invoke(initial_state)
+        result = workflow.invoke(initial_state)
 
-      transcript = result.get("transcript", "")
-      response_text = result.get("response", "")
-      response_audio = result.get("response_audio", None)
+        transcript = result.get("transcript", "")
+        response_text = result.get("response", "")
+        response_audio = result.get("response_audio", None)
 
-      st.session_state.current_transcript = transcript or t('voice_no_speech', st.session_state.language)
-      st.session_state.current_response = response_text or t('voice_could_not_understand', st.session_state.language)
+        st.session_state.current_transcript = transcript or t('voice_no_speech', st.session_state.language)
+        st.session_state.current_response = response_text or t('voice_could_not_understand', st.session_state.language)
 
-      st.session_state.current_metadata = {
-          "key_points": result.get("key_points", []),
-          "suggested_actions": result.get("suggested_actions", []),
-          "verification_steps": result.get("verification_steps", []),
-          "official_sources": result.get("official_sources", []),
-      }
+        st.session_state.current_metadata = {
+            "key_points": result.get("key_points", []),
+            "suggested_actions": result.get("suggested_actions", []),
+            "verification_steps": result.get("verification_steps", []),
+            "official_sources": result.get("official_sources", []),
+        }
 
-      if response_audio:
-          st.session_state.pending_audio = response_audio
-          st.session_state.is_speaking = True
-          st.session_state.status = t('voice_status_speaking', st.session_state.language)
-      else:
-          st.session_state.status = t('voice_status_ready', st.session_state.language)
+        if response_audio:
+            st.session_state.pending_audio = response_audio
+            st.session_state.is_speaking = True
+            st.session_state.status = t('voice_status_speaking', st.session_state.language)
+        else:
+            st.session_state.status = t('voice_status_ready', st.session_state.language)
 
-      if transcript:
-          memory.add_message('user', transcript)
-          memory.extract_entities(transcript)
-      if response_text:
-          memory.add_message('assistant', response_text)
+        if transcript:
+            memory.add_message('user', transcript)
+            memory.extract_entities(transcript)
+        if response_text:
+            memory.add_message('assistant', response_text)
 
-  except Exception as e:
-      logger.exception("Error during voice processing: %s", e)
-      st.session_state.current_transcript = f"❌ Error: {str(e)}"
-      st.session_state.current_response = t('voice_error_processing', st.session_state.language)
-      st.session_state.status = t('voice_status_error', st.session_state.language)
-      st.session_state.pending_audio = None
+    except Exception as e:
+        logger.exception("Error during voice processing: %s", e)
+        st.session_state.current_transcript = f"❌ Error: {str(e)}"
+        st.session_state.current_response = t('voice_error_processing', st.session_state.language)
+        st.session_state.status = t('voice_status_error', st.session_state.language)
+        st.session_state.pending_audio = None
 
-  finally:
-      st.session_state.is_processing = False
-      st.session_state.status = t('voice_status_ready', st.session_state.language)
-      st.session_state.pending_audio_bytes = None
-      st.rerun()
+    finally:
+        st.session_state.is_processing = False
+        st.session_state.status = t('voice_status_ready', st.session_state.language)
+        st.session_state.pending_audio_bytes = None
+        st.rerun()
