@@ -73,6 +73,8 @@ class GreetingResponse(BaseModel):
     includes_offer_to_help: bool = Field(
         description="Whether the greeting includes an offer to help"
     )
+    
+    
 class NEEDSInfoResponse(BaseModel):
     """Structured output for needs info responses"""
     needs_info: str = Field(
@@ -145,11 +147,13 @@ class LLMManager:
         Detect user intent using LLM with structured output
         Returns: Dict with intent, confidence, and reasoning
         """
+        
+        # FIXED: Initialize last_company at the beginning
+        last_company = st.session_state.get("last_company_name", "")
 
         if "last_company_name" in st.session_state and len(user_input.strip().split()) <= 4:
             user_input = f"{user_input.strip()} لشركة {st.session_state['last_company_name']}"
             logger.info(f"Context auto-filled with last company: {st.session_state['last_company_name']}")
-            last_company = st.session_state.get("last_company_name", "")
 
         intent_prompt = f"""
         You are a fraud-prevention assistant for Hajj pilgrims. 
@@ -423,7 +427,7 @@ Output format (per agency) when showing all columns:
 
 Feel free to:
 - Mix sentences and bullet points
-- Add small friendly phrases like “You can contact them confidently.”
+- Add small friendly phrases like "You can contact them confidently."
 - Vary sentence structure per agency
 - Keep summary concise and readable
 """
@@ -536,8 +540,8 @@ Feel free to:
             - `SELECT DISTINCT country` if asking for list
             - Always based on agencies table
         5. "Cities" or "number of cities" → same logic as above but for `city`
-        6. Never assume or add “Saudi Arabia” unless mentioned explicitly.
-        7. When user asks about “countries that have agencies” → use `DISTINCT country` from `agencies`
+        6. Never assume or add "Saudi Arabia" unless mentioned explicitly.
+        7. When user asks about "countries that have agencies" → use `DISTINCT country` from `agencies`
         8. Always return agency-related data only, not external or world data.
 
         --------------------------------------------
@@ -620,6 +624,8 @@ Feel free to:
     def ask_for_more_info(self, user_input: str, language: str) -> Dict:
         """Generate structured response asking user for more specific information"""
         is_arabic = language == "العربية"
+        
+        # FIXED: Initialize last_company at the beginning
         last_company = st.session_state.get("last_company_name", "")
         
         if last_company and "agency" not in user_input.lower() and "شركة" not in user_input:
