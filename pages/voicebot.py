@@ -353,7 +353,7 @@ header[data-testid="stHeader"] button {{
   background: rgba(251, 191, 36, 0.2);
   color: #92400e;
   border: 1px solid rgba(251, 191, 36, 0.3);
-  margin-{'right' if is_arabic or is_urdus else 'left'}: 3.5rem;
+  margin-left: auto;
   flex-shrink: 0;
   white-space: nowrap;
 }}
