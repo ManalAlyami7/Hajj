@@ -468,11 +468,7 @@ audio {{
 }}
 
 /* Enhanced stop button styling - positioned below response container */
-.stButton {{
-    padding: 0 1.25rem !important;
-    position: relative !important;
-    z-index: 10 !important;
-}}
+
 
 div[data-testid="stButton"] > button[kind="primary"] {{
     background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
