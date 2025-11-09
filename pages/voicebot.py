@@ -475,7 +475,11 @@ def _hash_bytes(b):
             raise TypeError(f"Unsupported type for hashing: {type(b)}")
     return hashlib.sha256(b).hexdigest()
 
+# ---------------------------
+# Interaction Handlers
+# ---------------------------
 
+    # The response text remains, but the audio is stopped.
 # ---------------------------
 # Status Indicator
 # ---------------------------
@@ -532,6 +536,22 @@ with col_left:
       <div class="record-label">{recording_label}</div>
     </div>
     """, unsafe_allow_html=True)
+
+    if st.session_state.is_speaking:
+        if st.button(
+            f"🚫 {t('voice_stop_speaking', st.session_state.language)}",
+            use_container_width=True,
+            type="primary",
+            key="stop_button"
+        ):
+            logger.info("Stop button pressed. Halting speech.")
+            # Clear the audio bytes so the playback block doesn't run
+            st.session_state.pending_audio = None
+            st.session_state.is_speaking = False
+            st.session_state.status = t('voice_status_interrupted', st.session_state.language)
+            st.rerun()
+            
+            
 
     audio_bytes = st.audio_input(
         label="",
