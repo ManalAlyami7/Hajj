@@ -7,10 +7,17 @@ pytz>=2023.3
 deep-translator>=1.11.0
 langgraph>=0.0.26
 langchain>=0.2.0
+<<<<<<< HEAD
 langchain-core>=0.1.0
 langchain-openai>=0.1.0
+=======
+langchain-community>=0.0.1  # لإصدار ChatOpenAI الجديد
+>>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
 audio-recorder-streamlit>=0.0.8
 rapidfuzz
 num2words
 mutagen>=1.45.1
+<<<<<<< HEAD
 
+=======
+>>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
