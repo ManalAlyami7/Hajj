@@ -342,9 +342,9 @@ header[data-testid="stHeader"] button {{
   font-weight: 700;
   color: {text_primary};
   margin: 0;
-  flex-shrink: 0; /* Prevent title from shrinking */
+  flex-shrink: 0;
+  margin-right: auto; /* Pushes everything after it to the right */
 }}
-
 .panel-badge {{
   padding: 0.3rem 0.8rem;
   border-radius: 1rem;
