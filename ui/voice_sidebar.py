@@ -95,7 +95,7 @@ def _inject_professional_styles(is_rtl: bool):
     [data-testid="stSidebar"] h3 {{
         color: #d4af37 !important;
         font-weight: 800;
-        text-align: {'right' if is_rtl else 'left'};
+        text-align: center;
         letter-spacing: -0.025em;
         margin-bottom: 1rem;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -376,7 +376,7 @@ def _render_header(language_code: str):
     <div class="sidebar-header">
         <span class="sidebar-icon">🎙️</span>
         <h2 class="sidebar-title">{t('assistant_title', language_code).replace('🕋 ', '')}</h2>
-        <p class="sidebar-subtitle">{t('voice_mode_desc', language_code)}</p>
+        <p class="sidebar-subtitle">{t('assistant_subtitle', language_code)}</p>
     </div>
     """, unsafe_allow_html=True)
 
