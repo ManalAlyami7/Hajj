@@ -39,8 +39,8 @@ class ChatInterface:
         self._inject_professional_styles()
         self._display_chat_history()
         
-        if self._show_quick_actions():
-            self._display_quick_actions()
+        # if self._show_quick_actions():
+        #     self._display_quick_actions()
         
         self._handle_user_input()
 
