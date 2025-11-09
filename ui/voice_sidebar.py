@@ -166,10 +166,10 @@ def _inject_professional_styles(is_rtl: bool):
     }}
 
     [data-testid="stSidebar"] .stButton > button:hover {{
-        background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%);
-        border-color: #f4e5b5;
-        transform: translateY(-3px);
-        box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5);
+         background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%);
+            border-color: #f4e5b5;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5);
     }}
 
     [data-testid="stSidebar"] button[kind="primary"] {{
