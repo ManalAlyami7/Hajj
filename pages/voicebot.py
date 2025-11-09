@@ -617,7 +617,6 @@ if st.session_state.get('pending_audio'):
         st.markdown("</div>", unsafe_allow_html=True)
     except Exception as e:
         logger.warning("Failed to play pending audio: %s", e)
-<<<<<<< HEAD
 
     audio_bytes = st.session_state.pending_audio
     if isinstance(audio_bytes, bytes):
@@ -738,7 +737,6 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         if response_text:
             memory.add_message('assistant', response_text)
 
-=======
     
     st.session_state.pending_audio = None
     st.session_state.is_speaking = False
@@ -843,7 +841,6 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         if response_text:
             memory.add_message('assistant', response_text)
 
->>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
     except Exception as e:
         logger.exception("Error during voice processing: %s", e)
         st.session_state.current_transcript = f"❌ Error: {str(e)}"
