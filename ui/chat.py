@@ -498,7 +498,7 @@ class ChatInterface:
             # Call the LLM manager's text_to_speech function
             # Pass the language parameter
             tts_lang = "ar" if lang == "العربية" else "en"
-            audio_bytes = self.llm_manager.text_to_speech(clean_for_speech, tts_lang)
+            audio_bytes = self.llm.text_to_speech(clean_for_speech, tts_lang)
             
             if audio_bytes:
                 # Encode audio for HTML playback
