@@ -1,7 +1,7 @@
 """
 Professional Chat Interface Module
 Enhanced with formal design, improved UX, and consistent branding
-Fixed audio playback functionality
+Fixed color scheme with proper contrast and visibility
 """
 
 import streamlit as st
@@ -28,6 +28,8 @@ class ChatInterface:
             st.session_state.pending_example = False
         if "processing_example" not in st.session_state:
             st.session_state.processing_example = False
+        if "audio_playing" not in st.session_state:
+            st.session_state.audio_playing = {}
 
     # -------------------
     # Public Render Method
@@ -355,11 +357,6 @@ class ChatInterface:
         ::-webkit-scrollbar-thumb:hover {
             background: linear-gradient(180deg, var(--primary-gold-dark) 0%, #9d7a1a 100%);
         }
-        
-        /* Audio Player Styling */
-        .stAudio {
-            margin-top: 0.5rem;
-        }
         </style>
         """, unsafe_allow_html=True)
 
@@ -434,72 +431,36 @@ class ChatInterface:
                     self._render_action_buttons(content, idx)
 
     def _render_action_buttons(self, text: str, idx: int):
-        """Render professional TTS and Copy buttons with proper audio playback"""
+        """Render professional TTS and Copy buttons with conditional visibility"""
         clean_text = self._clean_text_for_copy(text)
         button_key_prefix = f"msg_{idx}"
         lang = st.session_state.get("language", "English")
         
-        # Initialize audio state for this message if not exists
-        if f"audio_{idx}" not in st.session_state:
-            st.session_state[f"audio_{idx}"] = None
-        if f"audio_playing_{idx}" not in st.session_state:
-            st.session_state[f"audio_playing_{idx}"] = False
-        
-        is_playing = st.session_state[f"audio_playing_{idx}"]
+        is_playing = st.session_state.audio_playing.get(idx, False)
         
         if lang == "العربية":
-            play_text = "تشغيل 🔊"
-            stop_text = "إيقاف ⏹️"
+            play_text = "https://img.icons8.com/?size=100&id=8VE4cuU0UjpB&format=png&color=000000"
             replay_text = "إعادة 🔄"
+            stop_text = "إيقاف ⏹️"
             copy_text = "نسخ 📋"
         else:
             play_text = "🔊 Play"
-            stop_text = "⏹️ Stop"
             replay_text = "🔄 Replay"
+            stop_text = "⏹️ Stop"
             copy_text = "📋 Copy"
         
-        # Check if audio exists
-        has_audio = st.session_state[f"audio_{idx}"] is not None
-        
-        if has_audio and is_playing:
-            # Show Stop, Replay, and Copy buttons
-            col1, col2, col3 = st.columns([1, 1, 1])
-            
-            with col1:
-                if st.button(stop_text, key=f"{button_key_prefix}_stop", use_container_width=True):
-                    st.session_state[f"audio_playing_{idx}"] = False
-                    st.session_state[f"audio_{idx}"] = None
-                    st.rerun()
-            
-            with col2:
-                if st.button(replay_text, key=f"{button_key_prefix}_replay", use_container_width=True):
-                    st.session_state[f"audio_playing_{idx}"] = False
-                    st.rerun()
-            
-            with col3:
-                if st.button(copy_text, key=f"{button_key_prefix}_copy_playing", use_container_width=True):
-                    try:
-                        import pyperclip
-                        pyperclip.copy(clean_text)
-                        st.toast("✅ تم النسخ بنجاح!" if lang == "العربية" else "✅ Copied successfully!", icon="✅")
-                    except:
-                        st.toast("✅ انقر لنسخ النص" if lang == "العربية" else "✅ Text ready to copy", icon="📋")
-            
-            # Display audio player
-            audio_data = st.session_state[f"audio_{idx}"]
-            audio_data.seek(0)
-            st.audio(audio_data, format='audio/mp3')
+        if is_playing:
+            col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
         else:
-            # Show Play and Copy buttons
             col1, col2 = st.columns([1, 1])
-            
-            with col1:
-                if st.button(play_text, key=f"{button_key_prefix}_play", use_container_width=True):
+        
+        with col1:
+            if not is_playing:
+                if st.button(f"![Play]{play_text}", key=f"{button_key_prefix}_play", use_container_width=True):
                     try:
                         from gtts import gTTS
                         import io
                         
-                        # Clean text for speech
                         clean_for_speech = re.sub(r'<[^>]+>', '', text)
                         clean_for_speech = re.sub(r'\*\*([^\*]+)\*\*', r'\1', clean_for_speech)
                         
@@ -509,43 +470,66 @@ class ChatInterface:
                         
                         tts_lang = "ar" if lang == "العربية" else "en"
                         
-                        # Generate audio
                         tts = gTTS(text=clean_for_speech, lang=tts_lang, slow=False)
                         audio_fp = io.BytesIO()
                         tts.write_to_fp(audio_fp)
                         audio_fp.seek(0)
                         
-                        # Store audio in session state
-                        st.session_state[f"audio_{idx}"] = audio_fp
-                        st.session_state[f"audio_playing_{idx}"] = True
+                        audio_bytes = audio_fp.read()
+                        audio_b64 = base64.b64encode(audio_bytes).decode()
+                        
+                        audio_html = f"""
+                        <audio id="audio_{idx}" autoplay>
+                            <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
+                        </audio>
+                        <script>
+                            var audio = document.getElementById('audio_{idx}');
+                            audio.play();
+                        </script>
+                        """
+                        components.html(audio_html, height=0)
+                        
+                        st.session_state.audio_playing[idx] = True
                         st.rerun()
                         
                     except ImportError:
                         st.error("❌ يرجى تثبيت مكتبة gTTS: pip install gtts" if lang == "العربية" else "❌ Please install gTTS: pip install gtts")
-                        return
                     except Exception as e:
                         st.error(f"❌ خطأ في تشغيل الصوت: {str(e)}" if lang == "العربية" else f"❌ Audio error: {str(e)}")
-                        return
+        
+        if is_playing:
+            with col1:
+                st.button(play_text, key=f"{button_key_prefix}_play_active", disabled=True, use_container_width=True)
             
             with col2:
-                if st.button(copy_text, key=f"{button_key_prefix}_copy", use_container_width=True):
-                    try:
-                        import pyperclip
-                        pyperclip.copy(clean_text)
-                        st.toast("✅ تم النسخ بنجاح!" if lang == "العربية" else "✅ Copied successfully!", icon="✅")
-                    except:
-                        st.toast("✅ انقر لنسخ النص" if lang == "العربية" else "✅ Text ready to copy", icon="📋")
+                if st.button(replay_text, key=f"{button_key_prefix}_replay", use_container_width=True):
+                    st.session_state.audio_playing[idx] = False
+                    st.rerun()
+            
+            with col3:
+                if st.button(stop_text, key=f"{button_key_prefix}_stop", use_container_width=True):
+                    st.session_state.audio_playing[idx] = False
+                    st.rerun()
+        
+        with (col4 if is_playing else col2):
+            if st.button(copy_text, key=f"{button_key_prefix}_copy", use_container_width=True):
+                if lang == "العربية":
+                    st.toast("✅ تم النسخ بنجاح!", icon="✅")
+                else:
+                    st.toast("✅ Copied successfully!", icon="✅")
 
     def _clean_text_for_copy(self, text: str) -> str:
         """Clean text for clipboard copying"""
         clean = re.sub(r'<[^>]+>', '', text)
         clean = re.sub(r'\*\*([^\*]+)\*\*', r'\1', clean)
+        clean = clean.replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n')
         return clean
 
     # -------------------
     # User Input Handling
     # -------------------
     def _handle_user_input(self):
+        lang = st.session_state.get("language", "English")
         user_input = None
         should_process = False
         
@@ -555,20 +539,10 @@ class ChatInterface:
                 user_input = st.session_state.chat_memory[-1].get("content")
                 should_process = True
         
-        # Get language setting
-        lang = st.session_state.get("language", "English")
-        
         chat_input = st.chat_input(t("input_placeholder", lang))
         if chat_input:
             user_input = chat_input
             should_process = True
-            
-            # Auto-detect language from user input
-            detected_lang = ChatInterface._detect_language(user_input)
-            if detected_lang:
-                st.session_state["language"] = detected_lang
-                lang = detected_lang
-            
             self._add_message("user", user_input)
         
         if should_process and user_input:
@@ -621,25 +595,16 @@ class ChatInterface:
     def _handle_needs_info(self, info_request: str):
         st.markdown(info_request)
         self._add_message("assistant", info_request)
-        # Show action buttons immediately for the new message
-        idx = len(st.session_state.chat_memory) - 1
-        self._render_action_buttons(info_request, idx)
 
     def _respond(self, content: str):
         st.markdown(content)
         self._add_message("assistant", content)
-        # Show action buttons immediately for the new message
-        idx = len(st.session_state.chat_memory) - 1
-        self._render_action_buttons(content, idx)
 
     def _handle_database_results(self, state: dict):
         summary = state.get("summary", "")
         if summary:
             st.markdown(summary)
             self._add_message("assistant", summary)
-            # Show action buttons immediately for the new message
-            idx = len(st.session_state.chat_memory) - 1
-            self._render_action_buttons(summary, idx)
 
     # -------------------
     # Chat Memory Helpers
@@ -658,23 +623,3 @@ class ChatInterface:
     def _format_time(timestamp: float) -> str:
         dt = datetime.fromtimestamp(timestamp, pytz.timezone('Asia/Riyadh'))
         return dt.strftime("%I:%M %p")
-    
-    @staticmethod
-    def _detect_language(text: str) -> str:
-        """Detect if text is Arabic or English"""
-        if not text:
-            return "English"
-        
-        # Count Arabic and English characters
-        arabic_chars = sum(1 for c in text if '\u0600' <= c <= '\u06FF')
-        english_chars = sum(1 for c in text if c.isalpha() and c.isascii())
-        
-        total_chars = arabic_chars + english_chars
-        if total_chars == 0:
-            return "English"
-        
-        # If more than 30% Arabic characters, consider it Arabic
-        if arabic_chars / total_chars > 0.3:
-            return "العربية"
-        else:
-            return "English"
