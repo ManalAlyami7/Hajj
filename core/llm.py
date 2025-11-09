@@ -68,9 +68,6 @@ class LLMManager:
     """Initialize OpenAI client and company memory"""
     
     def __init__(self):
-<<<<<<< HEAD
-        self.client = self._get_client()
-=======
         self.memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
         self.conversation = ConversationChain(
             llm=self._get_llm(),
@@ -81,18 +78,11 @@ class LLMManager:
         )
        
         # أصوات TTS حسب اللغة (إذا استخدمت لاحقًا)
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
         self.voice_map = {
             "العربية": "onyx",
             "English": "alloy"
         }
-<<<<<<< HEAD
-    
-        if "chat_memory" not in st.session_state:
-            st.session_state.chat_memory = []
-=======
 
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
     
     @st.cache_resource
     def _get_llm(self):
@@ -108,13 +98,6 @@ class LLMManager:
             openai_api_key=api_key
         )
     
-<<<<<<< HEAD
-    def build_chat_context(self, limit: Optional[int] = None) -> List[Dict[str, str]]:
-        """
-        Build chat context from all messages.
-        limit: max number of messages to include, None = all
-        """
-=======
     def add_user_message(self, user_input: str):
         st.session_state.chat_memory.append({"role": "user", "content": user_input})
         self.conversation.predict(user_input=user_input)  # يخزن تلقائيًا في memory
@@ -126,35 +109,9 @@ class LLMManager:
     
     def build_chat_context(self, limit: Optional[int] = None) -> List[Dict[str, str]]:
         """Retrieve chat context from Streamlit state (optional)"""
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
         if "chat_memory" not in st.session_state:
             return []
         recent = st.session_state.chat_memory if limit is None else st.session_state.chat_memory[-limit:]
-<<<<<<< HEAD
-    
-        context = []
-        for msg in recent:
-            # ✅ Include all messages without filtering
-            context.append({"role": msg["role"], "content": msg["content"]})
-    
-        return context
-        
-    def add_user_message(self, user_input: str):
-        st.session_state.chat_memory.append({"role": "user", "content": user_input})
-
-    def add_assistant_message(self, assistant_reply: str):
-        st.session_state.chat_memory.append({"role": "assistant", "content": assistant_reply})
-        
-    def detect_intent(self, user_input: str, language: str) -> Dict:
-        """
-        Detect user intent using full conversation context
-        """
-        context_messages = self.build_chat_context(limit=None)  # استخدم كل المحادثة
-
-        intent_prompt = f"""
-        You are a fraud-prevention assistant for Hajj pilgrims. 
-        Use the full conversation context and any previously mentioned company.
-=======
         return [{"role": msg["role"], "content": msg["content"]} for msg in recent]
 
     # -----------------------------
@@ -175,7 +132,6 @@ class LLMManager:
         intent_prompt = f"""
         You are a fraud-prevention assistant for Hajj pilgrims. 
         Use the conversation history stored in memory automatically.
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
         
         📋 Classify this message into ONE of four categories:
         
@@ -206,10 +162,7 @@ class LLMManager:
         - "Tell me about Hajj companies" (what specifically?)
         - "Is this authorized?" (which company? - unless last_company exists)
         - "Check this company" (need company name - unless last_company exists)
-<<<<<<< HEAD
-=======
         - general Hajj-related questions, not agency-specific
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
 
         🔍 COMPANY EXTRACTION:
         Extract any company name mentioned in the user's message and return it in 'extracted_company'.
@@ -227,31 +180,6 @@ class LLMManager:
         - For DATABASE questions, we need specific agency names or clear location criteria
 
         Message: {user_input}
-<<<<<<< HEAD
-        Classify the intent, provide confidence score, and explain your reasoning.
-        """
-        
-        try:
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You classify user intents for a Hajj agency verification system."},
-                    {"role": "user", "content": intent_prompt},
-                    *context_messages
-                ],
-                response_format=IntentClassification,
-                temperature=0
-            )
-            
-            intent_data = response.choices[0].message.parsed
-            logger.info(f"Intent detected: {intent_data.intent} (confidence: {intent_data.confidence})")
-            
-            return {
-                "intent": intent_data.intent,
-                "confidence": intent_data.confidence,
-                "reasoning": intent_data.reasoning
-            }
-=======
         Classify the intent, provide confidence score, and explain your reasoning in JSON format
         matching the IntentClassification Pydantic model.
         """
@@ -265,7 +193,6 @@ class LLMManager:
 
             logger.info(f"Intent detected: {intent_data['intent']} (confidence: {intent_data['confidence']})")
             return intent_data
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
             
         except Exception as e:
             logger.error(f"Structured intent detection failed: {e}")
@@ -296,14 +223,7 @@ class LLMManager:
         You are a friendly Hajj and fraud prevention assistant designed to protect pilgrims from scams and help them verify Hajj agencies authorized by the Ministry of Hajj and Umrah.
 
         💡 INSTRUCTIONS:
-<<<<<<< HEAD
-        - Use the full conversation context to maintain awareness of previous messages.
-        - Remember personal details the user shares during this session (like their name, language, or company mentioned).
-        - If the user asks something like "Do you remember my name?" — recall it naturally from context.
-        - If the user switches topics, still keep memory of previous details but prioritize the current question.
-=======
         - Use the full conversation context automatically (remember user's name, language, and previous messages).
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
         - Respond in Arabic if the user input contains Arabic text; otherwise, respond in English.
         - Generate a short, warm, natural greeting (max 3 sentences) that:
         - Acknowledges the user's greeting
@@ -315,22 +235,6 @@ class LLMManager:
 
         
         try:
-<<<<<<< HEAD
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_input},
-                    *self.build_chat_context(limit=None)  # شامل كل المحادثة
-                ],
-                response_format=GreetingResponse,
-                temperature=0.7
-            )
-            
-            greeting_data = response.choices[0].message.parsed
-            return greeting_data.greeting
-            
-=======
             # Use ConversationChain with memory
             prompt = f"{system_prompt}\nUser says: {user_input}"
             response = self.conversation.predict(user_input=prompt)
@@ -338,7 +242,6 @@ class LLMManager:
             # إذا أردنا تحويل الاستجابة إلى نص فقط
             return response
     
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
         except Exception as e:
             logger.error(f"Greeting generation failed: {e}")
             return "Hello! 👋 How can I help you today?" if not is_arabic else "السلام عليكم! 👋 كيف يمكنني مساعدتك؟"
@@ -352,27 +255,12 @@ class LLMManager:
         Avoid religious rulings or fatwa - stick to practical guidance."""
         
         try:
-<<<<<<< HEAD
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_input},
-                    *self.build_chat_context(limit=None)
-                ],
-                temperature=0.6,
-                max_tokens=400
-            )
-            return response.choices[0].message.content.strip()
-            
-=======
             # Combine system prompt and user input
             prompt = f"{system_prompt}\nUser asks: {user_input}"
             # Use ConversationChain with memory
             response = self.conversation.predict(user_input=prompt)
             return response.strip()
 
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
         except Exception as e:
             logger.error(f"General answer generation failed: {e}")
             return "I encountered an error. Please try rephrasing your question." if language != "العربية" else "حدث خطأ. يرجى إعادة صياغة سؤالك."
@@ -380,43 +268,18 @@ class LLMManager:
     
     def generate_sql(self, user_input: str, language: str) -> Optional[Dict]:
         """
-<<<<<<< HEAD
-        Generate SQL query from user input with structured output and context awareness.
-=======
         Generate SQL query from user input with structured output and context awareness
         using ConversationChain memory.
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
         Returns: Dict with sql_query, query_type, filters, explanation, safety_checked.
         """
         sql_prompt = self._get_sql_system_prompt(language) + f"\n\nUser Question: {user_input}"
         
         try:
-<<<<<<< HEAD
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are a SQL expert for Hajj agency database."},
-                    {"role": "user", "content": sql_prompt},
-                    *self.build_chat_context(limit=None)
-                ],
-                response_format=SQLQueryGeneration,
-                temperature=0
-            )
-            
-            sql_data = response.choices[0].message.parsed
-            return {
-                "sql_query": sql_data.sql_query,
-                "query_type": sql_data.query_type,
-                "filters": sql_data.filters_applied,
-                "explanation": sql_data.explanation
-            } if sql_data.sql_query and sql_data.safety_checked else None
-=======
             # استخدم ConversationChain مع الذاكرة التلقائية
             response = self.conversation.predict(user_input=sql_prompt)
 
             # نفترض أن المخرجات JSON مطابق لـ SQLQueryGeneration
             sql_data = json.loads(response)
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
             
             return {
                 "sql_query": sql_data.get("sql_query"),
@@ -551,19 +414,6 @@ class LLMManager:
         """
         
         try:
-<<<<<<< HEAD
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You summarize Hajj agency data in a friendly, structured way."},
-                    {"role": "user", "content": summary_prompt}
-                ],
-                response_format=QuerySummary,
-                temperature=0.6
-            )
-            summary_data = response.choices[0].message.parsed
-            return {"summary": summary_data.summary}
-=======
             # استخدم الذاكرة التلقائية عبر ConversationChain
             response = self.conversation.predict(user_input=summary_prompt)
 
@@ -571,7 +421,6 @@ class LLMManager:
             summary_data = json.loads(response)
             return {"summary": summary_data.get("summary", "")}
 
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
         except Exception as e:
             logger.error(f"Summary generation failed: {e}")
             return {"summary": f"📊 Found {row_count} matching records."}
@@ -595,10 +444,7 @@ class LLMManager:
         except Exception as e:
             logger.error(f"TTS failed: {e}")
             return None
-<<<<<<< HEAD
-=======
         
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
     def _detect_language_from_text(self, text: str) -> Optional[str]:
         """
         Detect if text is Arabic or English based on character analysis
@@ -798,12 +644,10 @@ class LLMManager:
         
         Ask for specific details in a friendly way. Focus on:
         1. Agency name (if verifying a company)
-<<<<<<< HEAD
-        2. Location (city/country)
+        2. Location (city/country/Google Maps link)
         3. What specifically they want to know
         
-        Use Arabic if user input is Arabic, otherwise English.
-        Keep it brief but friendly (2-3 sentences max).
+        Respond in the user's language, keep it short (2–3 sentences), and friendly.
         Add a simple example of a more specific question.
         """
         try:
@@ -818,32 +662,12 @@ class LLMManager:
                 temperature=0.7
             )
             info_data = response.choices[0].message.parsed
-=======
-        2. Location (city/country/Google Maps link)
-        3. What specifically they want to know
-        
-        Respond in the user's language, keep it short (2–3 sentences), and friendly.
-        Add a simple example of a more specific question.
-        """
-        try:
-           
-            conversation = ConversationChain(
-                llm=self.llm,  # 
-                memory=self.memory,  
-                verbose=False
-            )
-
-            prompt = f'User question: "{user_input}"'
-            response_text = conversation.predict(input=f"{system_prompt}\n\n{prompt}")
-
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
             return {
-                "needs_info": response_text,
-                "suggestions": ["هل شركة الهدى للحج معتمدة؟"] if is_arabic else ["Is Al Huda Hajj Agency authorized?"],
-                "missing_info": ["اسم الوكالة", "الموقع"] if is_arabic else ["agency name", "location"],
-                "sample_query": "هل شركة الهدى للحج معتمدة؟" if is_arabic else "Is Al Huda Hajj Agency authorized?"
+                "needs_info": info_data.needs_info,
+                "suggestions": info_data.suggestions,
+                "missing_info": info_data.missing_info,
+                "sample_query": info_data.sample_query
             }
-<<<<<<< HEAD
         except Exception as e:
             logger.error(f"More info prompt generation failed: {e}")
             return {
@@ -851,14 +675,4 @@ class LLMManager:
                 "suggestions": ["Is Al Huda Hajj Agency authorized?"] if not is_arabic else ["هل شركة الهدى للحج معتمدة؟"],
                 "missing_info": ["agency name", "location"] if not is_arabic else ["اسم الوكالة", "الموقع"],
                 "sample_query": "Is Al Huda Hajj Agency authorized?" if not is_arabic else "هل شركة الهدى للحج معتمدة؟"
-=======
-
-        except Exception as e:
-            logger.error(f"More info prompt generation failed: {e}")
-            return {
-                "needs_info": "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔" if is_arabic else "Could you provide more details? 🤔",
-                "suggestions": ["هل شركة الهدى للحج معتمدة؟"] if is_arabic else ["Is Al Huda Hajj Agency authorized?"],
-                "missing_info": ["اسم الوكالة", "الموقع"] if is_arabic else ["agency name", "location"],
-                "sample_query": "هل شركة الهدى للحج معتمدة؟" if is_arabic else "Is Al Huda Hajj Agency authorized?"
->>>>>>> 32a6f127871edbebae2a9ae332099f67298211b5
             }
