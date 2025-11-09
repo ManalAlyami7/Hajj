@@ -8,8 +8,11 @@ import logging
 import hashlib
 from pathlib import Path
 import sys
+<<<<<<< HEAD
 from io import BytesIO
 from mutagen.mp3 import MP3
+=======
+>>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
 
 import streamlit as st
 
@@ -617,6 +620,7 @@ if st.session_state.get('pending_audio'):
         st.markdown("</div>", unsafe_allow_html=True)
     except Exception as e:
         logger.warning("Failed to play pending audio: %s", e)
+<<<<<<< HEAD
 
     audio_bytes = st.session_state.pending_audio
     if isinstance(audio_bytes, bytes):
@@ -737,6 +741,112 @@ elif st.session_state.is_processing and st.session_state.get("pending_audio_byte
         if response_text:
             memory.add_message('assistant', response_text)
 
+=======
+    
+    st.session_state.pending_audio = None
+    st.session_state.is_speaking = False
+    st.session_state.status = t('voice_status_completed', st.session_state.language)
+    
+    time.sleep(2)
+    st.session_state.status = t('voice_status_ready', st.session_state.language)
+
+# ---------------------------
+# Handle new audio input
+# ---------------------------
+if audio_bytes and not st.session_state.is_processing:
+    if hasattr(audio_bytes, 'read'):
+        audio = audio_bytes.read()
+        audio_bytes.seek(0)
+    else:
+        audio = audio_bytes
+    
+    audio_hash = _hash_bytes(audio)
+    
+    if audio_hash != st.session_state.last_audio_hash:
+        st.session_state.last_audio_hash = audio_hash
+        st.session_state.pending_audio_bytes = audio
+        st.session_state.is_processing = True
+        st.session_state.status = t('voice_status_analyzing', st.session_state.language)
+        st.rerun()
+
+# ---------------------------
+# Process pending audio
+# ---------------------------
+elif st.session_state.is_processing and st.session_state.get("pending_audio_bytes"):
+    try:
+        logger.info("Running LangGraph workflow on pending audio...")
+
+        pending_audio_bytes = st.session_state.pending_audio_bytes
+        conversation_history = memory.get_formatted_history(limit=5)
+
+        initial_state = {
+            "audio_bytes": pending_audio_bytes,
+            "transcript": "",
+            "detected_language": "",
+            "transcription_confidence": 0.0,
+            "user_input": "",
+            "language": "",
+            "intent": "",
+            "intent_confidence": 0.0,
+            "intent_reasoning": "",
+            "is_vague": False,
+            "is_arabic": False,
+            "urgency": "",
+            "sql_query": "",
+            "sql_params": {},
+            "sql_query_type": "",
+            "sql_filters": [],
+            "sql_explanation": "",
+            "sql_error": "",
+            "result_rows": [],
+            "columns": [],
+            "row_count": 0,
+            "summary": "",
+            "greeting_text": "",
+            "general_answer": "",
+            "response": "",
+            "response_tone": "",
+            "key_points": [],
+            "suggested_actions": [],
+            "includes_warning": False,
+            "verification_steps": [],
+            "official_sources": [],
+            "response_audio": b"",
+            "error": "",
+            "messages_history": memory.get_conversation_history(limit=5),
+            "conversation_context": conversation_history
+        }
+
+        result = workflow.invoke(initial_state)
+        
+        transcript = result.get("transcript", "")
+        response_text = result.get("response", "")
+        response_audio = result.get("response_audio", None)
+
+        st.session_state.current_transcript = transcript or t('voice_no_speech', st.session_state.language)
+        st.session_state.current_response = response_text or t('voice_could_not_understand', st.session_state.language)
+        
+        st.session_state.current_metadata = {
+            "key_points": result.get("key_points", []),
+            "suggested_actions": result.get("suggested_actions", []),
+            "verification_steps": result.get("verification_steps", []),
+            "official_sources": result.get("official_sources", []),
+        }
+        
+        if response_audio:
+            st.session_state.pending_audio = response_audio
+            st.session_state.is_speaking = True
+            st.session_state.status = t('voice_status_speaking', st.session_state.language)
+        else:
+            st.session_state.status = t('voice_status_ready', st.session_state.language)
+
+        if transcript:
+            memory.add_message('user', transcript)
+            memory.extract_entities(transcript)
+        if response_text:
+            memory.add_message('assistant', response_text)
+
+>>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
     except Exception as e:
         logger.exception("Error during voice processing: %s", e)
         st.session_state.current_transcript = f"❌ Error: {str(e)}"
