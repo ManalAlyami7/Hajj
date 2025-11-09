@@ -8,11 +8,8 @@ import logging
 import hashlib
 from pathlib import Path
 import sys
-<<<<<<< HEAD
 from io import BytesIO
 from mutagen.mp3 import MP3
-=======
->>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
 
 import streamlit as st
 
