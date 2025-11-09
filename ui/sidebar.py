@@ -456,9 +456,9 @@ class SidebarInterface:
         
         st.markdown(f"""
         <div class="sidebar-footer">
-            <p>© {year} Hajj Assistant</p>
+            <p>© {year} {t('assistant_title', lang)}</p>
             <p style="margin-top: 0.5rem;">
-                Powered by <strong>AI Technology</strong>
+                {t('footer_powered', lang)} <strong>{t('footer_chat', lang)}</strong>
             </p>
         </div>
         """, unsafe_allow_html=True)
