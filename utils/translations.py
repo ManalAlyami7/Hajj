@@ -399,7 +399,6 @@ TRANSLATIONS = {
         "feat_ai": "AI سے چلنے والی تلاش",
         "feat_ai_desc": "قدرتی زبان کے سوالات",
         "feat_multilingual": "کثیر لسانی",
-        "feat_multilingual_desc": "عربی اور انگریزی کی معاونت",
         "feat_viz": "ڈیٹا کی تصویر کشی",
         "feat_viz_desc": "انٹرایکٹو ٹیبلز",
         "feat_secure": "محفوظ",
