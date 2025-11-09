@@ -469,7 +469,6 @@ audio {{
 
 /* Enhanced stop button styling - positioned below response container */
 .stButton {{
-    margin-top: -1.5rem !important;
     padding: 0 1.25rem !important;
     position: relative !important;
     z-index: 10 !important;
