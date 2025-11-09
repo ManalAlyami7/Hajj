@@ -564,7 +564,7 @@ class ChatInterface:
             should_process = True
             
             # Auto-detect language from user input
-            detected_lang = self._detect_language(user_input)
+            detected_lang = ChatInterface._detect_language(user_input)
             if detected_lang:
                 st.session_state["language"] = detected_lang
                 lang = detected_lang
