@@ -79,7 +79,6 @@ class LLMManager:
         self.conversation = ConversationChain(
             llm=self._get_llm(),
             memory=self.memory,
-            memory_key="chat_history",
             input_key="user_input",
             verbose=False
         )
