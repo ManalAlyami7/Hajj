@@ -91,7 +91,7 @@ class LLMManager:
         }
 
     
-    @st.cache_resource
+   
     def _get_llm(self):
         """Initialize and cache the ChatOpenAI client"""
         api_key = st.secrets.get("OPENAI_API_KEY")
