@@ -26,163 +26,174 @@ def render_sidebar(memory, language_code: str):
         # Inject sidebar-specific RTL styling
         st.markdown(f"""
         <style>
-        /* Sidebar Position - Right side for RTL languages */
-        [data-testid="stSidebar"] {{
-            {'left: auto !important; right: 0 !important;' if is_rtl else ''}
-        }}
-        
-        [data-testid="stSidebar"] > div:first-child {{
-            {'transform: translateX(0) !important;' if is_rtl else ''}
-        }}
-        
-        /* Sidebar RTL Support */
-        [data-testid="stSidebar"] .block-container {{
-            direction: {'rtl' if is_rtl else 'ltr'};
-        }}
-        
-        [data-testid="stSidebar"] .stMarkdown {{
-            text-align: {'right' if is_rtl else 'left'};
-        }}
-        
-        [data-testid="stSidebar"] h3 {{
-            text-align: {'right' if is_rtl else 'left'};
-        }}
-        
-        [data-testid="stSidebar"] p {{
-            text-align: {'right' if is_rtl else 'left'};
-        }}
-        
-        /* Sidebar Color Harmony with Main Page */
-        [data-testid="stSidebar"] {{
-            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-            border-{'left' if is_rtl else 'right'}: 1px solid rgba(251, 191, 36, 0.2);
-        }}
-        
-        [data-testid="stSidebar"] .stMarkdown {{
-            color: #e2e8f0;
-        }}
-        
-        /* Sidebar Headers */
-        [data-testid="stSidebar"] h3 {{
-            color: #fbbf24 !important;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }}
-        
-        /* Sidebar Captions */
-        [data-testid="stSidebar"] .stCaption {{
-            color: #94a3b8 !important;
-        }}
-        
-        /* Sidebar Selectbox */
-        [data-testid="stSidebar"] .stSelectbox > div > div {{
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(251, 191, 36, 0.3);
-            color: #e2e8f0;
-        }}
-        
-        /* Sidebar Checkbox */
-        [data-testid="stSidebar"] .stCheckbox {{
-            color: #e2e8f0;
-        }}
-        
-        /* Sidebar Buttons */
-        [data-testid="stSidebar"] .stButton > button {{
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-            color: #1e293b;
-            font-weight: 600;
-            border: none;
-            transition: all 0.3s ease;
-        }}
-        
-        [data-testid="stSidebar"] .stButton > button:hover {{
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
-        }}
-        
-        [data-testid="stSidebar"] button[kind="secondary"] {{
-            background: rgba(239, 68, 68, 0.1) !important;
-            color: #ef4444 !important;
-            border: 1px solid rgba(239, 68, 68, 0.3) !important;
-        }}
-        
-        [data-testid="stSidebar"] button[kind="secondary"]:hover {{
-            background: rgba(239, 68, 68, 0.2) !important;
-            border-color: rgba(239, 68, 68, 0.5) !important;
-        }}
-        
-        /* Collapsed Control Button - Position for RTL */
-        [data-testid="collapsedControl"] {{
-            {'left: auto !important; right: 0.5rem !important;' if is_rtl else ''}
-        }}
-        
-        /* Memory Panel Styling */
-        .memory-panel {{
-            background: rgba(251, 191, 36, 0.1);
-            padding: 1rem;
-            border-radius: 0.75rem;
-            border-{'right' if is_rtl else 'left'}: 4px solid #fbbf24;
-            margin-top: 0.5rem;
-        }}
-        
-        .memory-panel-row {{
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-            direction: {'rtl' if is_rtl else 'ltr'};
-        }}
-        
-        .memory-panel-row:last-child {{
-            margin-bottom: 0;
-        }}
-        
-        .memory-label {{
-            color: #94a3b8;
-            font-size: 0.85rem;
-        }}
-        
-        .memory-value {{
-            color: #fbbf24;
-            font-weight: 600;
-        }}
-        
-        /* Sample Questions Styling */
-        .sample-question {{
-            background: rgba(251, 191, 36, 0.08);
-            padding: 0.6rem 0.9rem;
-            border-radius: 0.6rem;
-            margin-bottom: 0.6rem;
-            font-size: 0.9rem;
-            border: 1px solid rgba(251, 191, 36, 0.15);
-            color: #e2e8f0;
-            transition: all 0.3s ease;
-            text-align: {'right' if is_rtl else 'left'};
-            direction: {'rtl' if is_rtl else 'ltr'};
-        }}
-        
-        .sample-question:hover {{
-            background: rgba(251, 191, 36, 0.15);
-            border-color: rgba(251, 191, 36, 0.3);
-            transform: translateX({'-5px' if is_rtl else '5px'});
-        }}
-        
-        /* Divider Styling */
-        [data-testid="stSidebar"] hr {{
-            border-color: rgba(251, 191, 36, 0.2) !important;
-            margin: 1rem 0;
-        }}
-        
-        /* Main content adjustment for RTL sidebar */
-        .main .block-container {{
-            {'margin-right: 21rem !important; margin-left: 1rem !important;' if is_rtl else ''}
-        }}
-        
-        /* Adjust main content when sidebar is collapsed in RTL */
-        [data-testid="stSidebar"][aria-expanded="false"] ~ .main .block-container {{
-            {'margin-right: 1rem !important;' if is_rtl else ''}
-        }}
-        </style>
+/* Sidebar Position - Right side for RTL languages */
+[data-testid="stSidebar"] {{
+    /* Set left: auto and right: 0 to pin it to the right for RTL */
+    left: {'auto !important' if is_rtl else '0 !important'}; 
+    right: {'0 !important' if is_rtl else 'auto !important'};
+}}
+
+[data-testid="stSidebar"] > div:first-child {{
+    {'transform: translateX(0) !important;' if is_rtl else ''}
+}}
+
+/* Sidebar RTL Support */
+[data-testid="stSidebar"] .block-container {{
+    direction: {'rtl' if is_rtl else 'ltr'};
+}}
+
+[data-testid="stSidebar"] .stMarkdown {{
+    text-align: {'right' if is_rtl else 'left'};
+}}
+
+[data-testid="stSidebar"] h3 {{
+    text-align: {'right' if is_rtl else 'left'};
+}}
+
+[data-testid="stSidebar"] p {{
+    text-align: {'right' if is_rtl else 'left'};
+}}
+
+/* Sidebar Color Harmony with Main Page */
+[data-testid="stSidebar"] {{
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    /* Adjust border: use border-left for RTL, border-right for LTR */
+    border-right: {'none' if is_rtl else '1px solid rgba(251, 191, 36, 0.2)'} !important;
+    border-left: {'1px solid rgba(251, 191, 36, 0.2)' if is_rtl else 'none'} !important;
+}}
+
+[data-testid="stSidebar"] .stMarkdown {{
+    color: #e2e8f0;
+}}
+
+/* Sidebar Headers */
+[data-testid="stSidebar"] h3 {{
+    color: #fbbf24 !important;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}}
+
+/* Sidebar Captions */
+[data-testid="stSidebar"] .stCaption {{
+    color: #94a3b8 !important;
+}}
+
+/* Sidebar Selectbox */
+[data-testid="stSidebar"] .stSelectbox > div > div {{
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    color: #e2e8f0;
+}}
+
+/* Sidebar Checkbox */
+[data-testid="stSidebar"] .stCheckbox {{
+    color: #e2e8f0;
+}}
+
+/* Sidebar Buttons */
+[data-testid="stSidebar"] .stButton > button {{
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #1e293b;
+    font-weight: 600;
+    border: none;
+    transition: all 0.3s ease;
+}}
+
+[data-testid="stSidebar"] .stButton > button:hover {{
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}}
+
+[data-testid="stSidebar"] button[kind="secondary"] {{
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: #ef4444 !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}}
+
+[data-testid="stSidebar"] button[kind="secondary"]:hover {{
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-color: rgba(239, 68, 68, 0.5) !important;
+}}
+
+/* Collapsed Control Button - Position for RTL */
+[data-testid="collapsedControl"] {{
+    /* If RTL (sidebar on the right), move button to the left edge of the main content area */
+    left: {'0.5rem !important' if is_rtl else 'auto !important'}; 
+    right: {'auto !important' if is_rtl else '0.5rem !important'};
+}}
+
+/* Memory Panel Styling */
+.memory-panel {{
+    background: rgba(251, 191, 36, 0.1);
+    padding: 1rem;
+    border-radius: 0.75rem;
+    /* Adjust border side */
+    border-right: {'4px solid #fbbf24' if is_rtl else 'none'};
+    border-left: {'none' if is_rtl else '4px solid #fbbf24'};
+    margin-top: 0.5rem;
+}}
+
+.memory-panel-row {{
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    direction: {'rtl' if is_rtl else 'ltr'};
+}}
+
+.memory-panel-row:last-child {{
+    margin-bottom: 0;
+}}
+
+.memory-label {{
+    color: #94a3b8;
+    font-size: 0.85rem;
+}}
+
+.memory-value {{
+    color: #fbbf24;
+    font-weight: 600;
+}}
+
+/* Sample Questions Styling */
+.sample-question {{
+    background: rgba(251, 191, 36, 0.08);
+    padding: 0.6rem 0.9rem;
+    border-radius: 0.6rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.9rem;
+    border: 1px solid rgba(251, 191, 36, 0.15);
+    color: #e2e8f0;
+    transition: all 0.3s ease;
+    text-align: {'right' if is_rtl else 'left'};
+    direction: {'rtl' if is_rtl else 'ltr'};
+}}
+
+.sample-question:hover {{
+    background: rgba(251, 191, 36, 0.15);
+    border-color: rgba(251, 191, 36, 0.3);
+    /* Flip translation direction for RTL */
+    transform: translateX({'-5px' if is_rtl else '5px'});
+}}
+
+/* Divider Styling */
+[data-testid="stSidebar"] hr {{
+    border-color: rgba(251, 191, 36, 0.2) !important;
+    margin: 1rem 0;
+}}
+
+/* Main content adjustment for RTL sidebar (creates margin on the right) */
+.main .block-container {{
+    /* The 21rem space is now on the right */
+    margin-right: {'21rem !important' if is_rtl else '1rem !important'}; 
+    margin-left: {'1rem !important' if is_rtl else '1rem !important'};
+}}
+
+/* Adjust main content when sidebar is collapsed in RTL (removes margin) */
+[data-testid="stSidebar"][aria-expanded="false"] ~ .main .block-container {{
+    margin-right: {'1rem !important' if is_rtl else 'auto'};
+}}
+</style>
         """, unsafe_allow_html=True)
         
         # -----------------------------
