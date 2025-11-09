@@ -197,7 +197,15 @@ def _inject_professional_styles(is_rtl: bool):
             background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
             border-color: #b91c1c;
         }}
-        
+        [data-testid="stSidebar"] .stButton > button {{
+    background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
+    color: #1a1f2e !important;
+    border: 2px solid #d4af37 !important;
+}}
+[data-testid="stSidebar"] .stButton > button:hover {{
+    background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%) !important;
+}}
+
 
     /* Collapsed Control Button */
     [data-testid="collapsedControl"] {{
