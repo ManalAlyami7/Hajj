@@ -11,10 +11,10 @@ import re
 from typing import Optional, List, Dict, Literal
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_community.chat_models import ChatOpenAI
-from langchain.memory import ConversationBufferMemory  
+from langchain.schema import HumanMessage, AIMessage
+from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationChain
+from langchain_community.chat_models import ChatOpenAI
 import logging
 import json
 logging.basicConfig(level=logging.INFO)
