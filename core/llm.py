@@ -311,10 +311,13 @@ class LLMManager:
     def generate_summary(self, user_input: str, language: str, row_count: int, sample_rows: List[Dict]) -> Dict:
         """
         Generate natural, friendly, and structured summary of query results.
-        Uses ConversationChain memory automatically.
-        Adds assistant-like sentences and recommendations based on intent.
+        Uses ConversationChain memory automatically and normalizes company names 
+        for consistent memory handling.
+
+        Adds assistant-like sentences and recommendations based on user intent.
         Auto-detects language from user input for accurate responses.
-        Enhanced to handle "not found in location" scenarios intelligently.
+        Handles missing or not found data intelligently.
+        Responds with only the requested columns unless "all info" is requested.
         """
         if row_count == 0:
             return {"summary": "No results found." if language=="English" else "لم يتم العثور على نتائج."}
