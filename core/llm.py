@@ -20,7 +20,14 @@ import json
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
+def normalize_company_name(name: str) -> str:
+    """Normalize company names for consistent memory storage and search."""
+    if not name:
+        return ""
+    name = name.lower()                     # تحويل الحروف لصغيرة
+    name = " ".join(name.split())           # إزالة المسافات الزائدة
+    name = re.sub(r'[^\w\s]', '', name)    # إزالة الرموز غير الضرورية
+    return name
 # -----------------------------
 # Pydantic Models for Structured Outputs
 # -----------------------------
@@ -97,6 +104,15 @@ class LLMManager:
             temperature=0.4,
             openai_api_key=api_key
         )
+    def store_last_company(self, company_name: str):
+        """Normalize and store last company asked about"""
+        if company_name:
+            normalized_name = normalize_company_name(company_name)
+            st.session_state["last_company_name"] = normalized_name
+
+    def get_last_company(self) -> str:
+        """Retrieve the normalized last company from memory"""
+        return st.session_state.get("last_company_name", "")
     
     def add_user_message(self, user_input: str):
         st.session_state.chat_memory.append({"role": "user", "content": user_input})
@@ -306,7 +322,7 @@ class LLMManager:
         first_row = sample_rows[0]
         last_agency = first_row.get("hajj_company_en") or first_row.get("hajj_company_ar")
         if last_agency:
-            st.session_state["last_company_name"] = last_agency
+            self.store_last_company(last_agency)
         
         data_preview = json.dumps(sample_rows[:50], ensure_ascii=False)
 
