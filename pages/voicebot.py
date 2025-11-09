@@ -623,47 +623,14 @@ with col_right:
       <div class='response-content'>{clean_response}</div> 
     </div>
     """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Stop button with enhanced styling - INSIDE col_right
     if st.session_state.is_speaking:
-        st.markdown("""
-            <style>
-            /* Enhanced stop button styling */
-            div[data-testid="stButton"] > button[kind="primary"] {
-                background: linear-gradient(135deg, #ff4b4b 0%, #cc0000 100%) !important;
-                border: none !important;
-                box-shadow: 0 4px 15px rgba(255, 75, 75, 0.4) !important;
-                transition: all 0.3s ease !important;
-                font-weight: 600 !important;
-                animation: pulse 2s infinite !important;
-                margin-top: 1rem !important;
-                border-radius: 8px !important;
-                padding: 0.75rem 1rem !important;
-                font-size: 1.05rem !important;
-            }
-            div[data-testid="stButton"] > button[kind="primary"]:hover {
-                transform: translateY(-2px) !important;
-                box-shadow: 0 6px 20px rgba(255, 75, 75, 0.6) !important;
-                background: linear-gradient(135deg, #ff5555 0%, #dd1111 100%) !important;
-            }
-            div[data-testid="stButton"] > button[kind="primary"]:active {
-                transform: translateY(0) !important;
-                box-shadow: 0 2px 10px rgba(255, 75, 75, 0.5) !important;
-            }
-            @keyframes pulse {
-                0%, 100% { box-shadow: 0 4px 15px rgba(255, 75, 75, 0.4); }
-                50% { box-shadow: 0 4px 25px rgba(255, 75, 75, 0.7); }
-            }
-            </style>
-        """, unsafe_allow_html=True)
-        
         if st.button(
-            f"🛑 {t('voice_stop_speaking', st.session_state.language)}",
+            f"🚫 {t('voice_stop_speaking', st.session_state.language)}",
             use_container_width=True,
             type="primary",
             key="stop_button",
             help="Click to stop the voice assistant"
+
         ):
             logger.info("Stop button pressed. Halting speech.")
             # Clear the audio bytes so the playback block doesn't run
@@ -672,6 +639,7 @@ with col_right:
             st.session_state.status = t('voice_status_interrupted', st.session_state.language)
             st.rerun()
 
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------
 # Play pending audio
