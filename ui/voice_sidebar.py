@@ -30,6 +30,10 @@ def render_sidebar(memory, language_code: str):
         _render_header(language_code)
         _render_divider()
 
+         # Navigation
+        _render_navigation_buttons(language_code)
+        _render_divider()
+
         # Language Selection
         _render_language_section(language_code)
         _render_divider()
@@ -46,9 +50,7 @@ def render_sidebar(memory, language_code: str):
         _render_memory_section(memory, language_code)
         _render_divider()
         
-        # Navigation
-        _render_navigation_buttons(language_code)
-        _render_divider()
+       
         
         # Footer
         _render_footer(language_code)
