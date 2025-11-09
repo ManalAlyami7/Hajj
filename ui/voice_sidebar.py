@@ -102,7 +102,6 @@ def _inject_professional_styles(is_rtl: bool):
     }}
 
     [data-testid="stSidebar"] p {{
-        text-align: {'right' if is_rtl else 'left'};
         color: #cbd5e1 !important;
         line-height: 1.7;
         font-weight: 500;
