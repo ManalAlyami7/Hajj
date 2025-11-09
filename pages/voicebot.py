@@ -626,11 +626,9 @@ with col_right:
     if st.session_state.is_speaking:
         if st.button(
             f"🚫 {t('voice_stop_speaking', st.session_state.language)}",
-            use_container_width=True,
+            use_container_width=False,
             type="primary",
-            key="stop_button",
-            help="Click to stop the voice assistant"
-
+            key="stop_button", 
         ):
             logger.info("Stop button pressed. Halting speech.")
             # Clear the audio bytes so the playback block doesn't run
