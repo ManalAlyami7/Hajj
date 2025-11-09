@@ -373,7 +373,7 @@ def _render_header(language_code: str):
     st.markdown(f"""
     <div class="sidebar-header">
         <span class="sidebar-icon">🎙️</span>
-        <h2 class="sidebar-title">{t('assistant_title', language_code).replace('🕋 ', '')}</h2>
+        <h2 class="sidebar-title">{t('voice_main_title', language_code).replace('🕋 ', '')}</h2>
         <p class="sidebar-subtitle">{t('assistant_subtitle', language_code)}</p>
     </div>
     """, unsafe_allow_html=True)
