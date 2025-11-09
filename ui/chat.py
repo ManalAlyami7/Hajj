@@ -360,7 +360,7 @@ class ChatInterface:
         message = {"role": role, "content": content, "timestamp": self._get_current_time()}
         if result_data: message["result_data"] = result_data
         st.session_state.chat_memory.append(message)
-        save_chat_memory()
+        #save_chat_memory()
 
     @staticmethod
     def _get_current_time() -> float:
