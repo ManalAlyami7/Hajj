@@ -161,19 +161,22 @@ class LLMManager:
         """
         Detect if a question is a follow-up (vague reference to previous context)
         Short questions with location/detail keywords are likely follow-ups
+        Enhanced to detect city/location-based follow-ups
         """
         text_lower = text.lower().strip()
         
-        # Short questions (4 words or less) are candidates for follow-ups
-        if len(text_lower.split()) <= 4:
+        # Short questions (6 words or less) are candidates for follow-ups
+        if len(text_lower.split()) <= 6:
             followup_keywords_ar = [
                 "موقع", "عنوان", "موجود", "معتمد", "مصرح", "رقم", "ايميل", 
                 "تفاصيل", "تقييم", "خريطة", "وين", "كيف", "متى", 
-                "هل هي", "هل هو", "فين", "ايش", "شنو"
+                "هل هي", "هل هو", "فين", "ايش", "شنو", "موجودة",
+                "في الرياض", "في مكة", "في جدة", "في المدينة"
             ]
             followup_keywords_en = [
                 "location", "address", "where", "authorized", "phone", "email", 
-                "details", "rating", "map", "is it", "contact", "info", "number"
+                "details", "rating", "map", "is it", "contact", "info", "number",
+                "in riyadh", "in makkah", "in jeddah", "in medina", "there", "located"
             ]
             
             all_keywords = followup_keywords_ar + followup_keywords_en
@@ -194,9 +197,9 @@ class LLMManager:
         # Auto-enrich vague follow-up questions with last company context
         if last_company and self._is_followup_question(user_input):
             if language == "العربية":
-                user_input = f"{user_input.strip()} (للشركة: {last_company})"
+                user_input = f"هل شركة {last_company} {original_input.strip()}"
             else:
-                user_input = f"{user_input.strip()} (about {last_company})"
+                user_input = f"Is {last_company} {original_input.strip()}"
             logger.info(f"🔗 Context auto-enriched: '{original_input}' → '{user_input}'")
 
         intent_prompt = f"""
@@ -208,14 +211,14 @@ Last company mentioned in conversation: {last_company if last_company else 'None
 
 🎯 CRITICAL FOLLOW-UP DETECTION:
 If user asks a follow-up question like:
-- Arabic: "وين موقعها؟" / "هل هي معتمدة؟" / "أعطني التفاصيل" / "رقم التواصل؟"
-- English: "Where is it located?" / "Is it authorized?" / "Give me details" / "Contact number?"
+- Arabic: "وين موقعها؟" / "هل هي معتمدة؟" / "أعطني التفاصيل" / "رقم التواصل؟" / "هل موجودة في الرياض؟"
+- English: "Where is it located?" / "Is it authorized?" / "Give me details" / "Contact number?" / "Is it in Riyadh?"
 
 AND there's a last_company in memory, then:
 1. Classify as DATABASE
 2. Extract that last_company as the company name
 3. Set high confidence (0.95+)
-4. Reasoning should mention "follow-up question about [company name]"
+4. Reasoning should mention "follow-up question about [company name] - checking if it exists in [location/context]"
 
 📋 Classify this message into ONE of four categories:
 
@@ -441,6 +444,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         Generate natural, friendly, and structured summary of query results.
         Adds assistant-like sentences and recommendations based on intent.
         Auto-detects language from user input for accurate responses.
+        Enhanced to handle "not found in location" scenarios intelligently.
         """
         # Auto-detect language from user input (override parameter if needed)
         detected_language = self._detect_language_from_text(user_input)
@@ -448,10 +452,29 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             language = detected_language
             logger.info(f"🌐 Language auto-detected from input: {language}")
         
+        last_company = st.session_state.get("last_company_name", "")
+        
+        # Handle zero results intelligently
         if row_count == 0:
-            return {
-                "summary": "No results found. Try rephrasing your question or broadening the search." if language == "English" else "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال.",
-            }
+            # Check if this was a location-specific query
+            location_keywords_ar = ["في", "الرياض", "جدة", "مكة", "المدينة"]
+            location_keywords_en = ["in", "riyadh", "jeddah", "makkah", "medina"]
+            
+            is_location_query = any(kw in user_input.lower() for kw in location_keywords_ar + location_keywords_en)
+            
+            if last_company and is_location_query:
+                if language == "العربية":
+                    return {
+                        "summary": f"لم أجد شركة {last_company} في الموقع المحدد. ✨\n\nهل تريد معرفة الموقع الفعلي لشركة {last_company}؟ أو هل تريد البحث عن شركات أخرى معتمدة في المنطقة المطلوبة؟"
+                    }
+                else:
+                    return {
+                        "summary": f"I couldn't find {last_company} in the specified location. ✨\n\nWould you like to know the actual location of {last_company}? Or search for other authorized agencies in that area?"
+                    }
+            else:
+                return {
+                    "summary": "No results found. Try rephrasing your question or broadening the search." if language == "English" else "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال.",
+                }
 
         
         data_preview = json.dumps(sample_rows[:50], ensure_ascii=False)
@@ -736,6 +759,14 @@ Q: "وين موقعها؟" (with context: about "جبل عمر")
 FROM agencies 
 WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%'
        OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
+LIMIT 1;
+
+Q: "هل موجودة في الرياض؟" (with context: about "جبل عمر")
+→ SELECT hajj_company_en, hajj_company_ar, city, country, formatted_address
+FROM agencies
+WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%'
+       OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
+  AND (city LIKE '%الرياض%' OR LOWER(city) LIKE '%riyadh%')
 LIMIT 1;
 
 Q: "Authorized agencies in Makkah"
