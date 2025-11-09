@@ -14,10 +14,15 @@ TRANSLATIONS = {
         # Assistant
         "assistant_title": "🕋 Hajj Assistant",
         "assistant_subtitle": "Your AI-powered guide",
+         "footer_chat":"AI Technology",
         
         # Sidebar
         "language_title": "🌐 Language",
         "stats_title": "📊 Live Statistics",
+        "footer_title_voice": "Hajj Voice Assistant",
+        "footer_tech": "AI Speech Technology",
+        "footer_powered": "Powered by",
+
         "examples_title": "💡 Quick Examples",
         "clear_chat": "🧹 Clear Chat History",
         "features_title": "ℹ️ Features",
@@ -181,6 +186,9 @@ TRANSLATIONS = {
     "memory_status_title": "🧠 حالة الذاكرة",
     "memory_status_desc": "راجع تقدم الجلسة الحالية.",
     "voice_memory_messages": "الرسائل",
+    "footer_title_voice": "مساعد الحج الصوتي",
+        "footer_powered": "مدعوم بواسطة",
+        "footer_tech": "تقنية الذكاء الاصطناعي الصوتية",
     "voice_session_duration": "المدة",
     "voice_clear_memory": "مسح الذاكرة",
     "memory_cleared": "تم مسح الذاكرة بنجاح!",
@@ -218,6 +226,8 @@ TRANSLATIONS = {
         "total_agencies": "إجمالي الشركات",
         "authorized": "المعتمدة",
         "countries": "الدول",
+        "footer_chat": "تقنية الذكاء الاصطناعي",
+
         "cities": "المدن",
         
         # Examples
@@ -342,6 +352,9 @@ TRANSLATIONS = {
     "memory_status_title": "🧠 یادداشت کی حالت",
     "memory_status_desc": "اپنے موجودہ سیشن کی پیش رفت دیکھیں۔",
     "voice_memory_messages": "پیغامات",
+    "footer_title_voice": "حج وائس اسسٹنٹ",
+        "footer_powered": "کے ذریعے چلنے والا",
+        "footer_tech": "اے آئی آواز کی ٹیکنالوجی",
     "voice_session_duration": "دورانیہ",
     "voice_clear_memory": "یادداشت صاف کریں",
     "memory_cleared": "یادداشت کامیابی سے صاف ہو گئی!",
@@ -451,6 +464,8 @@ TRANSLATIONS = {
         "voice_no_speech": "میں آپ کو واضح طور پر نہیں سن سکا",
         "voice_try_again": "براہ کرم واضح طور پر بولیں اور دوبارہ کوشش کریں",
         "voice_error_occurred": "کچھ غلط ہو گیا۔ آئیے دوبارہ کوشش کریں۔",
+                "footer_chat": "اے آئی ٹیکنالوجی",
+
         "voice_could_not_understand": "میں یہ نہیں سمجھ سکا۔ کیا آپ دوبارہ کہہ سکتے ہیں؟",
         "voice_error_processing": "مجھے اس درخواست پر کارروائی کرنے میں دشواری ہو رہی ہے",
 

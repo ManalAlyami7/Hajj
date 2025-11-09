@@ -573,9 +573,9 @@ def _render_footer(language_code: str):
     
     st.markdown(f"""
     <div class="sidebar-footer">
-        <p>© {year} Hajj Voice Assistant</p>
+        <p>© {year} {t('footer_title_voice',language_code)}</p>
         <p style="margin-top: 0.5rem;">
-            Powered by <strong>AI Speech Technology</strong>
+            {t('footer_powered',language_code)} <strong>{t('footer_tech', language_code)}</strong>
         </p>
     </div>
     """, unsafe_allow_html=True)
