@@ -28,6 +28,8 @@ class ChatInterface:
             st.session_state.pending_example = False
         if "processing_example" not in st.session_state:
             st.session_state.processing_example = False
+        if "audio_playing" not in st.session_state:
+            st.session_state.audio_playing = {}
 
     # -------------------
     # Public Render Method
@@ -198,62 +200,12 @@ class ChatInterface:
             transform: translateY(-1px);
         }
 
-        /* Action Buttons Container */
-        .action-buttons-container {
-            display: flex;
-            gap: 12px;
-            margin-top: 1.2rem;
-            flex-wrap: wrap;
-        }
-
-        .action-btn {
-            padding: 12px 20px;
-            border-radius: 12px;
-            border: 2px solid transparent;
-            font-size: 0.95rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: var(--shadow-sm);
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-
-        .action-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .action-btn.primary {
-            background: linear-gradient(135deg, #4a9eff 0%, #2563eb 100%);
-            color: white;
-            border-color: #2563eb;
-        }
-
-        .action-btn.primary:hover {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        }
-
-        .action-btn.success {
-            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-            color: white;
-            border-color: #16a34a;
-        }
-
-        .action-btn.success:hover {
-            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-        }
-
-        .action-btn.danger {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-            border-color: #dc2626;
-        }
-
-        .action-btn.danger:hover {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        /* Small Action Buttons for Audio Controls */
+        div[data-testid="column"] > div > div > button {
+            padding: 0.4rem 0.7rem !important;
+            font-size: 0.8rem !important;
+            border-radius: 8px !important;
+            min-height: 35px !important;
         }
 
         /* Timestamp Styling */
@@ -460,20 +412,7 @@ class ChatInterface:
     # Chat History Display
     # -------------------
     def _display_chat_history(self):
-<<<<<<< HEAD
-<<<<<<< HEAD
-        """Display all messages in chat history with clean modern theme"""
-        for idx, msg in enumerate(st.session_state.chat_memory):
-            role = msg.get("role", "assistant")
-            avatar = "🕋" if role == "assistant" else "👤"
-
-            with st.chat_message(role, avatar=avatar):
-                st.markdown(msg.get("content", ""), unsafe_allow_html=True)
-=======
-        """Display all messages in chat history with clean modern theme and copy button"""
-=======
         """Display all messages with professional styling"""
->>>>>>> fb4da5c (Update chat and voice UI, and main app)
         for idx, msg in enumerate(st.session_state.chat_memory):
             role = msg.get("role", "assistant")
             avatar = "🕋" if role == "assistant" else "👤"
@@ -481,7 +420,6 @@ class ChatInterface:
 
             with st.chat_message(role, avatar=avatar):
                 st.markdown(content, unsafe_allow_html=True)
->>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
 
                 if msg.get("timestamp"):
                     st.markdown(
@@ -489,127 +427,96 @@ class ChatInterface:
                         unsafe_allow_html=True
                     )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-                # TTS buttons with clean modern colors
-                if role == "assistant":
-                    html = f"""
-                    <div style="margin:8px 0; display:flex; gap:10px;">
-                        <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                                       border:2px solid #e5e7eb; background:white; color:#1f2937;
-                                       cursor:pointer; transition: all 0.3s ease;
-                                       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);"
-                                onmouseover="this.style.background='#f9fafb'; this.style.boxShadow='0 4px 10px rgba(0, 0, 0, 0.1)'"
-                                onmouseout="this.style.background='white'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.06)'"
-                                onclick="fetch('/generate_tts', {{
-                                    method: 'POST',
-                                    headers: {{'Content-Type':'application/json'}},
-                                    body: JSON.stringify({{'text':'{msg.get('content','').replace("'", "\\'")}'}})
-                                }}).then(resp => resp.json())
-                                .then(data => {{
-                                    const audio = new Audio('data:audio/mp3;base64,' + data.audio_b64);
-                                    audio.id = 'audio_{idx}';
-                                    audio.play();
-                                    window.audio_{idx} = audio;
-                                }});"
-                        >🔊</button>
-                        <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                                       border:2px solid #e5e7eb; background:#3b82f6; color:white;
-                                       cursor:pointer; transition: all 0.3s ease; font-weight:600;
-                                       box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);"
-                                onmouseover="this.style.background='#2563eb'; this.style.boxShadow='0 4px 10px rgba(59, 130, 246, 0.4)'"
-                                onmouseout="this.style.background='#3b82f6'; this.style.boxShadow='0 2px 6px rgba(59, 130, 246, 0.3)'"
-                                onclick="if(window.audio_{idx}){{ window.audio_{idx}.currentTime=0; window.audio_{idx}.play(); }}">🔄</button>
-                        <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                                       border:2px solid #e5e7eb; background:white; color:#ef4444;
-                                       cursor:pointer; transition: all 0.3s ease; font-weight:600;
-                                       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);"
-                                onmouseover="this.style.background='#fef2f2'; this.style.borderColor='#fca5a5'"
-                                onmouseout="this.style.background='white'; this.style.borderColor='#e5e7eb'"
-                                onclick="if(window.audio_{idx}){{ window.audio_{idx}.pause(); }}">⏹️</button>
-                    </div>
-                    """
-                    components.html(html, height=60)
-=======
-                # TTS and Copy buttons for assistant messages
-=======
->>>>>>> fb4da5c (Update chat and voice UI, and main app)
                 if role == "assistant":
                     self._render_action_buttons(content, idx)
 
     def _render_action_buttons(self, text: str, idx: int):
-        """Render professional TTS and Copy buttons"""
+        """Render professional TTS and Copy buttons with conditional visibility"""
         clean_text = self._clean_text_for_copy(text)
+        button_key_prefix = f"msg_{idx}"
+        lang = st.session_state.get("language", "English")
         
-        html = f"""
-        <div class="action-buttons-container">
-            <button class="action-btn primary" onclick="playAudio_{idx}()">
-                🔊 Play
-            </button>
-            
-            <button class="action-btn primary" onclick="replayAudio_{idx}()">
-                🔄 Replay
-            </button>
-            
-            <button class="action-btn danger" onclick="stopAudio_{idx}()">
-                ⏹️ Stop
-            </button>
-            
-            <button class="action-btn success" onclick="copyText_{idx}()">
-                📋 Copy
-            </button>
-        </div>
+        is_playing = st.session_state.audio_playing.get(idx, False)
         
-        <script>
-            function playAudio_{idx}() {{
-                fetch('/generate_tts', {{
-                    method: 'POST',
-                    headers: {{'Content-Type':'application/json'}},
-                    body: JSON.stringify({{'text':'{text.replace("'", "\\'")}'}})
-                }})
-                .then(resp => resp.json())
-                .then(data => {{
-                    const audio = new Audio('data:audio/mp3;base64,' + data.audio_b64);
-                    audio.id = 'audio_{idx}';
-                    audio.play();
-                    window.audio_{idx} = audio;
-                }});
-            }}
+        if lang == "العربية":
+            play_text = "تشغيل 🔊"
+            replay_text = "إعادة 🔄"
+            stop_text = "إيقاف ⏹️"
+            copy_text = "نسخ 📋"
+        else:
+            play_text = "🔊 Play"
+            replay_text = "🔄 Replay"
+            stop_text = "⏹️ Stop"
+            copy_text = "📋 Copy"
+        
+        if is_playing:
+            col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+        else:
+            col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            if not is_playing:
+                if st.button(play_text, key=f"{button_key_prefix}_play", use_container_width=True):
+                    try:
+                        from gtts import gTTS
+                        import io
+                        
+                        clean_for_speech = re.sub(r'<[^>]+>', '', text)
+                        clean_for_speech = re.sub(r'\*\*([^\*]+)\*\*', r'\1', clean_for_speech)
+                        
+                        if not clean_for_speech.strip():
+                            st.warning("لا يوجد نص لقراءته" if lang == "العربية" else "No text to read")
+                            return
+                        
+                        tts_lang = "ar" if lang == "العربية" else "en"
+                        
+                        tts = gTTS(text=clean_for_speech, lang=tts_lang, slow=False)
+                        audio_fp = io.BytesIO()
+                        tts.write_to_fp(audio_fp)
+                        audio_fp.seek(0)
+                        
+                        audio_bytes = audio_fp.read()
+                        audio_b64 = base64.b64encode(audio_bytes).decode()
+                        
+                        audio_html = f"""
+                        <audio id="audio_{idx}" autoplay>
+                            <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
+                        </audio>
+                        <script>
+                            var audio = document.getElementById('audio_{idx}');
+                            audio.play();
+                        </script>
+                        """
+                        components.html(audio_html, height=0)
+                        
+                        st.session_state.audio_playing[idx] = True
+                        st.rerun()
+                        
+                    except ImportError:
+                        st.error("❌ يرجى تثبيت مكتبة gTTS: pip install gtts" if lang == "العربية" else "❌ Please install gTTS: pip install gtts")
+                    except Exception as e:
+                        st.error(f"❌ خطأ في تشغيل الصوت: {str(e)}" if lang == "العربية" else f"❌ Audio error: {str(e)}")
+        
+        if is_playing:
+            with col1:
+                st.button(play_text, key=f"{button_key_prefix}_play_active", disabled=True, use_container_width=True)
             
-            function replayAudio_{idx}() {{
-                if(window.audio_{idx}) {{
-                    window.audio_{idx}.currentTime = 0;
-                    window.audio_{idx}.play();
-                }}
-            }}
+            with col2:
+                if st.button(replay_text, key=f"{button_key_prefix}_replay", use_container_width=True):
+                    st.session_state.audio_playing[idx] = False
+                    st.rerun()
             
-            function stopAudio_{idx}() {{
-                if(window.audio_{idx}) {{
-                    window.audio_{idx}.pause();
-                }}
-            }}
-            
-            function copyText_{idx}() {{
-                const text = `{clean_text}`;
-                navigator.clipboard.writeText(text).then(() => {{
-                    showToast('✅ تم النسخ بنجاح! / Copied successfully!');
-                }});
-            }}
-            
-            function showToast(message) {{
-                const toast = document.createElement('div');
-                toast.className = 'toast-notification';
-                toast.innerText = message;
-                document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 3000);
-            }}
-        </script>
-        """
-<<<<<<< HEAD
-        components.html(html, height=70)
->>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
-=======
-        components.html(html, height=80)
+            with col3:
+                if st.button(stop_text, key=f"{button_key_prefix}_stop", use_container_width=True):
+                    st.session_state.audio_playing[idx] = False
+                    st.rerun()
+        
+        with (col4 if is_playing else col2):
+            if st.button(copy_text, key=f"{button_key_prefix}_copy", use_container_width=True):
+                if lang == "العربية":
+                    st.toast("✅ تم النسخ بنجاح!", icon="✅")
+                else:
+                    st.toast("✅ Copied successfully!", icon="✅")
 
     def _clean_text_for_copy(self, text: str) -> str:
         """Clean text for clipboard copying"""
@@ -617,7 +524,6 @@ class ChatInterface:
         clean = re.sub(r'\*\*([^\*]+)\*\*', r'\1', clean)
         clean = clean.replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n')
         return clean
->>>>>>> fb4da5c (Update chat and voice UI, and main app)
 
     # -------------------
     # User Input Handling
@@ -688,176 +594,17 @@ class ChatInterface:
 
     def _handle_needs_info(self, info_request: str):
         st.markdown(info_request)
-<<<<<<< HEAD
-        self._create_voice_player(info_request)  
-=======
->>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
         self._add_message("assistant", info_request)
 
     def _respond(self, content: str):
         st.markdown(content)
-<<<<<<< HEAD
-        self._create_voice_player(content)
-=======
->>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
         self._add_message("assistant", content)
 
     def _handle_database_results(self, state: dict):
         summary = state.get("summary", "")
         if summary:
             st.markdown(summary)
-<<<<<<< HEAD
-            self._create_voice_player(summary) 
-=======
->>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
             self._add_message("assistant", summary)
-<<<<<<< HEAD
-        else:
-            st.warning(summary)
-            self._add_message("assistant", summary)
-
-    def _display_results(self, result_data: dict):
-        rows = result_data.get("rows", [])
-        if not rows:
-            st.info("No results found.")
-            return
-            
-        st.markdown("""
-            <div style='background: white; 
-                        padding: 1.2rem; border-radius: 16px; margin: 1rem 0;
-                        border: 2px solid #e5e7eb; text-align: center;
-                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);'>
-                <h3 style='margin: 0; color: #1f2937; font-weight: 700;
-                           letter-spacing: 0.3px;'>
-                    🕋 Authorized Hajj Agencies
-                </h3>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        for row in rows:
-            name_en = row.get("hajj_company_en", "") or "N/A"
-            name_ar = row.get("hajj_company_ar", "") or ""
-            address = row.get("formatted_address", "")
-            city = row.get("city", "")
-            country = row.get("country", "")
-            email = row.get("email", "")
-            phone = row.get("contact_Info", "")
-            rating = row.get("rating_reviews", "")
-            authorized = row.get("is_authorized", "")
-            maps_link = row.get("google_maps_link", "")
-            link_valid = row.get("link_valid", False)
-            
-            is_authorized = authorized.lower() == "yes"
-            status_icon = "✅ Authorized" if is_authorized else "❌ Not Authorized"
-            bg_color = "white"
-            border_color = "#10b981" if is_authorized else "#ef4444"
-
-            if maps_link and link_valid:
-                maps_display = f"""
-                <div style='margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;'>
-                    <a href='{maps_link}' target='_blank'
-                       style='padding:8px 16px;background:#3b82f6;color:white;
-                              text-decoration:none;border-radius:10px;font-size:0.9rem;
-                              border:2px solid #e5e7eb;font-weight:600;
-                              transition: all 0.3s ease;
-                              box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);'>
-                    📍 Open Map
-                    </a>
-                    <button onclick="navigator.clipboard.writeText('{maps_link}');
-                                    var msg=document.createElement('div');
-                                    msg.innerText='✅ Link copied!';
-                                    msg.style='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-                                            background:#10b981;color:white;padding:10px 16px;border-radius:10px;
-                                            border:2px solid white;z-index:9999;font-size:0.9rem;font-weight:600;
-                                            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);';
-                                    document.body.appendChild(msg);
-                                    setTimeout(()=>msg.remove(),2000);"
-                            style='padding:8px 16px;background:white;color:#1f2937;
-                                   border:2px solid #e5e7eb;border-radius:10px;font-size:0.9rem;
-                                   cursor:pointer;font-weight:600;transition: all 0.3s ease;
-                                   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);'>
-                        🔗 Copy Link
-                    </button>
-                </div>
-                """
-            else:
-                maps_display = "<span style='color:#ef4444;font-weight:500;'>⚠️ Invalid Link</span>" if maps_link else "N/A"
-
-            st.markdown(f"""
-            <div style='padding:18px;margin:12px 0;border-radius:14px;
-                        background:{bg_color};border:2px solid {border_color};
-                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-                        transition: transform 0.2s ease;'>
-                <strong style='color:#1f2937;font-size:1.15rem;'>🏢 {name_en}</strong>  
-                {f"<br><span style='color:#6b7280;font-size:0.95rem;font-weight:500;'>({name_ar})</span>" if name_ar else ""}<br><br>
-                <div style='color:#4b5563;line-height:1.8;'>
-                    📍 <b style='color:#1f2937;'>Address:</b> {address or "N/A"}  
-                    <br>🏙️ <b style='color:#1f2937;'>City:</b> {city or "N/A"} | 🌍 <b style='color:#1f2937;'>Country:</b> {country or "N/A"}  
-                    <br>☎️ <b style='color:#1f2937;'>Phone:</b> {phone or "N/A"}  
-                    <br>📧 <b style='color:#1f2937;'>Email:</b> {email or "N/A"}  
-                    <br>⭐ <b style='color:#1f2937;'>Rating & Reviews:</b> {rating or "N/A"} 
-                    <br>🗺️ <b style='color:#1f2937;'>Google Maps:</b> {maps_display} 
-                    <br><b style='color:#1f2937;'>Status:</b> <span style='font-weight:600;color:{border_color};'>{status_icon}</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        save_chat_memory()
-<<<<<<< HEAD
-
-    # -------------------
-    # TTS
-    # -------------------
-    def _create_voice_player(self, text: str, idx: str = None):
-        """Render audio player for TTS with clean modern theme"""
-        import streamlit.components.v1 as components
-        import uuid
-
-        if idx is None:
-            idx = str(uuid.uuid4())
-
-        html = f"""
-        <div style="margin:8px 0; display:flex; gap:10px;">
-            <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                           border:2px solid #e5e7eb; background:white; color:#1f2937;
-                           cursor:pointer; transition: all 0.3s ease;
-                           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);"
-                    onmouseover="this.style.background='#f9fafb'; this.style.boxShadow='0 4px 10px rgba(0, 0, 0, 0.1)'"
-                    onmouseout="this.style.background='white'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.06)'"
-                    onclick="
-                        (async () => {{
-                            const resp = await fetch('/generate_tts', {{
-                                method: 'POST',
-                                headers: {{'Content-Type':'application/json'}},
-                                body: JSON.stringify({{'text':'{text.replace("'", "\\'")}'}})
-                            }});
-                            const data = await resp.json();
-                            const audio = new Audio('data:audio/mp3;base64,' + data.audio_b64);
-                            audio.id = 'audio_{idx}';
-                            audio.play();
-                            window.audio_{idx} = audio;
-                        }})();
-                    ">🔊</button>
-            <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                           border:2px solid #e5e7eb; background:#3b82f6; color:white;
-                           cursor:pointer; transition: all 0.3s ease; font-weight:600;
-                           box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);"
-                    onmouseover="this.style.background='#2563eb'; this.style.boxShadow='0 4px 10px rgba(59, 130, 246, 0.4)'"
-                    onmouseout="this.style.background='#3b82f6'; this.style.boxShadow='0 2px 6px rgba(59, 130, 246, 0.3)'"
-                    onclick="if(window.audio_{idx}){{ window.audio_{idx}.currentTime=0; window.audio_{idx}.play(); }}">🔄</button>
-            <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                           border:2px solid #e5e7eb; background:white; color:#ef4444;
-                           cursor:pointer; transition: all 0.3s ease; font-weight:600;
-                           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);"
-                    onmouseover="this.style.background='#fef2f2'; this.style.borderColor='#fca5a5'"
-                    onmouseout="this.style.background='white'; this.style.borderColor='#e5e7eb'"
-                    onclick="if(window.audio_{idx}){{ window.audio_{idx}.pause(); }}">⏹️</button>
-        </div>
-        """
-        components.html(html, height=60)
-=======
->>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
-=======
->>>>>>> fb4da5c (Update chat and voice UI, and main app)
 
     # -------------------
     # Chat Memory Helpers
