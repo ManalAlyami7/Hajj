@@ -345,7 +345,14 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             logger.info(f"SQL generated - Type: {sql_data.query_type}, Safety: {sql_data.safety_checked}")
             logger.info(f"Explanation: {sql_data.explanation}")
             
+            # حفظ اسم الوكالة الأخيرة إذا موجود
             if sql_data.sql_query and sql_data.safety_checked:
+                company_name = None
+                if sql_data.filters_applied:
+                    company_name = sql_data.filters_applied.get("company_name")
+                if company_name:
+                    st.session_state["last_company_name"] = company_name
+                
                 return {
                     "sql_query": sql_data.sql_query,
                     "query_type": sql_data.query_type,
@@ -359,6 +366,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         except Exception as e:
             logger.error(f"Structured SQL generation failed: {e}")
             return None
+
     
     def generate_summary(self, user_input: str, language: str, row_count: int, sample_rows: List[Dict]) -> Dict:
         """
@@ -369,7 +377,11 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             return {
                 "summary": "No results found. Try rephrasing your question or broadening the search." if language == "English" else "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال.",
             }
-
+        # حفظ اسم الوكالة الأخيرة (أول صف في النتائج)
+        first_row = sample_rows[0]
+        last_agency = first_row.get("hajj_company_en") or first_row.get("hajj_company_ar")
+        if last_agency:
+            st.session_state["last_company_name"] = last_agency
         
         data_preview = json.dumps(sample_rows[:50], ensure_ascii=False)
 
