@@ -623,7 +623,8 @@ with col_right:
       <div class='response-content'>{clean_response}</div> 
     </div>
     """, unsafe_allow_html=True)
-    
+    st.markdown('</div>', unsafe_allow_html=True)
+
     # Stop button with enhanced styling - INSIDE col_right
     if st.session_state.is_speaking:
         st.markdown("""
@@ -671,7 +672,6 @@ with col_right:
             st.session_state.status = t('voice_status_interrupted', st.session_state.language)
             st.rerun()
 
-st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------
 # Play pending audio
