@@ -173,5 +173,25 @@
     "role": "assistant",
     "content": "Hello! 👋 How can I help you today?",
     "timestamp": 1762432709.929292
+  },
+  {
+    "role": "user",
+    "content": "هل شركة جبل عمر مصرحة؟",
+    "timestamp": 1762677766.843284
+  },
+  {
+    "role": "assistant",
+    "content": "Here are the results I found for you regarding the Jabal Omar agency:\n\n- **Name (Arabic / English):** فندق جبل عمر جميرا الفندقية / Jabal Omar Jumeirah Hotel\n- **City:** مكة المكرمة\n- **Country:** المملكة العربية السعودية\n- **Email:** Not available\n- **Contact Info:** +966 12 556 0111\n- **Rating:** 4.6 (5243 reviews)\n- **Status:** Yes, Authorized\n- **Google Maps Link:** [View on Google Maps](https://www.google.com/maps/search/?api=1&query=Jabal%20Omar%20Jumeirah%20Hotel%2C%20Al%20Shubaikah%2C%20Ibrahim%20Al-Khalil%20Road%2C%20Jabal%20Omar%2C%20Ash%20Shubaikah%2C%20Makkah%2024231%2C%20Saudi%20Arabia)\n\nYou can contact them confidently as they are authorized by the Ministry of Hajj and Umrah.",
+    "timestamp": 1762677779.322157
+  },
+  {
+    "role": "user",
+    "content": "هل شركة جبل عمر مصرحة؟",
+    "timestamp": 1762677863.954983
+  },
+  {
+    "role": "assistant",
+    "content": "بناءً على البيانات، وجدت لك النتائج التالية:\n\n- الاسم (بالعربية): فندق جبل عمر جميرا الفندقية  \n- المدينة: مكة المكرمة  \n- الدولة: المملكة العربية السعودية  \n- البريد الإلكتروني: غير متوفر  \n- رقم التواصل: +966 12 556 0111  \n- التقييم: 4.6 (5243 مراجعة)  \n- الحالة: نعم، معتمد  \n- رابط خرائط جوجل: [رابط خرائط جوجل](https://www.google.com/maps/search/?api=1&query=Jabal%20Omar%20Jumeirah%20Hotel%2C%20Al%20Shubaikah%2C%20Ibrahim%20Al-Khalil%20Road%2C%20Jabal%20Omar%2C%20Ash%20Shubaikah%2C%20Makkah%2024231%2C%20Saudi%20Arabia)  \n\nيمكنك التواصل معهم بثقة، وهم معتمدون من وزارة الحج والعمرة.",
+    "timestamp": 1762677875.043122
   }
 ]

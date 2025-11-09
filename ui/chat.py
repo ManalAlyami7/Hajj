@@ -1,6 +1,7 @@
 """
 Chat Interface Module
 Handles chat display, user interactions, and TTS
+Enhanced with copy button for assistant messages
 """
 
 import streamlit as st
@@ -120,13 +121,14 @@ class ChatInterface:
     # Chat History Display
     # -------------------
     def _display_chat_history(self):
-        """Display all messages in chat history with clean modern theme"""
+        """Display all messages in chat history with clean modern theme and copy button"""
         for idx, msg in enumerate(st.session_state.chat_memory):
             role = msg.get("role", "assistant")
             avatar = "🕋" if role == "assistant" else "👤"
+            content = msg.get("content", "")
 
             with st.chat_message(role, avatar=avatar):
-                st.markdown(msg.get("content", ""), unsafe_allow_html=True)
+                st.markdown(content, unsafe_allow_html=True)
 
                 if msg.get("timestamp"):
                     time_color = "#6b7280"
@@ -135,45 +137,103 @@ class ChatInterface:
                         unsafe_allow_html=True
                     )
 
-                # TTS buttons with clean modern colors
+                # TTS and Copy buttons for assistant messages
                 if role == "assistant":
-                    html = f"""
-                    <div style="margin:8px 0; display:flex; gap:10px;">
-                        <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                                       border:2px solid #e5e7eb; background:white; color:#1f2937;
-                                       cursor:pointer; transition: all 0.3s ease;
-                                       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);"
-                                onmouseover="this.style.background='#f9fafb'; this.style.boxShadow='0 4px 10px rgba(0, 0, 0, 0.1)'"
-                                onmouseout="this.style.background='white'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.06)'"
-                                onclick="fetch('/generate_tts', {{
-                                    method: 'POST',
-                                    headers: {{'Content-Type':'application/json'}},
-                                    body: JSON.stringify({{'text':'{msg.get('content','').replace("'", "\\'")}'}})
-                                }}).then(resp => resp.json())
-                                .then(data => {{
-                                    const audio = new Audio('data:audio/mp3;base64,' + data.audio_b64);
-                                    audio.id = 'audio_{idx}';
-                                    audio.play();
-                                    window.audio_{idx} = audio;
-                                }});"
-                        >🔊</button>
-                        <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                                       border:2px solid #e5e7eb; background:#3b82f6; color:white;
-                                       cursor:pointer; transition: all 0.3s ease; font-weight:600;
-                                       box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);"
-                                onmouseover="this.style.background='#2563eb'; this.style.boxShadow='0 4px 10px rgba(59, 130, 246, 0.4)'"
-                                onmouseout="this.style.background='#3b82f6'; this.style.boxShadow='0 2px 6px rgba(59, 130, 246, 0.3)'"
-                                onclick="if(window.audio_{idx}){{ window.audio_{idx}.currentTime=0; window.audio_{idx}.play(); }}">🔄</button>
-                        <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                                       border:2px solid #e5e7eb; background:white; color:#ef4444;
-                                       cursor:pointer; transition: all 0.3s ease; font-weight:600;
-                                       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);"
-                                onmouseover="this.style.background='#fef2f2'; this.style.borderColor='#fca5a5'"
-                                onmouseout="this.style.background='white'; this.style.borderColor='#e5e7eb'"
-                                onclick="if(window.audio_{idx}){{ window.audio_{idx}.pause(); }}">⏹️</button>
-                    </div>
-                    """
-                    components.html(html, height=60)
+                    self._render_action_buttons(content, idx)
+
+    def _render_action_buttons(self, text: str, idx: int):
+        """Render TTS and Copy buttons with clean modern theme"""
+        # Clean text for copying (remove markdown and HTML)
+        import re
+        clean_text = re.sub(r'<[^>]+>', '', text)  # Remove HTML tags
+        clean_text = re.sub(r'\*\*([^\*]+)\*\*', r'\1', clean_text)  # Remove bold markdown
+        clean_text = clean_text.replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n')
+        
+        html = f"""
+        <div style="margin:8px 0; display:flex; gap:10px; flex-wrap:wrap;">
+            <!-- TTS Play Button -->
+            <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
+                           border:2px solid #e5e7eb; background:white; color:#1f2937;
+                           cursor:pointer; transition: all 0.3s ease;
+                           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);"
+                    onmouseover="this.style.background='#f9fafb'; this.style.boxShadow='0 4px 10px rgba(0, 0, 0, 0.1)'"
+                    onmouseout="this.style.background='white'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.06)'"
+                    onclick="
+                        (async () => {{
+                            const resp = await fetch('/generate_tts', {{
+                                method: 'POST',
+                                headers: {{'Content-Type':'application/json'}},
+                                body: JSON.stringify({{'text':'{text.replace("'", "\\'")}'}})
+                            }});
+                            const data = await resp.json();
+                            const audio = new Audio('data:audio/mp3;base64,' + data.audio_b64);
+                            audio.id = 'audio_{idx}';
+                            audio.play();
+                            window.audio_{idx} = audio;
+                        }})();
+                    ">🔊</button>
+            
+            <!-- TTS Replay Button -->
+            <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
+                           border:2px solid #e5e7eb; background:#3b82f6; color:white;
+                           cursor:pointer; transition: all 0.3s ease; font-weight:600;
+                           box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);"
+                    onmouseover="this.style.background='#2563eb'; this.style.boxShadow='0 4px 10px rgba(59, 130, 246, 0.4)'"
+                    onmouseout="this.style.background='#3b82f6'; this.style.boxShadow='0 2px 6px rgba(59, 130, 246, 0.3)'"
+                    onclick="if(window.audio_{idx}){{ window.audio_{idx}.currentTime=0; window.audio_{idx}.play(); }}">🔄</button>
+            
+            <!-- TTS Stop Button -->
+            <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
+                           border:2px solid #e5e7eb; background:white; color:#ef4444;
+                           cursor:pointer; transition: all 0.3s ease; font-weight:600;
+                           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);"
+                    onmouseover="this.style.background='#fef2f2'; this.style.borderColor='#fca5a5'"
+                    onmouseout="this.style.background='white'; this.style.borderColor='#e5e7eb'"
+                    onclick="if(window.audio_{idx}){{ window.audio_{idx}.pause(); }}">⏹️</button>
+            
+            <!-- Copy Button -->
+            <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
+                           border:2px solid #e5e7eb; background:white; color:#10b981;
+                           cursor:pointer; transition: all 0.3s ease; font-weight:600;
+                           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);"
+                    onmouseover="this.style.background='#ecfdf5'; this.style.borderColor='#6ee7b7'"
+                    onmouseout="this.style.background='white'; this.style.borderColor='#e5e7eb'"
+                    onclick="
+                        const textToCopy = `{clean_text}`;
+                        navigator.clipboard.writeText(textToCopy).then(() => {{
+                            const btn = event.target;
+                            const originalText = btn.innerHTML;
+                            btn.innerHTML = '✅';
+                            btn.style.background = '#10b981';
+                            btn.style.color = 'white';
+                            
+                            // Show toast notification
+                            const toast = document.createElement('div');
+                            toast.innerText = '✅ تم النسخ بنجاح! / Copied successfully!';
+                            toast.style = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#10b981; color:white; padding:12px 20px; border-radius:12px; border:2px solid white; z-index:9999; font-size:0.95rem; font-weight:600; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); animation: slideUp 0.3s ease;';
+                            document.body.appendChild(toast);
+                            
+                            setTimeout(() => {{
+                                btn.innerHTML = originalText;
+                                btn.style.background = 'white';
+                                btn.style.color = '#10b981';
+                                toast.remove();
+                            }}, 2000);
+                        }}).catch(err => {{
+                            console.error('Copy failed:', err);
+                            alert('فشل النسخ / Copy failed');
+                        }});
+                    ">📋</button>
+        </div>
+        
+        <style>
+        @keyframes slideUp {{
+            from {{ bottom: -50px; opacity: 0; }}
+            to {{ bottom: 20px; opacity: 1; }}
+        }}
+        </style>
+        """
+        components.html(html, height=70)
 
     # -------------------
     # User Input Handling
@@ -265,12 +325,10 @@ class ChatInterface:
     def _handle_needs_info(self, info_request: str):
         lang = st.session_state.get("language", "English")
         st.markdown(info_request)
-        self._create_voice_player(info_request)  
         self._add_message("assistant", info_request)
 
     def _respond(self, content: str):
         st.markdown(content)
-        self._create_voice_player(content)
         self._add_message("assistant", content)
 
     # -------------------
@@ -280,7 +338,6 @@ class ChatInterface:
         summary = state.get("summary", "")
         if summary:
             st.markdown(summary)
-            self._create_voice_player(summary) 
             self._add_message("assistant", summary)
         else:
             st.warning(summary)
@@ -372,57 +429,6 @@ class ChatInterface:
             </div>
             """, unsafe_allow_html=True)
         save_chat_memory()
-
-    # -------------------
-    # TTS
-    # -------------------
-    def _create_voice_player(self, text: str, idx: str = None):
-        """Render audio player for TTS with clean modern theme"""
-        import streamlit.components.v1 as components
-        import uuid
-
-        if idx is None:
-            idx = str(uuid.uuid4())
-
-        html = f"""
-        <div style="margin:8px 0; display:flex; gap:10px;">
-            <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                           border:2px solid #e5e7eb; background:white; color:#1f2937;
-                           cursor:pointer; transition: all 0.3s ease;
-                           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);"
-                    onmouseover="this.style.background='#f9fafb'; this.style.boxShadow='0 4px 10px rgba(0, 0, 0, 0.1)'"
-                    onmouseout="this.style.background='white'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.06)'"
-                    onclick="
-                        (async () => {{
-                            const resp = await fetch('/generate_tts', {{
-                                method: 'POST',
-                                headers: {{'Content-Type':'application/json'}},
-                                body: JSON.stringify({{'text':'{text.replace("'", "\\'")}'}})
-                            }});
-                            const data = await resp.json();
-                            const audio = new Audio('data:audio/mp3;base64,' + data.audio_b64);
-                            audio.id = 'audio_{idx}';
-                            audio.play();
-                            window.audio_{idx} = audio;
-                        }})();
-                    ">🔊</button>
-            <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                           border:2px solid #e5e7eb; background:#3b82f6; color:white;
-                           cursor:pointer; transition: all 0.3s ease; font-weight:600;
-                           box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);"
-                    onmouseover="this.style.background='#2563eb'; this.style.boxShadow='0 4px 10px rgba(59, 130, 246, 0.4)'"
-                    onmouseout="this.style.background='#3b82f6'; this.style.boxShadow='0 2px 6px rgba(59, 130, 246, 0.3)'"
-                    onclick="if(window.audio_{idx}){{ window.audio_{idx}.currentTime=0; window.audio_{idx}.play(); }}">🔄</button>
-            <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                           border:2px solid #e5e7eb; background:white; color:#ef4444;
-                           cursor:pointer; transition: all 0.3s ease; font-weight:600;
-                           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);"
-                    onmouseover="this.style.background='#fef2f2'; this.style.borderColor='#fca5a5'"
-                    onmouseout="this.style.background='white'; this.style.borderColor='#e5e7eb'"
-                    onclick="if(window.audio_{idx}){{ window.audio_{idx}.pause(); }}">⏹️</button>
-        </div>
-        """
-        components.html(html, height=60)
 
     # -------------------
     # Chat Memory Helpers
