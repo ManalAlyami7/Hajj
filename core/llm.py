@@ -112,9 +112,13 @@ class LLMManager:
         """Initialize OpenAI client and company memory"""
         self.client = self._get_client()
         self.voice_map = {
-            "العربية": "onyx",
+            "العربية": "onyx",  # Deeper voice for Arabic
             "English": "alloy"
         }
+        # Initialize company memory tracking
+        if "last_company_name" not in st.session_state:
+            st.session_state["last_company_name"] = None
+            logger.info("🆕 Initialized company memory tracking")
     
     @st.cache_resource
     def _get_client(_self):
@@ -144,12 +148,38 @@ class LLMManager:
     
         return context
         
-    def update_last_agency(self, user_input: str, extracted_company: Optional[str]):
-        """Keep track of last mentioned agency"""
-        if "last_agency_name" not in st.session_state:
-            st.session_state["last_agency_name"] = None
-        if extracted_company:
-            st.session_state["last_agency_name"] = extracted_company
+    def update_last_company(self, company_name: Optional[str]):
+        """
+        Update the last mentioned company in session state
+        This enables context-aware follow-up questions
+        """
+        if company_name:
+            st.session_state["last_company_name"] = company_name
+            logger.info(f"💾 Company memory updated: {company_name}")
+    
+    def _is_followup_question(self, text: str) -> bool:
+        """
+        Detect if a question is a follow-up (vague reference to previous context)
+        Short questions with location/detail keywords are likely follow-ups
+        """
+        text_lower = text.lower().strip()
+        
+        # Short questions (4 words or less) are candidates for follow-ups
+        if len(text_lower.split()) <= 4:
+            followup_keywords_ar = [
+                "موقع", "عنوان", "موجود", "معتمد", "مصرح", "رقم", "ايميل", 
+                "تفاصيل", "تقييم", "خريطة", "وين", "كيف", "متى", 
+                "هل هي", "هل هو", "فين", "ايش", "شنو"
+            ]
+            followup_keywords_en = [
+                "location", "address", "where", "authorized", "phone", "email", 
+                "details", "rating", "map", "is it", "contact", "info", "number"
+            ]
+            
+            all_keywords = followup_keywords_ar + followup_keywords_en
+            return any(kw in text_lower for kw in all_keywords)
+        
+        return False
 
     def detect_intent(self, user_input: str, language: str) -> Dict:
         """
@@ -391,14 +421,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             logger.info(f"SQL generated - Type: {sql_data.query_type}, Safety: {sql_data.safety_checked}")
             logger.info(f"Explanation: {sql_data.explanation}")
             
-            # حفظ اسم الوكالة الأخيرة إذا موجود
             if sql_data.sql_query and sql_data.safety_checked:
-                company_name = None
-                if sql_data.filters_applied:
-                    company_name = sql_data.filters_applied.get("company_name")
-                if company_name:
-                    st.session_state["last_company_name"] = company_name
-                
                 return {
                     "sql_query": sql_data.sql_query,
                     "query_type": sql_data.query_type,
@@ -412,38 +435,48 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         except Exception as e:
             logger.error(f"Structured SQL generation failed: {e}")
             return None
-
     
     def generate_summary(self, user_input: str, language: str, row_count: int, sample_rows: List[Dict]) -> Dict:
         """
         Generate natural, friendly, and structured summary of query results.
         Adds assistant-like sentences and recommendations based on intent.
+        Auto-detects language from user input for accurate responses.
         """
+        # Auto-detect language from user input (override parameter if needed)
+        detected_language = self._detect_language_from_text(user_input)
+        if detected_language:
+            language = detected_language
+            logger.info(f"🌐 Language auto-detected from input: {language}")
+        
         if row_count == 0:
             return {
                 "summary": "No results found. Try rephrasing your question or broadening the search." if language == "English" else "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال.",
             }
-        # حفظ اسم الوكالة الأخيرة (أول صف في النتائج)
-        first_row = sample_rows[0]
-        last_agency = first_row.get("hajj_company_en") or first_row.get("hajj_company_ar")
-        if last_agency:
-            st.session_state["last_company_name"] = last_agency
+
         
         data_preview = json.dumps(sample_rows[:50], ensure_ascii=False)
 
         summary_prompt = f"""
 You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
 
+🚨 CRITICAL LANGUAGE RULE:
+- User question language: {language}
+- You MUST respond in {language} ONLY
+- If language is "العربية", respond COMPLETELY in Arabic
+- If language is "English", respond COMPLETELY in English
+- Do NOT mix languages in your response
+
 Your task:
 → Summarize SQL query results clearly and naturally, with a warm, conversational tone that feels friendly and professional.
 
 User question: {user_input}
-Language: {language}
 Data: {data_preview}
 
 Instructions:
-- Always acknowledge the user's question
-- Use sentences like "Here are the results I found for you:" or "Based on the data, here's what I found:"
+- ALWAYS respond in {language}
+- Always acknowledge the user's question in {language}
+- Arabic examples: "بناءً على البيانات، وجدت لك النتائج التالية:" أو "إليك ما وجدته:"
+- English examples: "Here are the results I found for you:" or "Based on the data, here's what I found:"
 - Be concise and clear
 - Highlight number of matching records
 - Provide actionable advice if relevant
@@ -457,54 +490,73 @@ Behavior:
    - Always include Google Maps Link.
 
 2️⃣ If the user does NOT mention "agency" or the context is unclear:
-   - Politely ask the user to clarify what they would like to know.
-   - Do NOT assume they are asking about a Hajj agency or a specific column.
+   - Politely ask the user to clarify what they would like to know IN {language}.
 
-Columns:
-- Default summary columns are:
-hajj_company_en, hajj_company_ar, formatted_address, 
-city, country, email, contact_Info, rating_reviews, is_authorized,
-google_maps_link
+Columns to include in summary:
+- hajj_company_en, hajj_company_ar, formatted_address, 
+- city, country, email, contact_Info, rating_reviews, is_authorized,
+- google_maps_link
 
-Language-specific content rules:
-- If the user question is in **Arabic**, output `city`, `country`, `is_authorized` in Arabic.  
-- If the user question is in **English**, output `city`, `country`, `is_authorized` in English.  
-- Column names in the output can also be translated to match user language.
+🚨 CRITICAL LANGUAGE-SPECIFIC RULES:
+- If {language} is "العربية":
+  * Translate ALL field names to Arabic
+  * city → المدينة
+  * country → الدولة
+  * email → البريد الإلكتروني
+  * contact_Info → رقم التواصل
+  * rating_reviews → التقييم
+  * is_authorized → مصرح / معتمد (translate "Yes" to "نعم، معتمد" and "No" to "لا، غير معتمد")
+  * formatted_address → العنوان
+  * Google Maps Link → رابط خرائط جوجل
+
+- If {language} is "English":
+  * Keep all field names in English
+  * is_authorized → translate to "Yes, Authorized" or "No, Not Authorized"
 
 Behavior based on user question:
-- If the user asks about a **specific column**, provide only that column's data.
-- If the user asks for **all information** or does not specify, provide all default columns.
-- Translate city and country, is_authorized if needed based on user language
+- If the user asks about a **specific column**, provide only that column's data IN {language}
+- If the user asks for **all information** or does not specify, provide all default columns IN {language}
+- ALWAYS respond in {language} - this is CRITICAL
 - Include contact info and Google Maps link if available
-- Respond in the same language as the user's question
-- Translate the column names if needed based on user language
-- Detect the user language from user question and respond in the same language.
 - Ensure the response is complete and readable, no truncated or missing information
-- You are designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah.
+- You are designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
 
 - Always include Google Maps Link exactly as it appears in the column `google_maps_link`.
 
-Output format (per agency) when showing all columns:
+🌍 OUTPUT FORMAT:
+
+If {language} is "العربية", use this format:
+- الاسم (بالعربية / بالإنجليزية):
+- المدينة:
+- الدولة:
+- البريد الإلكتروني:
+- رقم التواصل:
+- التقييم:
+- الحالة: (نعم، معتمد / لا، غير معتمد)
+- رابط خرائط جوجل:
+
+If {language} is "English", use this format:
 - Name (Arabic / English):
 - City:
 - Country:
 - Email:
 - Contact Info:
 - Rating:
-- Authorized:
+- Status: (Yes, Authorized / No, Not Authorized)
 - Google Maps Link:
 
-- Keep tone friendly, professional, and natural.
-- Mix sentences and bullets; add small friendly phrases if appropriate.
-
-- Do NOT invent any data.
-- If rows count more than 1, list the names and important details of up to 10 agencies, use numbers or bullets and emojis if appropriate.
+- Keep tone friendly, professional, and natural IN {language}
+- Mix sentences and bullets; add small friendly phrases if appropriate IN {language}
+- Do NOT invent any data
+- If rows count more than 1, list the names and important details of up to 10 agencies, use numbers or bullets and emojis if appropriate
+- REMEMBER: Your ENTIRE response must be in {language}
 
 Feel free to:
-- Mix sentences and bullet points
-- Add small friendly phrases like "You can contact them confidently."
+- Mix sentences and bullet points (in {language})
+- Add small friendly phrases like "يمكنك التواصل معهم بثقة." (Arabic) or "You can contact them confidently." (English)
 - Vary sentence structure per agency
 - Keep summary concise and readable
+- BUT ALWAYS IN {language} ONLY
 """
 
         try:
@@ -555,6 +607,28 @@ Feel free to:
         except Exception as e:
             logger.error(f"TTS failed: {e}")
             return None
+    
+    def _detect_language_from_text(self, text: str) -> Optional[str]:
+        """
+        Detect if text is Arabic or English based on character analysis
+        Returns: "العربية" or "English" or None
+        """
+        if not text:
+            return None
+        
+        # Count Arabic and English characters
+        arabic_chars = sum(1 for c in text if '\u0600' <= c <= '\u06FF')
+        english_chars = sum(1 for c in text if c.isalpha() and c.isascii())
+        
+        total_chars = arabic_chars + english_chars
+        if total_chars == 0:
+            return None
+        
+        # If more than 30% Arabic characters, consider it Arabic
+        if arabic_chars / total_chars > 0.3:
+            return "العربية"
+        else:
+            return "English"
     
     @staticmethod
     def _get_sql_system_prompt(language: str) -> str:
