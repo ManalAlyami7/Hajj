@@ -629,47 +629,48 @@ class LLMManager:
         return None
     
     def ask_for_more_info(self, user_input: str, language: str) -> Dict:
-        """Generate structured response asking user for more specific information using LangChain memory"""
+        """Generate structured response asking user for more specific information using LangChain memory with guaranteed JSON output"""
         is_arabic = language == "العربية"
+
+        system_prompt = f"""
+        You are a helpful Hajj verification assistant.
+        Your task is to ask the user for more specific details if their question is vague.
+        Respond in {language} ONLY.
         
-        prompt = f"""You are a helpful Hajj verification assistant.
-        The user's question: "{user_input}" needs more details to provide accurate information.
-        
-        Examples of vague questions:
-        - "I want to verify an agency" (which agency?)
-        - "Tell me about Hajj companies" (what specifically?)
-        - "Is this authorized?" (which company?)
-        - "Check this company" (need company name)
-        - "وين موقعها؟" without context (which company's location?)
-        
-        Ask for specific details in a friendly way. Focus on:
-        1. Agency name (if verifying a company)
-        2. Location (city/country/Google Maps link)
-        3. What specifically they want to know
-        
-        Respond in the user's language, keep it short (2–3 sentences), and friendly.
-        Add a simple example of a more specific question.
+        Instructions:
+        - Keep the response short (2-3 sentences), friendly, and professional.
+        - Ask for agency name, location (city/country/Google Maps link), and what they want to know.
+        - Provide one clear example of a well-formed question.
+        - Output ONLY valid JSON matching this structure:
+
+        {{
+            "needs_info": "<friendly message asking for more details>",
+            "suggestions": ["<example suggestion 1>", "<example suggestion 2>"],
+            "missing_info": ["<list missing pieces of info>"],
+            "sample_query": "<example of a well-formed query>"
+        }}
         """
+
         try:
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "Help user provide specific Hajj agency queries."},
-                    {"role": "user", "content": prompt},
-                    *self.build_chat_context(limit=None)
-                ],
-                response_format=NEEDSInfoResponse,
-                temperature=0.7
-            )
-            info_data = response.choices[0].message.parsed
+            prompt = f"{system_prompt}\nUser's vague question: \"{user_input}\""
+
+            # استخدم LangChain مع ذاكرة المحادثة
+            response_text = self.conversation.predict(user_input=prompt)
+
+            # تحويل الرد إلى dict (JSON)
+            info_data = json.loads(response_text)
+
+            # التأكد من وجود كل الحقول المطلوبة
             return {
-                "needs_info": info_data.needs_info,
-                "suggestions": info_data.suggestions,
-                "missing_info": info_data.missing_info,
-                "sample_query": info_data.sample_query
+                "needs_info": info_data.get("needs_info", ""),
+                "suggestions": info_data.get("suggestions", []),
+                "missing_info": info_data.get("missing_info", []),
+                "sample_query": info_data.get("sample_query", "")
             }
+
         except Exception as e:
             logger.error(f"More info prompt generation failed: {e}")
+            # fallback آمن
             return {
                 "needs_info": "Could you provide more details? 🤔" if not is_arabic else "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔",
                 "suggestions": ["Is Al Huda Hajj Agency authorized?"] if not is_arabic else ["هل شركة الهدى للحج معتمدة؟"],
