@@ -467,36 +467,34 @@ audio {{
   align-items: center;
 }}
 
-/* Enhanced stop button styling - positioned below response container */
-
-
+/* Enhanced stop button styling - Below header, inside container */
 div[data-testid="stButton"] > button[kind="primary"] {{
     background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
     border: none !important;
-    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.5) !important;
+    box-shadow: 0 3px 12px rgba(212, 175, 55, 0.4) !important;
     transition: all 0.3s ease !important;
     font-weight: 600 !important;
     animation: pulse-stop 2s infinite !important;
-    margin: 0 !important;
+    margin: 0.75rem 0 !important;
     border-radius: 8px !important;
-    padding: 0.7rem 1.2rem !important;
+    padding: 0.6rem 1rem !important;
     font-size: 0.95rem !important;
 }}
 
 div[data-testid="stButton"] > button[kind="primary"]:hover {{
     transform: translateY(-2px) !important;
-    box-shadow: 0 6px 22px rgba(212, 175, 55, 0.7) !important;
+    box-shadow: 0 5px 18px rgba(212, 175, 55, 0.6) !important;
     background: linear-gradient(135deg, #e6c345 0%, #c9a527 100%) !important;
 }}
 
 div[data-testid="stButton"] > button[kind="primary"]:active {{
     transform: translateY(0) !important;
-    box-shadow: 0 2px 10px rgba(212, 175, 55, 0.5) !important;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.5) !important;
 }}
 
 @keyframes pulse-stop {{
-    0%, 100% {{ box-shadow: 0 4px 16px rgba(212, 175, 55, 0.5); }}
-    50% {{ box-shadow: 0 4px 24px rgba(212, 175, 55, 0.8); }}
+    0%, 100% {{ box-shadow: 0 3px 12px rgba(212, 175, 55, 0.4); }}
+    50% {{ box-shadow: 0 3px 20px rgba(212, 175, 55, 0.7); }}
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -615,11 +613,9 @@ with col_right:
             else t('voice_status_ready', st.session_state.language))}
         </div>
       </div>
-      <div class='response-content'>{clean_response}</div> 
-    </div>
     """, unsafe_allow_html=True)
     
-    # Stop button OUTSIDE but styled to look part of the container
+    # Stop button right after header - Only show when speaking
     if st.session_state.is_speaking:
         if st.button(
             f"⏹️ {t('voice_stop_speaking', st.session_state.language)}",
@@ -632,6 +628,12 @@ with col_right:
             st.session_state.is_speaking = False
             st.session_state.status = t('voice_status_interrupted', st.session_state.language)
             st.rerun()
+    
+    # Response content and close container
+    st.markdown(f"""
+      <div class='response-content'>{clean_response}</div> 
+    </div>
+    """, unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
 
