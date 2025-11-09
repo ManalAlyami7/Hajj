@@ -1,7 +1,7 @@
 """
-Chat Interface Module
-Handles chat display, user interactions, and TTS
-Enhanced with copy button for assistant messages
+Professional Chat Interface Module
+Enhanced with formal design, improved UX, and consistent branding
+Fixed color scheme with proper contrast and visibility
 """
 
 import streamlit as st
@@ -14,9 +14,10 @@ from utils.state import save_chat_memory
 from utils.validators import validate_user_input
 import uuid
 import streamlit.components.v1 as components
+import re
 
 class ChatInterface:
-    """Manages chat interface and message display"""
+    """Manages professional chat interface and message display"""
 
     def __init__(self, chat_graph, llm_manager):
         self.graph = chat_graph
@@ -32,14 +33,380 @@ class ChatInterface:
     # Public Render Method
     # -------------------
     def render(self):
-        """Render chat interface"""
+        """Render professional chat interface"""
+        self._inject_professional_styles()
         self._display_chat_history()
         
-        # Show quick actions only if conditions are met
         if self._show_quick_actions():
             self._display_quick_actions()
         
         self._handle_user_input()
+
+    # -------------------
+    # Professional Styling
+    # -------------------
+    def _inject_professional_styles(self):
+        """Inject enhanced professional CSS styles with fixed colors"""
+        st.markdown("""
+        <style>
+        /* Professional Color Palette */
+        :root {
+            --primary-gold: #d4af37;
+            --primary-gold-light: #f4e5b5;
+            --primary-gold-dark: #b8941f;
+            --primary-dark: #1a1f2e;
+            --secondary-dark: #0f1419;
+            --accent-blue: #4a9eff;
+            --success-green: #22c55e;
+            --error-red: #ef4444;
+            --warning-orange: #f97316;
+            --text-dark: #1f2937;
+            --text-light: #f8fafc;
+            --text-muted: #64748b;
+            --border-light: #e2e8f0;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+        }
+
+        /* Main Background */
+        .main {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        }
+
+        /* Chat Container Styling */
+        .stChatMessage {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 2px solid var(--border-light);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+        }
+
+        .stChatMessage:hover {
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-gold);
+            transform: translateY(-2px);
+        }
+
+        /* User Message Styling */
+        .stChatMessage[data-testid*="user"] {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-left: 5px solid var(--accent-blue);
+        }
+
+        /* Assistant Message Styling */
+        .stChatMessage[data-testid*="assistant"] {
+            background: linear-gradient(135deg, #fef9e7 0%, #fdf4d8 100%);
+            border-left: 5px solid var(--primary-gold);
+        }
+
+        /* Chat Message Text */
+        .stChatMessage p, .stChatMessage span, .stChatMessage div {
+            color: var(--text-dark) !important;
+            line-height: 1.7;
+        }
+
+        /* Chat Input Styling */
+        .stChatInputContainer {
+            border-top: 3px solid var(--primary-gold);
+            background: white;
+            padding: 1.5rem 0;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .stChatInput > div {
+            border-radius: 24px;
+            border: 2px solid var(--primary-gold);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .stChatInput > div:focus-within {
+            border-color: var(--primary-gold-dark);
+            box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
+            transform: scale(1.01);
+        }
+
+        .stChatInput input {
+            color: var(--text-dark) !important;
+            font-size: 1rem !important;
+        }
+
+        .stChatInput input::placeholder {
+            color: var(--text-muted) !important;
+        }
+
+        /* Quick Actions Styling */
+        .quick-actions-container {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            padding: 2rem;
+            border-radius: 20px;
+            border: 3px solid var(--primary-gold);
+            box-shadow: var(--shadow-md);
+            margin: 2rem 0;
+        }
+
+        .quick-actions-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .quick-actions-header h3 {
+            color: var(--primary-dark);
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin: 0 0 0.5rem 0;
+            letter-spacing: -0.025em;
+        }
+
+        .quick-actions-header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        /* Professional Button Styling */
+        .stButton > button {
+            width: 100% !important;
+            padding: 1.1rem 1.5rem !important;
+            border-radius: 14px !important;
+            font-weight: 700 !important;
+            font-size: 1rem !important;
+            cursor: pointer !important;
+            border: 2px solid var(--primary-gold) !important;
+            background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-gold-dark) 100%) !important;
+            color: white !important;
+            box-shadow: var(--shadow-sm) !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            letter-spacing: 0.025em !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .stButton > button:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg) !important;
+            background: linear-gradient(135deg, var(--primary-gold-dark) 0%, #9d7a1a 100%) !important;
+            border-color: var(--primary-gold-dark) !important;
+        }
+
+        .stButton > button:active {
+            transform: translateY(-1px);
+        }
+
+        /* Action Buttons Container */
+        .action-buttons-container {
+            display: flex;
+            gap: 12px;
+            margin-top: 1.2rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, #4a9eff 0%, #2563eb 100%);
+            color: white;
+            border-color: #2563eb;
+        }
+
+        .action-btn.primary:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        }
+
+        .action-btn.success {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+            border-color: #16a34a;
+        }
+
+        .action-btn.success:hover {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+        }
+
+        .action-btn.danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border-color: #dc2626;
+        }
+
+        .action-btn.danger:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
+
+        /* Timestamp Styling */
+        .message-timestamp {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Toast Notification */
+        .toast-notification {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+            padding: 16px 28px;
+            border-radius: 16px;
+            border: 2px solid white;
+            z-index: 9999;
+            font-size: 1rem;
+            font-weight: 700;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease, fadeOut 0.3s ease 2.7s;
+        }
+
+        @keyframes slideUp {
+            from {
+                bottom: -50px;
+                opacity: 0;
+            }
+            to {
+                bottom: 30px;
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                bottom: -50px;
+            }
+        }
+
+        /* Results Card Styling */
+        .results-card {
+            padding: 2rem;
+            margin: 1.5rem 0;
+            border-radius: 16px;
+            background: white;
+            border: 2px solid var(--border-light);
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .results-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .results-card.authorized {
+            border-left: 6px solid var(--success-green);
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        }
+
+        .results-card.unauthorized {
+            border-left: 6px solid var(--error-red);
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+        }
+
+        .results-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1.2rem;
+        }
+
+        .results-card-title {
+            color: var(--text-dark);
+            font-size: 1.25rem;
+            font-weight: 800;
+            line-height: 1.4;
+        }
+
+        .status-badge {
+            padding: 8px 18px;
+            border-radius: 24px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            white-space: nowrap;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-badge.authorized {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+            border: 2px solid #15803d;
+        }
+
+        .status-badge.unauthorized {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: 2px solid #b91c1c;
+        }
+
+        .results-card-content {
+            color: var(--text-dark);
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        .results-card-content strong {
+            color: var(--primary-dark);
+            font-weight: 700;
+        }
+
+        /* Loading Spinner */
+        .stSpinner > div {
+            border-color: var(--primary-gold) !important;
+        }
+
+        /* Error/Success Messages */
+        .stAlert {
+            border-radius: 12px;
+            border-width: 2px;
+            font-weight: 600;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--primary-gold) 0%, var(--primary-gold-dark) 100%);
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, var(--primary-gold-dark) 0%, #9d7a1a 100%);
+        }
+        </style>
+        """, unsafe_allow_html=True)
 
     # -------------------
     # Quick Actions
@@ -53,44 +420,16 @@ class ChatInterface:
         return False
 
     def _display_quick_actions(self):
-        """Display quick action buttons with clean modern theme"""
+        """Display professional quick action buttons"""
         lang = st.session_state.get("language", "English")
         
         st.markdown(f"""
-            <div style='background: white; 
-                        padding: 1.2rem; border-radius: 16px; margin-bottom: 1rem;
-                        border: 2px solid #e5e7eb; text-align: center;
-                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);'>
-                <h3 style='margin: 0; color: #1f2937; font-weight: 700;
-                           letter-spacing: 0.3px;'>
-                    {t('quick_actions', lang)}
-                </h3>
+            <div class='quick-actions-container'>
+                <div class='quick-actions-header'>
+                    <h3>✨ {t('quick_actions', lang)}</h3>
+                    <p>Select a quick action to get started instantly</p>
+                </div>
             </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <style>
-        .quick-actions-row { display:flex; gap:12px; margin:12px 0; flex-wrap:wrap; }
-        .quick-action { display:inline-block; width:100% !important; }
-        .stButton>button {
-            width:100% !important;
-            padding:14px 18px !important;
-            border-radius:12px !important;
-            font-weight:600 !important;
-            cursor:pointer !important;
-            border:2px solid #e5e7eb !important;
-            background: white !important;
-            color:#1f2937 !important;
-            box-shadow:0 2px 8px rgba(0, 0, 0, 0.06) !important;
-            transition: all 0.3s ease !important;
-        }
-        .stButton>button:hover { 
-            transform: translateY(-2px); 
-            box-shadow:0 6px 16px rgba(0, 0, 0, 0.12) !important;
-            border-color: #d1d5db !important;
-            background: #f9fafb !important;
-        }
-        </style>
         """, unsafe_allow_html=True)
 
         col1, col2 = st.columns(2)
@@ -122,6 +461,7 @@ class ChatInterface:
     # -------------------
     def _display_chat_history(self):
 <<<<<<< HEAD
+<<<<<<< HEAD
         """Display all messages in chat history with clean modern theme"""
         for idx, msg in enumerate(st.session_state.chat_memory):
             role = msg.get("role", "assistant")
@@ -131,6 +471,9 @@ class ChatInterface:
                 st.markdown(msg.get("content", ""), unsafe_allow_html=True)
 =======
         """Display all messages in chat history with clean modern theme and copy button"""
+=======
+        """Display all messages with professional styling"""
+>>>>>>> fb4da5c (Update chat and voice UI, and main app)
         for idx, msg in enumerate(st.session_state.chat_memory):
             role = msg.get("role", "assistant")
             avatar = "🕋" if role == "assistant" else "👤"
@@ -141,12 +484,12 @@ class ChatInterface:
 >>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
 
                 if msg.get("timestamp"):
-                    time_color = "#6b7280"
                     st.markdown(
-                        f"<div style='color: {time_color}; font-size:0.8rem; margin-top:4px; font-weight:500'>🕐 {self._format_time(msg['timestamp'])}</div>",
+                        f"<div class='message-timestamp'>🕐 {self._format_time(msg['timestamp'])}</div>",
                         unsafe_allow_html=True
                     )
 
+<<<<<<< HEAD
 <<<<<<< HEAD
                 # TTS buttons with clean modern colors
                 if role == "assistant":
@@ -189,103 +532,92 @@ class ChatInterface:
                     components.html(html, height=60)
 =======
                 # TTS and Copy buttons for assistant messages
+=======
+>>>>>>> fb4da5c (Update chat and voice UI, and main app)
                 if role == "assistant":
                     self._render_action_buttons(content, idx)
 
     def _render_action_buttons(self, text: str, idx: int):
-        """Render TTS and Copy buttons with clean modern theme"""
-        # Clean text for copying (remove markdown and HTML)
-        import re
-        clean_text = re.sub(r'<[^>]+>', '', text)  # Remove HTML tags
-        clean_text = re.sub(r'\*\*([^\*]+)\*\*', r'\1', clean_text)  # Remove bold markdown
-        clean_text = clean_text.replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n')
+        """Render professional TTS and Copy buttons"""
+        clean_text = self._clean_text_for_copy(text)
         
         html = f"""
-        <div style="margin:8px 0; display:flex; gap:10px; flex-wrap:wrap;">
-            <!-- TTS Play Button -->
-            <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                           border:2px solid #e5e7eb; background:white; color:#1f2937;
-                           cursor:pointer; transition: all 0.3s ease;
-                           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);"
-                    onmouseover="this.style.background='#f9fafb'; this.style.boxShadow='0 4px 10px rgba(0, 0, 0, 0.1)'"
-                    onmouseout="this.style.background='white'; this.style.boxShadow='0 2px 6px rgba(0, 0, 0, 0.06)'"
-                    onclick="
-                        (async () => {{
-                            const resp = await fetch('/generate_tts', {{
-                                method: 'POST',
-                                headers: {{'Content-Type':'application/json'}},
-                                body: JSON.stringify({{'text':'{text.replace("'", "\\'")}'}})
-                            }});
-                            const data = await resp.json();
-                            const audio = new Audio('data:audio/mp3;base64,' + data.audio_b64);
-                            audio.id = 'audio_{idx}';
-                            audio.play();
-                            window.audio_{idx} = audio;
-                        }})();
-                    ">🔊</button>
+        <div class="action-buttons-container">
+            <button class="action-btn primary" onclick="playAudio_{idx}()">
+                🔊 Play
+            </button>
             
-            <!-- TTS Replay Button -->
-            <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                           border:2px solid #e5e7eb; background:#3b82f6; color:white;
-                           cursor:pointer; transition: all 0.3s ease; font-weight:600;
-                           box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);"
-                    onmouseover="this.style.background='#2563eb'; this.style.boxShadow='0 4px 10px rgba(59, 130, 246, 0.4)'"
-                    onmouseout="this.style.background='#3b82f6'; this.style.boxShadow='0 2px 6px rgba(59, 130, 246, 0.3)'"
-                    onclick="if(window.audio_{idx}){{ window.audio_{idx}.currentTime=0; window.audio_{idx}.play(); }}">🔄</button>
+            <button class="action-btn primary" onclick="replayAudio_{idx}()">
+                🔄 Replay
+            </button>
             
-            <!-- TTS Stop Button -->
-            <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                           border:2px solid #e5e7eb; background:white; color:#ef4444;
-                           cursor:pointer; transition: all 0.3s ease; font-weight:600;
-                           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);"
-                    onmouseover="this.style.background='#fef2f2'; this.style.borderColor='#fca5a5'"
-                    onmouseout="this.style.background='white'; this.style.borderColor='#e5e7eb'"
-                    onclick="if(window.audio_{idx}){{ window.audio_{idx}.pause(); }}">⏹️</button>
+            <button class="action-btn danger" onclick="stopAudio_{idx}()">
+                ⏹️ Stop
+            </button>
             
-            <!-- Copy Button -->
-            <button style="font-size:20px; padding:8px 14px; border-radius:10px; 
-                           border:2px solid #e5e7eb; background:white; color:#10b981;
-                           cursor:pointer; transition: all 0.3s ease; font-weight:600;
-                           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);"
-                    onmouseover="this.style.background='#ecfdf5'; this.style.borderColor='#6ee7b7'"
-                    onmouseout="this.style.background='white'; this.style.borderColor='#e5e7eb'"
-                    onclick="
-                        const textToCopy = `{clean_text}`;
-                        navigator.clipboard.writeText(textToCopy).then(() => {{
-                            const btn = event.target;
-                            const originalText = btn.innerHTML;
-                            btn.innerHTML = '✅';
-                            btn.style.background = '#10b981';
-                            btn.style.color = 'white';
-                            
-                            // Show toast notification
-                            const toast = document.createElement('div');
-                            toast.innerText = '✅ تم النسخ بنجاح! / Copied successfully!';
-                            toast.style = 'position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#10b981; color:white; padding:12px 20px; border-radius:12px; border:2px solid white; z-index:9999; font-size:0.95rem; font-weight:600; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4); animation: slideUp 0.3s ease;';
-                            document.body.appendChild(toast);
-                            
-                            setTimeout(() => {{
-                                btn.innerHTML = originalText;
-                                btn.style.background = 'white';
-                                btn.style.color = '#10b981';
-                                toast.remove();
-                            }}, 2000);
-                        }}).catch(err => {{
-                            console.error('Copy failed:', err);
-                            alert('فشل النسخ / Copy failed');
-                        }});
-                    ">📋</button>
+            <button class="action-btn success" onclick="copyText_{idx}()">
+                📋 Copy
+            </button>
         </div>
         
-        <style>
-        @keyframes slideUp {{
-            from {{ bottom: -50px; opacity: 0; }}
-            to {{ bottom: 20px; opacity: 1; }}
-        }}
-        </style>
+        <script>
+            function playAudio_{idx}() {{
+                fetch('/generate_tts', {{
+                    method: 'POST',
+                    headers: {{'Content-Type':'application/json'}},
+                    body: JSON.stringify({{'text':'{text.replace("'", "\\'")}'}})
+                }})
+                .then(resp => resp.json())
+                .then(data => {{
+                    const audio = new Audio('data:audio/mp3;base64,' + data.audio_b64);
+                    audio.id = 'audio_{idx}';
+                    audio.play();
+                    window.audio_{idx} = audio;
+                }});
+            }}
+            
+            function replayAudio_{idx}() {{
+                if(window.audio_{idx}) {{
+                    window.audio_{idx}.currentTime = 0;
+                    window.audio_{idx}.play();
+                }}
+            }}
+            
+            function stopAudio_{idx}() {{
+                if(window.audio_{idx}) {{
+                    window.audio_{idx}.pause();
+                }}
+            }}
+            
+            function copyText_{idx}() {{
+                const text = `{clean_text}`;
+                navigator.clipboard.writeText(text).then(() => {{
+                    showToast('✅ تم النسخ بنجاح! / Copied successfully!');
+                }});
+            }}
+            
+            function showToast(message) {{
+                const toast = document.createElement('div');
+                toast.className = 'toast-notification';
+                toast.innerText = message;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            }}
+        </script>
         """
+<<<<<<< HEAD
         components.html(html, height=70)
 >>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
+=======
+        components.html(html, height=80)
+
+    def _clean_text_for_copy(self, text: str) -> str:
+        """Clean text for clipboard copying"""
+        clean = re.sub(r'<[^>]+>', '', text)
+        clean = re.sub(r'\*\*([^\*]+)\*\*', r'\1', clean)
+        clean = clean.replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n')
+        return clean
+>>>>>>> fb4da5c (Update chat and voice UI, and main app)
 
     # -------------------
     # User Input Handling
@@ -295,65 +627,45 @@ class ChatInterface:
         user_input = None
         should_process = False
         
-        # Check if there's a pending example from sidebar that hasn't been processed yet
         if st.session_state.get("pending_example") and not st.session_state.get("processing_example"):
-            # Mark as processing
             st.session_state.processing_example = True
-            
-            # Get the last user message from chat memory
             if st.session_state.chat_memory and st.session_state.chat_memory[-1].get("role") == "user":
                 user_input = st.session_state.chat_memory[-1].get("content")
                 should_process = True
         
-        # Always show the chat input (this is the fix!)
         chat_input = st.chat_input(t("input_placeholder", lang))
         if chat_input:
             user_input = chat_input
             should_process = True
-            # Add new message from chat input
             self._add_message("user", user_input)
         
-        # If we have input to process
         if should_process and user_input:
-            # Validate input
             valid, err = validate_user_input(user_input)
             if not valid:
                 st.error(f"❌ {err}")
-                # Clear flags
                 st.session_state.pending_example = False
                 st.session_state.processing_example = False
                 return
 
-            # Display user message if it's from chat input
             if chat_input:
                 with st.chat_message("user", avatar="👤"):
                     st.markdown(user_input)
                     st.markdown(
-                        f"<div style='color: #6b7280; font-size:0.8rem; font-weight:500'>🕐 {self._format_time(self._get_current_time())}</div>",
+                        f"<div class='message-timestamp'>🕐 {self._format_time(self._get_current_time())}</div>",
                         unsafe_allow_html=True
                     )
 
-            # Process the query and show response
             with st.chat_message("assistant", avatar="🕋"):
                 with st.spinner(t("thinking", lang)):
                     try:
                         final_state = self.graph.process(user_input, lang)
                         self._handle_response(final_state)
-                        
-                        # Clear flags after successful processing
                         st.session_state.pending_example = False
                         st.session_state.processing_example = False
-                        
                     except Exception as e:
-                        error_msg = f"Error processing request: {str(e)}"
+                        error_msg = f"Error: {str(e)}"
                         st.error(error_msg)
                         self._add_message("assistant", error_msg)
-                        st.markdown(
-                            f"<div style='color: #6b7280; font-size:0.8rem; margin-top:4px; font-weight:500'>🕐 {self._format_time(self._get_current_time())}</div>",
-                            unsafe_allow_html=True
-                        )
-                        
-                        # Clear flags on error too
                         st.session_state.pending_example = False
                         st.session_state.processing_example = False
 
@@ -375,7 +687,6 @@ class ChatInterface:
             self._add_message("assistant", err)
 
     def _handle_needs_info(self, info_request: str):
-        lang = st.session_state.get("language", "English")
         st.markdown(info_request)
 <<<<<<< HEAD
         self._create_voice_player(info_request)  
@@ -391,9 +702,6 @@ class ChatInterface:
 >>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
         self._add_message("assistant", content)
 
-    # -------------------
-    # Database Results Display
-    # -------------------
     def _handle_database_results(self, state: dict):
         summary = state.get("summary", "")
         if summary:
@@ -403,6 +711,7 @@ class ChatInterface:
 =======
 >>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
             self._add_message("assistant", summary)
+<<<<<<< HEAD
         else:
             st.warning(summary)
             self._add_message("assistant", summary)
@@ -547,15 +856,17 @@ class ChatInterface:
         components.html(html, height=60)
 =======
 >>>>>>> 6d085673f358d911d5b250454877f5c350067cb3
+=======
+>>>>>>> fb4da5c (Update chat and voice UI, and main app)
 
     # -------------------
     # Chat Memory Helpers
     # -------------------
     def _add_message(self, role: str, content: str, result_data: dict = None):
         message = {"role": role, "content": content, "timestamp": self._get_current_time()}
-        if result_data: message["result_data"] = result_data
+        if result_data:
+            message["result_data"] = result_data
         st.session_state.chat_memory.append(message)
-        #save_chat_memory()
 
     @staticmethod
     def _get_current_time() -> float:
