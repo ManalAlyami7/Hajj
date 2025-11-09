@@ -421,111 +421,157 @@ class ChatInterface:
             with st.chat_message(role, avatar=avatar):
                 st.markdown(content, unsafe_allow_html=True)
 
-                if msg.get("timestamp"):
-                    st.markdown(
-                        f"<div class='message-timestamp'>🕐 {self._format_time(msg['timestamp'])}</div>",
-                        unsafe_allow_html=True
-                    )
-
                 if role == "assistant":
-                    self._render_action_buttons(content, idx)
+                    self._render_timestamp_and_actions(msg, content, idx)
 
-    def _render_action_buttons(self, text: str, idx: int):
-        """Render professional TTS and Copy buttons with conditional visibility"""
-        clean_text = self._clean_text_for_copy(text)
-        button_key_prefix = f"msg_{idx}"
+    def _render_timestamp_and_actions(self, msg: dict, text: str, idx: int):
+        """Render timestamp with action buttons in a single row"""
         lang = st.session_state.get("language", "English")
-        
+        button_key_prefix = f"msg_{idx}"
         is_playing = st.session_state.audio_playing.get(idx, False)
         
-        if lang == "العربية":
-            play_text = "https://img.icons8.com/?size=100&id=8VE4cuU0UjpB&format=png&color=000000"
-            replay_text = "إعادة 🔄"
-            stop_text = "إيقاف ⏹️"
-            copy_text = "نسخ 📋"
-        else:
-            play_text = "https://img.icons8.com/?size=100&id=8VE4cuU0UjpB&format=png&color=000000"
-            replay_text = "🔄 Replay"
-            stop_text = "⏹️ Stop"
-            copy_text = "📋 Copy"
+        # Icon URLs
+        play_icon = "https://img.icons8.com/?size=100&id=8VE4cuU0UjpB&format=png&color=000000"
+        replay_icon = "https://img.icons8.com/?size=100&id=59872&format=png&color=000000"
+        stop_icon = "https://img.icons8.com/?size=100&id=61012&format=png&color=000000"
+        copy_icon = "https://img.icons8.com/?size=100&id=86206&format=png&color=000000"
         
+        # Text labels
+        replay_text = "إعادة" if lang == "العربية" else "Replay"
+        stop_text = "إيقاف" if lang == "العربية" else "Stop"
+        
+        # Create columns based on playing state
         if is_playing:
-            col1, col2, col3, col4 = st.columns([1, 1, 1, 1])
+            cols = st.columns([2, 0.7, 0.7, 0.7, 0.7])
         else:
-            col1, col2 = st.columns([1, 1])
+            cols = st.columns([2, 0.7, 0.7])
         
-        with col1:
+        # Timestamp in first column
+        with cols[0]:
+            if msg.get("timestamp"):
+                st.markdown(
+                    f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._format_time(msg['timestamp'])}</div>",
+                    unsafe_allow_html=True
+                )
+        
+        # Play button in second column
+        with cols[1]:
             if not is_playing:
-                 if st.button(f"![Play]({play_text})", key=f"{button_key_prefix}_play"):
-                    try:
-                        from gtts import gTTS
-                        import io
-                        
-                        clean_for_speech = re.sub(r'<[^>]+>', '', text)
-                        clean_for_speech = re.sub(r'\*\*([^\*]+)\*\*', r'\1', clean_for_speech)
-                        
-                        if not clean_for_speech.strip():
-                            st.warning("لا يوجد نص لقراءته" if lang == "العربية" else "No text to read")
-                            return
-                        
-                        tts_lang = "ar" if lang == "العربية" else "en"
-                        
-                        tts = gTTS(text=clean_for_speech, lang=tts_lang, slow=False)
-                        audio_fp = io.BytesIO()
-                        tts.write_to_fp(audio_fp)
-                        audio_fp.seek(0)
-                        
-                        audio_bytes = audio_fp.read()
-                        audio_b64 = base64.b64encode(audio_bytes).decode()
-                        
-                        audio_html = f"""
-                        <audio id="audio_{idx}" autoplay>
-                            <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
-                        </audio>
-                        <script>
-                            var audio = document.getElementById('audio_{idx}');
-                            audio.play();
-                        </script>
-                        """
-                        components.html(audio_html, height=0)
-                        
-                        st.session_state.audio_playing[idx] = True
-                        st.rerun()
-                        
-                    except ImportError:
-                        st.error("❌ يرجى تثبيت مكتبة gTTS: pip install gtts" if lang == "العربية" else "❌ Please install gTTS: pip install gtts")
-                    except Exception as e:
-                        st.error(f"❌ خطأ في تشغيل الصوت: {str(e)}" if lang == "العربية" else f"❌ Audio error: {str(e)}")
+                if st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play", use_container_width=True):
+                    self._play_message_audio(text, idx)
+            else:
+                st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play_active", disabled=True, use_container_width=True)
         
+        # Replay button (only when playing)
         if is_playing:
-            with col1:
-                st.button(play_text, key=f"{button_key_prefix}_play_active", disabled=True, use_container_width=True)
-            
-            with col2:
-                if st.button(replay_text, key=f"{button_key_prefix}_replay", use_container_width=True):
-                    st.session_state.audio_playing[idx] = False
-                    st.rerun()
-            
-            with col3:
-                if st.button(stop_text, key=f"{button_key_prefix}_stop", use_container_width=True):
+            with cols[2]:
+                if st.button(f"[Replay]({replay_icon})", key=f"{button_key_prefix}_replay", use_container_width=True):
                     st.session_state.audio_playing[idx] = False
                     st.rerun()
         
-        with (col4 if is_playing else col2):
-            if st.button(copy_text, key=f"{button_key_prefix}_copy", use_container_width=True):
-                if lang == "العربية":
-                    st.toast("✅ تم النسخ بنجاح!", icon="✅")
-                else:
-                    st.toast("✅ Copied successfully!", icon="✅")
+        # Stop button (only when playing)
+        if is_playing:
+            with cols[3]:
+                if st.button(f"[Stop]({stop_icon})", key=f"{button_key_prefix}_stop", use_container_width=True):
+                    st.session_state.audio_playing[idx] = False
+                    st.rerun()
+        
+        # Copy button in last column
+        with (cols[4] if is_playing else cols[2]):
+            if st.button(f"![Copy]({copy_icon})", key=f"{button_key_prefix}_copy", use_container_width=True):
+                self._copy_to_clipboard(text, idx)
+
+    def _play_message_audio(self, text: str, idx: int):
+        """Play message audio using LLM manager's text_to_speech function"""
+        lang = st.session_state.get("language", "English")
+        
+        try:
+            # Clean text for speech
+            clean_for_speech = re.sub(r'<[^>]+>', '', text)
+            clean_for_speech = re.sub(r'\*\*([^\*]+)\*\*', r'\1', clean_for_speech)
+            clean_for_speech = clean_for_speech.strip()
+            
+            if not clean_for_speech:
+                st.warning("لا يوجد نص لقراءته" if lang == "العربية" else "No text to read")
+                return
+            
+            # Call the LLM manager's text_to_speech function
+            # Pass the language parameter
+            tts_lang = "ar" if lang == "العربية" else "en"
+            audio_bytes = self.llm_manager.text_to_speech(clean_for_speech, tts_lang)
+            
+            if audio_bytes:
+                # Encode audio for HTML playback
+                audio_b64 = base64.b64encode(audio_bytes).decode()
+                
+                audio_html = f"""
+                <audio id="audio_{idx}" autoplay>
+                    <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
+                </audio>
+                <script>
+                    var audio = document.getElementById('audio_{idx}');
+                    audio.play();
+                </script>
+                """
+                components.html(audio_html, height=0)
+                
+                # Set playing state
+                st.session_state.audio_playing[idx] = True
+                st.rerun()
+            else:
+                st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
+                
+        except Exception as e:
+            st.error(f"❌ خطأ في تشغيل الصوت: {str(e)}" if lang == "العربية" else f"❌ Audio error: {str(e)}")
+
+    def _copy_to_clipboard(self, text: str, idx: int):
+        """Copy text to clipboard with improved functionality"""
+        lang = st.session_state.get("language", "English")
+        
+        # Clean text for copying
+        clean_text = self._clean_text_for_copy(text)
+        
+        # Escape special characters for JavaScript
+        escaped_text = clean_text.replace('\\', '\\\\').replace('`', '\\`').replace('$', '\\$').replace('"', '\\"').replace('\n', '\\n')
+        
+        # Create JavaScript to copy to clipboard
+        copy_js = f"""
+        <script>
+            (function() {{
+                const text = `{escaped_text}`;
+                navigator.clipboard.writeText(text).then(function() {{
+                    console.log('Copied successfully');
+                }}, function(err) {{
+                    console.error('Could not copy text: ', err);
+                }});
+            }})();
+        </script>
+        """
+        
+        components.html(copy_js, height=0)
+        
+        # Show success message
+        if lang == "العربية":
+            st.toast("✅ تم النسخ إلى الحافظة!", icon="📋")
+        else:
+            st.toast("✅ Copied to clipboard!", icon="📋")
 
     def _clean_text_for_copy(self, text: str) -> str:
-        """Clean text for clipboard copying"""
+        """Clean text for copying - remove HTML and markdown formatting"""
+        # Remove HTML tags
         clean = re.sub(r'<[^>]+>', '', text)
+        # Remove markdown bold
         clean = re.sub(r'\*\*([^\*]+)\*\*', r'\1', clean)
-        clean = clean.replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n')
-        return clean
+        # Remove markdown italic
+        clean = re.sub(r'\*([^\*]+)\*', r'\1', clean)
+        # Remove markdown headers
+        clean = re.sub(r'^#+\s+', '', clean, flags=re.MULTILINE)
+        # Clean up extra whitespace
+        clean = re.sub(r'\n\s*\n', '\n\n', clean)
+        
+        return clean.strip()
 
-    # -------------------
+        # -------------------
     # User Input Handling
     # -------------------
     def _handle_user_input(self):
