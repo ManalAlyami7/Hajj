@@ -467,36 +467,34 @@ audio {{
   align-items: center;
 }}
 
-/* Enhanced stop button styling - Inside header */
+/* Enhanced stop button styling - Below header, inside container */
 div[data-testid="stButton"] > button[kind="primary"] {{
     background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
     border: none !important;
-    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3) !important;
+    box-shadow: 0 3px 12px rgba(212, 175, 55, 0.4) !important;
     transition: all 0.3s ease !important;
     font-weight: 600 !important;
     animation: pulse-stop 2s infinite !important;
-    margin: 0 !important;
-    border-radius: 6px !important;
-    padding: 0.4rem 0.9rem !important;
-    font-size: 0.85rem !important;
-    height: auto !important;
-    line-height: 1.2 !important;
+    margin: 0.75rem 0 !important;
+    border-radius: 8px !important;
+    padding: 0.6rem 1rem !important;
+    font-size: 0.95rem !important;
 }}
 
 div[data-testid="stButton"] > button[kind="primary"]:hover {{
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.5) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 5px 18px rgba(212, 175, 55, 0.6) !important;
     background: linear-gradient(135deg, #e6c345 0%, #c9a527 100%) !important;
 }}
 
 div[data-testid="stButton"] > button[kind="primary"]:active {{
     transform: translateY(0) !important;
-    box-shadow: 0 1px 6px rgba(212, 175, 55, 0.4) !important;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.5) !important;
 }}
 
 @keyframes pulse-stop {{
-    0%, 100% {{ box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3); }}
-    50% {{ box-shadow: 0 2px 16px rgba(212, 175, 55, 0.6); }}
+    0%, 100% {{ box-shadow: 0 3px 12px rgba(212, 175, 55, 0.4); }}
+    50% {{ box-shadow: 0 3px 20px rgba(212, 175, 55, 0.7); }}
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -603,20 +601,27 @@ with col_right:
     </div>
     """, unsafe_allow_html=True)
   
-    # Response panel - START (opening the container and header)
+    # Response panel
     st.markdown(f"""
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
         <div class="panel-icon {response_icon_class}">🕋</div>
         <h3 class="panel-title">{t('voice_response_title', st.session_state.language)}</h3>
+        <div class="panel-badge {response_badge_class}">
+            {'● ' + (t('voice_status_speaking', st.session_state.language)
+            if st.session_state.is_speaking
+            else t('voice_status_ready', st.session_state.language))}
+        </div>
+      </div>
     """, unsafe_allow_html=True)
     
-    # Stop button INSIDE the header - Only show when speaking
+    # Stop button right after header - Only show when speaking
     if st.session_state.is_speaking:
         if st.button(
             f"⏹️ {t('voice_stop_speaking', st.session_state.language)}",
             type="primary",
-            key="stop_button"
+            key="stop_button",
+            use_container_width=True
         ):
             logger.info("Stop button pressed. Halting speech.")
             st.session_state.pending_audio = None
@@ -624,14 +629,8 @@ with col_right:
             st.session_state.status = t('voice_status_interrupted', st.session_state.language)
             st.rerun()
     
-    # Continue the header with badge and close the container
+    # Response content and close container
     st.markdown(f"""
-        <div class="panel-badge {response_badge_class}">
-            {'● ' + (t('voice_status_speaking', st.session_state.language)
-            if st.session_state.is_speaking
-            else t('voice_status_ready', st.session_state.language))}
-        </div>
-      </div>
       <div class='response-content'>{clean_response}</div> 
     </div>
     """, unsafe_allow_html=True)
