@@ -617,6 +617,7 @@ if st.session_state.get('pending_audio'):
         st.markdown("</div>", unsafe_allow_html=True)
     except Exception as e:
         logger.warning("Failed to play pending audio: %s", e)
+
     audio_bytes = st.session_state.pending_audio
     if isinstance(audio_bytes, bytes):
         audio_file = BytesIO(audio_bytes)
@@ -625,15 +626,21 @@ if st.session_state.get('pending_audio'):
 
     audio = MP3(audio_file)
     duration = audio.info.length
+
+    # Simulate speaking
+    st.session_state.is_speaking = True
+    st.session_state.status = t('voice_status_speaking', st.session_state.language)
+
+    # Block for duration
     time.sleep(duration)
-    
-    st.session_state.pending_audio = None
+
+    # Update state after playback ends
     st.session_state.is_speaking = False
     st.session_state.status = t('voice_status_completed', st.session_state.language)
-    
-    time.sleep(2)
-    st.session_state.status = t('voice_status_ready', st.session_state.language)
+    st.session_state.pending_audio = None
 
+    # ⚠️ Force re-render so Streamlit sees new state
+    st.rerun()
 # ---------------------------
 # Handle new audio input
 # ---------------------------
