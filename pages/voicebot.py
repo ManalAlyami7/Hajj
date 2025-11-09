@@ -573,19 +573,7 @@ with col_right:
       <div class="transcript-text">{clean_transcript}</div>
     </div>
     """, unsafe_allow_html=True)
-    if st.session_state.is_speaking:
-        if st.button(
-            f"🚫 {t('voice_stop_speaking', st.session_state.language)}",
-            use_container_width=False,
-            type="primary",
-            key="stop_button"
-        ):
-            logger.info("Stop button pressed. Halting speech.")
-            # Clear the audio bytes so the playback block doesn't run
-            st.session_state.pending_audio = None
-            st.session_state.is_speaking = False
-            st.session_state.status = t('voice_status_interrupted', st.session_state.language)
-            st.rerun()
+  
 
     # Response panel
     st.markdown(f"""
@@ -602,6 +590,19 @@ with col_right:
       <div class='response-content'>{clean_response}</div> 
     </div>
     """, unsafe_allow_html=True)
+    if st.session_state.is_speaking:
+        if st.button(
+            f"🚫 {t('voice_stop_speaking', st.session_state.language)}",
+            use_container_width=False,
+            type="primary",
+            key="stop_button"
+        ):
+            logger.info("Stop button pressed. Halting speech.")
+            # Clear the audio bytes so the playback block doesn't run
+            st.session_state.pending_audio = None
+            st.session_state.is_speaking = False
+            st.session_state.status = t('voice_status_interrupted', st.session_state.language)
+            st.rerun()
 
 st.markdown('</div>', unsafe_allow_html=True)
 
