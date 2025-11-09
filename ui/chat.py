@@ -24,6 +24,8 @@ class ChatInterface:
             st.session_state.chat_memory = []
         if "pending_example" not in st.session_state:
             st.session_state.pending_example = False
+        if "processing_example" not in st.session_state:
+            st.session_state.processing_example = False
 
     # -------------------
     # Public Render Method
@@ -102,12 +104,16 @@ class ChatInterface:
             for icon, label, key, role, content in actions[:2]:
                 if st.button(f"{icon}  {label}", key=f"qa_{key}", use_container_width=True):
                     self._add_message(role, content)
+                    st.session_state.pending_example = True
+                    st.session_state.processing_example = False
                     st.rerun()
 
         with col2:
             for icon, label, key, role, content in actions[2:]:
                 if st.button(f"{icon}  {label}", key=f"qa_{key}", use_container_width=True):
                     self._add_message(role, content)
+                    st.session_state.pending_example = True
+                    st.session_state.processing_example = False
                     st.rerun()
 
     # -------------------
@@ -175,54 +181,69 @@ class ChatInterface:
     def _handle_user_input(self):
         lang = st.session_state.get("language", "English")
         user_input = None
-        from_example = False
+        should_process = False
         
-        # Check if there's a pending example from sidebar
-        if st.session_state.get("pending_example"):
-            st.session_state.pending_example = False
-            from_example = True
+        # Check if there's a pending example from sidebar that hasn't been processed yet
+        if st.session_state.get("pending_example") and not st.session_state.get("processing_example"):
+            # Mark as processing
+            st.session_state.processing_example = True
+            
             # Get the last user message from chat memory
             if st.session_state.chat_memory and st.session_state.chat_memory[-1].get("role") == "user":
                 user_input = st.session_state.chat_memory[-1].get("content")
-        # Check if there's a selected question from quick actions  
-        elif st.session_state.get("selected_question"):
-            user_input = st.session_state["selected_question"]
-            st.session_state.selected_question = ""
-        else:
-            user_input = st.chat_input(t("input_placeholder", lang))
+                should_process = True
         
-        if not user_input:
-            return
-        
-        valid, err = validate_user_input(user_input)
-        if not valid:
-            st.error(f"❌ {err}")
-            return
-
-        # Only add message if it doesn't already exist (from sidebar)
-        if not from_example:
+        # Always show the chat input (this is the fix!)
+        chat_input = st.chat_input(t("input_placeholder", lang))
+        if chat_input:
+            user_input = chat_input
+            should_process = True
+            # Add new message from chat input
             self._add_message("user", user_input)
-            with st.chat_message("user", avatar="👤"):
-                st.markdown(user_input)
-                st.markdown(
-                    f"<div style='color: #6b7280; font-size:0.8rem; font-weight:500'>🕐 {self._format_time(self._get_current_time())}</div>",
-                    unsafe_allow_html=True
-                )
+        
+        # If we have input to process
+        if should_process and user_input:
+            # Validate input
+            valid, err = validate_user_input(user_input)
+            if not valid:
+                st.error(f"❌ {err}")
+                # Clear flags
+                st.session_state.pending_example = False
+                st.session_state.processing_example = False
+                return
 
-        # Process the query and show response
-        with st.chat_message("assistant", avatar="🕋"):
-            with st.spinner(t("thinking", lang)):
-                try:
-                    final_state = self.graph.process(user_input, lang)
-                    self._handle_response(final_state)
-                except Exception as e:
-                    error_msg = f"Error processing request: {str(e)}"
-                    st.error(error_msg)
-                    self._add_message("assistant", error_msg)
+            # Display user message if it's from chat input
+            if chat_input:
+                with st.chat_message("user", avatar="👤"):
+                    st.markdown(user_input)
                     st.markdown(
-                        f"<div style='color: #6b7280; font-size:0.8rem; margin-top:4px; font-weight:500'>🕐 {self._format_time(self._get_current_time())}</div>",
+                        f"<div style='color: #6b7280; font-size:0.8rem; font-weight:500'>🕐 {self._format_time(self._get_current_time())}</div>",
                         unsafe_allow_html=True
                     )
+
+            # Process the query and show response
+            with st.chat_message("assistant", avatar="🕋"):
+                with st.spinner(t("thinking", lang)):
+                    try:
+                        final_state = self.graph.process(user_input, lang)
+                        self._handle_response(final_state)
+                        
+                        # Clear flags after successful processing
+                        st.session_state.pending_example = False
+                        st.session_state.processing_example = False
+                        
+                    except Exception as e:
+                        error_msg = f"Error processing request: {str(e)}"
+                        st.error(error_msg)
+                        self._add_message("assistant", error_msg)
+                        st.markdown(
+                            f"<div style='color: #6b7280; font-size:0.8rem; margin-top:4px; font-weight:500'>🕐 {self._format_time(self._get_current_time())}</div>",
+                            unsafe_allow_html=True
+                        )
+                        
+                        # Clear flags on error too
+                        st.session_state.pending_example = False
+                        st.session_state.processing_example = False
 
     # -------------------
     # Response Handling
