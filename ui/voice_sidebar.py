@@ -152,49 +152,46 @@ def _inject_professional_styles(is_rtl: bool):
     }}
 
     /* Button Styling */
-    [data-testid="stSidebar"] .stButton > button {{
-            width: 100%;
-            padding: 1rem 1.5rem;
-            border-radius: 14px;
-            font-weight: 700;
-            font-size: 1rem;
-            border: 2px solid #d4af37;
-            background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
-            color: #1a1f2e;
-            transition: all 0.3s ease;
-            letter-spacing: 0.025em;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
-        }}
-        
-        [data-testid="stSidebar"] .stButton > button:hover {{
-            background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%);
-            border-color: #f4e5b5;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5);
-        }}
-        
-     
-        
-        [data-testid="stSidebar"] button[kind="secondary"] {{
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-            border: 2px solid #dc2626;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-        }}
-        
-        [data-testid="stSidebar"] button[kind="secondary"]:hover {{
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            border-color: #b91c1c;
-        }}
-        [data-testid="stSidebar"] .stButton > button {{
+    /* ===== Sidebar Button Styling (Gold Theme) ===== */
+[data-testid="stSidebar"] .stButton > button {{
+    width: 100%;
+    padding: 1rem 1.5rem;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 1rem;
+    border: 2px solid #d4af37 !important;
     background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
     color: #1a1f2e !important;
-    border: 2px solid #d4af37 !important;
+    transition: all 0.3s ease;
+    letter-spacing: 0.025em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
 }}
+
+/* Hover Effect */
 [data-testid="stSidebar"] .stButton > button:hover {{
     background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%) !important;
+    border-color: #f4e5b5 !important;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5);
 }}
+
+/* ===== Secondary (Alert) Buttons ===== */
+[data-testid="stSidebar"] button[kind="secondary"] {{
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    color: white !important;
+    border: 2px solid #dc2626 !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}}
+
+[data-testid="stSidebar"] button[kind="secondary"]:hover {{
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+    border-color: #b91c1c !important;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
+}}
+
 
 
     /* Collapsed Control Button */
