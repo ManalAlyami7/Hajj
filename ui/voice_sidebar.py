@@ -1,6 +1,7 @@
 """
-Sidebar Component Module
-Handles sidebar rendering with language selection, accessibility, and navigation
+Professional Voicebot Sidebar Component Module
+Enhanced with formal design, RTL support, and accessibility
+Fixed color scheme with proper contrast and visibility
 """
 import time
 import streamlit as st
@@ -18,201 +19,15 @@ LANGUAGE_CONFIG = {
 
 
 def render_sidebar(memory, language_code: str):
-    """Render the complete sidebar with all controls"""
+    """Render the complete professional sidebar with all controls"""
     with st.sidebar:
-        # Apply RTL/LTR direction to sidebar
         is_rtl = _is_rtl_language(language_code)
         
-        # Inject sidebar-specific RTL styling
-        st.markdown(f"""
-        <style>
-/* Sidebar Position - Right side for RTL languages */
-[data-testid="stSidebar"] {{
-    /* Set left: auto and right: 0 to pin it to the right for RTL */
-    left: {'auto !important' if is_rtl else '0 !important'}; 
-    right: {'0 !important' if is_rtl else 'auto !important'};
-}}
-
-[data-testid="stSidebar"] > div:first-child {{
-    {'transform: translateX(0) !important;' if is_rtl else ''}
-}}
-
-/* Sidebar RTL Support */
-[data-testid="stSidebar"] .block-container {{
-    direction: {'rtl' if is_rtl else 'ltr'};
-}}
-
-[data-testid="stSidebar"] .stMarkdown {{
-    text-align: {'right' if is_rtl else 'left'};
-}}
-
-[data-testid="stSidebar"] h3 {{
-    text-align: {'right' if is_rtl else 'left'};
-}}
-
-[data-testid="stSidebar"] p {{
-    text-align: {'right' if is_rtl else 'left'};
-}}
-
-/* Sidebar Color Harmony with Main Page */
-[data-testid="stSidebar"] {{
-    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-    /* Adjust border: use border-left for RTL, border-right for LTR */
-    border-right: {'none' if is_rtl else '1px solid rgba(251, 191, 36, 0.2)'} !important;
-    border-left: {'1px solid rgba(251, 191, 36, 0.2)' if is_rtl else 'none'} !important;
-}}
-
-[data-testid="stSidebar"] .stMarkdown {{
-    color: #e2e8f0;
-}}
-
-/* Sidebar Headers */
-[data-testid="stSidebar"] h3 {{
-    color: #fbbf24 !important;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}}
-
-/* Sidebar Captions */
-[data-testid="stSidebar"] .stCaption {{
-    color: #94a3b8 !important;
-}}
-
-/* Sidebar Selectbox */
-[data-testid="stSidebar"] .stSelectbox > div > div {{
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(251, 191, 36, 0.3);
-    color: #e2e8f0;
-}}
-
-/* Sidebar Checkbox */
-[data-testid="stSidebar"] .stCheckbox {{
-    color: #e2e8f0;
-}}
-
-/* Sidebar Buttons */
-[data-testid="stSidebar"] .stButton > button {{
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-    color: #1e293b;
-    font-weight: 600;
-    border: none;
-    transition: all 0.3s ease;
-}}
-
-[data-testid="stSidebar"] .stButton > button:hover {{
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
-}}
-
-[data-testid="stSidebar"] button[kind="secondary"] {{
-    background: rgba(239, 68, 68, 0.1) !important;
-    color: #ef4444 !important;
-    border: 1px solid rgba(239, 68, 68, 0.3) !important;
-}}
-
-[data-testid="stSidebar"] button[kind="secondary"]:hover {{
-    background: rgba(239, 68, 68, 0.2) !important;
-    border-color: rgba(239, 68, 68, 0.5) !important;
-}}
-
-/* Collapsed Control Button - Position for RTL */
-[data-testid="collapsedControl"] {{
-    /* If RTL (sidebar on the right), move button to the left edge of the main content area */
-    left: {'0.5rem !important' if is_rtl else 'auto !important'}; 
-    right: {'auto !important' if is_rtl else '0.5rem !important'};
-}}
-
-/* Memory Panel Styling */
-.memory-panel {{
-    background: rgba(251, 191, 36, 0.1);
-    padding: 1rem;
-    border-radius: 0.75rem;
-    /* Adjust border side */
-    border-right: {'4px solid #fbbf24' if is_rtl else 'none'};
-    border-left: {'none' if is_rtl else '4px solid #fbbf24'};
-    margin-top: 0.5rem;
-}}
-
-.memory-panel-row {{
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-    direction: {'rtl' if is_rtl else 'ltr'};
-}}
-
-.memory-panel-row:last-child {{
-    margin-bottom: 0;
-}}
-
-.memory-label {{
-    color: #94a3b8;
-    font-size: 0.85rem;
-}}
-
-.memory-value {{
-    color: #fbbf24;
-    font-weight: 600;
-}}
-
-/* Sample Questions Styling */
-.sample-question {{
-    background: rgba(251, 191, 36, 0.08);
-    padding: 0.6rem 0.9rem;
-    border-radius: 0.6rem;
-    margin-bottom: 0.6rem;
-    font-size: 0.9rem;
-    border: 1px solid rgba(251, 191, 36, 0.15);
-    color: #e2e8f0;
-    transition: all 0.3s ease;
-    text-align: {'right' if is_rtl else 'left'};
-    direction: {'rtl' if is_rtl else 'ltr'};
-}}
-
-.sample-question:hover {{
-    background: rgba(251, 191, 36, 0.15);
-    border-color: rgba(251, 191, 36, 0.3);
-    /* Flip translation direction for RTL */
-    transform: translateX({'-5px' if is_rtl else '5px'});
-}}
-
-/* Divider Styling */
-[data-testid="stSidebar"] hr {{
-    border-color: rgba(251, 191, 36, 0.2) !important;
-    margin: 1rem 0;
-}}
-
-/* Main content adjustment for RTL sidebar (creates margin on the right) */
-.main .block-container {{
-    /* The 21rem space is now on the right */
-    margin-right: {'21rem !important' if is_rtl else '1rem !important'}; 
-    margin-left: {'1rem !important' if is_rtl else '1rem !important'};
-}}
-
-/* Adjust main content when sidebar is collapsed in RTL (removes margin) */
-[data-testid="stSidebar"][aria-expanded="false"] ~ .main .block-container {{
-    margin-right: {'1rem !important' if is_rtl else 'auto'};
-}}
-</style>
-        """, unsafe_allow_html=True)
+        # Inject professional sidebar styling
+        _inject_professional_styles(is_rtl)
         
-        # -----------------------------
         # Header Section
-        # -----------------------------
-        st.markdown(f"""
-        <div style="text-align: center; padding: 1.5rem 0 2rem 0;">
-            <div style="font-size: 3rem; margin-bottom: 0.75rem;">🕋</div>
-            <h2 style="margin: 0; font-size: 1.7rem; font-weight: 700; 
-                       background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-                       -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                {t('assistant_title', language_code).replace('🕋 ', '')}
-            </h2>
-            <p style="color: #94a3b8; font-size: 0.9rem; margin-top: 0.25rem;">
-                {t('assistant_subtitle', language_code)}
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
+        _render_header(language_code)
         _render_divider()
 
         # Language Selection
@@ -227,20 +42,313 @@ def render_sidebar(memory, language_code: str):
         _render_sample_questions(language_code)
         _render_divider()
 
-        # Memory
+        # Memory Status
         _render_memory_section(memory, language_code)
         _render_divider()
         
         # Navigation
         _render_navigation(language_code)
+        _render_divider()
+        
+        # Footer
+        _render_footer(language_code)
+
+
+# -----------------------------
+# PROFESSIONAL STYLING
+# -----------------------------
+def _inject_professional_styles(is_rtl: bool):
+    """Inject enhanced professional CSS for voicebot sidebar with fixed colors"""
+    st.markdown(f"""
+    <style>
+    /* Sidebar Position and RTL Support */
+    [data-testid="stSidebar"] {{
+        left: {'auto !important' if is_rtl else '0 !important'};
+        right: {'0 !important' if is_rtl else 'auto !important'};
+        background: linear-gradient(180deg, #0f1419 0%, #1a1f2e 100%);
+        border-right: {'none' if is_rtl else '3px solid #d4af37'} !important;
+        border-left: {'3px solid #d4af37' if is_rtl else 'none'} !important;
+    }}
+
+    [data-testid="stSidebar"] > div:first-child {{
+        {'transform: translateX(0) !important;' if is_rtl else ''}
+    }}
+
+    [data-testid="stSidebar"] .block-container {{
+        direction: {'rtl' if is_rtl else 'ltr'};
+        padding: 2rem 1.5rem;
+    }}
+
+    [data-testid="stSidebar"] .stMarkdown {{
+        text-align: {'right' if is_rtl else 'left'};
+        color: #f8fafc !important;
+    }}
+
+    [data-testid="stSidebar"] .stMarkdown p,
+    [data-testid="stSidebar"] .stMarkdown span,
+    [data-testid="stSidebar"] .stMarkdown div {{
+        color: #f8fafc !important;
+    }}
+
+    /* Headers */
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3 {{
+        color: #d4af37 !important;
+        font-weight: 800;
+        text-align: {'right' if is_rtl else 'left'};
+        letter-spacing: -0.025em;
+        margin-bottom: 1rem;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }}
+
+    [data-testid="stSidebar"] p {{
+        text-align: {'right' if is_rtl else 'left'};
+        color: #cbd5e1 !important;
+        line-height: 1.7;
+        font-weight: 500;
+    }}
+
+    /* Captions */
+    [data-testid="stSidebar"] .stCaption {{
+        color: #94a3b8 !important;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        font-weight: 500;
+    }}
+
+    /* Selectbox Styling */
+    [data-testid="stSidebar"] .stSelectbox > div > div {{
+        background: rgba(212, 175, 55, 0.1);
+        border: 2px solid rgba(212, 175, 55, 0.4);
+        border-radius: 14px;
+        color: #f8fafc;
+        font-weight: 700;
+        transition: all 0.3s ease;
+    }}
+
+    [data-testid="stSidebar"] .stSelectbox > div > div:hover {{
+        border-color: rgba(212, 175, 55, 0.7);
+        background: rgba(212, 175, 55, 0.15);
+    }}
+
+    [data-testid="stSidebar"] .stSelectbox label {{
+        color: #f8fafc !important;
+        font-weight: 700 !important;
+    }}
+
+    /* Checkbox Styling */
+    [data-testid="stSidebar"] .stCheckbox {{
+        color: #f8fafc;
+    }}
+
+    [data-testid="stSidebar"] .stCheckbox label {{
+        color: #f8fafc !important;
+        font-weight: 700 !important;
+    }}
+
+    [data-testid="stSidebar"] .stCheckbox label span {{
+        color: #f8fafc !important;
+    }}
+
+    /* Button Styling */
+    [data-testid="stSidebar"] .stButton > button {{
+        width: 100%;
+        padding: 1rem 1.5rem;
+        border-radius: 14px;
+        font-weight: 700;
+        font-size: 1rem;
+        border: 2px solid #d4af37;
+        background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
+        color: #1a1f2e;
+        transition: all 0.3s ease;
+        letter-spacing: 0.025em;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+    }}
+
+    [data-testid="stSidebar"] .stButton > button:hover {{
+        background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%);
+        border-color: #f4e5b5;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5);
+    }}
+
+    [data-testid="stSidebar"] button[kind="primary"] {{
+        background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
+        color: white;
+        border: 2px solid #b8941f;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }}
+
+    [data-testid="stSidebar"] button[kind="primary"]:hover {{
+        background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%);
+        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
+    }}
+
+    [data-testid="stSidebar"] button[kind="secondary"] {{
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white !important;
+        border: 2px solid #dc2626 !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }}
+
+    [data-testid="stSidebar"] button[kind="secondary"]:hover {{
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+        border-color: #b91c1c !important;
+    }}
+
+    /* Collapsed Control Button */
+    [data-testid="collapsedControl"] {{
+        left: {'0.5rem !important' if is_rtl else 'auto !important'};
+        right: {'auto !important' if is_rtl else '0.5rem !important'};
+    }}
+
+    /* Memory Panel */
+    .memory-panel {{
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
+        padding: 1.5rem;
+        border-radius: 16px;
+        border-right: {'4px solid #d4af37' if is_rtl else 'none'};
+        border-left: {'none' if is_rtl else '4px solid #d4af37'};
+        margin-top: 0.75rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }}
+
+    .memory-panel:hover {{
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.15) 100%);
+        box-shadow: 0 6px 16px rgba(212, 175, 55, 0.4);
+    }}
+
+    .memory-panel-row {{
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        direction: {'rtl' if is_rtl else 'ltr'};
+        align-items: center;
+    }}
+
+    .memory-panel-row:last-child {{
+        margin-bottom: 0;
+    }}
+
+    .memory-label {{
+        color: #cbd5e1;
+        font-size: 0.95rem;
+        font-weight: 700;
+    }}
+
+    .memory-value {{
+        color: #d4af37;
+        font-weight: 900;
+        font-size: 1.2rem;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }}
+
+    /* Sample Questions */
+    .sample-question {{
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.06) 100%);
+        padding: 1rem 1.25rem;
+        border-radius: 14px;
+        margin-bottom: 0.85rem;
+        font-size: 0.95rem;
+        border: 2px solid rgba(212, 175, 55, 0.3);
+        color: #f8fafc;
+        transition: all 0.3s ease;
+        text-align: {'right' if is_rtl else 'left'};
+        direction: {'rtl' if is_rtl else 'ltr'};
+        font-weight: 600;
+        line-height: 1.6;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }}
+
+    .sample-question:hover {{
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.15) 100%);
+        border-color: rgba(212, 175, 55, 0.6);
+        transform: translateX({'-8px' if is_rtl else '8px'});
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+    }}
+
+    /* Divider Styling */
+    [data-testid="stSidebar"] hr {{
+        border-color: rgba(212, 175, 55, 0.3) !important;
+        border-width: 2px !important;
+        margin: 1.5rem 0;
+    }}
+
+    /* Main content adjustment */
+    .main .block-container {{
+        margin-right: {'21rem !important' if is_rtl else '1rem !important'};
+        margin-left: {'1rem !important' if is_rtl else '1rem !important'};
+    }}
+
+    [data-testid="stSidebar"][aria-expanded="false"] ~ .main .block-container {{
+        margin-right: {'1rem !important' if is_rtl else 'auto'};
+    }}
+
+    /* Header Styling */
+    .sidebar-header {{
+        text-align: center;
+        padding: 1.5rem 0 2rem 0;
+    }}
+
+    .sidebar-icon {{
+        font-size: 4rem;
+        display: block;
+        margin-bottom: 1.2rem;
+        animation: pulse 2s infinite;
+        filter: drop-shadow(0 4px 8px rgba(212, 175, 55, 0.6));
+    }}
+
+    @keyframes pulse {{
+        0%, 100% {{ transform: scale(1); }}
+        50% {{ transform: scale(1.08); }}
+    }}
+
+    .sidebar-title {{
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 900;
+        color: #d4af37;
+        text-shadow: 0 2px 8px rgba(212, 175, 55, 0.6);
+        letter-spacing: -0.025em;
+    }}
+
+    .sidebar-subtitle {{
+        color: #cbd5e1;
+        font-size: 1rem;
+        margin-top: 0.75rem;
+        line-height: 1.5;
+        font-weight: 600;
+    }}
+
+    /* Footer Styling */
+    .sidebar-footer {{
+        text-align: center;
+        padding-top: 1.5rem;
+        border-top: 2px solid rgba(212, 175, 55, 0.3);
+        color: #94a3b8;
+        font-size: 0.9rem;
+    }}
+
+    .sidebar-footer strong {{
+        color: #d4af37;
+        font-weight: 800;
+    }}
+
+    .sidebar-footer p {{
+        color: #94a3b8 !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
 
 
 # -----------------------------
 # HELPER FUNCTIONS
 # -----------------------------
 def _render_divider():
-    """Render a horizontal divider line"""
-    st.markdown("<hr style='margin-top:1rem; border-color:rgba(251, 191, 36, 0.2);'>", 
+    """Render a professional divider line"""
+    st.markdown("<hr style='margin-top:1.5rem; border-color:rgba(212, 175, 55, 0.3); border-width: 2px;'>", 
                 unsafe_allow_html=True)
 
 
@@ -249,7 +357,7 @@ def _get_current_language_display(language_code: str) -> str:
     for display_name, config in LANGUAGE_CONFIG.items():
         if config['code'] == language_code:
             return display_name
-    return "English"  # Default fallback
+    return "English"
 
 
 def _is_rtl_language(language_code: str) -> bool:
@@ -261,10 +369,25 @@ def _is_rtl_language(language_code: str) -> bool:
 
 
 # -----------------------------
+# HEADER SECTION
+# -----------------------------
+def _render_header(language_code: str):
+    """Render professional header"""
+    st.markdown(f"""
+    <div class="sidebar-header">
+        <span class="sidebar-icon">🎙️</span>
+        <h2 class="sidebar-title">{t('assistant_title', language_code).replace('🕋 ', '')}</h2>
+        <p class="sidebar-subtitle">{t('voice_mode_desc', language_code)}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# -----------------------------
 # LANGUAGE SELECTION
 # -----------------------------
 def _render_language_section(language_code: str):
-    st.markdown(f"### {t('language_title', language_code)}")
+    """Render professional language selector"""
+    st.markdown(f"### 🌐 {t('language_title', language_code)}")
     st.caption(t('feat_multilingual_desc', language_code))
 
     language_options = {
@@ -279,7 +402,8 @@ def _render_language_section(language_code: str):
         t('language_title', language_code),
         options=list(language_options.keys()),
         index=list(language_options.keys()).index(current_lang_display),
-        label_visibility="collapsed"
+        label_visibility="collapsed",
+        key="voicebot_lang_selector"
     )
 
     new_language_code = language_options[selected_language]
@@ -293,7 +417,8 @@ def _render_language_section(language_code: str):
 # ACCESSIBILITY SECTION
 # -----------------------------
 def _render_accessibility_section(language_code: str):
-    st.markdown(f"### {t('accessibility_title', language_code)}")
+    """Render professional accessibility controls"""
+    st.markdown(f"### ♿ {t('accessibility_title', language_code)}")
     st.caption(t('accessibility_desc', language_code))
 
     font_labels = [
@@ -303,7 +428,6 @@ def _render_accessibility_section(language_code: str):
     ]
     font_values = ['normal', 'large', 'extra-large']
     
-    # Ensure font_size exists in session state
     if 'font_size' not in st.session_state:
         st.session_state.font_size = 'normal'
     
@@ -324,7 +448,6 @@ def _render_accessibility_section(language_code: str):
 
     st.markdown("")
 
-    # Ensure high_contrast exists in session state
     if 'high_contrast' not in st.session_state:
         st.session_state.high_contrast = False
 
@@ -340,12 +463,32 @@ def _render_accessibility_section(language_code: str):
 
 
 # -----------------------------
+# SAMPLE QUESTIONS
+# -----------------------------
+def _render_sample_questions(language_code: str):
+    """Render professional sample questions"""
+    st.markdown(f"### 💡 {t('examples_title', language_code)}")
+    st.caption(t('examples_caption', language_code))
+
+    try:
+        sample_questions = t('sample_questions', language_code)
+        
+        for i, question in enumerate(sample_questions):
+            st.markdown(f"""
+            <div class="sample-question">
+                <strong>{i+1}.</strong> {question}
+            </div>
+            """, unsafe_allow_html=True)
+    except Exception as e:
+        st.error(f"Error loading sample questions: {str(e)}")
+
+
+# -----------------------------
 # MEMORY SECTION
 # -----------------------------
 def _render_memory_section(memory, language_code: str):
-    is_rtl = _is_rtl_language(language_code)
-    
-    st.markdown(f"### {t('memory_status_title', language_code)}")
+    """Render professional memory status"""
+    st.markdown(f"### 💾 {t('memory_status_title', language_code)}")
     st.caption(t('memory_status_desc', language_code))
 
     try:
@@ -354,16 +497,18 @@ def _render_memory_section(memory, language_code: str):
         st.markdown(f"""
         <div class="memory-panel">
             <div class="memory-panel-row">
-                <span class="memory-label">{t('voice_memory_messages', language_code)}</span>
+                <span class="memory-label">📝 {t('voice_memory_messages', language_code)}</span>
                 <strong class="memory-value">{memory_summary['total_messages']}</strong>
             </div>
             <div class="memory-panel-row">
-                <span class="memory-label">{t('voice_session_duration', language_code)}</span>
+                <span class="memory-label">⏱️ {t('voice_session_duration', language_code)}</span>
                 <strong class="memory-value">{memory_summary['session_duration']}</strong>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
+        st.markdown("")
+        
         if st.button(f"🗑️ {t('voice_clear_memory', language_code)}", use_container_width=True, type="secondary"):
             _clear_memory_and_state(memory, language_code)
             
@@ -372,11 +517,10 @@ def _render_memory_section(memory, language_code: str):
 
 
 def _clear_memory_and_state(memory, language_code: str):
-    """Clear memory and reset related session state"""
+    """Clear memory with professional feedback"""
     try:
         memory.clear_memory()
         
-        # Keys to clear
         keys_to_clear = [
             'current_transcript', 
             'current_response', 
@@ -398,30 +542,11 @@ def _clear_memory_and_state(memory, language_code: str):
 
 
 # -----------------------------
-# SAMPLE QUESTIONS
-# -----------------------------
-def _render_sample_questions(language_code: str):
-    st.markdown(f"### {t('examples_title', language_code)}")
-    st.caption(t('examples_caption', language_code))
-
-    try:
-        sample_questions = t('sample_questions', language_code)
-        
-        for question in sample_questions:
-            st.markdown(f"""
-            <div class="sample-question">
-                💬 {question}
-            </div>
-            """, unsafe_allow_html=True)
-    except Exception as e:
-        st.error(f"Error loading sample questions: {str(e)}")
-
-
-# -----------------------------
 # NAVIGATION SECTION
 # -----------------------------
 def _render_navigation(language_code: str):
-    st.markdown(f"### {t('nav_title', language_code)}")
+    """Render professional navigation"""
+    st.markdown(f"### 🧭 {t('nav_title', language_code)}")
     st.caption(t('nav_caption', language_code))
 
     back_label = t('voice_return_button', language_code)
@@ -432,3 +557,21 @@ def _render_navigation(language_code: str):
             st.switch_page("./app.py")
         except Exception as e:
             st.error(f"Navigation error: {str(e)}")
+
+
+# -----------------------------
+# FOOTER SECTION
+# -----------------------------
+def _render_footer(language_code: str):
+    """Render professional footer"""
+    from datetime import datetime
+    year = datetime.now().year
+    
+    st.markdown(f"""
+    <div class="sidebar-footer">
+        <p>© {year} Hajj Voice Assistant</p>
+        <p style="margin-top: 0.5rem;">
+            Powered by <strong>AI Speech Technology</strong>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
