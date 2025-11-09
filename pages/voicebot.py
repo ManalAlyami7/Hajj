@@ -467,39 +467,41 @@ audio {{
   align-items: center;
 }}
 
-/* Small inline stop button in header */
-.inline-stop-btn {{
-    background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 0.35rem 0.7rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
-    animation: pulse-stop-small 2s infinite;
-    margin-left: auto;
-    margin-right: 0.5rem;
-    white-space: nowrap;
-    flex-shrink: 0;
+/* Enhanced stop button styling - positioned below response container */
+.stButton {{
+    margin-top: -1.5rem !important;
+    padding: 0 1.25rem !important;
+    position: relative !important;
+    z-index: 10 !important;
 }}
 
-.inline-stop-btn:hover {{
-    background: linear-gradient(135deg, #e6c345 0%, #c9a527 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.5);
+div[data-testid="stButton"] > button[kind="primary"] {{
+    background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
+    border: none !important;
+    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.5) !important;
+    transition: all 0.3s ease !important;
+    font-weight: 600 !important;
+    animation: pulse-stop 2s infinite !important;
+    margin: 0 !important;
+    border-radius: 8px !important;
+    padding: 0.7rem 1.2rem !important;
+    font-size: 0.95rem !important;
 }}
 
-.inline-stop-btn:active {{
-    transform: translateY(0);
-    box-shadow: 0 1px 6px rgba(212, 175, 55, 0.4);
+div[data-testid="stButton"] > button[kind="primary"]:hover {{
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 22px rgba(212, 175, 55, 0.7) !important;
+    background: linear-gradient(135deg, #e6c345 0%, #c9a527 100%) !important;
 }}
 
-@keyframes pulse-stop-small {{
-    0%, 100% {{ box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3); }}
-    50% {{ box-shadow: 0 2px 14px rgba(212, 175, 55, 0.6); }}
+div[data-testid="stButton"] > button[kind="primary"]:active {{
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 10px rgba(212, 175, 55, 0.5) !important;
+}}
+
+@keyframes pulse-stop {{
+    0%, 100% {{ box-shadow: 0 4px 16px rgba(212, 175, 55, 0.5); }}
+    50% {{ box-shadow: 0 4px 24px rgba(212, 175, 55, 0.8); }}
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -606,32 +608,12 @@ with col_right:
     </div>
     """, unsafe_allow_html=True)
   
-    # Response panel with stop button at top
-    stop_button_html = ""
-    if st.session_state.is_speaking:
-        stop_button_html = f"""
-        <button class="inline-stop-btn" id="stop-btn-visual">
-            ⏹️ {t('voice_stop_speaking', st.session_state.language)}
-        </button>
-        <script>
-        document.getElementById('stop-btn-visual').addEventListener('click', function() {{
-            // Find and click the hidden Streamlit button
-            const stButtons = window.parent.document.querySelectorAll('button[kind="primary"]');
-            stButtons.forEach(btn => {{
-                if (btn.textContent.includes('⏹️')) {{
-                    btn.click();
-                }}
-            }});
-        }});
-        </script>
-        """
-    
+    # Response panel
     st.markdown(f"""
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
         <div class="panel-icon {response_icon_class}">🕋</div>
         <h3 class="panel-title">{t('voice_response_title', st.session_state.language)}</h3>
-        {stop_button_html}
         <div class="panel-badge {response_badge_class}">
             {'● ' + (t('voice_status_speaking', st.session_state.language)
             if st.session_state.is_speaking
@@ -642,16 +624,19 @@ with col_right:
     </div>
     """, unsafe_allow_html=True)
     
-    # Hidden Streamlit button for actual functionality (off-screen)
+    # Stop button OUTSIDE but styled to look part of the container
     if st.session_state.is_speaking:
-        st.markdown('<div style="position: absolute; left: -9999px;">', unsafe_allow_html=True)
-        if st.button("⏹️", key="stop_button", type="primary"):
+        if st.button(
+            f"⏹️ {t('voice_stop_speaking', st.session_state.language)}",
+            type="primary",
+            key="stop_button",
+            use_container_width=True
+        ):
             logger.info("Stop button pressed. Halting speech.")
             st.session_state.pending_audio = None
             st.session_state.is_speaking = False
             st.session_state.status = t('voice_status_interrupted', st.session_state.language)
             st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
 
