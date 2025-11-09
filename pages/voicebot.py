@@ -356,7 +356,6 @@ header[data-testid="stHeader"] button {{
 }}
 
 .panel-badge {{
-  margin-{'right' if is_arabic or is_urdus else 'left'}: auto;
   padding: 0.3rem 0.8rem;
   border-radius: 1rem;
   font-weight: 600;
