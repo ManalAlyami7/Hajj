@@ -8,6 +8,8 @@ import logging
 import hashlib
 from pathlib import Path
 import sys
+from io import BytesIO
+from mutagen.mp3 import MP3
 
 import streamlit as st
 
@@ -615,6 +617,15 @@ if st.session_state.get('pending_audio'):
         st.markdown("</div>", unsafe_allow_html=True)
     except Exception as e:
         logger.warning("Failed to play pending audio: %s", e)
+    audio_bytes = st.session_state.pending_audio
+    if isinstance(audio_bytes, bytes):
+        audio_file = BytesIO(audio_bytes)
+    else:
+        audio_file = audio_bytes
+
+    audio = MP3(audio_file)
+    duration = audio.info.length
+    time.sleep(duration)
     
     st.session_state.pending_audio = None
     st.session_state.is_speaking = False
