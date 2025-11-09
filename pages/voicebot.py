@@ -363,6 +363,8 @@ header[data-testid="stHeader"] button {{
   background: rgba(251, 191, 36, 0.2);
   color: #92400e;
   border: 1px solid rgba(251, 191, 36, 0.3);
+  margin-left: auto; /* pushes badge to the right end */
+
 }}
 
 .panel-badge.active {{
