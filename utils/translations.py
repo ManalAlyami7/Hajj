@@ -30,6 +30,7 @@ TRANSLATIONS = {
         "mode_chatbot": "Chatbot",
         "mode_voicebot": "Voicebot",
         "voicebot_unavailable": "Voice assistant page not available",
+        "voice_status_interrupted": "interrupted",
         
         # Stats
         "total_agencies": "Total Agencies",
@@ -196,6 +197,8 @@ TRANSLATIONS = {
     "voice_return_button": "عودة",
         
         # Sidebar
+        "voice_status_interrupted": "تم الإيقاف",
+
         "language_title": "🌐 اللغة",
         "stats_title": "📊 الإحصائيات المباشرة",
         "examples_title": "💡 أمثلة سريعة",
@@ -438,6 +441,7 @@ TRANSLATIONS = {
         "voice_status_error": "براہ کرم دوبارہ کوشش کریں",
 
         "voice_transcript_title": "آپ کا سوال",
+        "voice_status_interrupted": "روک دیا گیا",
         "voice_response_title": "معاون کا جواب",
         "voice_speak_now": "حج ایجنسیوں کے بارے میں مجھ سے کچھ بھی پوچھیں...",
         "voice_response_placeholder": "آپ کا جواب یہاں ظاہر ہوگا...",
