@@ -629,7 +629,7 @@ class LLMManager:
         return None
     
     def ask_for_more_info(self, user_input: str, language: str) -> Dict:
-        """Generate structured response asking user for more specific information"""
+        """Generate structured response asking user for more specific information using LangChain memory"""
         is_arabic = language == "العربية"
         
         prompt = f"""You are a helpful Hajj verification assistant.
@@ -644,36 +644,35 @@ class LLMManager:
         
         Ask for specific details in a friendly way. Focus on:
         1. Agency name (if verifying a company)
-        2. Location (city/country)
+        2. Location (city/country/Google Maps link)
         3. What specifically they want to know
         
-        Use Arabic if user input is Arabic, otherwise English.
-        Keep it brief but friendly (2-3 sentences max).
+        Respond in the user's language, keep it short (2–3 sentences), and friendly.
         Add a simple example of a more specific question.
         """
         try:
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "Help user provide specific Hajj agency queries."},
-                    {"role": "user", "content": prompt},
-                    *self.build_chat_context(limit=None)
-                ],
-                response_format=NEEDSInfoResponse,
-                temperature=0.7
+           
+            conversation = ConversationChain(
+                llm=self.llm,  # 
+                memory=self.memory,  
+                verbose=False
             )
-            info_data = response.choices[0].message.parsed
+
+            prompt = f'User question: "{user_input}"'
+            response_text = conversation.predict(input=f"{system_prompt}\n\n{prompt}")
+
             return {
-                "needs_info": info_data.needs_info,
-                "suggestions": info_data.suggestions,
-                "missing_info": info_data.missing_info,
-                "sample_query": info_data.sample_query
+                "needs_info": response_text,
+                "suggestions": ["هل شركة الهدى للحج معتمدة؟"] if is_arabic else ["Is Al Huda Hajj Agency authorized?"],
+                "missing_info": ["اسم الوكالة", "الموقع"] if is_arabic else ["agency name", "location"],
+                "sample_query": "هل شركة الهدى للحج معتمدة؟" if is_arabic else "Is Al Huda Hajj Agency authorized?"
             }
+
         except Exception as e:
             logger.error(f"More info prompt generation failed: {e}")
             return {
-                "needs_info": "Could you provide more details? 🤔" if not is_arabic else "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔",
-                "suggestions": ["Is Al Huda Hajj Agency authorized?"] if not is_arabic else ["هل شركة الهدى للحج معتمدة؟"],
-                "missing_info": ["agency name", "location"] if not is_arabic else ["اسم الوكالة", "الموقع"],
-                "sample_query": "Is Al Huda Hajj Agency authorized?" if not is_arabic else "هل شركة الهدى للحج معتمدة؟"
+                "needs_info": "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔" if is_arabic else "Could you provide more details? 🤔",
+                "suggestions": ["هل شركة الهدى للحج معتمدة؟"] if is_arabic else ["Is Al Huda Hajj Agency authorized?"],
+                "missing_info": ["اسم الوكالة", "الموقع"] if is_arabic else ["agency name", "location"],
+                "sample_query": "هل شركة الهدى للحج معتمدة؟" if is_arabic else "Is Al Huda Hajj Agency authorized?"
             }
