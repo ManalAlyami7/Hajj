@@ -103,9 +103,17 @@ class LLMManager:
         """Initialize OpenAI client"""
         self.client = self._get_client()
         self.voice_map = {
-            "العربية": "onyx",  # Deeper voice for Arabic
+            "العربية": "onyx",
             "English": "alloy"
         }
+    
+        # ✅ Initialize chat memory if it doesn't exist
+        if "chat_memory" not in st.session_state:
+            st.session_state.chat_memory = []
+    
+        if "last_company_name" not in st.session_state:
+            st.session_state["last_company_name"] = None
+
     
     @st.cache_resource
     def _get_client(_self):
@@ -134,6 +142,14 @@ class LLMManager:
             context.append({"role": msg["role"], "content": msg["content"]})
     
         return context
+        
+    def add_user_message(self, user_input: str):
+        """Add user message to memory"""
+        st.session_state.chat_memory.append({"role": "user", "content": user_input})
+
+    def add_assistant_message(self, assistant_reply: str):
+        """Add assistant reply to memory"""
+        st.session_state.chat_memory.append({"role": "assistant", "content": assistant_reply})
         
     def update_last_agency(self, user_input: str, extracted_company: Optional[str]):
         """Keep track of last mentioned agency"""
