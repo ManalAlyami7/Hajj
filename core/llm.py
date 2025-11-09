@@ -94,10 +94,10 @@ class LLMManager:
    
     def _get_llm(self):
         """Initialize and cache the ChatOpenAI client"""
-        api_key = st.secrets.get("OPENAI_API_KEY")
+        api_key = st.secrets.get("key")
         if not api_key:
-            logger.error("OpenAI API key not found")
-            st.warning("⚠️ OpenAI API key missing in Streamlit secrets")
+            logger.error("key  not found")
+            st.warning("⚠️key  missing in Streamlit secrets")
             st.stop()
         return ChatOpenAI(
             model_name="gpt-4o-mini",
