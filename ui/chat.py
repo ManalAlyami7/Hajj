@@ -444,7 +444,7 @@ class ChatInterface:
             stop_text = "إيقاف ⏹️"
             copy_text = "نسخ 📋"
         else:
-            play_text = "🔊 Play"
+            play_text = "https://img.icons8.com/?size=100&id=8VE4cuU0UjpB&format=png&color=000000"
             replay_text = "🔄 Replay"
             stop_text = "⏹️ Stop"
             copy_text = "📋 Copy"
