@@ -47,7 +47,7 @@ def render_sidebar(memory, language_code: str):
         _render_divider()
         
         # Navigation
-        _render_navigation(language_code)
+        _render_navigation_buttons(language_code)
         _render_divider()
         
         # Footer
@@ -543,19 +543,26 @@ def _clear_memory_and_state(memory, language_code: str):
 # -----------------------------
 # NAVIGATION SECTION
 # -----------------------------
-def _render_navigation(language_code: str):
-    """Render professional navigation"""
-    st.markdown(f"### 🧭 {t('nav_title', language_code)}")
-    st.caption(t('nav_caption', language_code))
-
-    back_label = t('voice_return_button', language_code)
-    arrow = "→" if _is_rtl_language(language_code) else "←"
-
-    if st.button(f"{arrow} {back_label}", use_container_width=True, type="primary"):
-        try:
-            st.switch_page("./app.py")
-        except Exception as e:
-            st.error(f"Navigation error: {str(e)}")
+def _render_navigation_buttons(lang):
+        """Render professional navigation buttons"""
+        
+        st.markdown(f"<h3>🎯 {t('mode_title', lang)}</h3>", unsafe_allow_html=True)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button(f"💬 {t('mode_chatbot', lang)}", key="nav_chatbot", use_container_width=True):
+                try:
+                    st.switch_page("app.py")
+                except Exception:
+                    st.rerun()
+        
+        with col2:
+            if st.button(f"🎙️ {t('mode_voicebot', lang)}", key="nav_voicebot", use_container_width=True):
+                try:
+                    st.switch_page("pages/voicebot.py")
+                except Exception:
+                    st.info(t('voicebot_unavailable', lang))
 
 
 # -----------------------------
