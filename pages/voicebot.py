@@ -327,13 +327,36 @@ header[data-testid="stHeader"] button {{
   padding-bottom: 0.75rem;
   border-bottom: 2px solid {border_color};
   flex-direction: {flex_direction};
+  position: relative; /* Add this for absolute positioning of children */
+  width: 100%; /* Ensure full width */
 }}
 
 .panel-icon {{
   font-size: 1.75rem;
   animation: icon-glow 2s ease-in-out infinite;
+  flex-shrink: 0; /* Prevent icon from shrinking */
 }}
 
+.panel-title {{
+  font-size: {current_sizes['panel']};
+  font-weight: 700;
+  color: {text_primary};
+  margin: 0;
+  flex-shrink: 0; /* Prevent title from shrinking */
+}}
+
+.panel-badge {{
+  padding: 0.3rem 0.8rem;
+  border-radius: 1rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+  background: rgba(251, 191, 36, 0.2);
+  color: #92400e;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  margin-left: auto; /* pushes badge to the right end */
+  flex-shrink: 0; /* Prevent badge from shrinking */
+  white-space: nowrap; /* Prevent text wrapping */
+}}
 .panel-icon.active {{
   animation: icon-bounce 0.6s ease-in-out infinite;
 }}
@@ -348,24 +371,7 @@ header[data-testid="stHeader"] button {{
   50% {{transform: translateY(-5px);}}
 }}
 
-.panel-title {{
-  font-size: {current_sizes['panel']};
-  font-weight: 700;
-  color: {text_primary};
-  margin: 0;
-}}
 
-.panel-badge {{
-  padding: 0.3rem 0.8rem;
-  border-radius: 1rem;
-  font-weight: 600;
-  font-size: 0.75rem;
-  background: rgba(251, 191, 36, 0.2);
-  color: #92400e;
-  border: 1px solid rgba(251, 191, 36, 0.3);
-  margin-left: auto; /* pushes badge to the right end */
-
-}}
 
 .panel-badge.active {{
   background: rgba(34, 197, 94, 0.2);
