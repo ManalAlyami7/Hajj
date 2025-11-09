@@ -456,7 +456,7 @@ class ChatInterface:
         
         with col1:
             if not is_playing:
-                if st.button(f"![Play]{play_text}", key=f"{button_key_prefix}_play", use_container_width=True):
+                 if st.button(f"![Play]({play_text})", key=f"{button_key_prefix}_play"):
                     try:
                         from gtts import gTTS
                         import io
