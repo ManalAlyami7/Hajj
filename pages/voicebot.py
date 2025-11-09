@@ -573,36 +573,38 @@ with col_right:
       <div class="transcript-text">{clean_transcript}</div>
     </div>
     """, unsafe_allow_html=True)
-st.markdown('<div class="response-container" style="margin-top:1rem;">', unsafe_allow_html=True)
-st.markdown('<div class="panel-header">', unsafe_allow_html=True)
-
-# Columns for icon+title | button | badge
-col1, col2, col3 = st.columns([4,1,2])
-
-with col1:
-    st.markdown(f"""
-    <div class="panel-icon {response_icon_class}">🕋</div>
-    <h3 class="panel-title">{t('voice_response_title', st.session_state.language)}</h3>
-    """, unsafe_allow_html=True)
-
-with col2:
     if st.session_state.is_speaking:
-        if st.button(f"🚫 {t('voice_stop_speaking', st.session_state.language)}", key="stop_button"):
+        if st.button(
+            f"🚫 {t('voice_stop_speaking', st.session_state.language)}",
+            use_container_width=False,
+            type="primary",
+            key="stop_button"
+        ):
+            logger.info("Stop button pressed. Halting speech.")
+            # Clear the audio bytes so the playback block doesn't run
             st.session_state.pending_audio = None
             st.session_state.is_speaking = False
             st.session_state.status = t('voice_status_interrupted', st.session_state.language)
             st.rerun()
 
-with col3:
-    badge_text = "● " + t('voice_status_speaking', st.session_state.language) if st.session_state.is_speaking else t('voice_status_ready', st.session_state.language)
-    st.markdown(f'<div class="panel-badge" style="text-align:right">{badge_text}</div>', unsafe_allow_html=True)
+    # Response panel
+    st.markdown(f"""
+    <div class="response-container" style="margin-top:1rem;">
+      <div class="panel-header">
+        <div class="panel-icon {response_icon_class}">🕋</div>
+        <h3 class="panel-title">{t('voice_response_title', st.session_state.language)}</h3>
+        
+        <div class="panel-badge {response_badge_class}">
+            {'● ' + (t('voice_status_speaking', st.session_state.language)
+            if st.session_state.is_speaking
+            else t('voice_status_ready', st.session_state.language))}
+        </div>
+      </div>
+      <div class='response-content'>{clean_response}</div> 
+    </div>
+    """, unsafe_allow_html=True)
 
-st.markdown('</div>  <!-- close panel-header -->', unsafe_allow_html=True)
-
-# Response content
-st.markdown(f'<div class="response-content">{clean_response}</div>', unsafe_allow_html=True)
-st.markdown('</div>  <!-- close response-container -->', unsafe_allow_html=True)
-
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------
 # Play pending audio
