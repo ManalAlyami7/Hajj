@@ -183,8 +183,9 @@ class DatabaseManager:
         3. If nothing found, fallback to fuzzy match
         """
         original_term = search_term.strip().lower()
+        if len(original_term) < 2:
+            return pd.DataFrame()
         
-        # نسخة منقّاة (في حال كتب المستخدم كلمات عامة)
         cleaned_term = (
             original_term
             .replace("شركة", "")
@@ -195,7 +196,14 @@ class DatabaseManager:
             .strip()
         )
     
-        # --- 1️⃣ البحث الدقيق بالاسم كما هو ---
+        def _save_last_company(row):
+            st.session_state["last_company_name"] = (
+                row["hajj_company_ar"].strip()
+                if pd.notna(row["hajj_company_ar"]) and row["hajj_company_ar"].strip()
+                else row["hajj_company_en"].strip()
+            )
+    
+        # --- 1️⃣ Exact match ---
         exact_query = """
         SELECT DISTINCT 
             hajj_company_en, hajj_company_ar, formatted_address,
@@ -206,29 +214,18 @@ class DatabaseManager:
         LIMIT 10
         """
         df, error = self.execute_query(exact_query, {"term": original_term})
-        if df is not None and not df.empty:
-           # ✅ نحفظ اسم آخر شركة تم العثور عليها
-           row = df.iloc[0]
-            # حفظ اسم الشركة في الذاكرة (عربي إن وجد، وإلا إنجليزي)
-           st.session_state["last_company_name"] = (
-                row["hajj_company_ar"].strip() if pd.notna(row["hajj_company_ar"]) and row["hajj_company_ar"].strip()
-                else row["hajj_company_en"].strip()
-            )
-           return df  # ✅ وجدنا نتيجة بالاسم الكامل مثل "وكالة الحرمين"
+        if isinstance(df, pd.DataFrame) and not df.empty:
+            _save_last_company(df.iloc[0])
+            return df
     
-        # --- 2️⃣ بحث دقيق بعد تنظيف الاسم ---
+        # --- 2️⃣ Cleaned exact match ---
         if cleaned_term and cleaned_term != original_term:
             df, error = self.execute_query(exact_query, {"term": cleaned_term})
-            if df is not None and not df.empty:
-               row = df.iloc[0]
-               # حفظ اسم الشركة في الذاكرة (عربي إن وجد، وإلا إنجليزي)
-               st.session_state["last_company_name"] = (
-                    row["hajj_company_ar"].strip() if pd.notna(row["hajj_company_ar"]) and row["hajj_company_ar"].strip()
-                    else row["hajj_company_en"].strip()
-                )
-               return df  # ✅ وجدنا نتيجة بعد التنظيف
+            if isinstance(df, pd.DataFrame) and not df.empty:
+                _save_last_company(df.iloc[0])
+                return df
     
-        # --- 3️⃣ بحث غامض (جزئي) ---
+        # --- 3️⃣ Fuzzy match ---
         fuzzy_query = """
         SELECT DISTINCT 
             hajj_company_en, hajj_company_ar, formatted_address,
@@ -241,13 +238,9 @@ class DatabaseManager:
         LIMIT 50
         """
         df, error = self.execute_query(fuzzy_query, {"term": f"%{cleaned_term or original_term}%"})
-        if df is not None and not df.empty:
-            row = df.iloc[0]
-            st.session_state["last_company_name"] = (
-                row["hajj_company_ar"].strip() if pd.notna(row["hajj_company_ar"]) and row["hajj_company_ar"].strip()
-                else row["hajj_company_en"].strip()
-            )
+        if isinstance(df, pd.DataFrame) and not df.empty:
+            _save_last_company(df.iloc[0])
             return df
-
-        # 🔴 ما وجدنا شيء
+    
         return pd.DataFrame()
+

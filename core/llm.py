@@ -73,6 +73,8 @@ class GreetingResponse(BaseModel):
     includes_offer_to_help: bool = Field(
         description="Whether the greeting includes an offer to help"
     )
+    
+    
 class NEEDSInfoResponse(BaseModel):
     """Structured output for needs info responses"""
     needs_info: str = Field(
@@ -101,9 +103,17 @@ class LLMManager:
         """Initialize OpenAI client"""
         self.client = self._get_client()
         self.voice_map = {
-            "العربية": "onyx",  # Deeper voice for Arabic
+            "العربية": "onyx",
             "English": "alloy"
         }
+    
+        # ✅ Initialize chat memory if it doesn't exist
+        if "chat_memory" not in st.session_state:
+            st.session_state.chat_memory = []
+    
+        if "last_company_name" not in st.session_state:
+            st.session_state["last_company_name"] = None
+
     
     @st.cache_resource
     def _get_client(_self):
@@ -133,6 +143,14 @@ class LLMManager:
     
         return context
         
+    def add_user_message(self, user_input: str):
+        """Add user message to memory"""
+        st.session_state.chat_memory.append({"role": "user", "content": user_input})
+
+    def add_assistant_message(self, assistant_reply: str):
+        """Add assistant reply to memory"""
+        st.session_state.chat_memory.append({"role": "assistant", "content": assistant_reply})
+        
     def update_last_agency(self, user_input: str, extracted_company: Optional[str]):
         """Keep track of last mentioned agency"""
         if "last_agency_name" not in st.session_state:
@@ -145,11 +163,13 @@ class LLMManager:
         Detect user intent using LLM with structured output
         Returns: Dict with intent, confidence, and reasoning
         """
+        
+        # FIXED: Initialize last_company at the beginning
+        last_company = st.session_state.get("last_company_name", "")
 
         if "last_company_name" in st.session_state and len(user_input.strip().split()) <= 4:
             user_input = f"{user_input.strip()} لشركة {st.session_state['last_company_name']}"
             logger.info(f"Context auto-filled with last company: {st.session_state['last_company_name']}")
-            last_company = st.session_state.get("last_company_name", "")
 
         intent_prompt = f"""
         You are a fraud-prevention assistant for Hajj pilgrims. 
@@ -325,7 +345,14 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             logger.info(f"SQL generated - Type: {sql_data.query_type}, Safety: {sql_data.safety_checked}")
             logger.info(f"Explanation: {sql_data.explanation}")
             
+            # حفظ اسم الوكالة الأخيرة إذا موجود
             if sql_data.sql_query and sql_data.safety_checked:
+                company_name = None
+                if sql_data.filters_applied:
+                    company_name = sql_data.filters_applied.get("company_name")
+                if company_name:
+                    st.session_state["last_company_name"] = company_name
+                
                 return {
                     "sql_query": sql_data.sql_query,
                     "query_type": sql_data.query_type,
@@ -339,6 +366,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         except Exception as e:
             logger.error(f"Structured SQL generation failed: {e}")
             return None
+
     
     def generate_summary(self, user_input: str, language: str, row_count: int, sample_rows: List[Dict]) -> Dict:
         """
@@ -349,7 +377,11 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             return {
                 "summary": "No results found. Try rephrasing your question or broadening the search." if language == "English" else "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال.",
             }
-
+        # حفظ اسم الوكالة الأخيرة (أول صف في النتائج)
+        first_row = sample_rows[0]
+        last_agency = first_row.get("hajj_company_en") or first_row.get("hajj_company_ar")
+        if last_agency:
+            st.session_state["last_company_name"] = last_agency
         
         data_preview = json.dumps(sample_rows[:50], ensure_ascii=False)
 
@@ -423,7 +455,7 @@ Output format (per agency) when showing all columns:
 
 Feel free to:
 - Mix sentences and bullet points
-- Add small friendly phrases like “You can contact them confidently.”
+- Add small friendly phrases like "You can contact them confidently."
 - Vary sentence structure per agency
 - Keep summary concise and readable
 """
@@ -536,8 +568,8 @@ Feel free to:
             - `SELECT DISTINCT country` if asking for list
             - Always based on agencies table
         5. "Cities" or "number of cities" → same logic as above but for `city`
-        6. Never assume or add “Saudi Arabia” unless mentioned explicitly.
-        7. When user asks about “countries that have agencies” → use `DISTINCT country` from `agencies`
+        6. Never assume or add "Saudi Arabia" unless mentioned explicitly.
+        7. When user asks about "countries that have agencies" → use `DISTINCT country` from `agencies`
         8. Always return agency-related data only, not external or world data.
 
         --------------------------------------------
@@ -620,6 +652,8 @@ Feel free to:
     def ask_for_more_info(self, user_input: str, language: str) -> Dict:
         """Generate structured response asking user for more specific information"""
         is_arabic = language == "العربية"
+        
+        # FIXED: Initialize last_company at the beginning
         last_company = st.session_state.get("last_company_name", "")
         
         if last_company and "agency" not in user_input.lower() and "شركة" not in user_input:
