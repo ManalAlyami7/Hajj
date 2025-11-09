@@ -444,9 +444,17 @@ def main():
     # Render sidebar
     sidebar.render()
     
-    # Render modern header
+    # Render modern header with translated badge
     lang = st.session_state.language
-    is_rtl = lang == 'العربية'
+    is_rtl = lang in ['العربية', 'اردو']
+    
+    # Build the badge text with translations - check all possible language values
+    if 'عرب' in lang or lang == 'العربية' or lang == 'Arabic':
+        badge_text = f"✨ مدعوم بالذكاء الاصطناعي • فوري • متعدد اللغات"
+    elif 'اردو' in lang or lang == 'Urdu':
+        badge_text = f"✨ AI سے چلنے والا • حقیقی وقت • کثیر لسانی"
+    else:  # English
+        badge_text = f"✨ AI-Powered • Real-Time • Multilingual"
     
     st.markdown(f"""
     <div class="header-container{' rtl' if is_rtl else ''}">
@@ -455,7 +463,7 @@ def main():
         </h1>
         <p class="subtitle">{t('subtitle', lang)}</p>
         <div class="header-badge">
-            ✨ AI-Powered • Real-Time • Multilingual
+            {badge_text}
         </div>
     </div>
     """, unsafe_allow_html=True)
