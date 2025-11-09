@@ -174,17 +174,7 @@ def _inject_professional_styles(is_rtl: bool):
             box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5);
         }}
         
-        [data-testid="stSidebar"] button[kind="primary"] {{
-            background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
-            color: white;
-            border: 2px solid #b8941f;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-        }}
-        
-        [data-testid="stSidebar"] button[kind="primary"]:hover {{
-            background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%);
-            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
-        }}
+     
         
         [data-testid="stSidebar"] button[kind="secondary"] {{
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
@@ -562,14 +552,14 @@ def _render_navigation_buttons(lang):
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button(f"💬 {t('mode_chatbot', lang)}", key="nav_chatbot", use_container_width=True, type="primary"):
+            if st.button(f"💬 {t('mode_chatbot', lang)}", key="nav_chatbot", use_container_width=True):
                 try:
                     st.switch_page("app.py")
                 except Exception:
                     st.rerun()
         
         with col2:
-            if st.button(f"🎙️ {t('mode_voicebot', lang)}", key="nav_voicebot", use_container_width=True,  type="primary"):
+            if st.button(f"🎙️ {t('mode_voicebot', lang)}", key="nav_voicebot", use_container_width=True):
                 try:
                     st.switch_page("pages/voicebot.py")
                 except Exception:
