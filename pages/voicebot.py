@@ -460,6 +460,39 @@ audio {{
   justify-content: center;
   align-items: center;
 }}
+/* New Style for Stop Button Container */
+.stop-button-header-container {{
+    /* Set the button container to absolute positioning relative to the panel-header */
+    position: absolute;
+    /* Position it between the title and the badge */
+    top: 50%;
+    transform: translateY(-50%);
+    /* Use the RTL/LTR setting to place it correctly */
+    {'right' if is_arabic else 'left'}: 50%; /* Start roughly in the middle */
+    margin-left: -50px; /* Adjust left/right to move it closer to the badge/title based on expected size */
+    z-index: 10;
+    /* Hide it when not speaking (optional, based on your state logic) */
+    /* display: none; */ 
+}}
+
+/* Modify panel-header to be the positioning reference */
+.response-container .panel-header {{
+    position: relative; /* Crucial for absolute positioning of children */
+    /* Add padding/margin to account for the button's presence */
+    padding-left: 20px; /* Example adjustment */
+    padding-right: 120px; /* Example adjustment to make space for the badge */
+}}
+
+/* Style the Streamlit button inside the container */
+.stop-button-header-container button {{
+    padding: 0.2rem 0.6rem;
+    font-size: 0.8rem;
+    background: #ef4444 !important; /* Red background for "Stop" */
+    color: white !important;
+    border: none;
+    border-radius: 0.5rem;
+    line-height: 1;
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -590,13 +623,34 @@ with col_right:
       <div class='response-content'>{clean_response}</div> 
     </div>
     """, unsafe_allow_html=True)
-    if st.session_state.is_speaking:
-        if st.button(
-            f"🚫 {t('voice_stop_speaking', st.session_state.language)}",
-            use_container_width=False,
-            type="primary",
-            key="stop_button"
-        ):
+if st.session_state.is_speaking:
+    st.markdown("""
+        <style>
+        div[data-testid="stButton"] > button[kind="primary"] {
+            background: linear-gradient(135deg, #ff4b4b 0%, #cc0000 100%);
+            border: none;
+            box-shadow: 0 4px 15px rgba(255, 75, 75, 0.4);
+            transition: all 0.3s ease;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+        div[data-testid="stButton"] > button[kind="primary"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 75, 75, 0.6);
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 4px 15px rgba(255, 75, 75, 0.4); }
+            50% { box-shadow: 0 4px 25px rgba(255, 75, 75, 0.7); }
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    if st.button(
+        f"🚫 {t('voice_stop_speaking', st.session_state.language)}",
+        use_container_width=True,
+        type="primary",
+        key="stop_button",
+        help="Click to stop the voice assistant"
+    ):
             logger.info("Stop button pressed. Halting speech.")
             # Clear the audio bytes so the playback block doesn't run
             st.session_state.pending_audio = None
