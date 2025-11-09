@@ -593,7 +593,6 @@ with col_right:
       <div class="panel-header">
         <div class="panel-icon {response_icon_class}">🕋</div>
         <h3 class="panel-title">{t('voice_response_title', st.session_state.language)}</h3>
-        
         <div class="panel-badge {response_badge_class}">
             {'● ' + (t('voice_status_speaking', st.session_state.language)
             if st.session_state.is_speaking
