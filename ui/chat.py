@@ -3,27 +3,26 @@ Professional Chat Interface Module
 Enhanced with formal design, improved UX, and consistent branding
 Fixed color scheme with proper contrast and visibility
 Simple clipboard copy with fallback
+Auto-stop audio buttons when playback finishes
 """
 
 import streamlit as st
-
 import pandas as pd
 from datetime import datetime
 import pytz
 import base64
 from utils.translations import t
 from utils.state import save_chat_memory
-from st_copy_to_clipboard import st_copy_to_clipboard
-
 from utils.validators import validate_user_input
-
 import uuid
 import streamlit.components.v1 as components
 import re
 from core.voice_processor import VoiceProcessor
+import time
+import threading
 
 try:
-    from streamlit_js_eval import copy_to_clipboard as js_copy_to_clipboard
+    from streamlit_js_eval import copy_to_clipboard
     CLIPBOARD_AVAILABLE = True
 except ImportError:
     CLIPBOARD_AVAILABLE = False
@@ -43,6 +42,8 @@ class ChatInterface:
             st.session_state.processing_example = False
         if "audio_playing" not in st.session_state:
             st.session_state.audio_playing = {}
+        if "audio_stop_time" not in st.session_state:
+            st.session_state.audio_stop_time = {}
 
     # -------------------
     # Public Render Method
@@ -50,6 +51,7 @@ class ChatInterface:
     def render(self):
         """Render professional chat interface"""
         self._inject_professional_styles()
+        self._check_audio_timeouts()
         self._display_chat_history()
         
         # if self._show_quick_actions():
@@ -408,6 +410,24 @@ class ChatInterface:
         """, unsafe_allow_html=True)
 
     # -------------------
+    # Audio Timeout Check
+    # -------------------
+    def _check_audio_timeouts(self):
+        """Check if any audio has exceeded its timeout and auto-stop"""
+        current_time = time.time()
+        to_remove = []
+        
+        for idx, stop_time in st.session_state.audio_stop_time.items():
+            if current_time >= stop_time:
+                to_remove.append(idx)
+        
+        if to_remove:
+            for idx in to_remove:
+                st.session_state.audio_playing.pop(idx, None)
+                st.session_state.audio_stop_time.pop(idx, None)
+            st.rerun()
+
+    # -------------------
     # Quick Actions
     # -------------------
     def _show_quick_actions(self) -> bool:
@@ -458,7 +478,26 @@ class ChatInterface:
     # -------------------
     # Chat History Display
     # -------------------
+    def _display_chat_history(self):
+        """Display all messages with professional styling"""
+        for idx, msg in enumerate(st.session_state.chat_memory):
+            role = msg.get("role", "assistant")
+            avatar = "🕋" if role == "assistant" else "👤"
+            content = msg.get("content", "")
 
+            with st.chat_message(role, avatar=avatar):
+                st.markdown(content, unsafe_allow_html=True)
+
+                # Show timestamp and actions only for assistant messages
+                if role == "assistant":
+                    self._render_timestamp_and_actions(msg, content, idx)
+                else:
+                    # Show only timestamp for user messages
+                    if msg.get("timestamp"):
+                        st.markdown(
+                            f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._safe_format_time(msg)}</div>",
+                            unsafe_allow_html=True,
+                        )
                     
     def _safe_format_time(self, msg):
         """تنسيق الوقت بشكل آمن بدون أخطاء"""
@@ -471,13 +510,8 @@ class ChatInterface:
         except Exception:
             return datetime.now().strftime("%I:%M %p")
 
-    """
-Add this import at the top of your chat_interface.py file:
-from streamlit_autorefresh import st_autorefresh
-"""
     def _render_timestamp_and_actions(self, msg: dict, text: str, idx: int):
         """Render timestamp with action buttons in a single row"""
-        import time
         lang = st.session_state.get("language", "English")
         button_key_prefix = f"msg_{idx}"
         is_playing = st.session_state.audio_playing.get(idx, False)
@@ -494,23 +528,6 @@ from streamlit_autorefresh import st_autorefresh
         stop_tip = "إيقاف الصوت" if lang == "العربية" else "Stop audio"
         copy_tip = "نسخ النص" if lang == "العربية" else "Copy text"
 
-        # Check if audio has finished playing
-        if is_playing:
-            start_time = st.session_state.get(f"audio_start_time_{idx}")
-            duration = st.session_state.get(f"audio_duration_{idx}")
-            
-            if start_time and duration:
-                elapsed = time.time() - start_time
-                if elapsed >= duration:
-                    # Audio finished, reset state
-                    st.session_state.audio_playing[idx] = False
-                    st.session_state.pop(f"audio_start_time_{idx}", None)
-                    st.session_state.pop(f"audio_duration_{idx}", None)
-                    st.session_state.pop(f"audio_trigger_{idx}", None)
-                    is_playing = False
-                    # Refresh the page once to update buttons
-                    st.rerun()
-
         # Create columns based on playing state
         cols = st.columns([3, 0.4, 0.4, 0.4, 0.4] if is_playing else [3, 0.4, 0.4], gap="small")
 
@@ -526,6 +543,7 @@ from streamlit_autorefresh import st_autorefresh
         with cols[1]:
             if not is_playing:
                 if st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play", help=play_tip):
+                    # Set playing state and trigger playback
                     st.session_state.audio_playing[idx] = True
                     st.session_state[f"audio_trigger_{idx}"] = True
                     st.rerun()
@@ -537,8 +555,7 @@ from streamlit_autorefresh import st_autorefresh
             with cols[2]:
                 if st.button(f"![Stop]({stop_icon})", key=f"{button_key_prefix}_stop", help=stop_tip):
                     st.session_state.audio_playing[idx] = False
-                    st.session_state.pop(f"audio_start_time_{idx}", None)
-                    st.session_state.pop(f"audio_duration_{idx}", None)
+                    st.session_state.audio_stop_time.pop(idx, None)
                     st.session_state.pop(f"audio_trigger_{idx}", None)
                     st.rerun()
 
@@ -557,34 +574,12 @@ from streamlit_autorefresh import st_autorefresh
         # Play audio if triggered
         if is_playing and st.session_state.get(f"audio_trigger_{idx}", False):
             self._play_message_audio(text, idx)
+            # Clear trigger after playing
             st.session_state[f"audio_trigger_{idx}"] = False
 
 
-    def _display_chat_history(self):
-        """Display all messages with professional styling"""
-        for idx, msg in enumerate(st.session_state.chat_memory):
-            role = msg.get("role", "assistant")
-            avatar = "🕋" if role == "assistant" else "👤"
-            content = msg.get("content", "")
-
-            with st.chat_message(role, avatar=avatar):
-                st.markdown(content, unsafe_allow_html=True)
-                if role == "assistant":
-                    self._render_timestamp_and_actions(msg, content, idx)
-                else:
-                    if msg.get("timestamp"):
-                        st.markdown(
-                            f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._safe_format_time(msg)}</div>",
-                            unsafe_allow_html=True,
-                        )
-
-
     def _play_message_audio(self, text: str, idx: int):
-        """Play message audio once"""
-        import time
-        from io import BytesIO
-        from mutagen.mp3 import MP3
-        
+        """Play message audio and set auto-stop timer"""
         lang = st.session_state.get("language", "English")
 
         try:
@@ -593,6 +588,7 @@ from streamlit_autorefresh import st_autorefresh
 
             if not clean_text:
                 st.warning("لا يوجد نص لقراءته" if lang == "العربية" else "No text to read")
+                st.session_state.audio_playing[idx] = False
                 return
 
             tts_lang = "ar" if lang == "العربية" else "en"
@@ -602,38 +598,26 @@ from streamlit_autorefresh import st_autorefresh
                 # Convert to bytes safely
                 audio_bytes = audio_data.getvalue() if hasattr(audio_data, "getvalue") else audio_data
                 
-                # Get audio duration
-                if isinstance(audio_bytes, bytes):
-                    audio_file = BytesIO(audio_bytes)
-                else:
-                    audio_file = audio_bytes
+                # Calculate estimated duration (rough: 150 words per minute for Arabic, 180 for English)
+                word_count = len(clean_text.split())
+                words_per_minute = 150 if tts_lang == "ar" else 180
+                estimated_duration = (word_count / words_per_minute) * 60  # seconds
                 
-                try:
-                    audio = MP3(audio_file)
-                    duration = audio.info.length
-                except Exception:
-                    # Fallback duration if MP3 parsing fails
-                    duration = 3.0
+                # Add 2 seconds buffer
+                estimated_duration += 2
                 
-                # Store when playback started and duration
-                st.session_state[f"audio_start_time_{idx}"] = time.time()
-                st.session_state[f"audio_duration_{idx}"] = duration
+                # Set auto-stop time
+                stop_time = time.time() + estimated_duration
+                st.session_state.audio_stop_time[idx] = stop_time
                 
-                # Render hidden audio player
-                audio_base64 = self._audio_to_base64(audio_bytes)
-                st.markdown(
-                    f"""
-                    <div style='display:none; visibility:hidden; height:0; width:0; position:absolute;'>
-                        <audio id="audio_{idx}" autoplay>
-                            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-                        </audio>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                # Play audio (hidden)
+                st.markdown("<div style='display:none; height:0; overflow:hidden;'>", unsafe_allow_html=True)
+                st.audio(audio_bytes, format="audio/mp3", autoplay=True)
+                st.markdown("</div>", unsafe_allow_html=True)
                 
             else:
                 st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
+                st.session_state.audio_playing[idx] = False
 
         except Exception as e:
             st.error(
@@ -641,49 +625,29 @@ from streamlit_autorefresh import st_autorefresh
                 if lang == "العربية"
                 else f"❌ Audio error: {str(e)}"
             )
-            # Clean up state on error
             st.session_state.audio_playing[idx] = False
-            st.session_state.pop(f"audio_trigger_{idx}", None)
-            st.session_state.pop(f"audio_start_time_{idx}", None)
-            st.session_state.pop(f"audio_duration_{idx}", None)
+
 
     def _audio_to_base64(self, audio_bytes):
         """Convert audio bytes to base64 string"""
         import base64
         return base64.b64encode(audio_bytes).decode()
 
-
     def _copy_to_clipboard(self, text: str, idx: int):
-        """Copy text to clipboard using streamlit_js_eval (if available)"""
+        """Copy text using Streamlit's native code block copy button"""
         lang = st.session_state.get("language", "English")
-
-        # Clean text before copying
+        
+        # Clean text for copying
         clean_text = self._clean_text_for_copy(text)
-        st_copy_to_clipboard(clean_text)
-
-
-
-
-    def _copy_to_clipboard1(self, text: str, idx: int):
-        """Copy text automatically to clipboard when button is clicked"""
-        # Escape quotes to avoid breaking JS
-        escaped_text = text.replace('"', '\\"').replace("\n", "\\n")
         
-        st.markdown(f"""
-            <script>
-                navigator.clipboard.writeText("{escaped_text}").then(function() {{
-                    console.log("Copied to clipboard");
-                }});
-            </script>
-        """, unsafe_allow_html=True)
+        # Show the text in a code block (has built-in copy button)
+        st.code(clean_text, language=None)
         
-        # Optional: show a small confirmation
-        lang = st.session_state.get("language", "English")
+        # Add instruction
         if lang == "العربية":
-            st.caption("✔️ تم نسخ النص")
+            st.caption("👆 اضغط على أيقونة النسخ في الزاوية اليمنى العليا")
         else:
-            st.caption("✔️ Copied to clipboard")
-
+            st.caption("👆 Click the copy icon in the top-right corner")
         
 
     def _clean_text_for_copy(self, text: str) -> str:
@@ -701,7 +665,6 @@ from streamlit_autorefresh import st_autorefresh
         
         return clean.strip()
 
-    # -------------------
     # -------------------
     # User Input Handling
     # -------------------
