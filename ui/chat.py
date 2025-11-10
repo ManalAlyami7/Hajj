@@ -479,67 +479,76 @@ class ChatInterface:
             return datetime.now().strftime("%I:%M %p")
 
     def _render_timestamp_and_actions(self, msg: dict, text: str, idx: int):
-        """Render timestamp with action buttons in a single row"""
-        lang = st.session_state.get("language", "English")
-        button_key_prefix = f"msg_{idx}"
-        is_playing = st.session_state.audio_playing.get(idx, False)
-        
-        # Icon URLs
-        play_icon = "https://img.icons8.com/?size=100&id=8VE4cuU0UjpB&format=png&color=000000"
-        replay_icon = "https://img.icons8.com/?size=100&id=59872&format=png&color=000000"
-        stop_icon = "https://img.icons8.com/?size=100&id=61012&format=png&color=000000"
-        copy_icon = "https://img.icons8.com/?size=100&id=86206&format=png&color=000000"
-        
-        # Tooltips
-        play_tip = "تشغيل الصوت" if lang == "العربية" else "Play audio"
-        replay_tip = "إعادة التشغيل" if lang == "العربية" else "Replay audio"
-        stop_tip = "إيقاف الصوت" if lang == "العربية" else "Stop audio"
-        copy_tip = "نسخ النص" if lang == "العربية" else "Copy text"
-        
-        # Create columns based on playing state with minimal gap
-        if is_playing:
-            cols = st.columns([3, 0.4, 0.4, 0.4, 0.4], gap="small")
-        else:
-            cols = st.columns([3, 0.4, 0.4], gap="small")
-        
-        # Timestamp in first column
-        with cols[0]:
-            if msg.get("timestamp"):
-                st.markdown(
-                    f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._safe_format_time(msg)}</div>",
-                    unsafe_allow_html=True
-                )
-        
-        # Play button in second column
-        with cols[1]:
-            if not is_playing:
-                if st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play", use_container_width=True, help=play_tip):
-                    st.session_state.audio_playing[idx] = True
-                    st.rerun() # <--- FORCE RE-RUN HERE
+            """Render timestamp with action buttons in a single row"""
+            lang = st.session_state.get("language", "English")
+            button_key_prefix = f"msg_{idx}"
+            # Check if audio is currently set to play (state is True)
+            is_playing = st.session_state.audio_playing.get(idx, False)
+            
+            # Icon URLs
+            play_icon = "https://img.icons8.com/?size=100&id=8VE4cuU0UjpB&format=png&color=000000"
+            replay_icon = "https://img.icons8.com/?size=100&id=59872&format=png&color=000000"
+            stop_icon = "https://img.icons8.com/?size=100&id=61012&format=png&color=000000"
+            copy_icon = "https://img.icons8.com/?size=100&id=86206&format=png&color=000000"
+            
+            # Tooltips
+            play_tip = "تشغيل الصوت" if lang == "العربية" else "Play audio"
+            replay_tip = "إعادة التشغيل" if lang == "العربية" else "Replay audio"
+            stop_tip = "إيقاف الصوت" if lang == "العربية" else "Stop audio"
+            copy_tip = "نسخ النص" if lang == "العربية" else "Copy text"
+            
+            # Create columns based on playing state with minimal gap
+            if is_playing:
+                cols = st.columns([3, 0.4, 0.4, 0.4, 0.4], gap="small")
             else:
-                st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play_active", disabled=True, use_container_width=True, help=play_tip)
-        
-        # Replay button (only when playing)
-        if is_playing:
-            with cols[2]:
-                if st.button(f"![Replay]({replay_icon})", key=f"{button_key_prefix}_replay", use_container_width=True, help=replay_tip):
-                    st.session_state.audio_playing[idx] = False
-                    st.rerun()
-        
-        # Stop button (only when playing)
-        if is_playing:
-            with cols[3]:
-                if st.button(f"![Stop]({stop_icon})", key=f"{button_key_prefix}_stop", use_container_width=True, help=stop_tip):
-                    st.session_state.audio_playing[idx] = False
-                    st.rerun()
-        
-        # Copy button in last column
-        with (cols[4] if is_playing else cols[2]):
-            if st.button(f"![Copy]({copy_icon})", key=f"{button_key_prefix}_copy", use_container_width=True, help=copy_tip):
-                self._copy_to_clipboard(text, idx)
-        if is_playing:
-            self._play_message_audio(text, idx)
+                cols = st.columns([3, 0.4, 0.4], gap="small")
+            
+            # Timestamp in first column
+            with cols[0]:
+                if msg.get("timestamp"):
+                    st.markdown(
+                        f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._safe_format_time(msg)}</div>",
+                        unsafe_allow_html=True
+                    )
+            
+            # Play button in second column (Visible only if not playing)
+            with cols[1]:
+                if not is_playing:
+                    if st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play", use_container_width=True, help=play_tip):
+                        # FIX 1: Set state and RERUN to toggle buttons/start audio on next run
+                        st.session_state.audio_playing[idx] = True
+                        st.rerun() 
+                else:
+                    # Disabled button when playing
+                    st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play_active", disabled=True, use_container_width=True, help=play_tip)
+            
+            # Replay button (only when playing)
+            if is_playing:
+                with cols[2]:
+                    if st.button(f"![Replay]({replay_icon})", key=f"{button_key_prefix}_replay", use_container_width=True, help=replay_tip):
+                        # Set state to False to stop rendering audio, and RERUN to reset UI
+                        st.session_state.audio_playing[idx] = False
+                        st.rerun()
+            
+            # Stop button (only when playing)
+            if is_playing:
+                with cols[3]:
+                    if st.button(f"![Stop]({stop_icon})", key=f"{button_key_prefix}_stop", use_container_width=True, help=stop_tip):
+                        # Set state to False to stop rendering audio, and RERUN to reset UI
+                        st.session_state.audio_playing[idx] = False
+                        st.rerun()
+            
+            # Copy button in last column
+            with (cols[4] if is_playing else cols[2]):
+                if st.button(f"![Copy]({copy_icon})", key=f"{button_key_prefix}_copy", use_container_width=True, help=copy_tip):
+                    self._copy_to_clipboard(text, idx)
+            
+            # FIX 2: Render Audio Player outside button logic, only if state is True
+            if is_playing:
+                self._play_message_audio(text, idx)
 
+    # 2. THE AUDIO PLAYING LOGIC
+    # --------------------------------------------------------------------------
     def _play_message_audio(self, text: str, idx: int):
         """Play message audio using LLM manager's text_to_speech function"""
         lang = st.session_state.get("language", "English")
@@ -552,6 +561,9 @@ class ChatInterface:
 
             if not clean_for_speech:
                 st.warning("لا يوجد نص لقراءته" if lang == "العربية" else "No text to read")
+                # Handle error by potentially resetting state if TTS failed before generating data
+                st.session_state.audio_playing[idx] = False
+                # st.rerun() # Optional: Rerun if you need the button back immediately
                 return
 
             # Detect language for TTS
@@ -568,20 +580,21 @@ class ChatInterface:
                     audio_bytes = audio_data
 
                 # Play audio (Streamlit handles autoplay internally)
-    
                 try:
+                    # Renders a hidden audio player that starts playing immediately
                     st.markdown("<div style='display:none'>", unsafe_allow_html=True)
                     st.audio(audio_bytes, format="audio/mp3", autoplay=True)
                     st.markdown("</div>", unsafe_allow_html=True)
                 except Exception as e:
-                    st.error("error ")
-
-                            # Update playing state
-                            
-                st.session_state.audio_playing[idx] = True
-                st.rerun()
+                    st.error("error playing audio: " + str(e))
+                
+                # IMPORTANT: NO RERUN HERE! The audio must be allowed to play.
+                # The state is already set to True by the calling function's button logic.
             else:
                 st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
+                # If audio generation fails, reset the state to show the Play button again
+                st.session_state.audio_playing[idx] = False
+                # st.rerun() # Optional: Rerun if you need the button back immediately
 
         except Exception as e:
             st.error(
@@ -589,6 +602,11 @@ class ChatInterface:
                 if lang == "العربية"
                 else f"❌ Audio error: {str(e)}"
             )
+            # On major exception, reset the state to show the Play button again
+            st.session_state.audio_playing[idx] = False
+            st.rerun() # Optional: Rerun if you need the button back immediately
+
+
 
 
     def _copy_to_clipboard(self, text: str, idx: int):
