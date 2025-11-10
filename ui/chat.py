@@ -173,7 +173,7 @@ class ChatInterface:
             font-weight: 500;
         }
 
-    /* Professional Button Styling */
+        /* Professional Button Styling */
         .stButton > button {
             width: 100% !important;
             padding: 1.1rem 1.5rem !important;
@@ -201,19 +201,12 @@ class ChatInterface:
             transform: translateY(-1px);
         }
 
-        /* Remove column gaps */
-        div[data-testid="column"] {
-            padding: 0 !important;
-        }
-
         /* Small Action Buttons for Audio Controls */
-        .stChatMessage div[data-testid="column"] > div > div > button {
-            padding: 0.5rem 0.6rem !important;
-            font-size: 1.1rem !important;
+        div[data-testid="column"] > div > div > button {
+            padding: 0.4rem 0.7rem !important;
+            font-size: 0.8rem !important;
             border-radius: 8px !important;
-            min-height: 38px !important;
-            max-height: 38px !important;
-            margin: 0 !important;
+            min-height: 35px !important;
         }
 
         /* Timestamp Styling */
