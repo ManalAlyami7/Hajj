@@ -58,7 +58,7 @@ class ChatInterface:
     # -------------------
     def _inject_professional_styles(self):
         """Inject enhanced professional CSS styles with fixed colors"""
-    st.markdown("""
+        st.markdown("""
         <style>
         /* Professional Color Palette */
         :root {
@@ -464,8 +464,16 @@ class ChatInterface:
             with st.chat_message(role, avatar=avatar):
                 st.markdown(content, unsafe_allow_html=True)
 
-                # Show timestamp and actions for all messages
-                self._render_timestamp_and_actions(msg, content, idx)
+                # Show timestamp and actions only for assistant messages
+                if role == "assistant":
+                    self._render_timestamp_and_actions(msg, content, idx)
+                else:
+                    # Show only timestamp for user messages
+                    if msg.get("timestamp"):
+                        st.markdown(
+                            f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._safe_format_time(msg)}</div>",
+                            unsafe_allow_html=True,
+                        )
                     
     def _safe_format_time(self, msg):
         """تنسيق الوقت بشكل آمن بدون أخطاء"""
