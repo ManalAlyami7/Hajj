@@ -494,7 +494,7 @@ from streamlit_autorefresh import st_autorefresh
                     st.rerun()
 
         # Create columns based on playing state
-        cols = st.columns([3, 0.4, 0.4, 0.4, 0.4] if is_playing else [3, 0.4, 0.4])
+        cols = st.columns([3, 0.4, 0.4, 0.4, 0.4] if is_playing else [3, 0.4, 0.4], gap ="small")
 
         # Timestamp
         with cols[0]:
