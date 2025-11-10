@@ -552,7 +552,7 @@ class ChatInterface:
 
                 # Render hidden player once
                 st.markdown("<div style='display:none'>", unsafe_allow_html=True)
-                st.audio(audio_bytes, format="audio/mp3")
+                st.audio(audio_bytes, format="audio/mp3", autoplay=True)
                 st.markdown("</div>", unsafe_allow_html=True)
             else:
                 st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
