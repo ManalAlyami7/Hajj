@@ -514,7 +514,8 @@ class ChatInterface:
         with cols[1]:
             if not is_playing:
                 if st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play", use_container_width=True, help=play_tip):
-                    self._play_message_audio(text, idx)
+                    st.session_state.audio_playing[idx] = True
+                    st.rerun() # <--- FORCE RE-RUN HERE
             else:
                 st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play_active", disabled=True, use_container_width=True, help=play_tip)
         
@@ -536,6 +537,8 @@ class ChatInterface:
         with (cols[4] if is_playing else cols[2]):
             if st.button(f"![Copy]({copy_icon})", key=f"{button_key_prefix}_copy", use_container_width=True, help=copy_tip):
                 self._copy_to_clipboard(text, idx)
+        if is_playing:
+            self._play_message_audio(text, idx)
 
     def _play_message_audio(self, text: str, idx: int):
         """Play message audio using LLM manager's text_to_speech function"""
@@ -576,7 +579,7 @@ class ChatInterface:
                             # Update playing state
                             
                 st.session_state.audio_playing[idx] = True
-                #st.rerun()
+                st.rerun()
             else:
                 st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
 
