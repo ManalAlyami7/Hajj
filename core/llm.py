@@ -85,6 +85,16 @@ class RobustMemory:
         if "conversation_context" not in st.session_state:
             st.session_state.conversation_context = []
     
+    def store_last_company(self, company_name: str):
+       
+        if company_name:
+            normalized_name = normalize_company_name(company_name)
+            st.session_state.last_company_name = normalized_name
+    
+    def get_last_company(self) -> str:
+     
+        return st.session_state.get("last_company_name", "")
+    
     def add_message(self, role: str, content: str):
         self._init_session_state()
         message = {"role": role, "content": content, "timestamp": datetime.now().isoformat()}
@@ -102,16 +112,6 @@ class RobustMemory:
      
         messages = self.get_recent_messages(limit or self.max_history)
         return [{"role": msg["role"], "content": msg["content"]} for msg in messages]
-    
-    def store_last_company(self, company_name: str):
-       
-        if company_name:
-            normalized_name = normalize_company_name(company_name)
-            st.session_state.last_company_name = normalized_name
-    
-    def get_last_company(self) -> str:
-     
-        return st.session_state.get("last_company_name", "")
     
     def clear_memory(self):
        
@@ -538,63 +538,6 @@ class LLMManager:
         except Exception as e:
             logger.error(f"Summary generation failed: {e}")
             return {"summary": f"📊 Found {row_count} matching records."}
-    
-    def ask_for_more_info(self, user_input: str, language: str) -> Dict:
-        """طلب مزيد من المعلومات باستخدام الذاكرة"""
-        context = self.build_chat_context(limit=3)
-        context_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in context])
-        
-        system_prompt = f"""
-        You are a helpful Hajj verification assistant.
-        Your task is to ask the user for more specific details if their question is vague.
-        Respond in {language} ONLY.
-        
-        Instructions:
-        - Keep the response short (2-3 sentences), friendly, and professional.
-        - Ask for agency name, location (city/country/Google Maps link), and what they want to know.
-        - Provide one clear example of a well-formed question.
-        - Output ONLY valid JSON matching this structure:
-
-        {{
-            "needs_info": "<friendly message asking for more details>",
-            "suggestions": ["<example suggestion 1>", "<example suggestion 2>"],
-            "missing_info": ["<list missing pieces of info>"],
-            "sample_query": "<example of a well-formed query>"
-        }}
-        """
-        
-        try:
-            prompt = f"{system_prompt}\nConversation Context:\n{context_text}\n\nUser's vague question: \"{user_input}\""
-            
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.3,
-                response_format={"type": "json_object"}
-            )
-            
-            info_data = json.loads(response.choices[0].message.content)
-            
-            return {
-                "needs_info": info_data.get("needs_info", ""),
-                "suggestions": info_data.get("suggestions", []),
-                "missing_info": info_data.get("missing_info", []),
-                "sample_query": info_data.get("sample_query", "")
-            }
-            
-        except Exception as e:
-            logger.error(f"More info prompt generation failed: {e}")
-            is_arabic = language == "العربية"
-            return {
-                "needs_info": "Could you provide more details? 🤔" if not is_arabic else "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔",
-                "suggestions": ["Is Al Huda Hajj Agency authorized?"] if not is_arabic else ["هل شركة الهدى للحج معتمدة؟"],
-                "missing_info": ["agency name", "location"] if not is_arabic else ["اسم الوكالة", "الموقع"],
-                "sample_query": "Is Al Huda Hajj Agency authorized?" if not is_arabic else "هل شركة الهدى للحج معتمدة؟"
-            }
-    
     def text_to_speech(self, text: str, language: str) -> Optional[io.BytesIO]:
         """تحويل النص إلى كلام (بدون تغيير)"""
         voice = self.voice_map.get(language, "alloy")
@@ -611,7 +554,6 @@ class LLMManager:
         except Exception as e:
             logger.error(f"TTS failed: {e}")
             return None
-    
     def _detect_language_from_text(self, text: str) -> Optional[str]:
         """كشف اللغة من النص (بدون تغيير)"""
         if not text:
@@ -628,7 +570,6 @@ class LLMManager:
             return "العربية"
         else:
             return "English"
-    
     @staticmethod
     def _get_sql_system_prompt(language: str) -> str:
         """Get SQL generation system prompt with context awareness"""
@@ -787,3 +728,65 @@ class LLMManager:
         if "NO_SQL" in response_text:
             return "NO_SQL"
         return None
+    
+    def ask_for_more_info(self, user_input: str, language: str) -> Dict:
+        """طلب مزيد من المعلومات باستخدام الذاكرة"""
+        context = self.build_chat_context(limit=3)
+        context_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in context])
+        
+        system_prompt = f"""
+        You are a helpful Hajj verification assistant.
+        Your task is to ask the user for more specific details if their question is vague.
+        Respond in {language} ONLY.
+        
+        Instructions:
+        - Keep the response short (2-3 sentences), friendly, and professional.
+        - Ask for agency name, location (city/country/Google Maps link), and what they want to know.
+        - Provide one clear example of a well-formed question.
+        - Output ONLY valid JSON matching this structure:
+
+        {{
+            "needs_info": "<friendly message asking for more details>",
+            "suggestions": ["<example suggestion 1>", "<example suggestion 2>"],
+            "missing_info": ["<list missing pieces of info>"],
+            "sample_query": "<example of a well-formed query>"
+        }}
+        """
+        
+        try:
+            prompt = f"{system_prompt}\nConversation Context:\n{context_text}\n\nUser's vague question: \"{user_input}\""
+            
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                response_format={"type": "json_object"}
+            )
+            
+            info_data = json.loads(response.choices[0].message.content)
+            
+            return {
+                "needs_info": info_data.get("needs_info", ""),
+                "suggestions": info_data.get("suggestions", []),
+                "missing_info": info_data.get("missing_info", []),
+                "sample_query": info_data.get("sample_query", "")
+            }
+            
+        except Exception as e:
+            logger.error(f"More info prompt generation failed: {e}")
+            is_arabic = language == "العربية"
+            return {
+                "needs_info": "Could you provide more details? 🤔" if not is_arabic else "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔",
+                "suggestions": ["Is Al Huda Hajj Agency authorized?"] if not is_arabic else ["هل شركة الهدى للحج معتمدة؟"],
+                "missing_info": ["agency name", "location"] if not is_arabic else ["اسم الوكالة", "الموقع"],
+                "sample_query": "Is Al Huda Hajj Agency authorized?" if not is_arabic else "هل شركة الهدى للحج معتمدة؟"
+            }
+    
+    
+    
+    
+    
+    
