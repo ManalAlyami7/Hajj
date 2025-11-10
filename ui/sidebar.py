@@ -423,7 +423,7 @@ class SidebarInterface:
                 })
                 
                 st.session_state.pending_example = True
-                save_chat_memory()
+                #save_chat_memory()
                 st.rerun()
     
     def _render_clear_button(self):
