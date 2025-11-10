@@ -204,6 +204,8 @@ class LLMManager:
         - For DATABASE questions, we need specific agency names or clear location criteria
 
         Message: {user_input}
+        Respond in JSON format like:
+        {{"intent": "GREETING", "confidence": 0.9, "reasoning": "...", "extracted_company": null}}
         Classify the intent, provide confidence score, and explain your reasoning in JSON format
         matching the IntentClassification Pydantic model.
         """
@@ -217,7 +219,6 @@ class LLMManager:
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.4,
-                api_key=st.secrets["OPENAI_API_KEY"]
             )
             response_text = response.choices[0].message.content.strip()
             intent_data = json.loads(response_text)
@@ -249,7 +250,7 @@ class LLMManager:
     
     def generate_greeting(self, user_input: str, language: str) -> str:
         """Generate natural greeting response using OpenAI directly"""
-        is_arabic = language == "العربية"
+        is_arabic = any('\u0600' <= c <= '\u06FF' for c in user_input)
 
         system_prompt = """
         You are a friendly Hajj and fraud prevention assistant designed to protect pilgrims from scams
@@ -276,7 +277,6 @@ class LLMManager:
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.5,
-                api_key=st.secrets["OPENAI_API_KEY"]
             )
             reply = response.choices[0].message.content.strip()
             self.add_assistant_message(reply)  # لو عندك memory
@@ -285,6 +285,7 @@ class LLMManager:
         except Exception as e:
             logger.error(f"Greeting generation failed: {e}")
             return "Hello! 👋 How can I help you today?" if not is_arabic else "السلام عليكم! 👋 كيف يمكنني مساعدتك؟"
+        
     def generate_general_answer(self, user_input: str, language: str) -> str:
         """Generate answer for general Hajj questions using OpenAI directly"""
         system_prompt = """You are a helpful assistant specialized in Hajj information. 
@@ -303,7 +304,6 @@ class LLMManager:
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.5,
-                api_key=st.secrets["OPENAI_API_KEY"]
             )
             reply = response.choices[0].message.content.strip()
             self.add_assistant_message(reply)  # حفظ الرد في الذاكرة لو عندك
@@ -334,7 +334,6 @@ class LLMManager:
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.3,
-                api_key=st.secrets["OPENAI_API_KEY"]
             )
             response_text = response.choices[0].message.content.strip()
             sql_data = json.loads(response_text)
@@ -486,7 +485,6 @@ class LLMManager:
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.4,
-                api_key=st.secrets["OPENAI_API_KEY"]
             )
             response_text = response.choices[0].message.content.strip()
             summary_data = json.loads(response_text)
@@ -707,7 +705,6 @@ class LLMManager:
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.4,
-                api_key=st.secrets["OPENAI_API_KEY"]
             )
             response_text = response.choices[0].message.content.strip()
             info_data = json.loads(response_text)
