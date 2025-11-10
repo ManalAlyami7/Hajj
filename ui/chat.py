@@ -387,7 +387,6 @@ div[data-testid="stHorizontalBlock"] {
 }
 </style>
 
-        </style>
         """, unsafe_allow_html=True)
 
     # -------------------
