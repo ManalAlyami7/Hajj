@@ -538,39 +538,46 @@ class ChatInterface:
     def _play_message_audio(self, text: str, idx: int):
         """Play message audio using LLM manager's text_to_speech function"""
         lang = st.session_state.get("language", "English")
-        
+
         try:
             # Clean text for speech
             clean_for_speech = re.sub(r'<[^>]+>', '', text)
             clean_for_speech = re.sub(r'\*\*([^\*]+)\*\*', r'\1', clean_for_speech)
             clean_for_speech = clean_for_speech.strip()
-            
+
             if not clean_for_speech:
                 st.warning("لا يوجد نص لقراءته" if lang == "العربية" else "No text to read")
                 return
-            
-            # Call the LLM manager's text_to_speech function
-            # Pass the language parameter
+
+            # Detect language for TTS
             tts_lang = "ar" if lang == "العربية" else "en"
-            audio_buffer = self.llm.text_to_speech(clean_for_speech, tts_lang)
 
-            if audio_buffer:
-                # Convert BytesIO → bytes
-                audio_bytes = audio_buffer.getvalue()
-                
-                # Encode audio for HTML playback
+            # Call TTS function
+            audio_data = self.llm.text_to_speech(clean_for_speech, tts_lang)
 
-                st.markdown("<div style='display:none'>", unsafe_allow_html=True)
-                st.audio(audio_bytes, format="audio/mp3", autoplay=True)
-                st.markdown("</div>", unsafe_allow_html=True)
-                # Set playing state
+            if audio_data:
+                # Ensure we have bytes
+                if hasattr(audio_data, "getvalue"):
+                    audio_bytes = audio_data.getvalue()
+                else:
+                    audio_bytes = audio_data
+
+                # Play audio (Streamlit handles autoplay internally)
+                st.audio(audio_bytes, format="audio/mp3")
+
+                # Update playing state
                 st.session_state.audio_playing[idx] = True
                 st.rerun()
             else:
                 st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
-                
+
         except Exception as e:
-            st.error(f"❌ خطأ في تشغيل الصوت: {str(e)}" if lang == "العربية" else f"❌ Audio error: {str(e)}")
+            st.error(
+                f"❌ خطأ في تشغيل الصوت: {str(e)}"
+                if lang == "العربية"
+                else f"❌ Audio error: {str(e)}"
+            )
+
 
     def _copy_to_clipboard(self, text: str, idx: int):
         """Copy text using Streamlit's native code block copy button"""
