@@ -767,7 +767,7 @@ class LLMManager:
 
         - "Authorized agencies in Makkah" → SELECT * FROM agencies
         WHERE is_authorized = 'Yes' AND (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%')
-        LIMIT 100;
+        LIMIT 25;
 
         - "كم عدد الشركات في المدينة؟" → SELECT COUNT(*) FROM agencies
         WHERE (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%');
