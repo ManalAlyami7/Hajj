@@ -565,9 +565,15 @@ class ChatInterface:
                     audio_bytes = audio_data
 
                 # Play audio (Streamlit handles autoplay internally)
-                st.audio(audio_bytes, format="audio/mp3")
+    
+                try:
+                    st.markdown("<div style='display:none'>", unsafe_allow_html=True)
+                    st.audio(audio_bytes, format="audio/mp3", autoplay=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
+                except Exception as e:
+                    st.error("error ")
 
-                # Update playing state
+                            # Update playing state
                 st.session_state.audio_playing[idx] = True
                 st.rerun()
             else:
