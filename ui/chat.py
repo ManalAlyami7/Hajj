@@ -199,8 +199,8 @@ div[data-testid="stHorizontalBlock"] {
     background: linear-gradient(135deg, var(--primary-gold), var(--primary-gold-dark)) !important;
     border: none !important;
     border-radius: 12px !important;
-    padding: 6px !important;
-    margin: 0 4px !important;
+    padding: 3px !important;
+    margin: 0 0px !important;
     box-shadow: var(--shadow-sm) !important;
     width: 42px !important;
     height: 42px !important;
