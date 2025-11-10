@@ -64,7 +64,13 @@ class NEEDSInfoResponse(BaseModel):
     sample_query: str = Field(description="An example of a well-formed query")
     user_lang: Literal["English", "العربية"] = Field(description="Language to respond in")
 
-
+@st.cache_resource
+def get_openai_client():
+    api_key = st.secrets.get("OPENAI_API_KEY") or st.secrets.get("key")
+    if not api_key:
+        st.warning("⚠️ OpenAI API key missing in Streamlit secrets")
+        st.stop()
+    return OpenAI(api_key=api_key)
 # -----------------------------
 # LLMManager without LangChain
 # -----------------------------
@@ -79,17 +85,7 @@ class LLMManager:
             "العربية": "onyx",
             "English": "alloy"
         }
-
-        
-    @st.cache_resource
-    def _get_client(_self):
-        """Get cached OpenAI client"""
-        api_key = st.secrets.get("OPENAI_API_KEY") or st.secrets.get("key")
-        if not api_key:
-            logger.error("OpenAI API key not found")
-            st.warning("⚠️ OpenAI API key missing in Streamlit secrets")
-            st.stop()
-        return OpenAI(api_key=api_key)
+        self.client = get_openai_client() 
 
 
     # -----------------------------
@@ -304,6 +300,7 @@ class LLMManager:
                 if language != "العربية"
                 else "حدث خطأ. يرجى إعادة صياغة سؤالك."
             )
+        
     def generate_sql(self, user_input: str, language: str) -> Optional[Dict]:
         """
         Generate SQL query from user input with structured output and context awareness
