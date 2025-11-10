@@ -423,6 +423,17 @@ class ChatInterface:
 
                 if role == "assistant":
                     self._render_timestamp_and_actions(msg, content, idx)
+                    
+    def _safe_format_time(self, msg):
+        """تنسيق الوقت بشكل آمن بدون أخطاء"""
+        try:
+            timestamp = msg.get('timestamp')
+            if not timestamp:
+                return datetime.now().strftime("%I:%M %p")
+            
+            return self._format_time(timestamp)
+        except Exception:
+            return datetime.now().strftime("%I:%M %p")
 
     def _render_timestamp_and_actions(self, msg: dict, text: str, idx: int):
         """Render timestamp with action buttons in a single row"""
@@ -449,7 +460,7 @@ class ChatInterface:
         # Timestamp in first column
         with cols[0]:
             if msg.get("timestamp"):
-                f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._format_time(msg.get('timestamp', datetime.now().isoformat()))}</div>",
+                f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._safe_format_time(msg)}</div>",
         
         # Play button in second column
         with cols[1]:
