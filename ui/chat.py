@@ -172,34 +172,38 @@ class ChatInterface:
             margin: 0;
             font-weight: 500;
         }
+/* Rounded Square Icon Buttons */
+.stButton > button:has(img) {
+    background: linear-gradient(135deg, var(--primary-gold), var(--primary-gold-dark)) !important;
+    border: none !important;
+    border-radius: 12px !important; /* Rounded corners */
+    padding: 10px !important;
+    box-shadow: var(--shadow-sm) !important;
+    width: 46px !important;
+    height: 46px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.25s ease !important;
+}
 
-        /* Professional Button Styling */
-        .stButton > button {
-            width: 100% !important;
-            padding: 1.1rem 1.5rem !important;
-            border-radius: 14px !important;
-            font-weight: 700 !important;
-            font-size: 1rem !important;
-            cursor: pointer !important;
-            border: 2px solid var(--primary-gold) !important;
-            background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-gold-dark) 100%) !important;
-            color: white !important;
-            box-shadow: var(--shadow-sm) !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            letter-spacing: 0.025em !important;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        }
+/* Hover & Active Effects */
+.stButton > button:has(img):hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: var(--shadow-md) !important;
+    background: linear-gradient(135deg, var(--primary-gold-dark), #9d7a1a) !important;
+}
 
-        .stButton > button:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-lg) !important;
-            background: linear-gradient(135deg, var(--primary-gold-dark) 0%, #9d7a1a 100%) !important;
-            border-color: var(--primary-gold-dark) !important;
-        }
+.stButton > button:has(img):active {
+    transform: scale(0.97);
+}
 
-        .stButton > button:active {
-            transform: translateY(-1px);
-        }
+/* Optional: Remove white flash or border focus outline */
+.stButton > button:focus {
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.35) !important;
+}
+
 
         /* Remove column gaps */
         div[data-testid="column"] {
