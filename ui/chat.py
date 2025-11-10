@@ -45,10 +45,7 @@ class ChatInterface:
         """Render professional chat interface"""
         self._inject_professional_styles()
         self._display_chat_history()
-        
-        # Display quick actions if at the start
-        if self._show_quick_actions():
-            self._display_quick_actions()
+
         
         self._handle_user_input()
 
@@ -406,56 +403,6 @@ class ChatInterface:
         </style>
         """, unsafe_allow_html=True)
 
-    # -------------------
-    # Quick Actions
-    # -------------------
-    def _show_quick_actions(self) -> bool:
-        chat = st.session_state.chat_memory
-        lang = st.session_state.get("language", "English")
-        if len(chat) == 1:
-            first = chat[0]
-            # Check if the welcome message is the last message
-            return first.get("role") == "assistant" and first.get("content") == t("welcome_msg", lang)
-        # Also show if the memory is completely empty (no welcome message yet)
-        return len(chat) == 0
-
-    def _display_quick_actions(self):
-        """Display professional quick action buttons"""
-        lang = st.session_state.get("language", "English")
-        
-        st.markdown(f"""
-            <div class='quick-actions-container'>
-                <div class='quick-actions-header'>
-                    <h3>✨ {t('quick_actions', lang)}</h3>
-                    <p>Select a quick action to get started instantly</p>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
-        col1, col2 = st.columns(2)
-        actions = [
-            ("🔍", t("find_authorized", lang), "find_authorized", "user", t("show_authorized", lang)),
-            ("📊", t("show_stats", lang), "show_stats", "user", t("hajj_statistics", lang)),
-            ("🌍", t("find_by_country", lang), "find_by_country", "user", t("country_search", lang)),
-            ("❓", t("general_help", lang), "general_help", "user", t("help_message", lang)),
-        ]
-
-        # These buttons will now be GOLD due to the general .stButton > button CSS rule
-        with col1:
-            for icon, label, key, role, content in actions[:2]:
-                if st.button(f"{icon}  {label}", key=f"qa_{key}", use_container_width=True):
-                    self._add_message(role, content)
-                    st.session_state.pending_example = True
-                    st.session_state.processing_example = False
-                    st.rerun()
-
-        with col2:
-            for icon, label, key, role, content in actions[2:]:
-                if st.button(f"{icon}  {label}", key=f"qa_{key}", use_container_width=True):
-                    self._add_message(role, content)
-                    st.session_state.pending_example = True
-                    st.session_state.processing_example = False
-                    st.rerun()
 
     # -------------------
     # Chat History Display
