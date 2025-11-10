@@ -526,17 +526,9 @@ class ChatInterface:
                 # Encode audio for HTML playback
                 audio_b64 = base64.b64encode(audio_bytes).decode()
 
-                audio_html = f"""
-                <audio id="audio_{idx}" autoplay>
-                    <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
-                </audio>
-                <script>
-                    var audio = document.getElementById('audio_{idx}');
-                    audio.play();
-                </script>
-                """
-                components.html(audio_html, height=0)
-
+                st.markdown("<div style='display:none'>", unsafe_allow_html=True)
+                st.audio(audio_b64, format="audio/mp3", autoplay=True)
+                st.markdown("</div>", unsafe_allow_html=True)
                 # Set playing state
                 st.session_state.audio_playing[idx] = True
                 st.rerun()
