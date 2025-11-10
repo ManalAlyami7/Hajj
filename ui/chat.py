@@ -522,6 +522,11 @@ class ChatInterface:
                     st.session_state.audio_playing[idx] = False
                     st.rerun()
 
+        if is_playing:
+            with cols[3]:
+                if st.button(f"![Replay]({replay_icon})", key=f"{button_key_prefix}_replay", help=replay_tip):
+                    self._play_message_audio(text, idx)
+
         # Copy button
         with (cols[4] if is_playing else cols[2]):
             if st.button(f"![Copy]({copy_icon})", key=f"{button_key_prefix}_copy", help=copy_tip):
@@ -549,6 +554,7 @@ class ChatInterface:
                 # Convert to bytes safely
                 audio_bytes = audio_data.getvalue() if hasattr(audio_data, "getvalue") else audio_data
                 st.session_state.audio_playing[idx] = True
+                st.rerun()
 
                 # Render hidden player once
                 st.markdown("<div style='display:none'>", unsafe_allow_html=True)
