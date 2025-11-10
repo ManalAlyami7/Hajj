@@ -6,6 +6,8 @@ Simple clipboard copy with fallback
 """
 
 import streamlit as st
+import pyperclip
+
 import pandas as pd
 from datetime import datetime
 import pytz
@@ -548,7 +550,7 @@ from streamlit_autorefresh import st_autorefresh
         # Copy button
         with (cols[4] if is_playing else cols[2]):
             if st.button(f"![Copy]({copy_icon})", key=f"{button_key_prefix}_copy", help=copy_tip):
-                self._copy_to_clipboard1(text, idx)
+                self._copy_to_clipboard(text, idx)
 
         # Play audio if triggered
         if is_playing and st.session_state.get(f"audio_trigger_{idx}", False):
@@ -647,21 +649,14 @@ from streamlit_autorefresh import st_autorefresh
         """Convert audio bytes to base64 string"""
         import base64
         return base64.b64encode(audio_bytes).decode()
-    def _copy_to_clipboard(self, text: str, idx: int):
-        """Copy text using Streamlit's native code block copy button"""
+    def _copy_to_clipboard(text: str, idx: int):
+        """Copy text directly to clipboard using pyperclip"""
+        pyperclip.copy(text)  # Copies the text immediately
         lang = st.session_state.get("language", "English")
-        
-        # Clean text for copying
-        clean_text = self._clean_text_for_copy(text)
-        
-        # Show the text in a code block (has built-in copy button)
-        st.code(clean_text, language=None)
-        
-        # Add instruction
         if lang == "العربية":
-            st.caption("👆 اضغط على أيقونة النسخ في الزاوية اليمنى العليا")
+            st.success("✔️ تم نسخ النص")
         else:
-            st.caption("👆 Click the copy icon in the top-right corner")
+            st.success("✔️ Copied to clipboard")
 
     def _copy_to_clipboard1(self, text: str, idx: int):
         """Copy text automatically to clipboard when button is clicked"""
