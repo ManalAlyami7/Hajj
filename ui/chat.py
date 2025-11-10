@@ -219,7 +219,7 @@ class ChatInterface:
 
         /* Remove column gaps */
         div[data-testid="column"] {
-            padding: 0 2px !important;
+            padding: 0 1px !important;
         }
 
         /* Small Action Buttons for Audio Controls */
@@ -512,7 +512,7 @@ from streamlit_autorefresh import st_autorefresh
                     st.rerun()
 
         # Create columns based on playing state
-        cols = st.columns([3, 0.4, 0.4, 0.4, 0.4] if is_playing else [3, 0.4, 0.4], gap="small")
+        cols = st.columns([3, 0.4, 0.4, 0.4, 0.4] if is_playing else [3, 0.4, 0.4])
 
         # Timestamp
         with cols[0]:

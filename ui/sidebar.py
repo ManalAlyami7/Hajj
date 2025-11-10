@@ -364,7 +364,7 @@ class SidebarInterface:
                     "content": t("welcome_msg", new_language),
                     "timestamp": self._get_current_time()
                 }]
-                save_chat_memory()
+                #save_chat_memory()
             
             st.rerun()
     
