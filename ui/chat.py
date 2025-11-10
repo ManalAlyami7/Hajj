@@ -517,11 +517,15 @@ class ChatInterface:
             # Pass the language parameter
             tts_lang = "ar" if lang == "العربية" else "en"
             audio_bytes = self.llm.text_to_speech(clean_for_speech, tts_lang)
-            
+
             if audio_bytes:
+                # Convert BytesIO → bytes
+                if hasattr(audio_bytes, "getvalue"):
+                    audio_bytes = audio_bytes.getvalue()
+                
                 # Encode audio for HTML playback
                 audio_b64 = base64.b64encode(audio_bytes).decode()
-                
+
                 audio_html = f"""
                 <audio id="audio_{idx}" autoplay>
                     <source src="data:audio/mp3;base64,{audio_b64}" type="audio/mp3">
@@ -532,7 +536,7 @@ class ChatInterface:
                 </script>
                 """
                 components.html(audio_html, height=0)
-                
+
                 # Set playing state
                 st.session_state.audio_playing[idx] = True
                 st.rerun()
@@ -557,6 +561,7 @@ class ChatInterface:
             st.caption("👆 اضغط على أيقونة النسخ في الزاوية اليمنى العليا")
         else:
             st.caption("👆 Click the copy icon in the top-right corner")
+        
 
     def _clean_text_for_copy(self, text: str) -> str:
         """Clean text for copying - remove HTML and markdown formatting"""
