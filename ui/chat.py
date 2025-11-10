@@ -475,10 +475,10 @@ class ChatInterface:
         is_playing = st.session_state.audio_playing.get(idx, False)
         
         # Icon URLs
-        play_icon = "https://img.icons8.com/?size=100&id=8VE4cuU0UjpB&format=png&color=FFFFFF"
-        replay_icon = "https://img.icons8.com/?size=100&id=59872&format=png&color=FFFFFF"
-        stop_icon = "https://img.icons8.com/?size=100&id=61012&format=png&color=FFFFFF"
-        copy_icon = "https://img.icons8.com/?size=100&id=86206&format=png&color=FFFFFF"
+        play_icon = "https://img.icons8.com/?size=100&id=8VE4cuU0UjpB&format=png&color=000000"
+        replay_icon = "https://img.icons8.com/?size=100&id=59872&format=png&color=000000"
+        stop_icon = "https://img.icons8.com/?size=100&id=61012&format=png&color=000000"
+        copy_icon = "https://img.icons8.com/?size=100&id=86206&format=png&color=000000"
         
         # Tooltips
         play_tip = "تشغيل الصوت" if lang == "العربية" else "Play audio"
