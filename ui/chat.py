@@ -2,6 +2,7 @@
 Professional Chat Interface Module
 Enhanced with formal design, improved UX, and consistent branding
 Fixed color scheme with proper contrast and visibility
+Fixed timestamp and buttons appearing on first render
 """
 
 import streamlit as st
@@ -460,33 +461,36 @@ class ChatInterface:
         # Timestamp in first column
         with cols[0]:
             if msg.get("timestamp"):
-                f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._safe_format_time(msg)}</div>",
+                st.markdown(
+                    f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._safe_format_time(msg)}</div>",
+                    unsafe_allow_html=True
+                )
         
         # Play button in second column
         with cols[1]:
             if not is_playing:
-                if st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play", use_container_width=True):
+                if st.button(f"▶️", key=f"{button_key_prefix}_play", use_container_width=True):
                     self._play_message_audio(text, idx)
             else:
-                st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play_active", disabled=True, use_container_width=True)
+                st.button(f"▶️", key=f"{button_key_prefix}_play_active", disabled=True, use_container_width=True)
         
         # Replay button (only when playing)
         if is_playing:
             with cols[2]:
-                if st.button(f"[Replay]({replay_icon})", key=f"{button_key_prefix}_replay", use_container_width=True):
+                if st.button(f"🔁", key=f"{button_key_prefix}_replay", use_container_width=True):
                     st.session_state.audio_playing[idx] = False
                     st.rerun()
         
         # Stop button (only when playing)
         if is_playing:
             with cols[3]:
-                if st.button(f"[Stop]({stop_icon})", key=f"{button_key_prefix}_stop", use_container_width=True):
+                if st.button(f"⏹️", key=f"{button_key_prefix}_stop", use_container_width=True):
                     st.session_state.audio_playing[idx] = False
                     st.rerun()
         
         # Copy button in last column
         with (cols[4] if is_playing else cols[2]):
-            if st.button(f"![Copy]({copy_icon})", key=f"{button_key_prefix}_copy", use_container_width=True):
+            if st.button(f"📋", key=f"{button_key_prefix}_copy", use_container_width=True):
                 self._copy_to_clipboard(text, idx)
 
     def _play_message_audio(self, text: str, idx: int):
@@ -579,7 +583,7 @@ class ChatInterface:
         
         return clean.strip()
 
-        # -------------------
+    # -------------------
     # User Input Handling
     # -------------------
     def _handle_user_input(self):
@@ -648,16 +652,49 @@ class ChatInterface:
 
     def _handle_needs_info(self, info_request: str):
         st.markdown(info_request)
+        
+        # Get the index for the new message
+        msg_idx = len(st.session_state.chat_memory)
+        
+        # Create the message object
+        msg = {"role": "assistant", "content": info_request, "timestamp": self._get_current_time()}
+        
+        # Render timestamp and actions immediately
+        self._render_timestamp_and_actions(msg, info_request, msg_idx)
+        
+        # Add to memory after rendering
         self._add_message("assistant", info_request)
 
     def _respond(self, content: str):
         st.markdown(content)
+        
+        # Get the index for the new message
+        msg_idx = len(st.session_state.chat_memory)
+        
+        # Create the message object
+        msg = {"role": "assistant", "content": content, "timestamp": self._get_current_time()}
+        
+        # Render timestamp and actions immediately
+        self._render_timestamp_and_actions(msg, content, msg_idx)
+        
+        # Add to memory after rendering
         self._add_message("assistant", content)
 
     def _handle_database_results(self, state: dict):
         summary = state.get("summary", "")
         if summary:
             st.markdown(summary)
+            
+            # Get the index for the new message
+            msg_idx = len(st.session_state.chat_memory)
+            
+            # Create the message object
+            msg = {"role": "assistant", "content": summary, "timestamp": self._get_current_time()}
+            
+            # Render timestamp and actions immediately
+            self._render_timestamp_and_actions(msg, summary, msg_idx)
+            
+            # Add to memory after rendering
             self._add_message("assistant", summary)
 
     # -------------------
