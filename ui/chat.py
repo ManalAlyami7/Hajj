@@ -454,9 +454,9 @@ class ChatInterface:
         
         # Create columns based on playing state
         if is_playing:
-            cols = st.columns([3, 0.4, 0.4, 0.4, 0.4], gap="small")
+            cols = st.columns([3, 0.7, 0.7, 0.7, 0.7], gap="small")
         else:
-            cols = st.columns([3, 0.4, 0.4], gap="small")
+            cols = st.columns([3, 0.7, 0.7])
         
         # Timestamp in first column
         with cols[0]:
