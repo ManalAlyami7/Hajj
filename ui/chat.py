@@ -214,6 +214,27 @@ class ChatInterface:
             min-height: 38px !important;
             max-height: 38px !important;
             margin: 0 !important;
+            border: 2px solid var(--primary-gold) !important;
+            background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-gold-dark) 100%) !important;
+            color: white !important;
+            box-shadow: var(--shadow-sm) !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+
+        .stChatMessage div[data-testid="column"] > div > div > button:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: var(--shadow-md) !important;
+            background: linear-gradient(135deg, var(--primary-gold-dark) 0%, #9d7a1a 100%) !important;
+            border-color: var(--primary-gold-dark) !important;
+        }
+
+        .stChatMessage div[data-testid="column"] > div > div > button:active {
+            transform: translateY(0px) !important;
+        }
+
+        .stChatMessage div[data-testid="column"] > div > div > button:disabled {
+            opacity: 0.6 !important;
+            cursor: not-allowed !important;
         }
 
         /* Timestamp Styling */
@@ -543,7 +564,7 @@ class ChatInterface:
                 st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
                 
         except Exception as e:
-            st.error(f"❌ خطأ في تشغيل الصوت: {str(e)}" if lang == "العربية" else  f"❌ Audio error: {str(e)}")
+            st.error(f"❌ خطأ في تشغيل الصوت: {str(e)}" if lang == "العربية" else f"❌ Audio error: {str(e)}")
 
     def _copy_to_clipboard(self, text: str, idx: int):
         """Copy text to clipboard with improved functionality"""
