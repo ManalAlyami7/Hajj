@@ -54,7 +54,7 @@ class ChatInterface:
     # -------------------
     def _inject_professional_styles(self):
         """Inject enhanced professional CSS styles with fixed colors"""
-        st.markdown("""
+    st.markdown("""
         <style>
         /* Professional Color Palette */
         :root {
@@ -217,6 +217,7 @@ class ChatInterface:
         /* ====================================================
         ✅ TARGETED: AUDIO ICON BUTTON STYLING (For small, image-based buttons)
         This overrides padding and size for the timestamp audio controls.
+        We explicitly re-assert the background here for maximum specificity.
         ====================================================
         */
         .stButton > button:has(img) {
@@ -227,6 +228,9 @@ class ChatInterface:
             padding: 10px !important;
             font-size: 1rem !important;
             margin: 0 !important; /* Ensure tight packing in columns */
+            
+            /* Re-assert Gold Background to prevent internal Streamlit overrides */
+            background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-gold-dark) 100%) !important;
         }
         
         /* Small Action Buttons for Audio Controls (Final size enforcement) */
@@ -235,6 +239,8 @@ class ChatInterface:
             min-height: 38px !important;
             max-height: 38px !important;
             margin: 0 !important;
+            
+            /* Re-assert Gold Background for the most specific selector */
             border: 2px solid var(--primary-gold) !important;
             background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-gold-dark) 100%) !important;
         }
@@ -402,7 +408,6 @@ class ChatInterface:
         }
         </style>
         """, unsafe_allow_html=True)
-
 
     # -------------------
     # Chat History Display
