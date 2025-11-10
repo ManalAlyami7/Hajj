@@ -173,7 +173,7 @@ class ChatInterface:
             font-weight: 500;
         }
 
-        /* Professional Button Styling */
+    /* Professional Button Styling */
         .stButton > button {
             width: 100% !important;
             padding: 1.1rem 1.5rem !important;
@@ -201,12 +201,19 @@ class ChatInterface:
             transform: translateY(-1px);
         }
 
+        /* Remove column gaps */
+        div[data-testid="column"] {
+            padding: 0 !important;
+        }
+
         /* Small Action Buttons for Audio Controls */
-        div[data-testid="column"] > div > div > button {
-            padding: 0.4rem 0.7rem !important;
-            font-size: 0.8rem !important;
+        .stChatMessage div[data-testid="column"] > div > div > button {
+            padding: 0.5rem 0.6rem !important;
+            font-size: 1.1rem !important;
             border-radius: 8px !important;
-            min-height: 35px !important;
+            min-height: 38px !important;
+            max-height: 38px !important;
+            margin: 0 !important;
         }
 
         /* Timestamp Styling */
@@ -454,9 +461,9 @@ class ChatInterface:
         
         # Create columns based on playing state
         if is_playing:
-            cols = st.columns([2, 0.7, 0.7, 0.7, 0.7])
+            cols = st.columns([3, 0.4, 0.4, 0.4, 0.4], gap="small")
         else:
-            cols = st.columns([2, 0.7, 0.7])
+            cols = st.columns([3, 0.4, 0.4], gap="small")
         
         # Timestamp in first column
         with cols[0]:
