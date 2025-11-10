@@ -1,7 +1,8 @@
 """
 Professional Sidebar Interface Module
 Enhanced with formal design, statistics, and navigation
-Minimal emoji usage for professional appearance
+Fixed color scheme with proper contrast
+Complete version with Urdu language support and all translations working
 """
 
 import streamlit as st
@@ -46,13 +47,13 @@ class SidebarInterface:
             self._render_footer()
     
     def _inject_sidebar_styles(self):
-        """Inject professional sidebar CSS with minimal decorative elements"""
+        """Inject professional sidebar CSS with fixed colors"""
         st.markdown("""
         <style>
         /* Sidebar Base Styling */
         [data-testid="stSidebar"] {
             background: linear-gradient(180deg, #0f1419 0%, #1a1f2e 100%);
-            border-right: 2px solid #d4af37;
+            border-right: 3px solid #d4af37;
         }
         
         [data-testid="stSidebar"] .block-container {
@@ -73,60 +74,64 @@ class SidebarInterface:
         [data-testid="stSidebar"] h2,
         [data-testid="stSidebar"] h3 {
             color: #d4af37 !important;
-            font-weight: 700;
-            letter-spacing: -0.015em;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
         
         [data-testid="stSidebar"] p {
             color: #cbd5e1 !important;
-            line-height: 1.6;
+            line-height: 1.7;
             font-weight: 500;
         }
         
         /* Sidebar Dividers */
         [data-testid="stSidebar"] hr {
             border-color: rgba(212, 175, 55, 0.3) !important;
-            border-width: 1px !important;
+            border-width: 2px !important;
             margin: 1.5rem 0;
         }
         
         /* Sidebar Buttons */
         [data-testid="stSidebar"] .stButton > button {
             width: 100%;
-            padding: 0.9rem 1.25rem;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 0.95rem;
+            padding: 1rem 1.5rem;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 1rem;
             border: 2px solid #d4af37;
             background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
             color: #1a1f2e;
             transition: all 0.3s ease;
-            letter-spacing: 0.015em;
-            box-shadow: 0 3px 10px rgba(212, 175, 55, 0.3);
+            letter-spacing: 0.025em;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
         }
         
         [data-testid="stSidebar"] .stButton > button:hover {
             background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%);
             border-color: #f4e5b5;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 14px rgba(212, 175, 55, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5);
         }
         
         [data-testid="stSidebar"] button[kind="primary"] {
             background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
             color: white;
             border: 2px solid #b8941f;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
         
         [data-testid="stSidebar"] button[kind="primary"]:hover {
             background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%);
-            box-shadow: 0 5px 16px rgba(212, 175, 55, 0.5);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
         }
         
         [data-testid="stSidebar"] button[kind="secondary"] {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             color: white;
             border: 2px solid #dc2626;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
         
         [data-testid="stSidebar"] button[kind="secondary"]:hover {
@@ -136,51 +141,52 @@ class SidebarInterface:
         
         /* Stat Cards */
         .stat-card {
-            background: linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.06) 100%);
-            padding: 1.25rem;
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            border: 1px solid rgba(212, 175, 55, 0.3);
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin-bottom: 1.2rem;
+            border: 2px solid rgba(212, 175, 55, 0.4);
             text-align: center;
             transition: all 0.3s ease;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         
         .stat-card:hover {
-            background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.12) 100%);
-            border-color: rgba(212, 175, 55, 0.5);
-            transform: translateY(-3px);
-            box-shadow: 0 6px 16px rgba(212, 175, 55, 0.3);
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.15) 100%);
+            border-color: rgba(212, 175, 55, 0.7);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(212, 175, 55, 0.4);
         }
         
         .stat-number {
-            font-size: 2.2rem;
-            font-weight: 800;
+            font-size: 2.5rem;
+            font-weight: 900;
             color: #d4af37;
             line-height: 1;
-            margin: 0.6rem 0;
+            margin: 0.75rem 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
         }
         
         .stat-label {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             color: #f8fafc;
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.075em;
         }
         
         /* Radio Button Styling */
         [data-testid="stSidebar"] .stRadio > div {
-            background: rgba(212, 175, 55, 0.08);
-            padding: 0.9rem;
-            border-radius: 10px;
-            border: 1px solid rgba(212, 175, 55, 0.25);
+            background: rgba(212, 175, 55, 0.1);
+            padding: 1rem;
+            border-radius: 14px;
+            border: 2px solid rgba(212, 175, 55, 0.3);
         }
         
         [data-testid="stSidebar"] .stRadio label {
             color: #f8fafc !important;
-            font-weight: 600 !important;
-            font-size: 0.95rem !important;
+            font-weight: 700 !important;
+            font-size: 1rem !important;
         }
         
         [data-testid="stSidebar"] .stRadio label span {
@@ -191,24 +197,24 @@ class SidebarInterface:
         .feature-item {
             display: flex;
             align-items: flex-start;
-            margin-bottom: 1rem;
-            padding: 1rem;
-            background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(212, 175, 55, 0.04) 100%);
-            border-radius: 10px;
-            border-left: 3px solid #d4af37;
+            margin-bottom: 1.2rem;
+            padding: 1.2rem;
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%);
+            border-radius: 12px;
+            border-left: 4px solid #d4af37;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
         
         .feature-item:hover {
-            background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
-            transform: translateX(6px);
-            box-shadow: 0 3px 10px rgba(212, 175, 55, 0.25);
+            background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.1) 100%);
+            transform: translateX(8px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
         }
         
         .feature-icon {
-            font-size: 1.5rem;
-            margin-right: 1rem;
+            font-size: 2rem;
+            margin-right: 1.2rem;
             flex-shrink: 0;
         }
         
@@ -218,15 +224,16 @@ class SidebarInterface:
         
         .feature-title {
             color: #d4af37;
-            font-weight: 700;
-            font-size: 1rem;
-            margin-bottom: 0.25rem;
+            font-weight: 800;
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
         
         .feature-desc {
             color: #cbd5e1;
-            font-size: 0.85rem;
-            line-height: 1.5;
+            font-size: 0.9rem;
+            line-height: 1.6;
             font-weight: 500;
         }
         
@@ -237,44 +244,52 @@ class SidebarInterface:
         }
         
         .sidebar-icon {
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
+            font-size: 4rem;
+            margin-bottom: 1.2rem;
             display: block;
+            animation: pulse 2s infinite;
+            filter: drop-shadow(0 4px 8px rgba(212, 175, 55, 0.5));
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
         }
         
         .sidebar-title {
             margin: 0;
-            font-size: 1.8rem;
-            font-weight: 800;
+            font-size: 2rem;
+            font-weight: 900;
             color: #d4af37;
-            letter-spacing: -0.02em;
+            text-shadow: 0 2px 8px rgba(212, 175, 55, 0.6);
+            letter-spacing: -0.025em;
         }
         
         .sidebar-subtitle {
             color: #cbd5e1;
-            font-size: 0.95rem;
-            margin-top: 0.6rem;
-            line-height: 1.4;
-            font-weight: 500;
+            font-size: 1rem;
+            margin-top: 0.75rem;
+            line-height: 1.5;
+            font-weight: 600;
         }
         
         /* Footer Styling */
         .sidebar-footer {
             text-align: center;
             padding-top: 1.5rem;
-            border-top: 1px solid rgba(212, 175, 55, 0.3);
+            border-top: 2px solid rgba(212, 175, 55, 0.3);
             color: #94a3b8;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
         }
         
         .sidebar-footer strong {
             color: #d4af37;
-            font-weight: 700;
+            font-weight: 800;
         }
         
         .sidebar-footer p {
             color: #94a3b8 !important;
-            margin: 0.4rem 0;
+            margin: 0.5rem 0;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -294,7 +309,9 @@ class SidebarInterface:
         """Render professional navigation buttons"""
         lang = st.session_state.language
         
-        st.markdown(f"<h3>🎯 Navigation</h3>", unsafe_allow_html=True)
+        # إضافة النص المترجم للعنوان
+        mode_title = t('mode_title', lang)
+        st.markdown(f"<h3>🎯 {mode_title}</h3>", unsafe_allow_html=True)
         
         col1, col2 = st.columns(2)
         
@@ -315,19 +332,29 @@ class SidebarInterface:
     def _render_language_selector(self):
         """Render professional language toggle"""
         lang = st.session_state.language
-        st.markdown(f"<h3>🌐 Language</h3>", unsafe_allow_html=True)
         
-        # Create unique key to avoid conflicts
+        # إضافة النص المترجم للعنوان
+        language_title = t('language_title', lang)
+        st.markdown(f"<h3>🌐 {language_title}</h3>", unsafe_allow_html=True)
+        
+        # إضافة الأردية للخيارات
         language_choice = st.radio(
             "",
-            ["English", "العربية"],
-            index=0 if lang == "English" else 1,
+            ["English 🇬🇧", "العربية 🇸🇦", "اردو 🇵🇰"],
+            index=0 if lang == "English" else (1 if lang == "العربية" else 2),
             horizontal=True,
             label_visibility="collapsed",
             key="chatbot_lang_selector"
         )
         
-        new_language = "العربية" if "العربية" in language_choice else "English"
+        # تحديد اللغة الجديدة
+        if "اردو" in language_choice:
+            new_language = "اردو"
+        elif "العربية" in language_choice:
+            new_language = "العربية"
+        else:
+            new_language = "English"
+        
         if new_language != st.session_state.language:
             st.session_state.language = new_language
             
@@ -344,31 +371,36 @@ class SidebarInterface:
     def _render_stats(self):
         """Render professional database statistics"""
         lang = st.session_state.language
-        st.markdown(f"<h3>📊 Statistics</h3>", unsafe_allow_html=True)
+        
+        # إضافة النص المترجم للعنوان
+        stats_title = t('stats_title', lang)
+        st.markdown(f"<h3>📊 {stats_title}</h3>", unsafe_allow_html=True)
         
         stats = self.db.get_stats()
         
         stat_items = [
-            ("total", "total_agencies", "🏢", "Agencies"),
-            ("authorized", "authorized", "✅", "Authorized"),
-            ("countries", "countries", "🌍", "Countries"),
-            ("cities", "cities", "🏙️", "Cities")
+            ("total", "total_agencies", "🏢"),
+            ("authorized", "authorized", "✅"),
+            ("countries", "countries", "🌍"),
+            ("cities", "cities", "🏙️")
         ]
         
-        for key, label_key, icon, fallback in stat_items:
-            display_label = t(label_key, lang) if label_key else fallback
+        for key, label_key, icon in stat_items:
             st.markdown(f"""
             <div class="stat-card">
-                <div style="font-size: 2rem; margin-bottom: 0.5rem;">{icon}</div>
+                <div style="font-size: 2.5rem;">{icon}</div>
                 <div class="stat-number">{stats.get(key, 0):,}</div>
-                <div class="stat-label">{display_label}</div>
+                <div class="stat-label">{t(label_key, lang)}</div>
             </div>
             """, unsafe_allow_html=True)
     
     def _render_examples(self):
         """Render professional example questions"""
         lang = st.session_state.language
-        st.markdown(f"<h3>💡 Example Questions</h3>", unsafe_allow_html=True)
+        
+        # إضافة النص المترجم للعنوان
+        examples_title = t('examples_title', lang)
+        st.markdown(f"<h3>💡 {examples_title}</h3>", unsafe_allow_html=True)
         
         example_questions = [
             ("ex_all_auth", "ex_all_auth_q"),
@@ -379,7 +411,7 @@ class SidebarInterface:
         
         for i, (display_key, question_key) in enumerate(example_questions):
             if st.button(
-                t(display_key, lang),
+                f"📝 {t(display_key, lang)}",
                 key=f"example_{i}",
                 use_container_width=True
             ):
@@ -416,7 +448,10 @@ class SidebarInterface:
     def _render_features(self):
         """Render professional features section"""
         lang = st.session_state.get("language", "English")
-        st.markdown(f"<h3>✨ Features</h3>", unsafe_allow_html=True)
+        
+        # إضافة النص المترجم للعنوان
+        features_title = t('features_title', lang)
+        st.markdown(f"<h3>✨ {features_title}</h3>", unsafe_allow_html=True)
 
         features = [
             ("feat_ai", "feat_ai_desc", "🤖"),
@@ -443,7 +478,7 @@ class SidebarInterface:
         
         st.markdown(f"""
         <div class="sidebar-footer">
-            <p>© {year} {t('assistant_title', lang)}</p>
+            <p>© {year} {t('assistant_title', lang).replace('🕋 ', '')}</p>
             <p style="margin-top: 0.5rem;">
                 {t('footer_powered', lang)} <strong>{t('footer_chat', lang)}</strong>
             </p>
