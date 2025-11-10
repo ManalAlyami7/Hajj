@@ -38,7 +38,7 @@ class LLMManager:
         # -----------------------------
         # OpenAI API key
         # -----------------------------
-        self.api_key = st.secrets.get("OPENAI_API_KEY")
+        self.api_key = st.secrets.get("key")
         if not self.api_key:
             logger.error("OpenAI API key missing")
             st.warning("⚠️ OpenAI API key missing in Streamlit secrets")
