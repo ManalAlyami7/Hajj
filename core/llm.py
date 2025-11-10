@@ -80,16 +80,7 @@ class LLMManager:
             "English": "alloy"
         }
 
-        # قراءة المفتاح من secrets.toml تحت key=""
-        self.api_key = st.secrets.get("key")
-        if not self.api_key:
-            logger.error("OpenAI API key missing")
-            st.warning("⚠️ OpenAI API key missing in Streamlit secrets")
-            st.stop()
-
-        # إنشاء العميل الحديث باستخدام @st.cache_resource
-        self.client = self._get_client()
-
+        
     @st.cache_resource
     def _get_client(_self):
         """Get cached OpenAI client"""
