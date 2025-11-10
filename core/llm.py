@@ -104,6 +104,10 @@ class NEEDSInfoResponse(BaseModel):
         description="Language to respond in"
     )
 
+class GeneralAnswer(BaseModel):
+        answer: str = Field(
+            description = "Answer of the general hajj question")
+
 
 class LLMManager:
     """Manages OpenAI API calls with error handling, rate limiting, and context memory"""
@@ -204,8 +208,11 @@ class LLMManager:
         You are a fraud-prevention assistant for Hajj pilgrims. 
         Use the full conversation context and any previously mentioned company.
 
+
         🧠 CONTEXT MEMORY:
         Last company mentioned in conversation: {last_company if last_company else 'None'}
+
+        Context: {self.build_chat_context()}
 
         🎯 CRITICAL FOLLOW-UP DETECTION:
         If user asks a follow-up question like:
@@ -327,7 +334,7 @@ class LLMManager:
         """Generate natural greeting response with structured output"""
         is_arabic = language == "العربية"
         
-        system_prompt = """You are a friendly Hajj and fraud prevention assistant designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah. 
+        system_prompt = f"""You are a friendly Hajj and fraud prevention assistant designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah. 
         Generate a short, warm, natural greeting (max 3 sentences) that:
         - Acknowledges the user's greeting
         - Expresses willingness to help
@@ -335,6 +342,7 @@ class LLMManager:
         - Uses emojis appropriately
         - Respond in Arabic **if the user input contains any Arabic text**, otherwise respond in English
         Explain your reasoning and what you provide briefly.
+        Context: {self.build_chat_context()}
 
         Keep the response concise, friendly, and professional."""
 
@@ -361,29 +369,31 @@ class LLMManager:
     
     def generate_general_answer(self, user_input: str, language: str) -> str:
         """Generate answer for general Hajj questions"""
-        system_prompt = """You are a helpful assistant specialized in Hajj information. 
+        system_prompt = f"""You are a helpful assistant specialized in Hajj information. 
         Be concise, factual, and helpful. Focus on practical information.
         Detect if the user's question is in Arabic or English, and respond in the same language.
         You are designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
-        Avoid religious rulings or fatwa - stick to practical guidance."""
-        
-        try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_input},
-                    *self.build_chat_context()
-                ],
-                temperature=0.6,
-                max_tokens=400
-            )
-            return response.choices[0].message.content.strip()
+        Avoid religious rulings or fatwa - stick to practical guidance.
+        Context: {self.build_chat_context()}"""
             
+        try:
+                    response = self.client.beta.chat.completions.parse(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_input},
+                        *self.build_chat_context()
+                    ],
+                    response_format=General,
+                    temperature=0.7
+                )
+                
+                    return response.choices[0].message.parsed
+                
         except Exception as e:
-            logger.error(f"General answer generation failed: {e}")
-            return "I encountered an error. Please try rephrasing your question."
-    
+                logger.error(f"General answer generation failed: {e}")
+                return "I encountered an error. Please try rephrasing your question."
+        
     def generate_sql(self, user_input: str, language: str) -> Optional[Dict]:
         """
         Generate SQL query from user input with structured output and context awareness
