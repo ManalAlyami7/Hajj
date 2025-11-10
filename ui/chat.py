@@ -577,8 +577,6 @@ class ChatInterface:
                 )
                 
           
-                st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
-
         except Exception as e:
             st.error(
                 f"❌ خطأ في تشغيل الصوت: {str(e)}"
