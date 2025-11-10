@@ -1,7 +1,7 @@
 """
 Professional Voicebot Sidebar Component Module
 Enhanced with formal design, RTL support, and accessibility
-Professional color scheme with proper contrast and visibility
+Professional LIGHT color scheme matching chat interface
 """
 import time
 import streamlit as st
@@ -23,8 +23,8 @@ def render_sidebar(memory, language_code: str):
     with st.sidebar:
         is_rtl = _is_rtl_language(language_code)
         
-        # Inject professional sidebar styling
-        _inject_professional_styles(is_rtl)
+        # Inject professional LIGHT theme sidebar styling
+        _inject_professional_light_styles(is_rtl)
         
         # Header Section
         _render_header(language_code)
@@ -55,19 +55,19 @@ def render_sidebar(memory, language_code: str):
 
 
 # -----------------------------
-# PROFESSIONAL STYLING
+# PROFESSIONAL LIGHT STYLING
 # -----------------------------
-def _inject_professional_styles(is_rtl: bool):
-    """Inject enhanced professional CSS for voicebot sidebar"""
+def _inject_professional_light_styles(is_rtl: bool):
+    """Inject enhanced professional LIGHT CSS for voicebot sidebar"""
     st.markdown(f"""
     <style>
-    /* ===== Sidebar Base Styling ===== */
+    /* ===== Sidebar Base Styling - MATCHING CHAT SIDEBAR ===== */
     [data-testid="stSidebar"] {{
         left: {'auto !important' if is_rtl else '0 !important'};
         right: {'0 !important' if is_rtl else 'auto !important'};
-        background: linear-gradient(180deg, #0f1419 0%, #1a1f2e 100%);
-        border-right: {'none' if is_rtl else '3px solid #d4af37'} !important;
-        border-left: {'3px solid #d4af37' if is_rtl else 'none'} !important;
+        background: linear-gradient(180deg, #0f1419 0%, #1a1f2e 100%) !important;
+        border-right: {'none' if is_rtl else '2px solid #d4af37'} !important;
+        border-left: {'2px solid #d4af37' if is_rtl else 'none'} !important;
     }}
 
     [data-testid="stSidebar"] > div:first-child {{
@@ -79,7 +79,7 @@ def _inject_professional_styles(is_rtl: bool):
         padding: 2rem 1.5rem;
     }}
 
-    /* ===== Text Colors ===== */
+    /* ===== Text Colors - WHITE ON DARK BACKGROUND ===== */
     [data-testid="stSidebar"] .stMarkdown {{
         text-align: {'right' if is_rtl else 'left'};
         color: #f8fafc !important;
@@ -91,7 +91,7 @@ def _inject_professional_styles(is_rtl: bool):
         color: #f8fafc !important;
     }}
 
-    /* ===== Headers ===== */
+    /* ===== Headers - GOLD ON DARK ===== */
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {{
         color: #d4af37 !important;
@@ -116,7 +116,7 @@ def _inject_professional_styles(is_rtl: bool):
         font-weight: 500;
     }}
 
-    /* ===== Selectbox Styling ===== */
+    /* ===== Selectbox Styling - MATCHING CHAT ===== */
     [data-testid="stSidebar"] .stSelectbox > div > div {{
         background: rgba(212, 175, 55, 0.1);
         border: 2px solid rgba(212, 175, 55, 0.4);
@@ -136,7 +136,7 @@ def _inject_professional_styles(is_rtl: bool):
         font-weight: 700 !important;
     }}
 
-    /* ===== Checkbox Styling ===== */
+    /* ===== Checkbox Styling - MATCHING CHAT ===== */
     [data-testid="stSidebar"] .stCheckbox {{
         color: #f8fafc;
     }}
@@ -150,66 +150,83 @@ def _inject_professional_styles(is_rtl: bool):
         color: #f8fafc !important;
     }}
 
-    /* ===== Button Styling ===== */
+    /* ===== Button Styling - MATCHING CHAT EXACTLY ===== */
     [data-testid="stSidebar"] .stButton > button {{
         width: 100%;
-        padding: 1rem 1.5rem;
-        border-radius: 14px;
-        font-weight: 700;
-        font-size: 1rem;
+        padding: 0.9rem 1.25rem;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.95rem;
         border: 2px solid #d4af37 !important;
         background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
         color: #1a1f2e !important;
         transition: all 0.3s ease;
-        letter-spacing: 0.025em;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        letter-spacing: 0.015em;
+        box-shadow: 0 3px 10px rgba(212, 175, 55, 0.3);
     }}
 
     [data-testid="stSidebar"] .stButton > button:hover {{
         background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%) !important;
         border-color: #f4e5b5 !important;
-        transform: translateY(-3px);
-        box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 14px rgba(212, 175, 55, 0.4);
     }}
 
-    /* ===== Secondary Buttons (Clear/Delete) ===== */
-    [data-testid="stSidebar"] button[kind="secondary"] {{
-        background: linear-gradient(135deg, #64748b 0%, #475569 100%) !important;
+    /* ===== Primary Button - MATCHING CHAT ===== */
+    [data-testid="stSidebar"] button[kind="primary"] {{
+        background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
         color: white !important;
-        border: 2px solid #64748b !important;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-        box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
+        border: 2px solid #b8941f !important;
+    }}
+
+    [data-testid="stSidebar"] button[kind="primary"]:hover {{
+        background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%) !important;
+        box-shadow: 0 5px 16px rgba(212, 175, 55, 0.5);
+    }}
+
+    /* ===== Secondary Buttons - MATCHING CHAT ===== */
+    [data-testid="stSidebar"] button[kind="secondary"] {{
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+        color: white !important;
+        border: 2px solid #dc2626 !important;
     }}
 
     [data-testid="stSidebar"] button[kind="secondary"]:hover {{
-        background: linear-gradient(135deg, #475569 0%, #334155 100%) !important;
-        border-color: #334155 !important;
-        transform: translateY(-3px);
-        box-shadow: 0 6px 16px rgba(100, 116, 139, 0.5);
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+        border-color: #b91c1c !important;
     }}
 
     /* ===== Collapsed Control Button ===== */
     [data-testid="collapsedControl"] {{
         left: {'0.5rem !important' if is_rtl else 'auto !important'};
         right: {'auto !important' if is_rtl else '0.5rem !important'};
+        background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
+        color: white !important;
+        border-radius: 0.5rem !important;
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3) !important;
     }}
 
-    /* ===== Memory Panel ===== */
+    [data-testid="collapsedControl"]:hover {{
+        background: linear-gradient(135deg, #e6c345 0%, #c9a527 100%) !important;
+        transform: scale(1.05) !important;
+    }}
+
+    /* ===== Memory Panel - LIGHT ===== */
     .memory-panel {{
-        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(212, 175, 55, 0.04) 100%);
         padding: 1.5rem;
         border-radius: 16px;
         border-right: {'4px solid #d4af37' if is_rtl else 'none'};
         border-left: {'none' if is_rtl else '4px solid #d4af37'};
         margin-top: 0.75rem;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }}
 
     .memory-panel:hover {{
-        background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.15) 100%);
-        box-shadow: 0 6px 16px rgba(212, 175, 55, 0.4);
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.08) 100%);
+        box-shadow: 0 6px 16px rgba(212, 175, 55, 0.2);
+        transform: translateY(-2px);
     }}
 
     .memory-panel-row {{
@@ -225,7 +242,7 @@ def _inject_professional_styles(is_rtl: bool):
     }}
 
     .memory-label {{
-        color: #cbd5e1;
+        color: #64748b;
         font-size: 0.95rem;
         font-weight: 700;
     }}
@@ -234,31 +251,31 @@ def _inject_professional_styles(is_rtl: bool):
         color: #d4af37;
         font-weight: 900;
         font-size: 1.2rem;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }}
 
-    /* ===== Sample Questions ===== */
+    /* ===== Sample Questions - LIGHT ===== */
     .sample-question {{
-        background: linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.06) 100%);
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(212, 175, 55, 0.04) 100%);
         padding: 1rem 1.25rem;
         border-radius: 14px;
         margin-bottom: 0.85rem;
         font-size: 0.95rem;
-        border: 2px solid rgba(212, 175, 55, 0.3);
-        color: #f8fafc;
+        border: 2px solid rgba(212, 175, 55, 0.25);
+        color: #1f2937;
         transition: all 0.3s ease;
         text-align: {'right' if is_rtl else 'left'};
         direction: {'rtl' if is_rtl else 'ltr'};
         font-weight: 600;
         line-height: 1.6;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     }}
 
     .sample-question:hover {{
-        background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.15) 100%);
-        border-color: rgba(212, 175, 55, 0.6);
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
+        border-color: rgba(212, 175, 55, 0.5);
         transform: translateX({'-8px' if is_rtl else '8px'});
-        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
     }}
 
     /* ===== Divider Styling ===== */
@@ -278,7 +295,7 @@ def _inject_professional_styles(is_rtl: bool):
         margin-right: {'1rem !important' if is_rtl else 'auto'};
     }}
 
-    /* ===== Header Styling ===== */
+    /* ===== Header Styling - LIGHT ===== */
     .sidebar-header {{
         text-align: center;
         padding: 1.5rem 0 2rem 0;
@@ -289,7 +306,7 @@ def _inject_professional_styles(is_rtl: bool):
         display: block;
         margin-bottom: 1.2rem;
         animation: pulse 2s infinite;
-        filter: drop-shadow(0 4px 8px rgba(212, 175, 55, 0.6));
+        filter: drop-shadow(0 4px 8px rgba(212, 175, 55, 0.3));
     }}
 
     @keyframes pulse {{
@@ -302,7 +319,7 @@ def _inject_professional_styles(is_rtl: bool):
         font-size: 2rem;
         font-weight: 900;
         color: #d4af37;
-        text-shadow: 0 2px 8px rgba(212, 175, 55, 0.6);
+        text-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
         letter-spacing: -0.025em;
     }}
 
@@ -314,7 +331,7 @@ def _inject_professional_styles(is_rtl: bool):
         font-weight: 600;
     }}
 
-    /* ===== Footer Styling ===== */
+    /* ===== Footer Styling - DARK THEME ===== */
     .sidebar-footer {{
         text-align: center;
         padding-top: 1.5rem;
@@ -330,6 +347,25 @@ def _inject_professional_styles(is_rtl: bool):
 
     .sidebar-footer p {{
         color: #94a3b8 !important;
+    }}
+
+    /* ===== Scrollbar Styling - DARK THEME ===== */
+    [data-testid="stSidebar"] ::-webkit-scrollbar {{
+        width: 8px;
+    }}
+
+    [data-testid="stSidebar"] ::-webkit-scrollbar-track {{
+        background: #1a1f2e;
+        border-radius: 4px;
+    }}
+
+    [data-testid="stSidebar"] ::-webkit-scrollbar-thumb {{
+        background: linear-gradient(180deg, #d4af37 0%, #b8941f 100%);
+        border-radius: 4px;
+    }}
+
+    [data-testid="stSidebar"] ::-webkit-scrollbar-thumb:hover {{
+        background: linear-gradient(180deg, #e6c345 0%, #c9a527 100%);
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -543,7 +579,7 @@ def _render_navigation_buttons(lang):
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button(f"💬 {t('mode_chatbot', lang)}", key="nav_chatbot", use_container_width=True, type="primary"):
+        if st.button(f"💬 {t('mode_chatbot', lang)}", key="nav_chatbot", use_container_width=True):
             try:
                 st.switch_page("app.py")
             except Exception:
@@ -551,10 +587,7 @@ def _render_navigation_buttons(lang):
     
     with col2:
         if st.button(f"🎙️ {t('mode_voicebot', lang)}", key="nav_voicebot", use_container_width=True, type="primary"):
-            try:
-                st.switch_page("pages/voicebot.py")
-            except Exception:
-                st.info(t('voicebot_unavailable', lang))
+            st.info("Current page")
 
 
 # -----------------------------
