@@ -2,26 +2,6 @@
   {
     "role": "assistant",
     "content": "Welcome! 👋\n\nI'm your Hajj Data Assistant. Ask me anything about Hajj companies, locations, or authorization status!",
-    "timestamp": 1762691421.118528
-  },
-  {
-    "role": "user",
-    "content": "List companies in Saudi Arabia",
-    "timestamp": 1762691425.937978
-  },
-  {
-    "role": "assistant",
-    "content": "Here are the results I found for you:\n\n1. **Jabal Omar Jumeirah Hotel**  \n   - **City:** Makkah  \n   - **Country:** Saudi Arabia  \n   - **Contact Info:** +966 12 556 0111  \n   - **Rating:** 4.6 (5243 reviews)  \n   - **Status:** Yes, Authorized  \n   - **Google Maps Link:** [View Here](https://www.google.com/maps/search/?api=1&query=Jabal%20Omar%20Jumeirah%20Hotel%2C%20Al%20Shubaikah%2C%20Ibrahim%20Al-Khalil%20Road%2C%20Jabal%20Omar%2C%20Ash%20Shubaikah%2C%20Makkah%2024231%2C%20Saudi%20Arabia)\n\n2. **Hajj Services Company for External Hajj Guests**  \n   - **City:** Jeddah  \n   - **Country:** Saudi Arabia  \n   - **Contact Info:** +966 555421021  \n   - **Rating:** 4.9 (172 reviews)  \n   - **Status:** Yes, Authorized  \n\n3. **Al-Arajah Foundation for Domestic Pilgrims Service**  \n   - **City:** Al Zilfi  \n   - **Country:** Saudi Arabia  \n   - **Contact Info:** +966 16 422 0964  \n   - **Rating:** 3.7 (65 reviews)  \n   - **Status:** Yes, Authorized  \n   - **Google Maps Link:** [View Here](ht...",
-    "timestamp": 1762691459.772328
-  },
-  {
-    "role": "user",
-    "content": "hi",
-    "timestamp": 1762691549.501409
-  },
-  {
-    "role": "assistant",
-    "content": "Hello! 🌟 I'm here to assist you with any questions you have. I can help you verify authorized Hajj companies, so feel free to ask!",
-    "timestamp": 1762691552.911356
+    "timestamp": 1762254931.922832
   }
 ]
