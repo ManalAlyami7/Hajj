@@ -16,6 +16,7 @@ from utils.validators import validate_user_input
 import uuid
 import streamlit.components.v1 as components
 import re
+from core.voice_processor import VoiceProcessor
 
 try:
     from streamlit_js_eval import copy_to_clipboard
@@ -29,6 +30,7 @@ class ChatInterface:
     def __init__(self, chat_graph, llm_manager):
         self.graph = chat_graph
         self.llm = llm_manager
+        self.proc= VoiceProcessor()
         if "chat_memory" not in st.session_state:
             st.session_state.chat_memory = []
         if "pending_example" not in st.session_state:
@@ -553,7 +555,7 @@ class ChatInterface:
             tts_lang = "ar" if lang == "العربية" else "en"
 
             # Call TTS function
-            audio_data = self.llm.text_to_speech(clean_for_speech, tts_lang)
+            audio_data = self.proc.text_to_speech(clean_for_speech, tts_lang)
 
             if audio_data:
                 # Ensure we have bytes
