@@ -551,6 +551,22 @@ class ChatInterface:
             self._play_message_audio(text, idx)
             # Clear trigger after playing
             st.session_state[f"audio_trigger_{idx}"] = False
+        
+        # Check if audio has finished playing (based on elapsed time)
+        if is_playing:
+            import time
+            start_time = st.session_state.get(f"audio_start_time_{idx}")
+            duration = st.session_state.get(f"audio_duration_{idx}")
+            
+            if start_time and duration:
+                elapsed = time.time() - start_time
+                if elapsed >= duration:
+                    # Audio finished, reset state
+                    st.session_state.audio_playing[idx] = False
+                    st.session_state.pop(f"audio_start_time_{idx}", None)
+                    st.session_state.pop(f"audio_duration_{idx}", None)
+                    st.session_state.pop(f"audio_trigger_{idx}", None)
+                    st.rerun()
 
 
     def _play_message_audio(self, text: str, idx: int):
@@ -589,25 +605,40 @@ class ChatInterface:
                     # Fallback duration if MP3 parsing fails
                     duration = 3.0
                 
-                # Render hidden audio player
+                # Store when playback started and duration
+                st.session_state[f"audio_start_time_{idx}"] = time.time()
+                st.session_state[f"audio_duration_{idx}"] = duration
+                
+                # Render hidden audio player with JavaScript to trigger rerun when done
+                audio_base64 = self._audio_to_base64(audio_bytes)
                 st.markdown(
                     f"""
                     <div style='display:none; visibility:hidden; height:0; width:0; position:absolute;'>
-                        <audio autoplay>
-                            <source src="data:audio/mp3;base64,{self._audio_to_base64(audio_bytes)}" type="audio/mp3">
+                        <audio id="audio_{idx}" autoplay>
+                            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
                         </audio>
                     </div>
+                    <script>
+                        (function() {{
+                            var audio = document.getElementById('audio_{idx}');
+                            if (audio) {{
+                                audio.onended = function() {{
+                                    // Trigger a rerun by modifying a query parameter
+                                    const url = new URL(window.location);
+                                    url.searchParams.set('audio_ended_{idx}', Date.now());
+                                    window.history.replaceState({{}}, '', url);
+                                    // Force a rerun
+                                    window.parent.postMessage({{
+                                        type: 'streamlit:setComponentValue',
+                                        value: 'audio_ended_{idx}'
+                                    }}, '*');
+                                }};
+                            }}
+                        }})();
+                    </script>
                     """,
                     unsafe_allow_html=True
                 )
-                
-                # Block for duration to simulate playback
-                time.sleep(duration)
-                
-                # Update state after playback ends
-                st.session_state.audio_playing[idx] = False
-                st.session_state.pop(f"audio_trigger_{idx}", None)
-                st.rerun()
                 
             else:
                 st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
