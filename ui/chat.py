@@ -555,6 +555,10 @@ class ChatInterface:
 
     def _play_message_audio(self, text: str, idx: int):
         """Play message audio once"""
+        import time
+        from io import BytesIO
+        from mutagen.mp3 import MP3
+        
         lang = st.session_state.get("language", "English")
 
         try:
@@ -572,6 +576,19 @@ class ChatInterface:
                 # Convert to bytes safely
                 audio_bytes = audio_data.getvalue() if hasattr(audio_data, "getvalue") else audio_data
                 
+                # Get audio duration
+                if isinstance(audio_bytes, bytes):
+                    audio_file = BytesIO(audio_bytes)
+                else:
+                    audio_file = audio_bytes
+                
+                try:
+                    audio = MP3(audio_file)
+                    duration = audio.info.length
+                except Exception:
+                    # Fallback duration if MP3 parsing fails
+                    duration = 3.0
+                
                 # Render hidden audio player
                 st.markdown(
                     f"""
@@ -584,20 +601,32 @@ class ChatInterface:
                     unsafe_allow_html=True
                 )
                 
-          
+                # Block for duration to simulate playback
+                time.sleep(duration)
+                
+                # Update state after playback ends
+                st.session_state.audio_playing[idx] = False
+                st.session_state.pop(f"audio_trigger_{idx}", None)
+                st.rerun()
+                
+            else:
+                st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
+
         except Exception as e:
             st.error(
                 f"❌ خطأ في تشغيل الصوت: {str(e)}"
                 if lang == "العربية"
                 else f"❌ Audio error: {str(e)}"
             )
+            # Clean up state on error
+            st.session_state.audio_playing[idx] = False
+            st.session_state.pop(f"audio_trigger_{idx}", None)
 
 
     def _audio_to_base64(self, audio_bytes):
         """Convert audio bytes to base64 string"""
         import base64
         return base64.b64encode(audio_bytes).decode()
-
     def _copy_to_clipboard(self, text: str, idx: int):
         """Copy text using Streamlit's native code block copy button"""
         lang = st.session_state.get("language", "English")
