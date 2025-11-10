@@ -516,18 +516,16 @@ class ChatInterface:
             # Call the LLM manager's text_to_speech function
             # Pass the language parameter
             tts_lang = "ar" if lang == "العربية" else "en"
-            audio_bytes = self.llm.text_to_speech(clean_for_speech, tts_lang)
+            audio_buffer = self.llm.text_to_speech(clean_for_speech, tts_lang)
 
-            if audio_bytes:
+            if audio_buffer:
                 # Convert BytesIO → bytes
-                if hasattr(audio_bytes, "getvalue"):
-                    audio_bytes = audio_bytes.getvalue()
+                audio_bytes = audio_buffer.getvalue()
                 
                 # Encode audio for HTML playback
-                audio_b64 = base64.b64encode(audio_bytes).decode()
 
                 st.markdown("<div style='display:none'>", unsafe_allow_html=True)
-                st.audio(audio_b64, format="audio/mp3", autoplay=True)
+                st.audio(audio_bytes, format="audio/mp3", autoplay=True)
                 st.markdown("</div>", unsafe_allow_html=True)
                 # Set playing state
                 st.session_state.audio_playing[idx] = True
