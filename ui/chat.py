@@ -224,7 +224,7 @@ class ChatInterface:
 
         /* Small Action Buttons for Audio Controls */
         .stChatMessage div[data-testid="column"] > div > div > button {
-            padding: 0.1rem 0.1rem !important;
+            padding: 0rem 0rem !important;
             font-size: 1.1rem !important;
             border-radius: 8px !important;
             min-height: 38px !important;
