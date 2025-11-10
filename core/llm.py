@@ -70,7 +70,7 @@ class NEEDSInfoResponse(BaseModel):
     user_lang: Literal["English", "العربية"] = Field(description="Language to respond in")
 
 
-class LLMManager:
+class RobustMemory:
     """بديل مضمون للذاكرة بدون Langchain"""
     
     def __init__(self, max_history=20):
@@ -127,7 +127,7 @@ class LLMManager:
     """إدارة الذكاء الاصطناعي مع ذاكرة مضمونة"""
     
     def __init__(self):
-        self.memory = LLMManager(max_history=20)
+        self.memory = RobustMemory(max_history=20)
         self.client = self._init_openai_client()
         
         # أصوات TTS حسب اللغة
