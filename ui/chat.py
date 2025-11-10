@@ -223,7 +223,7 @@ class ChatInterface:
         }
 
         /* Small Action Buttons for Audio Controls */
-        .stChatMessage div[data-testid="column"] > div > div > button:not(:has(img)) {
+        .stChatMessage div[data-testid="column"] > div > div > button {
             padding: 0.1rem 0.1rem !important;
             font-size: 1.1rem !important;
             border-radius: 8px !important;
@@ -234,12 +234,11 @@ class ChatInterface:
             /* Re-assert Gold Background for the most specific selector */
             border: 2px solid var(--primary-gold) !important;
             background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-gold-dark) 100%) !important;
-            color: white !important;
             box-shadow: var(--shadow-sm) !important;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
 
-        .stChatMessage div[data-testid="column"] > div > div >button:not(:has(img)):hover {
+        .stChatMessage div[data-testid="column"] > div > div >button:hover {
             transform: translateY(-2px) !important;
             box-shadow: var(--shadow-md) !important;
             background: linear-gradient(135deg, var(--primary-gold-dark) 0%, #9d7a1a 100%) !important;
