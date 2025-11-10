@@ -451,43 +451,9 @@ class ChatInterface:
                     st.session_state.processing_example = False
                     st.rerun()
 
-    # -------------------
-    # Chat History Display
-    # -------------------
-    def _display_chat_history(self):
-        """Display all messages with professional styling"""
-        for idx, msg in enumerate(st.session_state.chat_memory):
-            role = msg.get("role", "assistant")
-            avatar = "🕋" if role == "assistant" else "👤"
-            content = msg.get("content", "")
-
-            with st.chat_message(role, avatar=avatar):
-                st.markdown(content, unsafe_allow_html=True)
-
-                # Show timestamp and actions only for assistant messages
-                if role == "assistant":
-                    self._render_timestamp_and_actions(msg, content, idx)
-                else:
-                    # Show only timestamp for user messages
-                    if msg.get("timestamp"):
-                        st.markdown(
-                            f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._safe_format_time(msg)}</div>",
-                            unsafe_allow_html=True,
-                        )
-                    
-    def _safe_format_time(self, msg):
-        """تنسيق الوقت بشكل آمن بدون أخطاء"""
-        try:
-            timestamp = msg.get('timestamp')
-            if not timestamp:
-                return datetime.now().strftime("%I:%M %p")
-            
-            return self._format_time(timestamp)
-        except Exception:
-            return datetime.now().strftime("%I:%M %p")
-
     def _render_timestamp_and_actions(self, msg: dict, text: str, idx: int):
         """Render timestamp with action buttons in a single row"""
+        import time
         lang = st.session_state.get("language", "English")
         button_key_prefix = f"msg_{idx}"
         is_playing = st.session_state.audio_playing.get(idx, False)
@@ -504,6 +470,22 @@ class ChatInterface:
         stop_tip = "إيقاف الصوت" if lang == "العربية" else "Stop audio"
         copy_tip = "نسخ النص" if lang == "العربية" else "Copy text"
 
+        # Check if audio has finished playing
+        if is_playing:
+            start_time = st.session_state.get(f"audio_start_time_{idx}")
+            duration = st.session_state.get(f"audio_duration_{idx}")
+            
+            if start_time and duration:
+                elapsed = time.time() - start_time
+                if elapsed >= duration:
+                    # Audio finished, reset state
+                    st.session_state.audio_playing[idx] = False
+                    st.session_state.pop(f"audio_start_time_{idx}", None)
+                    st.session_state.pop(f"audio_duration_{idx}", None)
+                    st.session_state.pop(f"audio_trigger_{idx}", None)
+                    is_playing = False
+                    st.rerun()
+
         # Create columns based on playing state
         cols = st.columns([3, 0.4, 0.4, 0.4, 0.4] if is_playing else [3, 0.4, 0.4], gap="small")
 
@@ -519,7 +501,6 @@ class ChatInterface:
         with cols[1]:
             if not is_playing:
                 if st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play", help=play_tip):
-                    # Set playing state and trigger playback
                     st.session_state.audio_playing[idx] = True
                     st.session_state[f"audio_trigger_{idx}"] = True
                     st.rerun()
@@ -531,6 +512,8 @@ class ChatInterface:
             with cols[2]:
                 if st.button(f"![Stop]({stop_icon})", key=f"{button_key_prefix}_stop", help=stop_tip):
                     st.session_state.audio_playing[idx] = False
+                    st.session_state.pop(f"audio_start_time_{idx}", None)
+                    st.session_state.pop(f"audio_duration_{idx}", None)
                     st.session_state.pop(f"audio_trigger_{idx}", None)
                     st.rerun()
 
@@ -549,24 +532,41 @@ class ChatInterface:
         # Play audio if triggered
         if is_playing and st.session_state.get(f"audio_trigger_{idx}", False):
             self._play_message_audio(text, idx)
-            # Clear trigger after playing
             st.session_state[f"audio_trigger_{idx}"] = False
+
+
+    def _display_chat_history(self):
+        """Display all messages with professional styling"""
+        # Check if any audio is playing - if so, enable auto-refresh
+        any_playing = any(st.session_state.audio_playing.values()) if st.session_state.audio_playing else False
         
-        # Check if audio has finished playing (based on elapsed time)
-        if is_playing:
-            import time
-            start_time = st.session_state.get(f"audio_start_time_{idx}")
-            duration = st.session_state.get(f"audio_duration_{idx}")
-            
-            if start_time and duration:
-                elapsed = time.time() - start_time
-                if elapsed >= duration:
-                    # Audio finished, reset state
-                    st.session_state.audio_playing[idx] = False
-                    st.session_state.pop(f"audio_start_time_{idx}", None)
-                    st.session_state.pop(f"audio_duration_{idx}", None)
-                    st.session_state.pop(f"audio_trigger_{idx}", None)
-                    st.rerun()
+        if any_playing:
+            # Auto-refresh every 500ms while audio is playing
+            try:
+                from streamlit_autorefresh import st_autorefresh
+                st_autorefresh(interval=500, key="audio_check")
+            except ImportError:
+                # Fallback: use empty container with manual refresh instruction
+                pass
+        
+        for idx, msg in enumerate(st.session_state.chat_memory):
+            role = msg.get("role", "assistant")
+            avatar = "🕋" if role == "assistant" else "👤"
+            content = msg.get("content", "")
+
+            with st.chat_message(role, avatar=avatar):
+                st.markdown(content, unsafe_allow_html=True)
+
+                # Show timestamp and actions only for assistant messages
+                if role == "assistant":
+                    self._render_timestamp_and_actions(msg, content, idx)
+                else:
+                    # Show only timestamp for user messages
+                    if msg.get("timestamp"):
+                        st.markdown(
+                            f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._safe_format_time(msg)}</div>",
+                            unsafe_allow_html=True,
+                        )
 
 
     def _play_message_audio(self, text: str, idx: int):
@@ -609,7 +609,7 @@ class ChatInterface:
                 st.session_state[f"audio_start_time_{idx}"] = time.time()
                 st.session_state[f"audio_duration_{idx}"] = duration
                 
-                # Render hidden audio player with JavaScript to trigger rerun when done
+                # Render hidden audio player
                 audio_base64 = self._audio_to_base64(audio_bytes)
                 st.markdown(
                     f"""
@@ -618,24 +618,6 @@ class ChatInterface:
                             <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
                         </audio>
                     </div>
-                    <script>
-                        (function() {{
-                            var audio = document.getElementById('audio_{idx}');
-                            if (audio) {{
-                                audio.onended = function() {{
-                                    // Trigger a rerun by modifying a query parameter
-                                    const url = new URL(window.location);
-                                    url.searchParams.set('audio_ended_{idx}', Date.now());
-                                    window.history.replaceState({{}}, '', url);
-                                    // Force a rerun
-                                    window.parent.postMessage({{
-                                        type: 'streamlit:setComponentValue',
-                                        value: 'audio_ended_{idx}'
-                                    }}, '*');
-                                }};
-                            }}
-                        }})();
-                    </script>
                     """,
                     unsafe_allow_html=True
                 )
@@ -652,7 +634,8 @@ class ChatInterface:
             # Clean up state on error
             st.session_state.audio_playing[idx] = False
             st.session_state.pop(f"audio_trigger_{idx}", None)
-
+            st.session_state.pop(f"audio_start_time_{idx}", None)
+            st.session_state.pop(f"audio_duration_{idx}", None)
 
     def _audio_to_base64(self, audio_bytes):
         """Convert audio bytes to base64 string"""
