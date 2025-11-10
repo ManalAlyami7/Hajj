@@ -30,7 +30,7 @@ def initialize_session_state():
                 "content": t("welcome_msg", st.session_state.language),
                 "timestamp": get_current_time()
             }]
-            save_chat_memory()
+            #save_chat_memory()
     
     # Last result dataframe
     if "last_result_df" not in st.session_state:
@@ -131,7 +131,7 @@ def clear_chat_memory():
     
     st.session_state.last_result_df = None
     st.session_state.pending_example = False  # Reset the flag
-    save_chat_memory()
+    #save_chat_memory()
 
 
 def get_current_time() -> float:

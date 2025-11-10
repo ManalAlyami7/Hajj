@@ -417,20 +417,20 @@ def main():
     # Initialize session state
     initialize_session_state()
     
-    # Load existing chat memory
-    try:
-        load_chat_memory()
-    except Exception:
-        pass
+    # # Load existing chat memory
+    # try:
+    #     load_chat_memory()
+    # except Exception:
+    #     pass
 
-    # Trim session memory
-    _trim_session_memory()
+    # # Trim session memory
+    # _trim_session_memory()
     
-    # Persist trimmed memory
-    try:
-        save_chat_memory()
-    except Exception:
-        pass
+    # # Persist trimmed memory
+    # try:
+    #     save_chat_memory()
+    # except Exception:
+    #     pass
     
     # Initialize core managers
     db_manager = DatabaseManager()
