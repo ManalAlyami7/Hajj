@@ -302,11 +302,6 @@ class LLMManager:
             )
         
     def generate_sql(self, user_input: str, language: str) -> Optional[Dict]:
-        """
-        Generate SQL query from user input with structured output and context awareness
-        using OpenAI API directly.
-        Returns: Dict with sql_query, query_type, filters, explanation, safety_checked.
-        """
         sql_prompt = self._get_sql_system_prompt(language) + f"\n\nUser Question: {user_input}"
         
         context = self.build_chat_context(limit=10)
@@ -321,7 +316,17 @@ class LLMManager:
                 temperature=0.3,
             )
             response_text = response.choices[0].message.content.strip()
-            sql_data = json.loads(response_text)
+
+            # حماية ضد JSON فارغ أو غير صالح
+            if not response_text:
+                logger.warning("SQL response is empty")
+                return {"sql_query": "NO_SQL", "query_type": "no_sql", "filters": [], "explanation": "Empty response", "safety_checked": False}
+
+            try:
+                sql_data = json.loads(response_text)
+            except json.JSONDecodeError:
+                logger.warning(f"SQL response not valid JSON: {response_text}")
+                return {"sql_query": "NO_SQL", "query_type": "no_sql", "filters": [], "explanation": "Invalid JSON response", "safety_checked": False}
 
             if sql_data.get("sql_query") and sql_data.get("safety_checked"):
                 return {
@@ -331,11 +336,15 @@ class LLMManager:
                     "explanation": sql_data.get("explanation"),
                     "safety_checked": sql_data.get("safety_checked")
                 }
-            return None
+            # إذا لم يوجد sql_query أو لم يمر safety check
+            return {"sql_query": "NO_SQL", "query_type": "no_sql", "filters": [], "explanation": "No valid SQL generated", "safety_checked": False}
 
         except Exception as e:
             logger.error(f"SQL generation failed: {e}")
-            return None
+            return {"sql_query": "NO_SQL", "query_type": "no_sql", "filters": [], "explanation": str(e), "safety_checked": False}
+
+            
+        
     def generate_summary(self, user_input: str, language: str, row_count: int, sample_rows: List[Dict]) -> Dict:
         """
         Generate natural, friendly, and structured summary of query results.
