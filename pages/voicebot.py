@@ -2,6 +2,7 @@
 Hajj Voice Assistant - Modularized Version
 Features: Elegant sidebar, language selection, accessibility options, improved UX
 Uses modular components and translation system
+Updated with professional light background matching chat interface
 """
 import time
 import logging
@@ -67,6 +68,24 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ---------------------------
+# Hide Streamlit Navigation Menu
+# ---------------------------
+hide_streamlit_nav = """
+<style>
+[data-testid="stSidebarNav"] {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+}
+
+section[data-testid="stSidebarNav"] {
+    display: none !important;
+}
+</style>
+"""
+st.markdown(hide_streamlit_nav, unsafe_allow_html=True)
+
 # Initialize voice processor
 @st.cache_resource
 def init_voice_graph():
@@ -105,19 +124,27 @@ font_sizes = {
 
 current_sizes = font_sizes[st.session_state.font_size]
 
-# Color scheme
+# Color scheme - Updated for light background
 if st.session_state.high_contrast:
-    bg_gradient = "linear-gradient(135deg, #000000 0%, #1a1a1a 100%)"
+    bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)"
     panel_bg = "rgba(255, 255, 255, 0.98)"
     text_primary = "#000000"
     text_secondary = "#333333"
     border_color = "rgba(0, 0, 0, 0.3)"
+    status_bg = "rgba(255, 255, 255, 0.98)"
+    status_text = "#000000"
+    subtitle_color = "#333333"
+    record_label_color = "#000000"
 else:
-    bg_gradient = "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)"
-    panel_bg = "rgba(248, 250, 252, 0.95)"
-    text_primary = "#1e293b"
+    bg_gradient = "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)"
+    panel_bg = "rgba(255, 255, 255, 0.95)"
+    text_primary = "#1f2937"
     text_secondary = "#64748b"
-    border_color = "rgba(15, 23, 42, 0.1)"
+    border_color = "#e2e8f0"
+    status_bg = "rgba(255, 255, 255, 0.95)"
+    status_text = "#1f2937"
+    subtitle_color = "#64748b"
+    record_label_color = "#1f2937"
 
 # RTL support
 text_align = 'right' if is_arabic or is_urdus else 'left'
@@ -126,7 +153,7 @@ flex_direction = 'row-reverse' if is_arabic or is_urdus else 'row'
 st.markdown(f"""
 <style>
             
-/* Global Styles */
+/* Global Styles - Light Background */
 .stApp {{
   background: {bg_gradient};
   background-attachment: fixed;
@@ -151,31 +178,33 @@ button[kind="header"] {{
   direction: {'rtl' if is_arabic or is_urdus else 'ltr'};
 }}
 
-/* Sidebar Styling */
+/* Sidebar Styling - Light Theme */
 [data-testid="stSidebar"] {{
-  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border-right: 2px solid #e2e8f0;
 }}
 
 [data-testid="stSidebar"] .stMarkdown {{
-  color: #e2e8f0;
+  color: #1f2937;
 }}
 
 [data-testid="collapsedControl"] {{
   visibility: visible !important;
   display: flex !important;
-  background: rgba(251, 191, 36, 0.9) !important;
+  background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
   color: white !important;
   border-radius: 0.5rem !important;
   padding: 0.5rem !important;
   margin: 0.5rem !important;
   transition: all 0.3s ease !important;
   z-index: 9999 !important;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3) !important;
 }}
 
 [data-testid="collapsedControl"]:hover {{
-  background: rgba(245, 158, 11, 1) !important;
+  background: linear-gradient(135deg, #b8941f 0%, #9d7a1a 100%) !important;
   transform: scale(1.05) !important;
+  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5) !important;
 }}
 
 header[data-testid="stHeader"] {{
@@ -200,15 +229,17 @@ header[data-testid="stHeader"] button {{
   font-size: {current_sizes['title']};
   font-weight: 800;
   letter-spacing: 2px;
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+  background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 0.25rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }}
 
 .voice-subtitle {{
-  color: rgba(255, 255, 255, 0.85);
+  color: {subtitle_color};
   font-size: {current_sizes['base']};
+  font-weight: 500;
 }}
 
 /* Main Container */
@@ -227,12 +258,12 @@ header[data-testid="stHeader"] button {{
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 2rem;
   padding: 1.5rem;
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  border: 2px solid {border_color};
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   position: relative;
 }}
@@ -245,26 +276,26 @@ header[data-testid="stHeader"] button {{
   align-items: center;
   justify-content: center;
   font-size: 90px;
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  box-shadow: 0 20px 60px rgba(251, 191, 36, 0.4);
-  border: 6px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
+  box-shadow: 0 20px 60px rgba(212, 175, 55, 0.4);
+  border: 6px solid rgba(212, 175, 55, 0.2);
   animation: float 3s ease-in-out infinite;
   transition: all 0.3s ease;
 }}
 
 .voice-avatar.listening {{
   animation: pulse-listening 0.8s infinite;
-  box-shadow: 0 0 80px rgba(251, 191, 36, 0.8);
+  box-shadow: 0 0 80px rgba(212, 175, 55, 0.6);
 }}
 
 .voice-avatar.speaking {{
   animation: pulse-speaking 0.6s infinite;
-  box-shadow: 0 0 80px rgba(245, 158, 11, 0.8);
+  box-shadow: 0 0 80px rgba(184, 148, 31, 0.6);
 }}
 
 .voice-ring {{
   position: absolute;
-  border: 3px solid rgba(251, 191, 36, 0.3);
+  border: 3px solid rgba(212, 175, 55, 0.3);
   border-radius: 50%;
   top: 50%;
   left: 50%;
@@ -298,7 +329,7 @@ header[data-testid="stHeader"] button {{
 
 .record-label {{
   margin-top: 1.5rem;
-  color: white;
+  color: {record_label_color};
   font-weight: 600;
   letter-spacing: 1.5px;
   font-size: {current_sizes['base']};
@@ -310,8 +341,8 @@ header[data-testid="stHeader"] button {{
   border-radius: 1.5rem;
   padding: 1.25rem;
   backdrop-filter: blur(18px);
-  border: 1px solid {border_color};
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  border: 2px solid {border_color};
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   flex: 1;
   min-height: 0;
   display: flex;
@@ -350,9 +381,9 @@ header[data-testid="stHeader"] button {{
   border-radius: 1rem;
   font-weight: 600;
   font-size: 0.75rem;
-  background: rgba(251, 191, 36, 0.2);
+  background: rgba(212, 175, 55, 0.2);
   color: #92400e;
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  border: 1px solid rgba(212, 175, 55, 0.3);
   margin-{'right' if is_arabic or is_urdus else 'left'}: auto;
   flex-shrink: 0;
   white-space: nowrap;
@@ -402,19 +433,20 @@ header[data-testid="stHeader"] button {{
   font-weight: normal;
 }}
 
-/* Status Indicator */
+/* Status Indicator - Light Theme */
 .status-indicator {{
   position: fixed;
   top: 15px;
   {'left' if is_arabic or is_urdus else 'right'}: 15px;
   padding: 0.6rem 1.25rem;
-  background: rgba(0, 0, 0, 0.15);
+  background: {status_bg};
   border-radius: 2rem;
-  color: white;
+  color: {status_text};
   font-weight: 600;
   font-size: 0.85rem;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 2px solid {border_color};
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -479,6 +511,7 @@ div[data-testid="stButton"] > button[kind="primary"] {{
     border-radius: 8px !important;
     padding: 0.75rem 1rem !important;
     font-size: 1rem !important;
+    color: white !important;
 }}
 
 div[data-testid="stButton"] > button[kind="primary"]:hover {{
@@ -495,6 +528,25 @@ div[data-testid="stButton"] > button[kind="primary"]:active {{
 @keyframes pulse-stop {{
     0%, 100% {{ box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4); }}
     50% {{ box-shadow: 0 4px 25px rgba(212, 175, 55, 0.8); }}
+}}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {{
+  width: 10px;
+}}
+
+::-webkit-scrollbar-track {{
+  background: #f1f5f9;
+  border-radius: 5px;
+}}
+
+::-webkit-scrollbar-thumb {{
+  background: linear-gradient(180deg, #d4af37 0%, #b8941f 100%);
+  border-radius: 5px;
+}}
+
+::-webkit-scrollbar-thumb:hover {{
+  background: linear-gradient(180deg, #b8941f 0%, #9d7a1a 100%);
 }}
 </style>
 """, unsafe_allow_html=True)
