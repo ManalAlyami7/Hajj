@@ -13,6 +13,8 @@ import pytz
 import base64
 from utils.translations import t
 from utils.state import save_chat_memory
+from st_copy_to_clipboard import st_copy_to_clipboard
+
 from utils.validators import validate_user_input
 
 import uuid
@@ -657,20 +659,9 @@ from streamlit_autorefresh import st_autorefresh
 
         # Clean text before copying
         clean_text = self._clean_text_for_copy(text)
+        st_copy_to_clipboard(clean_text)
 
-        if CLIPBOARD_AVAILABLE:
-            js_copy_to_clipboard(clean_text)  # copies directly in browser
-            if lang == "العربية":
-                st.toast("✔️ تم نسخ النص بنجاح", icon="📋")
-            else:
-                st.toast("✔️ Text copied to clipboard", icon="📋")
-        else:
-            # Fallback for local dev without package
-            st.code(clean_text, language=None)
-            if lang == "العربية":
-                st.caption("👆 انسخ النص يدويًا (المكتبة غير مثبتة)")
-            else:
-                st.caption("👆 Copy manually (streamlit_js_eval not installed)")
+
 
 
     def _copy_to_clipboard1(self, text: str, idx: int):
