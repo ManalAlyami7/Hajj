@@ -5,7 +5,7 @@ import logging
 import streamlit as st
 from typing import Optional, List, Dict, Literal
 from pydantic import BaseModel, Field
-import openai
+from openai import OpenAI
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -91,10 +91,15 @@ class LLMManager:
         self.client = self._get_client()
 
     @st.cache_resource
-    def _get_client(self):
+    def _get_client(_self):
         """Get cached OpenAI client"""
-        from openai import OpenAI
-        return OpenAI(api_key=self.api_key)
+        api_key = st.secrets.get("OPENAI_API_KEY") or st.secrets.get("key")
+        if not api_key:
+            logger.error("OpenAI API key not found")
+            st.warning("⚠️ OpenAI API key missing in Streamlit secrets")
+            st.stop()
+        return OpenAI(api_key=api_key)
+
 
     # -----------------------------
     # Memory management
