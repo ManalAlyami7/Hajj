@@ -579,7 +579,7 @@ def _render_navigation_buttons(lang):
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button(f"💬 {t('mode_chatbot', lang)}", key="nav_chatbot", use_container_width=True):
+        if st.button(f"💬 {t('mode_chatbot', lang)}", key="nav_chatbot", use_container_width=True, type="primary"):
             try:
                 st.switch_page("app.py")
             except Exception:
