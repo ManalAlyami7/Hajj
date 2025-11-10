@@ -505,7 +505,7 @@ from streamlit_autorefresh import st_autorefresh
                     st.session_state.pop(f"audio_trigger_{idx}", None)
                     is_playing = False
                     # Refresh the page once to update buttons
-                    st.experimental_rerun()
+                    st.rerun()
 
         # Create columns based on playing state
         cols = st.columns([3, 0.4, 0.4, 0.4, 0.4] if is_playing else [3, 0.4, 0.4], gap="small")
