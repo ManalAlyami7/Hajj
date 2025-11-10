@@ -471,7 +471,6 @@ class ChatInterface:
 Add this import at the top of your chat_interface.py file:
 from streamlit_autorefresh import st_autorefresh
 """
-
     def _render_timestamp_and_actions(self, msg: dict, text: str, idx: int):
         """Render timestamp with action buttons in a single row"""
         import time
@@ -505,7 +504,8 @@ from streamlit_autorefresh import st_autorefresh
                     st.session_state.pop(f"audio_duration_{idx}", None)
                     st.session_state.pop(f"audio_trigger_{idx}", None)
                     is_playing = False
-                    st.rerun()
+                    # Refresh the page once to update buttons
+                    st.experimental_rerun()
 
         # Create columns based on playing state
         cols = st.columns([3, 0.4, 0.4, 0.4, 0.4] if is_playing else [3, 0.4, 0.4], gap="small")
@@ -558,18 +558,6 @@ from streamlit_autorefresh import st_autorefresh
 
     def _display_chat_history(self):
         """Display all messages with professional styling"""
-        # Check if any audio is playing - if so, enable auto-refresh
-        any_playing = any(st.session_state.audio_playing.values()) if st.session_state.audio_playing else False
-        
-        if any_playing:
-            # Auto-refresh every 500ms while audio is playing
-            try:
-                from streamlit_autorefresh import st_autorefresh
-                st_autorefresh(interval=500, key="audio_check")
-            except ImportError:
-                # Fallback: use empty container with manual refresh instruction
-                pass
-        
         for idx, msg in enumerate(st.session_state.chat_memory):
             role = msg.get("role", "assistant")
             avatar = "🕋" if role == "assistant" else "👤"
@@ -577,12 +565,9 @@ from streamlit_autorefresh import st_autorefresh
 
             with st.chat_message(role, avatar=avatar):
                 st.markdown(content, unsafe_allow_html=True)
-
-                # Show timestamp and actions only for assistant messages
                 if role == "assistant":
                     self._render_timestamp_and_actions(msg, content, idx)
                 else:
-                    # Show only timestamp for user messages
                     if msg.get("timestamp"):
                         st.markdown(
                             f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._safe_format_time(msg)}</div>",
