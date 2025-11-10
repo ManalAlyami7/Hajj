@@ -1,7 +1,7 @@
 """
 Professional Voicebot Sidebar Component Module
 Enhanced with formal design, RTL support, and accessibility
-Fixed color scheme with proper contrast and visibility
+Professional color scheme with proper contrast and visibility
 """
 import time
 import streamlit as st
@@ -30,7 +30,7 @@ def render_sidebar(memory, language_code: str):
         _render_header(language_code)
         _render_divider()
 
-         # Navigation
+        # Navigation
         _render_navigation_buttons(language_code)
         _render_divider()
 
@@ -50,8 +50,6 @@ def render_sidebar(memory, language_code: str):
         _render_memory_section(memory, language_code)
         _render_divider()
         
-       
-        
         # Footer
         _render_footer(language_code)
 
@@ -60,10 +58,10 @@ def render_sidebar(memory, language_code: str):
 # PROFESSIONAL STYLING
 # -----------------------------
 def _inject_professional_styles(is_rtl: bool):
-    """Inject enhanced professional CSS for voicebot sidebar with fixed colors"""
+    """Inject enhanced professional CSS for voicebot sidebar"""
     st.markdown(f"""
     <style>
-    /* Sidebar Position and RTL Support */
+    /* ===== Sidebar Base Styling ===== */
     [data-testid="stSidebar"] {{
         left: {'auto !important' if is_rtl else '0 !important'};
         right: {'0 !important' if is_rtl else 'auto !important'};
@@ -81,6 +79,7 @@ def _inject_professional_styles(is_rtl: bool):
         padding: 2rem 1.5rem;
     }}
 
+    /* ===== Text Colors ===== */
     [data-testid="stSidebar"] .stMarkdown {{
         text-align: {'right' if is_rtl else 'left'};
         color: #f8fafc !important;
@@ -92,7 +91,7 @@ def _inject_professional_styles(is_rtl: bool):
         color: #f8fafc !important;
     }}
 
-    /* Headers */
+    /* ===== Headers ===== */
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {{
         color: #d4af37 !important;
@@ -109,7 +108,7 @@ def _inject_professional_styles(is_rtl: bool):
         font-weight: 500;
     }}
 
-    /* Captions */
+    /* ===== Captions ===== */
     [data-testid="stSidebar"] .stCaption {{
         color: #94a3b8 !important;
         font-size: 0.9rem;
@@ -117,7 +116,7 @@ def _inject_professional_styles(is_rtl: bool):
         font-weight: 500;
     }}
 
-    /* Selectbox Styling */
+    /* ===== Selectbox Styling ===== */
     [data-testid="stSidebar"] .stSelectbox > div > div {{
         background: rgba(212, 175, 55, 0.1);
         border: 2px solid rgba(212, 175, 55, 0.4);
@@ -137,7 +136,7 @@ def _inject_professional_styles(is_rtl: bool):
         font-weight: 700 !important;
     }}
 
-    /* Checkbox Styling */
+    /* ===== Checkbox Styling ===== */
     [data-testid="stSidebar"] .stCheckbox {{
         color: #f8fafc;
     }}
@@ -151,56 +150,52 @@ def _inject_professional_styles(is_rtl: bool):
         color: #f8fafc !important;
     }}
 
-    /* Button Styling */
-    /* ===== Sidebar Button Styling (Gold Theme) ===== */
-[data-testid="stSidebar"] .stButton > button {{
-    width: 100%;
-    padding: 1rem 1.5rem;
-    border-radius: 14px;
-    font-weight: 700;
-    font-size: 1rem;
-    border: 2px solid #d4af37 !important;
-    background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
-    color: #1a1f2e !important;
-    transition: all 0.3s ease;
-    letter-spacing: 0.025em;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
-}}
+    /* ===== Button Styling ===== */
+    [data-testid="stSidebar"] .stButton > button {{
+        width: 100%;
+        padding: 1rem 1.5rem;
+        border-radius: 14px;
+        font-weight: 700;
+        font-size: 1rem;
+        border: 2px solid #d4af37 !important;
+        background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
+        color: #1a1f2e !important;
+        transition: all 0.3s ease;
+        letter-spacing: 0.025em;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+    }}
 
-/* Hover Effect */
-[data-testid="stSidebar"] .stButton > button:hover {{
-    background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%) !important;
-    border-color: #f4e5b5 !important;
-    transform: translateY(-3px);
-    box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5);
-}}
+    [data-testid="stSidebar"] .stButton > button:hover {{
+        background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%) !important;
+        border-color: #f4e5b5 !important;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5);
+    }}
 
-/* ===== Secondary (Alert) Buttons ===== */
-[data-testid="stSidebar"] button[kind="secondary"] {{
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
-    color: white !important;
-    border: 2px solid #dc2626 !important;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-}}
+    /* ===== Secondary Buttons (Clear/Delete) ===== */
+    [data-testid="stSidebar"] button[kind="secondary"] {{
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%) !important;
+        color: white !important;
+        border: 2px solid #64748b !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
+    }}
 
-[data-testid="stSidebar"] button[kind="secondary"]:hover {{
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
-    border-color: #b91c1c !important;
-    transform: translateY(-3px);
-    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
-}}
+    [data-testid="stSidebar"] button[kind="secondary"]:hover {{
+        background: linear-gradient(135deg, #475569 0%, #334155 100%) !important;
+        border-color: #334155 !important;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 16px rgba(100, 116, 139, 0.5);
+    }}
 
-
-
-    /* Collapsed Control Button */
+    /* ===== Collapsed Control Button ===== */
     [data-testid="collapsedControl"] {{
         left: {'0.5rem !important' if is_rtl else 'auto !important'};
         right: {'auto !important' if is_rtl else '0.5rem !important'};
     }}
 
-    /* Memory Panel */
+    /* ===== Memory Panel ===== */
     .memory-panel {{
         background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
         padding: 1.5rem;
@@ -242,7 +237,7 @@ def _inject_professional_styles(is_rtl: bool):
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     }}
 
-    /* Sample Questions */
+    /* ===== Sample Questions ===== */
     .sample-question {{
         background: linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.06) 100%);
         padding: 1rem 1.25rem;
@@ -266,14 +261,14 @@ def _inject_professional_styles(is_rtl: bool):
         box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
     }}
 
-    /* Divider Styling */
+    /* ===== Divider Styling ===== */
     [data-testid="stSidebar"] hr {{
         border-color: rgba(212, 175, 55, 0.3) !important;
         border-width: 2px !important;
         margin: 1.5rem 0;
     }}
 
-    /* Main content adjustment */
+    /* ===== Main content adjustment ===== */
     .main .block-container {{
         margin-right: {'21rem !important' if is_rtl else '1rem !important'};
         margin-left: {'1rem !important' if is_rtl else '1rem !important'};
@@ -283,7 +278,7 @@ def _inject_professional_styles(is_rtl: bool):
         margin-right: {'1rem !important' if is_rtl else 'auto'};
     }}
 
-    /* Header Styling */
+    /* ===== Header Styling ===== */
     .sidebar-header {{
         text-align: center;
         padding: 1.5rem 0 2rem 0;
@@ -319,7 +314,7 @@ def _inject_professional_styles(is_rtl: bool):
         font-weight: 600;
     }}
 
-    /* Footer Styling */
+    /* ===== Footer Styling ===== */
     .sidebar-footer {{
         text-align: center;
         padding-top: 1.5rem;
@@ -384,7 +379,7 @@ def _render_header(language_code: str):
 # -----------------------------
 def _render_language_section(language_code: str):
     """Render professional language selector"""
-    st.markdown(f"### 🌐 {t('language_title', language_code)}")
+    st.markdown(f"### {t('language_title', language_code)}")
     st.caption(t('feat_multilingual_desc', language_code))
 
     language_options = {
@@ -415,7 +410,7 @@ def _render_language_section(language_code: str):
 # -----------------------------
 def _render_accessibility_section(language_code: str):
     """Render professional accessibility controls"""
-    st.markdown(f"### ♿ {t('accessibility_title', language_code)}")
+    st.markdown(f"### {t('accessibility_title', language_code)}")
     st.caption(t('accessibility_desc', language_code))
 
     font_labels = [
@@ -464,7 +459,7 @@ def _render_accessibility_section(language_code: str):
 # -----------------------------
 def _render_sample_questions(language_code: str):
     """Render professional sample questions"""
-    st.markdown(f"### 💡 {t('examples_title', language_code)}")
+    st.markdown(f"### {t('examples_title', language_code)}")
     st.caption(t('examples_caption', language_code))
 
     try:
@@ -485,7 +480,7 @@ def _render_sample_questions(language_code: str):
 # -----------------------------
 def _render_memory_section(memory, language_code: str):
     """Render professional memory status"""
-    st.markdown(f"### 💾 {t('memory_status_title', language_code)}")
+    st.markdown(f"### {t('memory_status_title', language_code)}")
     st.caption(t('memory_status_desc', language_code))
 
     try:
@@ -542,25 +537,24 @@ def _clear_memory_and_state(memory, language_code: str):
 # NAVIGATION SECTION
 # -----------------------------
 def _render_navigation_buttons(lang):
-        """Render professional navigation buttons"""
-        
-        st.markdown(f"<h3>🎯 {t('mode_title', lang)}</h3>", unsafe_allow_html=True)
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button(f"💬 {t('mode_chatbot', lang)}", key="nav_chatbot", use_container_width=True, type="primary"):
-                try:
-                    st.switch_page("app.py")
-                except Exception:
-                    st.rerun()
-        
-        with col2:
-            if st.button(f"🎙️ {t('mode_voicebot', lang)}", key="nav_voicebot", use_container_width=True, type="primary"):
-                try:
-                    st.switch_page("pages/voicebot.py")
-                except Exception:
-                    st.info(t('voicebot_unavailable', lang))
+    """Render professional navigation buttons"""
+    st.markdown(f"### {t('mode_title', lang)}")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button(f"💬 {t('mode_chatbot', lang)}", key="nav_chatbot", use_container_width=True, type="primary"):
+            try:
+                st.switch_page("app.py")
+            except Exception:
+                st.rerun()
+    
+    with col2:
+        if st.button(f"🎙️ {t('mode_voicebot', lang)}", key="nav_voicebot", use_container_width=True, type="primary"):
+            try:
+                st.switch_page("pages/voicebot.py")
+            except Exception:
+                st.info(t('voicebot_unavailable', lang))
 
 
 # -----------------------------
