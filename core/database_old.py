@@ -167,7 +167,7 @@ class DatabaseManager:
         if "city" in q or "cities" in q or "مدن" in q:
             if "how many" in q or "كم" in q:
                 return "SELECT COUNT(DISTINCT city) as count FROM agencies", None
-            return "SELECT DISTINCT city FROM agencies ORDER BY city LIMIT 25", None
+            return "SELECT DISTINCT city FROM agencies ORDER BY city LIMIT 100", None
         
         # Show all
         if any(word in q for word in ["all", "show", "list", "عرض", "قائمة"]):
