@@ -2,7 +2,7 @@
 Professional Chat Interface Module
 Enhanced with formal design, improved UX, and consistent branding
 Fixed color scheme with proper contrast and visibility
-Fixed timestamp and buttons appearing on first render
+Simple clipboard copy with fallback
 """
 
 import streamlit as st
@@ -16,6 +16,12 @@ from utils.validators import validate_user_input
 import uuid
 import streamlit.components.v1 as components
 import re
+
+try:
+    from streamlit_js_eval import copy_to_clipboard
+    CLIPBOARD_AVAILABLE = True
+except ImportError:
+    CLIPBOARD_AVAILABLE = False
 
 class ChatInterface:
     """Manages professional chat interface and message display"""
@@ -571,36 +577,20 @@ class ChatInterface:
             st.error(f"❌ خطأ في تشغيل الصوت: {str(e)}" if lang == "العربية" else f"❌ Audio error: {str(e)}")
 
     def _copy_to_clipboard(self, text: str, idx: int):
-        """Copy text to clipboard with improved functionality"""
+        """Copy text using Streamlit's native code block copy button"""
         lang = st.session_state.get("language", "English")
         
         # Clean text for copying
         clean_text = self._clean_text_for_copy(text)
         
-        # Escape special characters for JavaScript
-        escaped_text = clean_text.replace('\\', '\\\\').replace('`', '\\`').replace('$', '\\$').replace('"', '\\"').replace('\n', '\\n')
+        # Show the text in a code block (has built-in copy button)
+        st.code(clean_text, language=None)
         
-        # Create JavaScript to copy to clipboard
-        copy_js = f"""
-        <script>
-            (function() {{
-                const text = `{escaped_text}`;
-                navigator.clipboard.writeText(text).then(function() {{
-                    console.log('Copied successfully');
-                }}, function(err) {{
-                    console.error('Could not copy text: ', err);
-                }});
-            }})();
-        </script>
-        """
-        
-        components.html(copy_js, height=0)
-        
-        # Show success message
+        # Add instruction
         if lang == "العربية":
-            st.toast("✅ تم النسخ إلى الحافظة!", icon="📋")
+            st.caption("👆 اضغط على أيقونة النسخ في الزاوية اليمنى العليا")
         else:
-            st.toast("✅ Copied to clipboard!", icon="📋")
+            st.caption("👆 Click the copy icon in the top-right corner")
 
     def _clean_text_for_copy(self, text: str) -> str:
         """Clean text for copying - remove HTML and markdown formatting"""
@@ -617,6 +607,7 @@ class ChatInterface:
         
         return clean.strip()
 
+    # -------------------
     # -------------------
     # User Input Handling
     # -------------------
