@@ -219,7 +219,7 @@ class ChatInterface:
 
         /* Remove column gaps */
         div[data-testid="column"] {
-            padding: 0 1px !important;
+            padding: 0 0px !important;
         }
 
         /* Small Action Buttons for Audio Controls */
