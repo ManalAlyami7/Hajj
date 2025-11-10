@@ -189,7 +189,7 @@ class ChatInterface:
     background: linear-gradient(135deg, var(--primary-gold), var(--primary-gold-dark)) !important;
     border: none !important;
     border-radius: 12px !important; /* Rounded corners */
-    padding: 10px !important;
+    padding: 1px !important;
     box-shadow: var(--shadow-sm) !important;
     width: 46px !important;
     height: 46px !important;
