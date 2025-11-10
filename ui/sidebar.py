@@ -311,7 +311,7 @@ class SidebarInterface:
         
         # إضافة النص المترجم للعنوان
         mode_title = t('mode_title', lang)
-        st.markdown(f"<h3>🎯 {mode_title}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3>{mode_title}</h3>", unsafe_allow_html=True)
         
         col1, col2 = st.columns(2)
         
@@ -335,7 +335,7 @@ class SidebarInterface:
         
         # إضافة النص المترجم للعنوان
         language_title = t('language_title', lang)
-        st.markdown(f"<h3>🌐 {language_title}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3>{language_title}</h3>", unsafe_allow_html=True)
         
         # إضافة الأردية للخيارات
         language_choice = st.radio(
@@ -374,7 +374,7 @@ class SidebarInterface:
         
         # إضافة النص المترجم للعنوان
         stats_title = t('stats_title', lang)
-        st.markdown(f"<h3>📊 {stats_title}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3>{stats_title}</h3>", unsafe_allow_html=True)
         
         stats = self.db.get_stats()
         
@@ -400,7 +400,7 @@ class SidebarInterface:
         
         # إضافة النص المترجم للعنوان
         examples_title = t('examples_title', lang)
-        st.markdown(f"<h3>💡 {examples_title}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3>{examples_title}</h3>", unsafe_allow_html=True)
         
         example_questions = [
             ("ex_all_auth", "ex_all_auth_q"),
@@ -451,7 +451,7 @@ class SidebarInterface:
         
         # إضافة النص المترجم للعنوان
         features_title = t('features_title', lang)
-        st.markdown(f"<h3>✨ {features_title}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3>{features_title}</h3>", unsafe_allow_html=True)
 
         features = [
             ("feat_ai", "feat_ai_desc", "🤖"),
