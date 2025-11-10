@@ -13,3 +13,4 @@ num2words>=0.5.12
 mutagen>=1.45.1
 altair>=5.0.0
 streamlit_autorefresh
+pyperclip
