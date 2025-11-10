@@ -574,8 +574,9 @@ class ChatInterface:
                     st.error("error ")
 
                             # Update playing state
+                            
                 st.session_state.audio_playing[idx] = True
-                st.rerun()
+                #st.rerun()
             else:
                 st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
 
