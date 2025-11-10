@@ -649,7 +649,7 @@ from streamlit_autorefresh import st_autorefresh
         """Convert audio bytes to base64 string"""
         import base64
         return base64.b64encode(audio_bytes).decode()
-    def _copy_to_clipboard(text: str, idx: int):
+    def _copy_to_clipboard(self, text: str, idx: int):
         """Copy text directly to clipboard using pyperclip"""
         pyperclip.copy(text)  # Copies the text immediately
         lang = st.session_state.get("language", "English")
