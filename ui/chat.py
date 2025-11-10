@@ -548,7 +548,7 @@ from streamlit_autorefresh import st_autorefresh
         # Copy button
         with (cols[4] if is_playing else cols[2]):
             if st.button(f"![Copy]({copy_icon})", key=f"{button_key_prefix}_copy", help=copy_tip):
-                self._copy_to_clipboard(text, idx)
+                self._copy_to_clipboard1(text, idx)
 
         # Play audio if triggered
         if is_playing and st.session_state.get(f"audio_trigger_{idx}", False):
@@ -662,6 +662,27 @@ from streamlit_autorefresh import st_autorefresh
             st.caption("👆 اضغط على أيقونة النسخ في الزاوية اليمنى العليا")
         else:
             st.caption("👆 Click the copy icon in the top-right corner")
+
+    def _copy_to_clipboard1(self, text: str, idx: int):
+        """Copy text automatically to clipboard when button is clicked"""
+        # Escape quotes to avoid breaking JS
+        escaped_text = text.replace('"', '\\"').replace("\n", "\\n")
+        
+        st.markdown(f"""
+            <script>
+                navigator.clipboard.writeText("{escaped_text}").then(function() {{
+                    console.log("Copied to clipboard");
+                }});
+            </script>
+        """, unsafe_allow_html=True)
+        
+        # Optional: show a small confirmation
+        lang = st.session_state.get("language", "English")
+        if lang == "العربية":
+            st.caption("✔️ تم نسخ النص")
+        else:
+            st.caption("✔️ Copied to clipboard")
+
         
 
     def _clean_text_for_copy(self, text: str) -> str:
