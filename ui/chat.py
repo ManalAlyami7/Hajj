@@ -451,6 +451,27 @@ class ChatInterface:
                     st.session_state.processing_example = False
                     st.rerun()
 
+    # -------------------
+    # Chat History Display
+    # -------------------
+
+                    
+    def _safe_format_time(self, msg):
+        """تنسيق الوقت بشكل آمن بدون أخطاء"""
+        try:
+            timestamp = msg.get('timestamp')
+            if not timestamp:
+                return datetime.now().strftime("%I:%M %p")
+            
+            return self._format_time(timestamp)
+        except Exception:
+            return datetime.now().strftime("%I:%M %p")
+
+    """
+Add this import at the top of your chat_interface.py file:
+from streamlit_autorefresh import st_autorefresh
+"""
+
     def _render_timestamp_and_actions(self, msg: dict, text: str, idx: int):
         """Render timestamp with action buttons in a single row"""
         import time
