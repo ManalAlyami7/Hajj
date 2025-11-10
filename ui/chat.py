@@ -40,8 +40,9 @@ class ChatInterface:
         self._inject_professional_styles()
         self._display_chat_history()
         
-        # if self._show_quick_actions():
-        #     self._display_quick_actions()
+        # Display quick actions if at the start
+        if self._show_quick_actions():
+            self._display_quick_actions()
         
         self._handle_user_input()
 
@@ -172,57 +173,67 @@ class ChatInterface:
             margin: 0;
             font-weight: 500;
         }
-/* Rounded Square Icon Buttons */
-.stButton > button:has(img) {
-    background: linear-gradient(135deg, var(--primary-gold), var(--primary-gold-dark)) !important;
-    border: none !important;
-    border-radius: 12px !important; /* Rounded corners */
-    padding: 10px !important;
-    box-shadow: var(--shadow-sm) !important;
-    width: 46px !important;
-    height: 46px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    transition: all 0.25s ease !important;
-}
-
-/* Hover & Active Effects */
-.stButton > button:has(img):hover {
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: var(--shadow-md) !important;
-    background: linear-gradient(135deg, var(--primary-gold-dark), #9d7a1a) !important;
-}
-
-.stButton > button:has(img):active {
-    transform: scale(0.97);
-}
-
-/* Optional: Remove white flash or border focus outline */
-.stButton > button:focus {
-    outline: none !important;
-    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.35) !important;
-}
-
-
-        /* Remove column gaps */
-        div[data-testid="column"] {
-            padding: 0 2px !important;
+        
+        /* ====================================================
+        ✅ FIX: GENERAL GOLD BUTTON STYLING (For all st.buttons)
+        This ensures Quick Actions (text + icon) are gold.
+        ====================================================
+        */
+        .stButton > button {
+            background: linear-gradient(135deg, var(--primary-gold), var(--primary-gold-dark)) !important;
+            border: none !important;
+            border-radius: 12px !important; /* Rounded corners */
+            padding: 10px 15px !important; /* Use text padding by default */
+            box-shadow: var(--shadow-sm) !important;
+            color: white !important; /* Set text/icon color to white */
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: all 0.25s ease !important;
+            font-weight: 600 !important;
+            font-size: 1rem !important;
         }
 
-        /* Small Action Buttons for Audio Controls */
+        /* Hover & Active Effects for all buttons */
+        .stButton > button:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: var(--shadow-md) !important;
+            background: linear-gradient(135deg, var(--primary-gold-dark), #9d7a1a) !important;
+        }
+
+        .stButton > button:active {
+            transform: scale(0.97);
+        }
+
+        /* Optional: Remove white flash or border focus outline */
+        .stButton > button:focus {
+            outline: none !important;
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.35) !important;
+        }
+
+        /* ====================================================
+        ✅ TARGETED: AUDIO ICON BUTTON STYLING (For small, image-based buttons)
+        This overrides padding and size for the timestamp audio controls.
+        ====================================================
+        */
+        .stButton > button:has(img) {
+            width: 46px !important;
+            min-width: 46px !important;
+            height: 46px !important;
+            min-height: 46px !important;
+            padding: 10px !important;
+            font-size: 1rem !important;
+            margin: 0 !important; /* Ensure tight packing in columns */
+        }
+        
+        /* Small Action Buttons for Audio Controls (Final size enforcement) */
         .stChatMessage div[data-testid="column"] > div > div > button {
             padding: 0.5rem 0.6rem !important;
-            font-size: 1.1rem !important;
-            border-radius: 8px !important;
             min-height: 38px !important;
             max-height: 38px !important;
             margin: 0 !important;
             border: 2px solid var(--primary-gold) !important;
             background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-gold-dark) 100%) !important;
-            color: white !important;
-            box-shadow: var(--shadow-sm) !important;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
 
         .stChatMessage div[data-testid="column"] > div > div > button:hover {
@@ -231,14 +242,10 @@ class ChatInterface:
             background: linear-gradient(135deg, var(--primary-gold-dark) 0%, #9d7a1a 100%) !important;
             border-color: var(--primary-gold-dark) !important;
         }
-
-        .stChatMessage div[data-testid="column"] > div > div > button:active {
-            transform: translateY(0px) !important;
-        }
-
-        .stChatMessage div[data-testid="column"] > div > div > button:disabled {
-            opacity: 0.6 !important;
-            cursor: not-allowed !important;
+        
+        /* Remove column gaps */
+        div[data-testid="column"] {
+            padding: 0 2px !important;
         }
 
         /* Timestamp Styling */
@@ -401,8 +408,10 @@ class ChatInterface:
         lang = st.session_state.get("language", "English")
         if len(chat) == 1:
             first = chat[0]
+            # Check if the welcome message is the last message
             return first.get("role") == "assistant" and first.get("content") == t("welcome_msg", lang)
-        return False
+        # Also show if the memory is completely empty (no welcome message yet)
+        return len(chat) == 0
 
     def _display_quick_actions(self):
         """Display professional quick action buttons"""
@@ -425,6 +434,7 @@ class ChatInterface:
             ("❓", t("general_help", lang), "general_help", "user", t("help_message", lang)),
         ]
 
+        # These buttons will now be GOLD due to the general .stButton > button CSS rule
         with col1:
             for icon, label, key, role, content in actions[:2]:
                 if st.button(f"{icon}  {label}", key=f"qa_{key}", use_container_width=True):
@@ -462,11 +472,13 @@ class ChatInterface:
         try:
             timestamp = msg.get('timestamp')
             if not timestamp:
-                return datetime.now().strftime("%I:%M %p")
+                # Use current time if timestamp is missing
+                return datetime.now(pytz.timezone('Asia/Riyadh')).strftime("%I:%M %p")
             
             return self._format_time(timestamp)
         except Exception:
-            return datetime.now().strftime("%I:%M %p")
+            # Fallback
+            return datetime.now(pytz.timezone('Asia/Riyadh')).strftime("%I:%M %p")
 
     def _render_timestamp_and_actions(self, msg: dict, text: str, idx: int):
         """Render timestamp with action buttons in a single row"""
@@ -474,7 +486,7 @@ class ChatInterface:
         button_key_prefix = f"msg_{idx}"
         is_playing = st.session_state.audio_playing.get(idx, False)
         
-        # Icon URLs
+        # Icon URLs (These are rendered as <img> inside the button)
         play_icon = "https://img.icons8.com/?size=100&id=8VE4cuU0UjpB&format=png&color=000000"
         replay_icon = "https://img.icons8.com/?size=100&id=59872&format=png&color=000000"
         stop_icon = "https://img.icons8.com/?size=100&id=61012&format=png&color=000000"
@@ -488,8 +500,10 @@ class ChatInterface:
         
         # Create columns based on playing state with minimal gap
         if is_playing:
+            # [Timestamp, Play, Replay, Stop, Copy]
             cols = st.columns([3, 0.4, 0.4, 0.4, 0.4], gap="small")
         else:
+            # [Timestamp, Play, Copy]
             cols = st.columns([3, 0.4, 0.4], gap="small")
         
         # Timestamp in first column
@@ -500,7 +514,7 @@ class ChatInterface:
                     unsafe_allow_html=True
                 )
         
-        # Play button in second column
+        # Play button in second column (Button with image will be gold due to :has(img) rule)
         with cols[1]:
             if not is_playing:
                 if st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play", use_container_width=True, help=play_tip):
@@ -645,6 +659,7 @@ class ChatInterface:
                 st.session_state.processing_example = False
                 return
 
+            # Display user message only if it came from the chat input
             if chat_input:
                 with st.chat_message("user", avatar="👤"):
                     st.markdown(user_input)
@@ -742,9 +757,11 @@ class ChatInterface:
 
     @staticmethod
     def _get_current_time() -> float:
+        # Note: This is a placeholder for actual timezone implementation
         return datetime.now(pytz.timezone('Asia/Riyadh')).timestamp()
 
     @staticmethod
     def _format_time(timestamp: float) -> str:
+        # Note: This is a placeholder for actual timezone implementation
         dt = datetime.fromtimestamp(timestamp, pytz.timezone('Asia/Riyadh'))
         return dt.strftime("%I:%M %p")
