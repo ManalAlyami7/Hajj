@@ -822,7 +822,7 @@ Keep it concise, warm, safe, and optimized for voice playback.
     🏁 OUTPUT RULES:
     - Output **only** one valid SQL SELECT query.
     - If no logical SQL can be formed → output `NO_SQL`
-    - Always include LIMIT 100 unless COUNT or DISTINCT is used.
+    - Always include LIMIT 25 unless COUNT or DISTINCT is used.
 
     --------------------------------------------
     ✅ EXAMPLES:
@@ -843,7 +843,7 @@ WHERE (LOWER(TRIM(hajj_company_en)) LIKE LOWER('%alhuda%')
    OR LOWER(TRIM(hajj_company_ar)) LIKE LOWER('%الهدى%'))
 LIMIT 50;
     Q: "Authorized agencies in Makkah"
-    → SELECT * FROM agencies WHERE is_authorized = 'Yes' AND (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%') LIMIT 100;
+    → SELECT * FROM agencies WHERE is_authorized = 'Yes' AND (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%') LIMIT 25;
 
     Q: "كم عدد الشركات في المدينة؟"
     → SELECT COUNT(*) FROM agencies WHERE (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%');
@@ -852,16 +852,16 @@ LIMIT 50;
     → SELECT COUNT(DISTINCT country) FROM agencies;
 
     Q: "List of countries that have agencies"
-    → SELECT DISTINCT country FROM agencies LIMIT 100;
+    → SELECT DISTINCT country FROM agencies LIMIT 25;
 
     Q: "Number of authorized countries"
     → SELECT COUNT(DISTINCT country) FROM agencies WHERE is_authorized = 'Yes';
 
     Q: "Countries with authorized agencies"
-    → SELECT DISTINCT country FROM agencies WHERE is_authorized = 'Yes' LIMIT 100;
+    → SELECT DISTINCT country FROM agencies WHERE is_authorized = 'Yes' LIMIT 25;
 
     Q: "Show all cities where agencies exist"
-    → SELECT DISTINCT city FROM agencies LIMIT 100;
+    → SELECT DISTINCT city FROM agencies LIMIT 25;
     """
     
     @staticmethod
