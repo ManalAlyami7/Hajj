@@ -14,3 +14,4 @@ mutagen>=1.45.1
 altair>=5.0.0
 streamlit_autorefresh
 pyperclip
+streamlit_js_eval

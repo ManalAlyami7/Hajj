@@ -6,7 +6,6 @@ Simple clipboard copy with fallback
 """
 
 import streamlit as st
-import pyperclip
 
 import pandas as pd
 from datetime import datetime
@@ -15,13 +14,14 @@ import base64
 from utils.translations import t
 from utils.state import save_chat_memory
 from utils.validators import validate_user_input
+
 import uuid
 import streamlit.components.v1 as components
 import re
 from core.voice_processor import VoiceProcessor
 
 try:
-    from streamlit_js_eval import copy_to_clipboard
+    from streamlit_js_eval import copy_to_clipboard as js_copy_to_clipboard
     CLIPBOARD_AVAILABLE = True
 except ImportError:
     CLIPBOARD_AVAILABLE = False
@@ -550,7 +550,7 @@ from streamlit_autorefresh import st_autorefresh
         # Copy button
         with (cols[4] if is_playing else cols[2]):
             if st.button(f"![Copy]({copy_icon})", key=f"{button_key_prefix}_copy", help=copy_tip):
-                self._copy_to_clipboard(text, idx)
+                self._copy_to_clipboard1(text, idx)
 
         # Play audio if triggered
         if is_playing and st.session_state.get(f"audio_trigger_{idx}", False):
@@ -649,14 +649,29 @@ from streamlit_autorefresh import st_autorefresh
         """Convert audio bytes to base64 string"""
         import base64
         return base64.b64encode(audio_bytes).decode()
+
+
     def _copy_to_clipboard(self, text: str, idx: int):
-        """Copy text directly to clipboard using pyperclip"""
-        pyperclip.copy(text)  # Copies the text immediately
+        """Copy text to clipboard using streamlit_js_eval (if available)"""
         lang = st.session_state.get("language", "English")
-        if lang == "العربية":
-            st.success("✔️ تم نسخ النص")
+
+        # Clean text before copying
+        clean_text = self._clean_text_for_copy(text)
+
+        if CLIPBOARD_AVAILABLE:
+            js_copy_to_clipboard(clean_text)  # copies directly in browser
+            if lang == "العربية":
+                st.toast("✔️ تم نسخ النص بنجاح", icon="📋")
+            else:
+                st.toast("✔️ Text copied to clipboard", icon="📋")
         else:
-            st.success("✔️ Copied to clipboard")
+            # Fallback for local dev without package
+            st.code(clean_text, language=None)
+            if lang == "العربية":
+                st.caption("👆 انسخ النص يدويًا (المكتبة غير مثبتة)")
+            else:
+                st.caption("👆 Copy manually (streamlit_js_eval not installed)")
+
 
     def _copy_to_clipboard1(self, text: str, idx: int):
         """Copy text automatically to clipboard when button is clicked"""
