@@ -67,6 +67,24 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ---------------------------
+# Hide Streamlit Navigation Menu
+# ---------------------------
+hide_streamlit_nav = """
+<style>
+[data-testid="stSidebarNav"] {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+}
+
+section[data-testid="stSidebarNav"] {
+    display: none !important;
+}
+</style>
+"""
+st.markdown(hide_streamlit_nav, unsafe_allow_html=True)
+
 # Initialize voice processor
 @st.cache_resource
 def init_voice_graph():
