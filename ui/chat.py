@@ -576,11 +576,7 @@ class ChatInterface:
                     unsafe_allow_html=True
                 )
                 
-                # Alternative: Use Streamlit's audio but truly hidden
-                st.markdown("<div style='display:none; height:0; overflow:hidden;'>", unsafe_allow_html=True)
-                st.audio(audio_bytes, format="audio/mp3", autoplay=True)
-                st.markdown("</div>", unsafe_allow_html=True)
-            else:
+          
                 st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
 
         except Exception as e:
