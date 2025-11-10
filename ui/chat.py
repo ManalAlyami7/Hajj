@@ -503,28 +503,28 @@ class ChatInterface:
         # Play button in second column
         with cols[1]:
             if not is_playing:
-                if st.button(f"![]({play_icon})", key=f"{button_key_prefix}_play", use_container_width=True, help=play_tip):
+                if st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play", use_container_width=True, help=play_tip):
                     self._play_message_audio(text, idx)
             else:
-                st.button(f"![]({play_icon})", key=f"{button_key_prefix}_play_active", disabled=True, use_container_width=True, help=play_tip)
+                st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play_active", disabled=True, use_container_width=True, help=play_tip)
         
         # Replay button (only when playing)
         if is_playing:
             with cols[2]:
-                if st.button(f"![]({replay_icon})", key=f"{button_key_prefix}_replay", use_container_width=True, help=replay_tip):
+                if st.button(f"![Replay]({replay_icon})", key=f"{button_key_prefix}_replay", use_container_width=True, help=replay_tip):
                     st.session_state.audio_playing[idx] = False
                     st.rerun()
         
         # Stop button (only when playing)
         if is_playing:
             with cols[3]:
-                if st.button(f"![]({stop_icon})", key=f"{button_key_prefix}_stop", use_container_width=True, help=stop_tip):
+                if st.button(f"![Stop]({stop_icon})", key=f"{button_key_prefix}_stop", use_container_width=True, help=stop_tip):
                     st.session_state.audio_playing[idx] = False
                     st.rerun()
         
         # Copy button in last column
         with (cols[4] if is_playing else cols[2]):
-            if st.button(f"![]({copy_icon})", key=f"{button_key_prefix}_copy", use_container_width=True, help=copy_tip):
+            if st.button(f"![Copy]({copy_icon})", key=f"{button_key_prefix}_copy", use_container_width=True, help=copy_tip):
                 self._copy_to_clipboard(text, idx)
 
     def _play_message_audio(self, text: str, idx: int):
