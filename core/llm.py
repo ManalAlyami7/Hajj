@@ -5,7 +5,7 @@ import logging
 import streamlit as st
 from typing import Optional, List, Dict, Literal
 from pydantic import BaseModel, Field
-import openai
+from openai import OpenAI
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -91,10 +91,15 @@ class LLMManager:
         self.client = self._get_client()
 
     @st.cache_resource
-    def _get_client(self):
+    def _get_client(_self):
         """Get cached OpenAI client"""
-        from openai import OpenAI
-        return OpenAI(api_key=self.api_key)
+        api_key = st.secrets.get("OPENAI_API_KEY") or st.secrets.get("key")
+        if not api_key:
+            logger.error("OpenAI API key not found")
+            st.warning("⚠️ OpenAI API key missing in Streamlit secrets")
+            st.stop()
+        return OpenAI(api_key=api_key)
+
 
     # -----------------------------
     # Memory management
@@ -131,7 +136,7 @@ class LLMManager:
                 messages=messages,
                 temperature=0.4
             )
-            reply = response.choices[0].message["content"].strip()
+            reply = response.choices[0].message.content
             self.add_assistant_message(reply)
             return reply
         except Exception as e:
@@ -212,7 +217,7 @@ class LLMManager:
                 messages=messages,
                 temperature=0.4,
             )
-            response_text = response.choices[0].message["content"].strip()
+            response_text = response.choices[0].message.content
             intent_data = json.loads(response_text)
             logger.info(f"Intent detected: {intent_data.get('intent')} confidence: {intent_data.get('confidence')}")
             return intent_data
@@ -270,7 +275,7 @@ class LLMManager:
                 messages=messages,
                 temperature=0.5,
             )
-            reply = response.choices[0].message["content"].strip()
+            reply = response.choices[0].message.content
             self.add_assistant_message(reply)  # لو عندك memory
             return reply
 
@@ -297,7 +302,7 @@ class LLMManager:
                 messages=messages,
                 temperature=0.5,
             )
-            reply = response.choices[0].message["content"].strip()
+            reply = response.choices[0].message.content.strip()
             self.add_assistant_message(reply)  # حفظ الرد في الذاكرة لو عندك
             return reply
 
@@ -478,7 +483,7 @@ class LLMManager:
                 messages=messages,
                 temperature=0.4,
             )
-            response_text = response.choices[0].message["content"].strip()
+            response_text = response.choices[0].message.content.strip()
             summary_data = json.loads(response_text)
             return {"summary": summary_data.get("summary", "")}
 
@@ -698,7 +703,7 @@ class LLMManager:
                 messages=messages,
                 temperature=0.4,
             )
-            response_text = response.choices[0].message["content"].strip()
+            response_text = response.choices[0].message.content.strip()
             info_data = json.loads(response_text)
             return {
                 "needs_info": info_data.get("needs_info", ""),
