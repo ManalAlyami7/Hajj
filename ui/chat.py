@@ -192,7 +192,7 @@ div[data-testid="column"], .stButton {
 }
 
 div[data-testid="stHorizontalBlock"] {
-    gap: 6px !important; /* Reduce spacing between buttons */
+    gap: 3px !important; /* Reduce spacing between buttons */
 }
 
 .stButton > button:has(img) {
