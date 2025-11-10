@@ -201,12 +201,19 @@ class ChatInterface:
             transform: translateY(-1px);
         }
 
+        /* Remove column gaps */
+        div[data-testid="column"] {
+            padding: 0 2px !important;
+        }
+
         /* Small Action Buttons for Audio Controls */
-        div[data-testid="column"] > div > div > button {
-            padding: 0.4rem 0.7rem !important;
-            font-size: 0.8rem !important;
+        .stChatMessage div[data-testid="column"] > div > div > button {
+            padding: 0.5rem 0.6rem !important;
+            font-size: 1.1rem !important;
             border-radius: 8px !important;
-            min-height: 35px !important;
+            min-height: 38px !important;
+            max-height: 38px !important;
+            margin: 0 !important;
         }
 
         /* Timestamp Styling */
@@ -443,20 +450,22 @@ class ChatInterface:
         is_playing = st.session_state.audio_playing.get(idx, False)
         
         # Icon URLs
-        play_icon = "https://img.icons8.com/?size=100&id=8VE4cuU0UjpB&format=png&color=000000"
-        replay_icon = "https://img.icons8.com/?size=100&id=59872&format=png&color=000000"
-        stop_icon = "https://img.icons8.com/?size=100&id=61012&format=png&color=000000"
-        copy_icon = "https://img.icons8.com/?size=100&id=86206&format=png&color=000000"
+        play_icon = "https://img.icons8.com/?size=100&id=8VE4cuU0UjpB&format=png&color=FFFFFF"
+        replay_icon = "https://img.icons8.com/?size=100&id=59872&format=png&color=FFFFFF"
+        stop_icon = "https://img.icons8.com/?size=100&id=61012&format=png&color=FFFFFF"
+        copy_icon = "https://img.icons8.com/?size=100&id=86206&format=png&color=FFFFFF"
         
-        # Text labels
-        replay_text = "إعادة" if lang == "العربية" else "Replay"
-        stop_text = "إيقاف" if lang == "العربية" else "Stop"
+        # Tooltips
+        play_tip = "تشغيل الصوت" if lang == "العربية" else "Play audio"
+        replay_tip = "إعادة التشغيل" if lang == "العربية" else "Replay audio"
+        stop_tip = "إيقاف الصوت" if lang == "العربية" else "Stop audio"
+        copy_tip = "نسخ النص" if lang == "العربية" else "Copy text"
         
-        # Create columns based on playing state
+        # Create columns based on playing state with minimal gap
         if is_playing:
-            cols = st.columns([3, 0.7, 0.7, 0.7, 0.7], gap="small")
+            cols = st.columns([3, 0.4, 0.4, 0.4, 0.4], gap="small")
         else:
-            cols = st.columns([3, 0.7, 0.7])
+            cols = st.columns([3, 0.4, 0.4], gap="small")
         
         # Timestamp in first column
         with cols[0]:
@@ -469,28 +478,28 @@ class ChatInterface:
         # Play button in second column
         with cols[1]:
             if not is_playing:
-                if st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play", use_container_width=False):
+                if st.button(f"![]({play_icon})", key=f"{button_key_prefix}_play", use_container_width=True, help=play_tip):
                     self._play_message_audio(text, idx)
             else:
-                st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play_active", disabled=True, use_container_width=False)
+                st.button(f"![]({play_icon})", key=f"{button_key_prefix}_play_active", disabled=True, use_container_width=True, help=play_tip)
         
         # Replay button (only when playing)
         if is_playing:
             with cols[2]:
-                if st.button(f"![Replay]({replay_icon})", key=f"{button_key_prefix}_replay", use_container_width=False):
+                if st.button(f"![]({replay_icon})", key=f"{button_key_prefix}_replay", use_container_width=True, help=replay_tip):
                     st.session_state.audio_playing[idx] = False
                     st.rerun()
         
         # Stop button (only when playing)
         if is_playing:
             with cols[3]:
-                if st.button(f"![Stop]({stop_icon})", key=f"{button_key_prefix}_stop", use_container_width=False):
+                if st.button(f"![]({stop_icon})", key=f"{button_key_prefix}_stop", use_container_width=True, help=stop_tip):
                     st.session_state.audio_playing[idx] = False
                     st.rerun()
         
         # Copy button in last column
         with (cols[4] if is_playing else cols[2]):
-            if st.button(f"![Copy]({copy_icon})", key=f"{button_key_prefix}_copy", use_container_width=False):
+            if st.button(f"![]({copy_icon})", key=f"{button_key_prefix}_copy", use_container_width=True, help=copy_tip):
                 self._copy_to_clipboard(text, idx)
 
     def _play_message_audio(self, text: str, idx: int):
@@ -534,7 +543,7 @@ class ChatInterface:
                 st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
                 
         except Exception as e:
-            st.error(f"❌ خطأ في تشغيل الصوت: {str(e)}" if lang == "العربية" else f"❌ Audio error: {str(e)}")
+            st.error(f"❌ خطأ في تشغيل الصوت: {str(e)}" if lang == "العربية" else  f"❌ Audio error: {str(e)}")
 
     def _copy_to_clipboard(self, text: str, idx: int):
         """Copy text to clipboard with improved functionality"""
