@@ -496,6 +496,7 @@ class ChatInterface:
         stop_tip = "إيقاف الصوت" if lang == "العربية" else "Stop audio"
         copy_tip = "نسخ النص" if lang == "العربية" else "Copy text"
 
+        # Create columns based on playing state
         cols = st.columns([3, 0.4, 0.4, 0.4, 0.4] if is_playing else [3, 0.4, 0.4], gap="small")
 
         # Timestamp
@@ -510,8 +511,10 @@ class ChatInterface:
         with cols[1]:
             if not is_playing:
                 if st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play", help=play_tip):
-                    # Trigger playback once
-                    self._play_message_audio(text, idx)
+                    # Set playing state and trigger playback
+                    st.session_state.audio_playing[idx] = True
+                    st.session_state[f"audio_trigger_{idx}"] = True
+                    st.rerun()
             else:
                 st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play_active", disabled=True)
 
@@ -520,21 +523,28 @@ class ChatInterface:
             with cols[2]:
                 if st.button(f"![Stop]({stop_icon})", key=f"{button_key_prefix}_stop", help=stop_tip):
                     st.session_state.audio_playing[idx] = False
+                    st.session_state.pop(f"audio_trigger_{idx}", None)
                     st.rerun()
 
+        # Replay button (visible only when playing)
         if is_playing:
             with cols[3]:
                 if st.button(f"![Replay]({replay_icon})", key=f"{button_key_prefix}_replay", help=replay_tip):
-                    self._play_message_audio(text, idx)
+                    st.session_state[f"audio_trigger_{idx}"] = True
+                    st.rerun()
 
         # Copy button
         with (cols[4] if is_playing else cols[2]):
             if st.button(f"![Copy]({copy_icon})", key=f"{button_key_prefix}_copy", help=copy_tip):
                 self._copy_to_clipboard(text, idx)
 
+        # Play audio if triggered
+        if is_playing and st.session_state.get(f"audio_trigger_{idx}", False):
+            self._play_message_audio(text, idx)
+            # Clear trigger after playing
+            st.session_state[f"audio_trigger_{idx}"] = False
 
-    # 2. THE AUDIO PLAYING LOGIC
-    # --------------------------------------------------------------------------
+
     def _play_message_audio(self, text: str, idx: int):
         """Play message audio once"""
         lang = st.session_state.get("language", "English")
@@ -553,11 +563,21 @@ class ChatInterface:
             if audio_data:
                 # Convert to bytes safely
                 audio_bytes = audio_data.getvalue() if hasattr(audio_data, "getvalue") else audio_data
-                st.session_state.audio_playing[idx] = True
-                st.rerun()
-
-                # Render hidden player once
-                st.markdown("<div style='display:none'>", unsafe_allow_html=True)
+                
+                # Render hidden audio player
+                st.markdown(
+                    f"""
+                    <div style='display:none; visibility:hidden; height:0; width:0; position:absolute;'>
+                        <audio autoplay>
+                            <source src="data:audio/mp3;base64,{self._audio_to_base64(audio_bytes)}" type="audio/mp3">
+                        </audio>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+                
+                # Alternative: Use Streamlit's audio but truly hidden
+                st.markdown("<div style='display:none; height:0; overflow:hidden;'>", unsafe_allow_html=True)
                 st.audio(audio_bytes, format="audio/mp3", autoplay=True)
                 st.markdown("</div>", unsafe_allow_html=True)
             else:
@@ -570,6 +590,11 @@ class ChatInterface:
                 else f"❌ Audio error: {str(e)}"
             )
 
+
+    def _audio_to_base64(self, audio_bytes):
+        """Convert audio bytes to base64 string"""
+        import base64
+        return base64.b64encode(audio_bytes).decode()
 
     def _copy_to_clipboard(self, text: str, idx: int):
         """Copy text using Streamlit's native code block copy button"""
