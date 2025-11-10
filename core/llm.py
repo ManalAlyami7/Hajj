@@ -136,7 +136,7 @@ class LLMManager:
                 messages=messages,
                 temperature=0.4
             )
-            reply = response.choices[0].message.content
+            reply = response.choices[0].message.content.strip()
             self.add_assistant_message(reply)
             return reply
         except Exception as e:
@@ -217,7 +217,7 @@ class LLMManager:
                 messages=messages,
                 temperature=0.4,
             )
-            response_text = response.choices[0].message.content
+            response_text = response.choices[0].message.content.strip()
             intent_data = json.loads(response_text)
             logger.info(f"Intent detected: {intent_data.get('intent')} confidence: {intent_data.get('confidence')}")
             return intent_data
@@ -275,7 +275,7 @@ class LLMManager:
                 messages=messages,
                 temperature=0.5,
             )
-            reply = response.choices[0].message.content
+            reply = response.choices[0].message.content.strip()
             self.add_assistant_message(reply)  # لو عندك memory
             return reply
 
@@ -332,7 +332,7 @@ class LLMManager:
                 messages=messages,
                 temperature=0.3,
             )
-            response_text = response.choices[0].message["content"].strip()
+            response_text = response.choices[0].message.content.strip()
             sql_data = json.loads(response_text)
 
             if sql_data.get("sql_query") and sql_data.get("safety_checked"):
