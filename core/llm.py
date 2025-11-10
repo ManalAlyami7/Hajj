@@ -80,15 +80,21 @@ class LLMManager:
             "English": "alloy"
         }
 
-        self.api_key = st.secrets.get("OPENAI_API_KEY")
+        # قراءة المفتاح من secrets.toml تحت key=""
+        self.api_key = st.secrets.get("key")
         if not self.api_key:
             logger.error("OpenAI API key missing")
             st.warning("⚠️ OpenAI API key missing in Streamlit secrets")
             st.stop()
-        openai.api_key = self.api_key
 
-        # لتفعيل TTS لاحقاً إذا رغبت
-        self.client = openai
+        # إنشاء العميل الحديث باستخدام @st.cache_resource
+        self.client = self._get_client()
+
+    @st.cache_resource
+    def _get_client(self):
+        """Get cached OpenAI client"""
+        from openai import OpenAI
+        return OpenAI(api_key=self.api_key)
 
     # -----------------------------
     # Memory management
@@ -120,33 +126,19 @@ class LLMManager:
         messages.append({"role": "user", "content": user_input})
 
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.4
             )
-            reply = response.choices[0].message.content.strip()
+            reply = response.choices[0].message["content"].strip()
             self.add_assistant_message(reply)
             return reply
         except Exception as e:
             logger.error(f"ask() failed: {e}")
             return "Sorry, I could not process your request."
 
-    # -----------------------------
-    # Core API call
-    # -----------------------------
-    # def _chat_completion(self, messages: List[Dict], temperature=0.4) -> str:
-    #     try:
-    #         response = openai.ChatCompletion.create(
-    #             model="gpt-4o-mini",
-    #             messages=messages,
-    #             temperature=temperature
-    #         )
-    #         return response.choices[0].message.content
-    #     except Exception as e:
-    #         logger.error(f"OpenAI ChatCompletion failed: {e}")
-    #         return "حدث خطأ أثناء معالجة طلبك."  # fallback message
-        
+    
     
     # -----------------------------
     # Intent detection
@@ -215,12 +207,12 @@ class LLMManager:
         messages.append({"role": "user", "content": user_input})
 
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.4,
             )
-            response_text = response.choices[0].message.content.strip()
+            response_text = response.choices[0].message["content"].strip()
             intent_data = json.loads(response_text)
             logger.info(f"Intent detected: {intent_data.get('intent')} confidence: {intent_data.get('confidence')}")
             return intent_data
@@ -273,12 +265,12 @@ class LLMManager:
         messages.append({"role": "user", "content": user_input})
 
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.5,
             )
-            reply = response.choices[0].message.content.strip()
+            reply = response.choices[0].message["content"].strip()
             self.add_assistant_message(reply)  # لو عندك memory
             return reply
 
@@ -300,12 +292,12 @@ class LLMManager:
         messages.append({"role": "user", "content": user_input})
 
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.5,
             )
-            reply = response.choices[0].message.content.strip()
+            reply = response.choices[0].message["content"].strip()
             self.add_assistant_message(reply)  # حفظ الرد في الذاكرة لو عندك
             return reply
 
@@ -330,12 +322,12 @@ class LLMManager:
         messages.append({"role": "user", "content": user_input})
 
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.3,
             )
-            response_text = response.choices[0].message.content.strip()
+            response_text = response.choices[0].message["content"].strip()
             sql_data = json.loads(response_text)
 
             if sql_data.get("sql_query") and sql_data.get("safety_checked"):
@@ -481,12 +473,12 @@ class LLMManager:
         messages.append({"role": "user", "content": user_input})
 
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.4,
             )
-            response_text = response.choices[0].message.content.strip()
+            response_text = response.choices[0].message["content"].strip()
             summary_data = json.loads(response_text)
             return {"summary": summary_data.get("summary", "")}
 
@@ -701,12 +693,12 @@ class LLMManager:
         ]
 
         try:
-            response = openai.ChatCompletion.create(
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=0.4,
             )
-            response_text = response.choices[0].message.content.strip()
+            response_text = response.choices[0].message["content"].strip()
             info_data = json.loads(response_text)
             return {
                 "needs_info": info_data.get("needs_info", ""),
