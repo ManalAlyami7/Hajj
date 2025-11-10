@@ -18,7 +18,7 @@ def normalize_company_name(name: str) -> str:
     name = re.sub(r'[^\w\s]', '', name)
     return name
 
-def detect_language_from_text(text: str) -> str:
+def detect_intent(self, user_input: str, language: Optional[str] = None) -> Dict:
     arabic_chars = sum(1 for c in text if '\u0600' <= c <= '\u06FF')
     english_chars = sum(1 for c in text if c.isalpha() and c.isascii())
     total = arabic_chars + english_chars
