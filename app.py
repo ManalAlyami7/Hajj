@@ -181,7 +181,7 @@ st.markdown("""
         color: white !important;
         border: 2px solid #d4af37 !important;
         border-radius: 14px !important;
-        padding: 1rem 1.5rem !important;
+        padding: 0rem 0rem !important;
         font-weight: 700 !important;
         font-size: 1rem !important;
         transition: all 0.3s ease !important;
