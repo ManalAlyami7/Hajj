@@ -449,10 +449,7 @@ class ChatInterface:
         # Timestamp in first column
         with cols[0]:
             if msg.get("timestamp"):
-                st.markdown(
-                    f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._format_time(msg['timestamp'])}</div>",
-                    unsafe_allow_html=True
-                )
+                f"<div class='message-timestamp' style='padding-top: 5px;'>🕐 {self._format_time(msg.get('timestamp', datetime.now().isoformat()))}</div>",
         
         # Play button in second column
         with cols[1]:
