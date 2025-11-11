@@ -534,7 +534,7 @@ from streamlit_autorefresh import st_autorefresh
         # Copy button
         with (cols[4] if is_playing else cols[2]):
             if st.button(f"![Copy]({copy_icon})", key=f"{button_key_prefix}_copy", help=copy_tip):
-                self._copy_to_clipboard(text, idx)
+                js_copy_to_clipboard(text, "copy", "Copied!")
 
         # Play audio if triggered
         if is_playing and st.session_state.get(f"audio_trigger_{idx}", False):
