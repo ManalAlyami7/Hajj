@@ -491,7 +491,12 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         ]
 
         requested_columns = []
-
+        # حالة خاصة لتفاصيل الاتصال
+        if any(k in user_input.lower() for k in ["contact details", "تفاصيل الاتصال"]):
+            requested_columns = ["email", "contact_Info", "google_maps_link"]
+        # حالة خاصة للعنوان
+        if any(k in user_input.lower() for k in ["address", "العنوان"]):
+            requested_columns.append("formatted_address")
         if any(k in user_input.lower() for k in ["contact", "رقم التواصل"]):
             requested_columns.append("contact_Info")
         if any(k in user_input.lower() for k in ["email", "البريد الإلكتروني"]):
@@ -502,7 +507,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             requested_columns.append("country")
         if any(k in user_input.lower() for k in ["status", "الحالة", "authorization", "معتمد"]):
             requested_columns.append("is_authorized")
-        if any(k in user_input.lower() for k in ["map", "خرائط", "google maps"]):
+        if any(k in user_input.lower() for k in ["map", "رابط قوقل ماب", "google maps links"]):
             requested_columns.append("google_maps_link")
 
         # إذا لم يذكر المستخدم أي عمود محدد → عرض كل الأعمدة
