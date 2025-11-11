@@ -14,7 +14,8 @@ from supabase import create_client, Client
 import os
 # Import core modules
 from core.database import DatabaseManager
-from core.report_llm import LLMManager
+from core.report_llm import RLLMManager
+from core.llm import LLMManager
 from core.graph import ChatGraph
 from ui.chat import ChatInterface
 from ui.sidebar import SidebarInterface
@@ -401,7 +402,7 @@ def render_report_bot():
     
     # Initialize LLMManager
     if "llm_manager" not in st.session_state:
-        st.session_state.llm_manager = LLMManager()
+        st.session_state.llm_manager = RLLMManager()
 
     # --- FIX 1: Get the Supabase client instance here ---
     supabase_client = get_supabase_client()
@@ -660,6 +661,39 @@ def main():
     
     if st.session_state.app_mode == "report":
         render_report_bot()
+    elif st.session_state.app_mode == "chat":
+        db = DatabaseManager()
+        llm_manager = LLMManager()
+        chat_graph = ChatGraph(db, llm_manager)
+        chat_ui = ChatInterface(chat_graph, llm_manager)
+        sidebar = SidebarInterface(db)
+
+        # Render sidebar and chat
+        sidebar.render()
+        lang = st.session_state.language
+        is_rtl = lang in ['العربية', 'اردو']
+        
+        # Build the badge text with translations - check all possible language values
+        if 'عرب' in lang or lang == 'العربية' or lang == 'Arabic':
+            badge_text = f"✨ مدعوم بالذكاء الاصطناعي • فوري • متعدد اللغات"
+        elif 'اردو' in lang or lang == 'Urdu':
+            badge_text = f"✨ AI سے چلنے والا • حقیقی وقت • کثیر لسانی"
+        else:  # English
+            badge_text = f"✨ AI-Powered • Real-Time • Multilingual"
+        
+        st.markdown(f"""
+        <div class="header-container{' rtl' if is_rtl else ''}">
+            <h1 class="main-title">
+                🕋 <span class="title-highlight">{t('main_title', lang)}</span>
+            </h1>
+            <p class="subtitle">{t('subtitle', lang)}</p>
+            <div class="header-badge">
+                {badge_text}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        chat_ui.render()
+
 
 if __name__ == "__main__":
     main()
