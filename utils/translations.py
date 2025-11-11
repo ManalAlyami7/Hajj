@@ -476,7 +476,7 @@ TRANSLATIONS = {
 }
 
 
-def t(key: str, lang: str = "English", **kwargs) -> str:
+def t(key: str, lang: str = "العربية", **kwargs) -> str:
     """
     Get translation for key in specified language with optional formatting
     
@@ -488,7 +488,7 @@ def t(key: str, lang: str = "English", **kwargs) -> str:
     Returns:
         Translated string
     """
-    text = TRANSLATIONS.get(lang, TRANSLATIONS["English"]).get(key, key)
+    text = TRANSLATIONS.get(lang, TRANSLATIONS["العربية"]).get(key, key)
     
     if kwargs:
         try:
