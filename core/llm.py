@@ -444,40 +444,29 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         Auto-detects language from user input for accurate responses.
         Enhanced to handle "not found in location" scenarios intelligently.
         """
-        # Auto-detect language from user input (override parameter if needed)
+      # --- 1️⃣ Auto-detect language ---
         detected_language = self._detect_language_from_text(user_input)
         if detected_language:
             language = detected_language
             logger.info(f"🌐 Language auto-detected from input: {language}")
         
         last_company = st.session_state.get("last_company_name", "")
-        
-        # Handle zero results intelligently
+
+        # --- 2️⃣ Handle zero rows ---
         if row_count == 0:
-            # Check if this was a location-specific query
             location_keywords_ar = ["في", "الرياض", "جدة", "مكة", "المدينة"]
             location_keywords_en = ["in", "riyadh", "jeddah", "makkah", "medina"]
-            
             is_location_query = any(kw in user_input.lower() for kw in location_keywords_ar + location_keywords_en)
-            
+
             if last_company and is_location_query:
                 if language == "العربية":
-                    return {
-                        "summary": f"لم أجد شركة {last_company} في الموقع المحدد. ✨\n\nهل تريد معرفة الموقع الفعلي لشركة {last_company}؟ أو هل تريد البحث عن شركات أخرى معتمدة في المنطقة المطلوبة؟"
-                    }
+                    return {"summary": f"لم أجد شركة {last_company} في الموقع المحدد. ✨\n\nهل تريد معرفة الموقع الفعلي لشركة {last_company}؟ أو البحث عن شركات أخرى معتمدة؟"}
                 else:
-                    return {
-                        "summary": f"I couldn't find {last_company} in the specified location. ✨\n\nWould you like to know the actual location of {last_company}? Or search for other authorized agencies in that area?"
-                    }
+                    return {"summary": f"I couldn't find {last_company} in the specified location. ✨\n\nWould you like to know the actual location of {last_company}? Or search for other authorized agencies in that area?"}
             else:
-                return {
-                    "summary": "No results found. Try rephrasing your question or broadening the search." if language == "English" else "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال.",
-                }
+                return {"summary": "No results found. Try rephrasing your question or broadening the search." if language == "English" else "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال."}
 
-        
-        data_preview = json.dumps(sample_rows[:50], ensure_ascii=False)
-        
-        # قائمة كل الأعمدة الأساسية
+        # --- 3️⃣ Prepare columns ---
         all_columns = [
             "hajj_company_en",
             "hajj_company_ar",
@@ -492,82 +481,58 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         ]
 
         requested_columns = []
-
-        # حالة خاصة لتفاصيل الاتصال
-        if any(k in user_input.lower() for k in ["contact details", "تفاصيل الاتصال"]):
+        user_input_lower = user_input.lower()
+        if any(k in user_input_lower for k in ["contact details", "تفاصيل الاتصال"]):
             requested_columns.extend(["email", "contact_Info", "google_maps_link"])
-
-        # حالة خاصة للعنوان
-        if any(k in user_input.lower() for k in ["address", "العنوان"]):
+        if any(k in user_input_lower for k in ["address", "العنوان"]):
             requested_columns.append("formatted_address")
-
-        if any(k in user_input.lower() for k in ["contact", "رقم التواصل"]):
+        if any(k in user_input_lower for k in ["contact", "رقم التواصل"]):
             requested_columns.append("contact_Info")
-
-        if any(k in user_input.lower() for k in ["email", "البريد الإلكتروني"]):
+        if any(k in user_input_lower for k in ["email", "البريد الإلكتروني"]):
             requested_columns.append("email")
-
-        if any(k in user_input.lower() for k in ["city", "المدينة"]):
+        if any(k in user_input_lower for k in ["city", "المدينة"]):
             requested_columns.append("city")
-
-        if any(k in user_input.lower() for k in ["country", "الدولة"]):
+        if any(k in user_input_lower for k in ["country", "الدولة"]):
             requested_columns.append("country")
-
-        if any(k in user_input.lower() for k in ["status", "الحالة", "authorization", "معتمد"]):
+        if any(k in user_input_lower for k in ["status", "الحالة", "authorization", "معتمد"]):
             requested_columns.append("is_authorized")
-
-        if any(k in user_input.lower() for k in ["map", "رابط قوقل ماب", "google maps links"]):
+        if any(k in user_input_lower for k in ["map", "رابط قوقل ماب", "google maps links"]):
             requested_columns.append("google_maps_link")
-
-        # إذا لم يذكر المستخدم أي عمود محدد → عرض كل الأعمدة
         if not requested_columns:
             requested_columns = all_columns
 
-        # --------------------------------------------------------------------------------------------------------------
-        # البحث عن الشركة بالاسم الجزئي أو الكامل
+        # --- 4️⃣ Fuzzy search using RapidFuzz ---
         search_name = user_input.lower().strip()
+        threshold = 70  # Adjust similarity threshold as needed
+        matching_rows = []
 
-        # أولًا، نجرب البحث الدقيق (الاسم بالكامل)
-        exact_matches = [
-            row for row in sample_rows
-            if search_name in (row.get("hajj_company_en", "").lower(), row.get("hajj_company_ar", "").lower())
-        ]
+        for row in sample_rows:
+            name_en = row.get("hajj_company_en", "").lower()
+            name_ar = row.get("hajj_company_ar", "").lower()
+            score_en = fuzz.token_set_ratio(search_name, name_en)
+            score_ar = fuzz.token_set_ratio(search_name, name_ar)
+            if score_en >= threshold or score_ar >= threshold:
+                matching_rows.append(row)
 
-        # لو وجدنا تطابق دقيق، نستخدمه
-        if exact_matches:
-            matching_rows = exact_matches
-        else:
-            # البحث الجزئي: أي شركة تحتوي على النص المدخل
-            matching_rows = [
-                row for row in sample_rows
-                if search_name in row.get("hajj_company_en", "").lower()
-                or search_name in row.get("hajj_company_ar", "").lower()
-            ]
-
-        # --- بعد تحديد matching_rows ---
+        # --- 5️⃣ Handle no matches ---
         if len(matching_rows) == 0:
-            # لم يتم العثور على أي شركة
             if language == "العربية":
                 return {"summary": "لم أتمكن من العثور على أي شركة تطابق ما كتبته."}
             else:
                 return {"summary": "I couldn't find any company matching your input."}
 
-        # إذا أكثر من صف، نعرض كل النتائج مباشرة بدل مطالبة المستخدم بالاختيار
-        # يمكننا إضافة سطر توضيحي في البداية
+        # --- 6️⃣ Handle multiple matches ---
         if len(matching_rows) > 1:
             if language == "العربية":
-                prompt_user = f"لقد وجدت {len(matching_rows)} شركات تطابق ما كتبته. إليك التفاصيل:\n"
+                prompt_user = f"لقد وجدت {len(matching_rows)} شركات قد تطابق ما كتبته. ✨ يرجى تحديد اسم الشركة بالضبط من بين الخيارات التالية:\n"
+                prompt_user += "\n".join([f"- {row['hajj_company_en']}" for row in matching_rows])
             else:
-                prompt_user = f"I found {len(matching_rows)} companies matching your input. Here are the details:\n"
-        else:
-            prompt_user = ""
+                prompt_user = f"I found {len(matching_rows)} companies matching your input. ✨ Please specify the exact company name from the following options:\n"
+                prompt_user += "\n".join([f"- {row['hajj_company_en']}" for row in matching_rows])
+            return {"summary": prompt_user}
 
-        # تحضير data_preview للأعمدة المطلوبة فقط
-        data_preview = [
-            {col: row.get(col, None) for col in requested_columns}
-            for row in matching_rows[:50]  # نأخذ أول 50 صف فقط للمعاينة
-        ]
-
+        # --- 7️⃣ Prepare data preview for the matched row ---
+        data_preview = [{col: row.get(col, None) for col in requested_columns} for row in matching_rows[:50]]
         data_preview_json = json.dumps(data_preview, ensure_ascii=False)
 
 
