@@ -529,7 +529,7 @@ Would you like to provide a secure contact method (email or phone) so authoritie
                     "complaint_text": data["complaint_text"],
                     "user_contact": contact if contact else None,
                     # Use a standard UTC timestamp for database
-                    "created_at": datetime.now(pytz.utc).isoformat()
+                 "submission_date": datetime.now(pytz.utc).isoformat()
                 }
 
                 # Perform the Supabase insertion
