@@ -16,7 +16,7 @@ def initialize_session_state():
     
     # Language
     if "language" not in st.session_state:
-        st.session_state.language = "English"
+        st.session_state.language = "العربية"
     
     # Chat memory
     if "chat_memory" not in st.session_state:
