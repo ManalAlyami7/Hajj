@@ -130,30 +130,30 @@ class LLMManager:
             st.stop()
         return OpenAI(api_key=api_key)
     
-    def build_chat_context(self, limit: Optional[int] = None) -> List[Dict[str, str]]:
+    def build_chat_context(self, limit: int = 5, exclude_last_user: bool = True) -> List[Dict[str, str]]:
         """
-        Build chat context from all recent messages (or limited number)
-        Includes metadata like intent, company, timestamp for stronger memory.
+        Build chat context from recent messages with metadata.
+        If exclude_last_user=True, the last user message will be skipped 
+        to avoid duplication when adding the current user input manually.
         """
         if "chat_memory" not in st.session_state:
             return []
 
-        # Take all messages if limit=None
-        recent = st.session_state.chat_memory if limit is None else st.session_state.chat_memory[-limit:]
+        recent = st.session_state.chat_memory[-limit:]
+
+        # 🔍 إذا بنستبعد آخر رسالة من المستخدم
+        if exclude_last_user and recent and recent[-1]["role"] == "user":
+            recent = recent[:-1]
 
         context = []
         for msg in recent:
-            # Skip non-chat dataframes or result data
-            if "dataframe" in msg or "result_data" in msg:
+            # تأكد نتجاهل أي عناصر غير دردشة
+            if not isinstance(msg, dict) or "role" not in msg or "content" not in msg:
                 continue
-            context.append({
-                "role": msg["role"],
-                "content": msg["content"],
-                "intent": msg.get("intent"),
-                "company": msg.get("company"),
-                "timestamp": msg.get("timestamp")
-            })
+            context.append({"role": msg["role"], "content": msg["content"]})
+
         return context
+
 
     def update_last_company(self, company_name: Optional[str]):
         """
@@ -372,13 +372,20 @@ class LLMManager:
             # ----------------------------
             # Save user message
             # ----------------------------
-            st.session_state.chat_memory.append({
-                "role": "user",
-                "content": original_input,
-                "intent": intent_data.intent,
-                "extracted_company": intent_data.extracted_company,
-                "timestamp": str(datetime.now())
-            })
+            # Avoid duplicate user messages
+            # Avoid duplicate user messages
+            if not st.session_state.chat_memory or st.session_state.chat_memory[-1]["content"] != original_input:
+                st.session_state.chat_memory.append({
+                    "role": "user",
+                    "content": original_input,
+                    "intent": intent_data.intent,
+                    "extracted_company": intent_data.extracted_company,
+                    "timestamp": str(datetime.now())
+                })
+            else:
+                logger.info("⚠️ Skipped duplicate user message in chat_memory.")
+
+
 
             logger.info(f"Intent: {intent_data.intent} | Confidence: {intent_data.confidence} | Company: {intent_data.extracted_company or 'None'}")
             logger.info(f"Reasoning: {intent_data.reasoning}")
