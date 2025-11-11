@@ -476,6 +476,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
 
         
         data_preview = json.dumps(sample_rows[:50], ensure_ascii=False)
+        
         # قائمة كل الأعمدة الأساسية
         all_columns = [
             "hajj_company_en",
@@ -524,23 +525,42 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
 
         # --------------------------------------------------------------------------------------------------------------
         # البحث عن الشركة بالاسم الجزئي أو الكامل
-        search_name = user_input.lower().strip()  # نص السؤال بالكامل
+        search_name = user_input.lower().strip()
 
         # أولًا، نجرب البحث الدقيق (الاسم بالكامل)
         exact_matches = [
             row for row in sample_rows
-            if search_name == row["hajj_company_en"].lower() or search_name == row["hajj_company_ar"].lower()
+            if search_name in (row.get("hajj_company_en", "").lower(), row.get("hajj_company_ar", "").lower())
         ]
 
+        # لو وجدنا تطابق دقيق، نستخدمه
         if exact_matches:
             matching_rows = exact_matches
         else:
+            # البحث الجزئي: أي شركة تحتوي على النص المدخل
             matching_rows = [
                 row for row in sample_rows
-                if search_name in row["hajj_company_en"].lower() or search_name in row["hajj_company_ar"].lower()
+                if search_name in row.get("hajj_company_en", "").lower()
+                or search_name in row.get("hajj_company_ar", "").lower()
             ]
 
+        # --- بعد تحديد matching_rows ---
+        if len(matching_rows) == 0:
+            # لم يتم العثور على أي شركة
+            if language == "العربية":
+                return {"summary": "لم أتمكن من العثور على أي شركة تطابق ما كتبته."}
+            else:
+                return {"summary": "I couldn't find any company matching your input."}
 
+        # إذا أكثر من صف، نعرض كل النتائج مباشرة بدل مطالبة المستخدم بالاختيار
+        # يمكننا إضافة سطر توضيحي في البداية
+        if len(matching_rows) > 1:
+            if language == "العربية":
+                prompt_user = f"لقد وجدت {len(matching_rows)} شركات تطابق ما كتبته. إليك التفاصيل:\n"
+            else:
+                prompt_user = f"I found {len(matching_rows)} companies matching your input. Here are the details:\n"
+        else:
+            prompt_user = ""
 
         # تحضير data_preview للأعمدة المطلوبة فقط
         data_preview = [
@@ -580,10 +600,11 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
 
     Important behavior for company search:
     - If the user mentions a company/agency name:
-        * First, check for exact match (full name). If found, display only that company.
-        * If no exact match, display all companies whose names contain the search term (partial match).
+        * Display all companies whose names match or partially match the search term.
+        * If there are multiple matches, include a short friendly note explaining that there are multiple companies and all relevant options are shown.
         * Always include the Google Maps link if available.
-        * If multiple rows, list up to 10 companies.
+        * Limit listing to up to 10 companies.
+
 
     Columns to include in summary: {requested_columns}
 
