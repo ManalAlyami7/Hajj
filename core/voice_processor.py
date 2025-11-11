@@ -147,7 +147,7 @@ class VoiceProcessor:
 
 
             result = {
-                "text": text.strip(),
+                "text": cleaned_text.strip(),
                 "language": language,
                 "confidence": 1.0,
                 "duration": 0  # Not available in text format
