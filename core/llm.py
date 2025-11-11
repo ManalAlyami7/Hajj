@@ -11,6 +11,7 @@ import io
 import re
 from typing import Optional, List, Dict, Literal
 from pydantic import BaseModel, Field
+from rapidfuzz import fuzz
 import logging
 import json
 logging.basicConfig(level=logging.INFO)
