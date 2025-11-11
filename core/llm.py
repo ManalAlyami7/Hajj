@@ -491,28 +491,65 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         ]
 
         requested_columns = []
+
         # حالة خاصة لتفاصيل الاتصال
         if any(k in user_input.lower() for k in ["contact details", "تفاصيل الاتصال"]):
-            requested_columns = ["email", "contact_Info", "google_maps_link"]
+            requested_columns.extend(["email", "contact_Info", "google_maps_link"])
+
         # حالة خاصة للعنوان
         if any(k in user_input.lower() for k in ["address", "العنوان"]):
             requested_columns.append("formatted_address")
+
         if any(k in user_input.lower() for k in ["contact", "رقم التواصل"]):
             requested_columns.append("contact_Info")
+
         if any(k in user_input.lower() for k in ["email", "البريد الإلكتروني"]):
             requested_columns.append("email")
+
         if any(k in user_input.lower() for k in ["city", "المدينة"]):
             requested_columns.append("city")
+
         if any(k in user_input.lower() for k in ["country", "الدولة"]):
             requested_columns.append("country")
+
         if any(k in user_input.lower() for k in ["status", "الحالة", "authorization", "معتمد"]):
             requested_columns.append("is_authorized")
+
         if any(k in user_input.lower() for k in ["map", "رابط قوقل ماب", "google maps links"]):
             requested_columns.append("google_maps_link")
 
         # إذا لم يذكر المستخدم أي عمود محدد → عرض كل الأعمدة
         if not requested_columns:
             requested_columns = all_columns
+
+        # --------------------------------------------------------------------------------------------------------------
+        # البحث عن الشركة بالاسم الجزئي أو الكامل
+        search_name = user_input.lower().strip()  # نص السؤال بالكامل
+
+        # أولًا، نجرب البحث الدقيق (الاسم بالكامل)
+        exact_matches = [
+            row for row in sample_rows
+            if search_name == row["hajj_company_en"].lower() or search_name == row["hajj_company_ar"].lower()
+        ]
+
+        if exact_matches:
+            # إذا وجدنا تطابق دقيق، نرجع هذه النتائج فقط
+            matching_rows = exact_matches
+        else:
+            # البحث الجزئي: أي شركة تحتوي على النص المدخل
+            matching_rows = [
+                row for row in sample_rows
+                if search_name in row["hajj_company_en"].lower() or search_name in row["hajj_company_ar"].lower()
+            ]
+
+
+        # تحضير data_preview للأعمدة المطلوبة فقط
+        data_preview = [
+            {col: row.get(col, None) for col in requested_columns}
+            for row in matching_rows[:50]  # نأخذ أول 50 صف فقط للمعاينة
+        ]
+
+        data_preview_json = json.dumps(data_preview, ensure_ascii=False)
 
 
         summary_prompt = f"""
@@ -529,7 +566,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
     → Summarize SQL query results clearly and naturally, with a warm, conversational tone that feels friendly and professional.
 
     User question: {user_input}
-    Data: {data_preview}
+    Data: {data_preview_json}
 
     Instructions:
     - ALWAYS respond in {language}
@@ -541,6 +578,13 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
     - Provide actionable advice if relevant
     - Use emojis sparingly to enhance friendliness
     - Use a mix of sentences and bullet points
+
+    Important behavior for company search:
+    - If the user mentions a company/agency name:
+        * First, check for exact match (full name). If found, display only that company.
+        * If no exact match, display all companies whose names contain the search term (partial match).
+        * Always include the Google Maps link if available.
+        * If multiple rows, list up to 10 companies.
 
     Columns to include in summary: {requested_columns}
 
