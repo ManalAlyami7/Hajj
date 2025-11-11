@@ -23,6 +23,7 @@ class SidebarInterface:
         """Render complete professional sidebar"""
         with st.sidebar:
             self._inject_sidebar_styles()
+            
             self._render_header()
             st.markdown("---")
             
@@ -42,6 +43,8 @@ class SidebarInterface:
             st.markdown("---")
             
             self._render_features()
+            st.markdown("---")
+            self._render_report()
             st.markdown("---")
             
             self._render_footer()
@@ -293,6 +296,12 @@ class SidebarInterface:
         }
         </style>
         """, unsafe_allow_html=True)
+    def _render_report(self):
+        lang = st.session_state.language
+
+        if st.button(f"{t('report', lang)}", use_container_width=True, type= "secondary"):
+            st.session_state.app_mode = "report"
+            st.switch_page("pages/report.py")
     
     def _render_header(self):
         """Render professional sidebar header"""
