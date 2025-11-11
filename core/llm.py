@@ -487,11 +487,6 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         if not requested_columns:
             requested_columns = all_columns
 
-<<<<<<< HEAD
-        # --- 4️⃣ Fuzzy search using RapidFuzz ---
-        # --- البحث عن الشركة بالاسم الكامل أولاً ---
-        search_name = user_input.lower().strip()
-=======
         # 🔧 FIX: Use extracted company name for better matching
         search_name = last_company.lower().strip() if last_company else user_input.lower().strip()
         
@@ -501,30 +496,11 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         logger.info(f"🔍 Searching for company: '{search_name}'")
         
         threshold = 60  # Lower threshold for more flexible matching
->>>>>>> f9a70d0 (fix fuzzy issue)
         matching_rows = []
 
-        # أولاً: البحث عن التطابق الدقيق (Exact Match)
         for row in sample_rows:
             name_en = row.get("hajj_company_en", "").lower()
             name_ar = row.get("hajj_company_ar", "").lower()
-<<<<<<< HEAD
-            if search_name == name_en or search_name == name_ar:
-                matching_rows.append(row)
-
-        # إذا لم نجد أي تطابق دقيق → نستخدم البحث الجزئي مع fuzzy matching
-        if not matching_rows:
-            threshold = 70  # درجة التشابه المطلوبة (يمكن تعديلها)
-            for row in sample_rows:
-                name_en = row.get("hajj_company_en", "").lower()
-                name_ar = row.get("hajj_company_ar", "").lower()
-                score_en = fuzz.token_set_ratio(search_name, name_en)
-                score_ar = fuzz.token_set_ratio(search_name, name_ar)
-                if score_en >= threshold or score_ar >= threshold:
-                    matching_rows.append(row)
-
-        # إذا لم يوجد أي شركة بعد كل هذا
-=======
             
             # Clean names for better matching
             name_en_clean = re.sub(r'\b(company|agency|establishment)\b', '', name_en, flags=re.IGNORECASE).strip()
@@ -552,19 +528,13 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         matching_rows = [row for row, score in matching_rows]
 
         # Handle no matches - show all results with a note
->>>>>>> f9a70d0 (fix fuzzy issue)
         if len(matching_rows) == 0:
             logger.warning(f"❌ No fuzzy matches found for '{search_name}', showing all {row_count} results")
             matching_rows = sample_rows[:10]  # Show top 10 results
             no_exact_match_note = f"\n\n💡 Note: No exact match found for '{last_company or search_name}'. Showing top results instead:"
 
-<<<<<<< HEAD
-        # إذا كانت هناك أكثر من شركة → أعرض رسالة ودية للمستخدم
-        if len(matching_rows) > 1:
-=======
         # Handle multiple matches
         elif len(matching_rows) > 1:
->>>>>>> f9a70d0 (fix fuzzy issue)
             if language == "العربية":
                 prompt_user = f"لقد وجدت {len(matching_rows)} شركات قد تطابق ما كتبته. ✨ يرجى تحديد اسم الشركة بالضبط من بين الخيارات التالية:\n"
                 prompt_user += "\n".join([f"- {row['hajj_company_en']} ({row['hajj_company_ar']})" for row in matching_rows[:5]])
@@ -573,12 +543,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
                 prompt_user += "\n".join([f"- {row['hajj_company_en']} ({row['hajj_company_ar']})" for row in matching_rows[:5]])
             return {"summary": prompt_user}
 
-<<<<<<< HEAD
-
-        # --- 7️⃣ Prepare data preview for the matched row ---
-=======
         # Prepare data for summary generation
->>>>>>> f9a70d0 (fix fuzzy issue)
         data_preview = [{col: row.get(col, None) for col in requested_columns} for row in matching_rows[:50]]
         data_preview_json = json.dumps(data_preview, ensure_ascii=False)
 
