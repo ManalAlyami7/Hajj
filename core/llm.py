@@ -1,7 +1,9 @@
 """
-LLM Manager Module
-Handles OpenAI API interactions for chat and TTS with structured outputs
-Enhanced with company memory tracking for context-aware conversations
+LLM Manager Module - FIXED VERSION
+Key Fix: Improved company name matching in generate_summary()
+- Now uses extracted_company from context instead of raw user input
+- Better fuzzy matching with normalized text
+- Handles both Arabic and English company names
 """
 
 import random
@@ -113,7 +115,7 @@ class LLMManager:
         """Initialize OpenAI client and company memory"""
         self.client = self._get_client()
         self.voice_map = {
-            "العربية": "onyx",  # Deeper voice for Arabic
+            "العربية": "onyx",
             "English": "alloy"
         }
         if "chat_memory" not in st.session_state:
@@ -130,10 +132,7 @@ class LLMManager:
         return OpenAI(api_key=api_key)
     
     def build_chat_context(self, limit: Optional[int] = 20) -> List[Dict[str, str]]:
-        """
-        Build chat context from recent messages
-        - limit: max number of messages to include, None = all
-        """
+        """Build chat context from recent messages"""
         if "chat_memory" not in st.session_state:
             return []
     
@@ -148,23 +147,15 @@ class LLMManager:
         return context
         
     def update_last_company(self, company_name: Optional[str]):
-        """
-        Update the last mentioned company in session state
-        This enables context-aware follow-up questions
-        """
+        """Update the last mentioned company in session state"""
         if company_name:
             st.session_state["last_company_name"] = company_name
             logger.info(f"💾 Company memory updated: {company_name}")
     
     def _is_followup_question(self, text: str) -> bool:
-        """
-        Detect if a question is a follow-up (vague reference to previous context)
-        Short questions with location/detail keywords are likely follow-ups
-        Enhanced to detect city/location-based follow-ups
-        """
+        """Detect if a question is a follow-up"""
         text_lower = text.lower().strip()
         
-        # Short questions (6 words or less) are candidates for follow-ups
         if len(text_lower.split()) <= 6:
             followup_keywords_ar = [
                 "موقع", "عنوان", "موجود", "معتمد", "مصرح", "رقم", "ايميل", 
@@ -184,11 +175,7 @@ class LLMManager:
         return False
 
     def detect_intent(self, user_input: str, language: str) -> Dict:
-        """
-        Detect user intent using LLM with structured output and company extraction
-        Automatically enriches follow-up questions with company context
-        Returns: Dict with intent, confidence, reasoning, and extracted_company
-        """
+        """Detect user intent using LLM with structured output and company extraction"""
         
         last_company = st.session_state.get("last_company_name", "")
         original_input = user_input
@@ -257,6 +244,8 @@ Examples of company mentions:
 - "Royal City Agency" → extracted_company: "Royal City"
 - "وكالة الهدى" → extracted_company: "الهدى"
 - "Al Safa Travel" → extracted_company: "Al Safa"
+- "jabal omar" → extracted_company: "jabal omar"
+- "Jabal Omar" → extracted_company: "Jabal Omar"
 
 🚨 CRITICAL CONTEXT:
 - 415 fake Hajj offices closed in 2025
@@ -275,7 +264,7 @@ Classify the intent, extract company name if mentioned, provide confidence score
                 messages=[
                     {"role": "system", "content": "You classify user intents and extract company names for a Hajj agency verification system. Pay special attention to follow-up questions that reference previously mentioned companies."},
                     {"role": "user", "content": intent_prompt},
-                    *self.build_chat_context(limit=5)  # Include recent context for better understanding
+                    *self.build_chat_context(limit=5)
                 ],
                 response_format=IntentClassification,
                 temperature=0
@@ -299,7 +288,6 @@ Classify the intent, extract company name if mentioned, provide confidence score
             
         except Exception as e:
             logger.error(f"Structured intent detection failed: {e}")
-            # Fallback to heuristics
             return self._fallback_intent_detection(user_input)
     
     def _fallback_intent_detection(self, user_input: str) -> Dict:
@@ -309,7 +297,6 @@ Classify the intent, extract company name if mentioned, provide confidence score
         if any(g in ui for g in ["hello", "hi", "salam", "السلام", "مرحبا"]):
             intent = "GREETING"
         elif any(k in ui for k in ["company", "agency", "معتمد", "شركات", "authorized", "وكالة"]):
-            # Check if query is too vague
             if len(ui.split()) < 4 and not any(specific in ui for specific in ["royal", "alhuda", "مكة", "جدة", "riyadh"]):
                 intent = "NEEDS_INFO"
             else:
@@ -386,15 +373,10 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             return "I encountered an error. Please try rephrasing your question."
     
     def generate_sql(self, user_input: str, language: str) -> Optional[Dict]:
-        """
-        Generate SQL query from user input with structured output and context awareness
-        Automatically includes company context for follow-up questions
-        Returns: Dict with sql_query, query_type, filters, explanation, safety_checked
-        """
+        """Generate SQL query from user input with structured output and context awareness"""
         
         last_company = st.session_state.get("last_company_name", "")
         
-        # If user asks follow-up without mentioning company, inject context note
         if last_company and self._is_followup_question(user_input):
             context_note = f"\n\n⚠️ IMPORTANT CONTEXT: User is asking a follow-up question about '{last_company}' (mentioned previously in conversation). Generate SQL query specifically for this company."
         else:
@@ -416,7 +398,6 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             
             sql_data = response.choices[0].message.parsed
             
-            # Update company memory if extracted from SQL context
             if sql_data.extracted_company:
                 self.update_last_company(sql_data.extracted_company)
             
@@ -440,20 +421,24 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
     
     def generate_summary(self, user_input: str, language: str, row_count: int, sample_rows: List[Dict]) -> Dict:
         """
-        Generate natural, friendly, and structured summary of query results.
-        Adds assistant-like sentences and recommendations based on intent.
-        Auto-detects language from user input for accurate responses.
-        Enhanced to handle "not found in location" scenarios intelligently.
+        🔧 FIXED VERSION - Improved company name matching
+        
+        KEY CHANGES:
+        1. Uses extracted_company from session state instead of raw user input
+        2. Better fuzzy matching with normalized company names
+        3. Handles partial matches more intelligently
+        4. Fallback to showing all results if exact match fails
         """
-      # --- 1️⃣ Auto-detect language ---
+        
+        # Auto-detect language from user input
         detected_language = self._detect_language_from_text(user_input)
         if detected_language:
             language = detected_language
             logger.info(f"🌐 Language auto-detected from input: {language}")
         
         last_company = st.session_state.get("last_company_name", "")
-
-        # --- 2️⃣ Handle zero rows ---
+        
+        # Handle zero rows
         if row_count == 0:
             location_keywords_ar = ["في", "الرياض", "جدة", "مكة", "المدينة"]
             location_keywords_en = ["in", "riyadh", "jeddah", "makkah", "medina"]
@@ -466,8 +451,8 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
                     return {"summary": f"I couldn't find {last_company} in the specified location. ✨\n\nWould you like to know the actual location of {last_company}? Or search for other authorized agencies in that area?"}
             else:
                 return {"summary": "No results found. Try rephrasing your question or broadening the search." if language == "English" else "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال."}
-
-        # --- 3️⃣ Prepare columns ---
+        
+        # Prepare requested columns
         all_columns = [
             "hajj_company_en",
             "hajj_company_ar",
@@ -502,15 +487,28 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         if not requested_columns:
             requested_columns = all_columns
 
+<<<<<<< HEAD
         # --- 4️⃣ Fuzzy search using RapidFuzz ---
         # --- البحث عن الشركة بالاسم الكامل أولاً ---
         search_name = user_input.lower().strip()
+=======
+        # 🔧 FIX: Use extracted company name for better matching
+        search_name = last_company.lower().strip() if last_company else user_input.lower().strip()
+        
+        # Remove common prefixes/suffixes for better matching
+        search_name = re.sub(r'\b(company|agency|شركة|وكالة|مؤسسة)\b', '', search_name, flags=re.IGNORECASE).strip()
+        
+        logger.info(f"🔍 Searching for company: '{search_name}'")
+        
+        threshold = 60  # Lower threshold for more flexible matching
+>>>>>>> f9a70d0 (fix fuzzy issue)
         matching_rows = []
 
         # أولاً: البحث عن التطابق الدقيق (Exact Match)
         for row in sample_rows:
             name_en = row.get("hajj_company_en", "").lower()
             name_ar = row.get("hajj_company_ar", "").lower()
+<<<<<<< HEAD
             if search_name == name_en or search_name == name_ar:
                 matching_rows.append(row)
 
@@ -526,117 +524,149 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
                     matching_rows.append(row)
 
         # إذا لم يوجد أي شركة بعد كل هذا
-        if len(matching_rows) == 0:
-            if language == "العربية":
-                return {"summary": "لم أتمكن من العثور على أي شركة تطابق ما كتبته."}
-            else:
-                return {"summary": "I couldn't find any company matching your input."}
+=======
+            
+            # Clean names for better matching
+            name_en_clean = re.sub(r'\b(company|agency|establishment)\b', '', name_en, flags=re.IGNORECASE).strip()
+            name_ar_clean = re.sub(r'\b(شركة|وكالة|مؤسسة)\b', '', name_ar).strip()
+            
+            score_en = max(
+                fuzz.token_set_ratio(search_name, name_en),
+                fuzz.token_set_ratio(search_name, name_en_clean),
+                fuzz.partial_ratio(search_name, name_en)
+            )
+            score_ar = max(
+                fuzz.token_set_ratio(search_name, name_ar),
+                fuzz.token_set_ratio(search_name, name_ar_clean),
+                fuzz.partial_ratio(search_name, name_ar)
+            )
+            
+            best_score = max(score_en, score_ar)
+            
+            if best_score >= threshold:
+                matching_rows.append((row, best_score))
+                logger.info(f"✓ Match found: {row.get('hajj_company_en', 'N/A')} (score: {best_score})")
 
+        # Sort by score (best matches first)
+        matching_rows.sort(key=lambda x: x[1], reverse=True)
+        matching_rows = [row for row, score in matching_rows]
+
+        # Handle no matches - show all results with a note
+>>>>>>> f9a70d0 (fix fuzzy issue)
+        if len(matching_rows) == 0:
+            logger.warning(f"❌ No fuzzy matches found for '{search_name}', showing all {row_count} results")
+            matching_rows = sample_rows[:10]  # Show top 10 results
+            no_exact_match_note = f"\n\n💡 Note: No exact match found for '{last_company or search_name}'. Showing top results instead:"
+
+<<<<<<< HEAD
         # إذا كانت هناك أكثر من شركة → أعرض رسالة ودية للمستخدم
         if len(matching_rows) > 1:
+=======
+        # Handle multiple matches
+        elif len(matching_rows) > 1:
+>>>>>>> f9a70d0 (fix fuzzy issue)
             if language == "العربية":
                 prompt_user = f"لقد وجدت {len(matching_rows)} شركات قد تطابق ما كتبته. ✨ يرجى تحديد اسم الشركة بالضبط من بين الخيارات التالية:\n"
-                prompt_user += "\n".join([f"- {row['hajj_company_en']}" for row in matching_rows])
+                prompt_user += "\n".join([f"- {row['hajj_company_en']} ({row['hajj_company_ar']})" for row in matching_rows[:5]])
             else:
                 prompt_user = f"I found {len(matching_rows)} companies matching your input. ✨ Please specify the exact company name from the following options:\n"
-                prompt_user += "\n".join([f"- {row['hajj_company_en']}" for row in matching_rows])
+                prompt_user += "\n".join([f"- {row['hajj_company_en']} ({row['hajj_company_ar']})" for row in matching_rows[:5]])
             return {"summary": prompt_user}
 
+<<<<<<< HEAD
 
         # --- 7️⃣ Prepare data preview for the matched row ---
+=======
+        # Prepare data for summary generation
+>>>>>>> f9a70d0 (fix fuzzy issue)
         data_preview = [{col: row.get(col, None) for col in requested_columns} for row in matching_rows[:50]]
         data_preview_json = json.dumps(data_preview, ensure_ascii=False)
 
-
         summary_prompt = f"""
-    You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
+You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
 
-    🚨 CRITICAL LANGUAGE RULE:
-    - User question language: {language}
-    - You MUST respond in {language} ONLY
-    - If language is "العربية", respond COMPLETELY in Arabic
-    - If language is "English", respond COMPLETELY in English
-    - Do NOT mix languages in your response
+🚨 CRITICAL LANGUAGE RULE:
+- User question language: {language}
+- You MUST respond in {language} ONLY
+- If language is "العربية", respond COMPLETELY in Arabic
+- If language is "English", respond COMPLETELY in English
+- Do NOT mix languages in your response
 
-    Your task:
-    → Summarize SQL query results clearly and naturally, with a warm, conversational tone that feels friendly and professional.
+Your task:
+→ Summarize SQL query results clearly and naturally, with a warm, conversational tone that feels friendly and professional.
 
-    User question: {user_input}
-    Data: {data_preview_json}
+User question: {user_input}
+Data: {data_preview_json}
 
-    Instructions:
-    - ALWAYS respond in {language}
-    - Always acknowledge the user's question in {language}
-    - Arabic examples: "بناءً على البيانات، وجدت لك النتائج التالية:" أو "إليك ما وجدته:"
-    - English examples: "Here are the results I found for you:" or "Based on the data, here's what I found:"
-    - Be concise and clear
-    - Highlight number of matching records
-    - Provide actionable advice if relevant
-    - Use emojis sparingly to enhance friendliness
-    - Use a mix of sentences and bullet points
+Instructions:
+- ALWAYS respond in {language}
+- Always acknowledge the user's question in {language}
+- Arabic examples: "بناءً على البيانات، وجدت لك النتائج التالية:" أو "إليك ما وجدته:"
+- English examples: "Here are the results I found for you:" or "Based on the data, here's what I found:"
+- Be concise and clear
+- Highlight number of matching records
+- Provide actionable advice if relevant
+- Use emojis sparingly to enhance friendliness
+- Use a mix of sentences and bullet points
 
-    Important behavior for company search:
-    - If the user mentions a company/agency name:
-        * Display all companies whose names match or partially match the search term.
-        * If there are multiple matches, include a short friendly note explaining that there are multiple companies and all relevant options are shown.
-        * Always include the Google Maps link if available.
-        * Limit listing to up to 10 companies.
+Important behavior for company search:
+- If the user mentions a company/agency name:
+    * Display all companies whose names match or partially match the search term.
+    * If there are multiple matches, include a short friendly note explaining that there are multiple companies and all relevant options are shown.
+    * Always include the Google Maps link if available.
+    * Limit listing to up to 10 companies.
 
+Columns to include in summary: {requested_columns}
 
-    Columns to include in summary: {requested_columns}
+🚨 CRITICAL LANGUAGE-SPECIFIC RULES:
+- If {language} is "العربية":
+* Translate ALL field names to Arabic
+* city → المدينة
+* country → الدولة
+* email → البريد الإلكتروني
+* contact_Info → رقم التواصل
+* rating_reviews → التقييم
+* is_authorized → مصرح / معتمد (translate "Yes" to "نعم، معتمد" and "No" to "لا، غير معتمد")
+* formatted_address → العنوان
+* google_maps_link → رابط خرائط جوجل
 
-    🚨 CRITICAL LANGUAGE-SPECIFIC RULES:
-    - If {language} is "العربية":
-    * Translate ALL field names to Arabic
-    * city → المدينة
-    * country → الدولة
-    * email → البريد الإلكتروني
-    * contact_Info → رقم التواصل
-    * rating_reviews → التقييم
-    * is_authorized → مصرح / معتمد (translate "Yes" to "نعم، معتمد" and "No" to "لا، غير معتمد")
-    * formatted_address → العنوان
-    * google_maps_link → رابط خرائط جوجل
+- If {language} is "English":
+* Keep all field names in English
+* is_authorized → translate to "Yes, Authorized" or "No, Not Authorized"
 
-    - If {language} is "English":
-    * Keep all field names in English
-    * is_authorized → translate to "Yes, Authorized" or "No, Not Authorized"
+Behavior based on user question:
+- Always include Google Maps Link if available
+- Ensure response is complete and readable, no truncated or missing information
+- You are designed to protect pilgrims from scams and help them verify Hajj agencies authorized by the Ministry of Hajj and Umrah
 
-    Behavior based on user question:
-    - Always include Google Maps Link if available
-    - Ensure response is complete and readable, no truncated or missing information
-    - You are designed to protect pilgrims from scams and help them verify Hajj agencies authorized by the Ministry of Hajj and Umrah
+🌍 OUTPUT FORMAT:
 
-    🌍 OUTPUT FORMAT:
+If {language} is "العربية", use this format:
+- الاسم (بالعربية / بالإنجليزية):
+- المدينة:
+- الدولة:
+- البريد الإلكتروني:
+- رقم التواصل:
+- التقييم:
+- الحالة: (نعم، معتمد / لا، غير معتمد)
+- رابط خرائط جوجل
 
-    If {language} is "العربية", use this format:
-    - الاسم (بالعربية / بالإنجليزية):
-    - المدينة:
-    - الدولة:
-    - البريد الإلكتروني:
-    - رقم التواصل:
-    - التقييم:
-    - الحالة: (نعم، معتمد / لا، غير معتمد)
-    - رابط خرائط جوجل
+If {language} is "English", use this format:
+- Name (Arabic / English):
+- City:
+- Country:
+- Email:
+- Contact Info:
+- Rating:
+- Status: (Yes, Authorized / No, Not Authorized)
+- Google Maps Link
 
-    If {language} is "English", use this format:
-    - Name (Arabic / English):
-    - City:
-    - Country:
-    - Email:
-    - Contact Info:
-    - Rating:
-    - Status: (Yes, Authorized / No, Not Authorized)
-    - Google Maps Link
-
-    - Keep tone friendly, professional, and natural IN {language}
-    - Mix sentences and bullets; add small friendly phrases if appropriate
-    - Do NOT invent any data
-    - If multiple rows, list up to 10 agencies with key details
-    - REMEMBER: Your ENTIRE response must be in {language}
-    """
-
-
-
+- Keep tone friendly, professional, and natural IN {language}
+- Mix sentences and bullets; add small friendly phrases if appropriate
+- Do NOT invent any data
+- If multiple rows, list up to 10 agencies with key details
+- REMEMBER: Your ENTIRE response must be in {language}
+"""
 
         try:
             response = self.client.beta.chat.completions.parse(
@@ -650,25 +680,17 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             )
 
             summary_data = response.choices[0].message.parsed
-
             final_summary = f"{summary_data.summary}"
-            logger.info("Summary generated successfully.")
+            logger.info("✅ Summary generated successfully.")
 
-            return {
-                "summary": final_summary,
-            }
+            return {"summary": final_summary}
 
         except Exception as e:
-            logger.error(f"Structured summary generation failed: {e}")
-            return {
-                "summary": f"📊 Found {row_count} matching records.",
-            }
+            logger.error(f"❌ Structured summary generation failed: {e}")
+            return {"summary": f"📊 Found {row_count} matching records."}
 
     def text_to_speech(self, text: str, language: str) -> Optional[io.BytesIO]:
-        """
-        Convert text to speech using OpenAI TTS
-        Returns BytesIO audio ready for st.audio
-        """
+        """Convert text to speech using OpenAI TTS"""
         voice = self.voice_map.get(language, "alloy")
         
         try:
@@ -708,6 +730,73 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             return "العربية"
         else:
             return "English"
+    
+    def ask_for_more_info(self, user_input: str, language: str) -> Dict:
+        """Generate structured response asking user for more specific information"""
+        is_arabic = language == "العربية"
+        
+        last_company = st.session_state.get("last_company_name", "")
+        
+        # If there's a company in memory but user didn't mention it, add context
+        if last_company and "agency" not in user_input.lower() and "شركة" not in user_input and "وكالة" not in user_input:
+            user_input += f" (Note: User was previously asking about '{last_company}')"
+            
+        prompt = f"""You are a helpful Hajj verification assistant.
+The user's question: "{user_input}" needs more details to provide accurate information.
+
+Examples of vague questions:
+- "I want to verify an agency" (which agency?)
+- "Tell me about Hajj companies" (what specifically?)
+- "Is this authorized?" (which company?)
+- "Check this company" (need company name)
+- "وين موقعها؟" without context (which company's location?)
+
+Ask for specific details in a friendly way. Focus on:
+1. Agency name (if verifying a company)
+2. Location (city/country)
+3. What specifically they want to know
+
+Use Arabic if user input is Arabic, otherwise English.
+Keep it brief but friendly (2-3 sentences max).
+Add a simple example of a more specific question.
+"""
+        
+        try:
+            response = self.client.beta.chat.completions.parse(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You help users provide more specific Hajj agency queries."},
+                    {"role": "user", "content": prompt}
+                ],
+                response_format=NEEDSInfoResponse,
+                temperature=0.7
+            )
+            
+            info_data = response.choices[0].message.parsed
+            return {
+                "needs_info": info_data.needs_info,
+                "suggestions": info_data.suggestions,
+                "missing_info": info_data.missing_info,
+                "sample_query": info_data.sample_query
+            }
+                
+        except Exception as e:
+            logger.error(f"More info prompt generation failed: {e}")
+            # Fallback with minimal structured response
+            if is_arabic:
+                return {
+                    "needs_info": "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔 على سبيل المثال، ما اسم الشركة التي تريد التحقق منها؟",
+                    "suggestions": ["هل شركة الهدى للحج معتمدة؟", "أريد التحقق من وكالات الحج في مكة", "ما هو عنوان شركة جبل عمر؟"],
+                    "missing_info": ["اسم الوكالة", "الموقع", "التفاصيل المحددة"],
+                    "sample_query": "هل شركة الهدى للحج معتمدة؟"
+                }
+            else:
+                return {
+                    "needs_info": "Could you provide more details? 🤔 For example, which company would you like to verify?",
+                    "suggestions": ["Is Al Huda Hajj Agency authorized?", "Show me authorized agencies in Makkah", "What is the address of Jabal Omar Agency?"],
+                    "missing_info": ["agency name", "location", "specific details"],
+                    "sample_query": "Is Al Huda Hajj Agency authorized?"
+                }
     
     @staticmethod
     def _get_sql_system_prompt(language: str) -> str:
@@ -810,6 +899,13 @@ WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%'
        OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
 LIMIT 1;
 
+Q: "is jabal omar authorized?"
+→ SELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
+FROM agencies
+WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%' 
+       OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
+LIMIT 1;
+
 Q: "وين موقعها؟" (with context: about "جبل عمر")
 → SELECT formatted_address, city, country, google_maps_link 
 FROM agencies 
@@ -871,70 +967,3 @@ LIMIT 1;
             return "NO_SQL"
         
         return None
-    
-    def ask_for_more_info(self, user_input: str, language: str) -> Dict:
-        """Generate structured response asking user for more specific information"""
-        is_arabic = language == "العربية"
-        
-        last_company = st.session_state.get("last_company_name", "")
-        
-        # If there's a company in memory but user didn't mention it, add context
-        if last_company and "agency" not in user_input.lower() and "شركة" not in user_input and "وكالة" not in user_input:
-            user_input += f" (Note: User was previously asking about '{last_company}')"
-            
-        prompt = f"""You are a helpful Hajj verification assistant.
-The user's question: "{user_input}" needs more details to provide accurate information.
-
-Examples of vague questions:
-- "I want to verify an agency" (which agency?)
-- "Tell me about Hajj companies" (what specifically?)
-- "Is this authorized?" (which company?)
-- "Check this company" (need company name)
-- "وين موقعها؟" without context (which company's location?)
-
-Ask for specific details in a friendly way. Focus on:
-1. Agency name (if verifying a company)
-2. Location (city/country)
-3. What specifically they want to know
-
-Use Arabic if user input is Arabic, otherwise English.
-Keep it brief but friendly (2-3 sentences max).
-Add a simple example of a more specific question.
-"""
-        
-        try:
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You help users provide more specific Hajj agency queries."},
-                    {"role": "user", "content": prompt}
-                ],
-                response_format=NEEDSInfoResponse,
-                temperature=0.7
-            )
-            
-            info_data = response.choices[0].message.parsed
-            return {
-                "needs_info": info_data.needs_info,
-                "suggestions": info_data.suggestions,
-                "missing_info": info_data.missing_info,
-                "sample_query": info_data.sample_query
-            }
-                
-        except Exception as e:
-            logger.error(f"More info prompt generation failed: {e}")
-            # Fallback with minimal structured response
-            if is_arabic:
-                return {
-                    "needs_info": "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔 على سبيل المثال، ما اسم الشركة التي تريد التحقق منها؟",
-                    "suggestions": ["هل شركة الهدى للحج معتمدة؟", "أريد التحقق من وكالات الحج في مكة", "ما هو عنوان شركة جبل عمر؟"],
-                    "missing_info": ["اسم الوكالة", "الموقع", "التفاصيل المحددة"],
-                    "sample_query": "هل شركة الهدى للحج معتمدة؟"
-                }
-            else:
-                return {
-                    "needs_info": "Could you provide more details? 🤔 For example, which company would you like to verify?",
-                    "suggestions": ["Is Al Huda Hajj Agency authorized?", "Show me authorized agencies in Makkah", "What is the address of Jabal Omar Agency?"],
-                    "missing_info": ["agency name", "location", "specific details"],
-                    "sample_query": "Is Al Huda Hajj Agency authorized?"
-                }
