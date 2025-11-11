@@ -14,4 +14,5 @@ altair>=5.0.0
 streamlit_autorefresh
 
 streamlit_js_eval
-st_copy_to_clipboard
+git+https://github.com/ManalAlyami7/st-copy-to-clipboard.git@my-custom-version
+
