@@ -514,4 +514,4 @@ LANGUAGE_MAP = {
 
 def get_language_name(code: str) -> str:
     """Convert language code to full language name"""
-    return LANGUAGE_MAP.get(code.lower(), 'English')
+    return LANGUAGE_MAP.get(code.lower(), 'العربية')
