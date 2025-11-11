@@ -503,26 +503,36 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             requested_columns = all_columns
 
         # --- 4️⃣ Fuzzy search using RapidFuzz ---
+        # --- البحث عن الشركة بالاسم الكامل أولاً ---
         search_name = user_input.lower().strip()
-        threshold = 70  # Adjust similarity threshold as needed
         matching_rows = []
 
+        # أولاً: البحث عن التطابق الدقيق (Exact Match)
         for row in sample_rows:
             name_en = row.get("hajj_company_en", "").lower()
             name_ar = row.get("hajj_company_ar", "").lower()
-            score_en = fuzz.token_set_ratio(search_name, name_en)
-            score_ar = fuzz.token_set_ratio(search_name, name_ar)
-            if score_en >= threshold or score_ar >= threshold:
+            if search_name == name_en or search_name == name_ar:
                 matching_rows.append(row)
 
-        # --- 5️⃣ Handle no matches ---
+        # إذا لم نجد أي تطابق دقيق → نستخدم البحث الجزئي مع fuzzy matching
+        if not matching_rows:
+            threshold = 70  # درجة التشابه المطلوبة (يمكن تعديلها)
+            for row in sample_rows:
+                name_en = row.get("hajj_company_en", "").lower()
+                name_ar = row.get("hajj_company_ar", "").lower()
+                score_en = fuzz.token_set_ratio(search_name, name_en)
+                score_ar = fuzz.token_set_ratio(search_name, name_ar)
+                if score_en >= threshold or score_ar >= threshold:
+                    matching_rows.append(row)
+
+        # إذا لم يوجد أي شركة بعد كل هذا
         if len(matching_rows) == 0:
             if language == "العربية":
                 return {"summary": "لم أتمكن من العثور على أي شركة تطابق ما كتبته."}
             else:
                 return {"summary": "I couldn't find any company matching your input."}
 
-        # --- 6️⃣ Handle multiple matches ---
+        # إذا كانت هناك أكثر من شركة → أعرض رسالة ودية للمستخدم
         if len(matching_rows) > 1:
             if language == "العربية":
                 prompt_user = f"لقد وجدت {len(matching_rows)} شركات قد تطابق ما كتبته. ✨ يرجى تحديد اسم الشركة بالضبط من بين الخيارات التالية:\n"
@@ -531,6 +541,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
                 prompt_user = f"I found {len(matching_rows)} companies matching your input. ✨ Please specify the exact company name from the following options:\n"
                 prompt_user += "\n".join([f"- {row['hajj_company_en']}" for row in matching_rows])
             return {"summary": prompt_user}
+
 
         # --- 7️⃣ Prepare data preview for the matched row ---
         data_preview = [{col: row.get(col, None) for col in requested_columns} for row in matching_rows[:50]]
