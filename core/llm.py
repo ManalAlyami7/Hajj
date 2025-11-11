@@ -476,6 +476,34 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
 
         
         data_preview = json.dumps(sample_rows[:50], ensure_ascii=False)
+        # قائمة كل الأعمدة الأساسية
+        all_columns = [
+            "hajj_company_en",
+            "hajj_company_ar",
+            "formatted_address",
+            "city",
+            "country",
+            "email",
+            "contact_Info",
+            "rating_reviews",
+            "is_authorized",
+            "google_maps_link"
+        ]
+
+        # نتحقق إذا سأل المستخدم عن عمود محدد
+        if any(k in user_input.lower() for k in ["contact", "رقم التواصل"]):
+            requested_columns = ["contact_Info"]
+        elif any(k in user_input.lower() for k in ["email", "البريد الإلكتروني"]):
+            requested_columns = ["email"]
+        elif any(k in user_input.lower() for k in ["city", "المدينة"]):
+            requested_columns = ["city"]
+        elif any(k in user_input.lower() for k in ["country", "الدولة"]):
+            requested_columns = ["country"]
+        elif any(k in user_input.lower() for k in ["status", "الحالة", "authorization", "معتمد"]):
+            requested_columns = ["is_authorized"]
+        else:
+            # إذا لم يذكر عمود محدد → عرض كل الأعمدة
+            requested_columns = all_columns
 
         summary_prompt = f"""
 You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
@@ -504,19 +532,12 @@ Instructions:
 - Use emojis sparingly to enhance friendliness
 - Use a mix of sentences and bullet points
 
-Behavior:
-1️⃣ If the user mentions the word "agency" or "company" or "شركة" or "وكالة" in their question:
-   - Extract and summarize all available data for the agency/agencies that match the name mentioned.
-   - Use all default columns if they request "all information".
-   - Always include Google Maps Link.
-
-2️⃣ If the user does NOT mention "agency" or the context is unclear:
-   - Politely ask the user to clarify what they would like to know IN {language}.
-
-Columns to include in summary:
-- hajj_company_en, hajj_company_ar, formatted_address, 
-- city, country, email, contact_Info, rating_reviews, is_authorized,
-- google_maps_link
+Columns logic:
+- If the user specifically asks about a column (e.g., contact info, email, city, country, status):
+    → Provide ONLY that column's data
+- Otherwise, provide ALL default columns:
+    hajj_company_en, hajj_company_ar, formatted_address, 
+    city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
 
 🚨 CRITICAL LANGUAGE-SPECIFIC RULES:
 - If {language} is "العربية":
@@ -528,21 +549,16 @@ Columns to include in summary:
   * rating_reviews → التقييم
   * is_authorized → مصرح / معتمد (translate "Yes" to "نعم، معتمد" and "No" to "لا، غير معتمد")
   * formatted_address → العنوان
-  * Google Maps Link → رابط خرائط جوجل
+  * google_maps_link → رابط خرائط جوجل
 
 - If {language} is "English":
   * Keep all field names in English
   * is_authorized → translate to "Yes, Authorized" or "No, Not Authorized"
 
 Behavior based on user question:
-- If the user asks about a **specific column**, provide only that column's data IN {language}
-- If the user asks for **all information** or does not specify, provide all default columns IN {language}
-- ALWAYS respond in {language} - this is CRITICAL
-- Include contact info and Google Maps link if available
-- Ensure the response is complete and readable, no truncated or missing information
-- You are designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
-
-- Always include Google Maps Link exactly as it appears in the column `google_maps_link`.
+- Always include Google Maps Link if available
+- Ensure response is complete and readable, no truncated or missing information
+- You are designed to protect pilgrims from scams and help them verify Hajj agencies authorized by the Ministry of Hajj and Umrah
 
 🌍 OUTPUT FORMAT:
 
@@ -567,18 +583,13 @@ If {language} is "English", use this format:
 - Google Maps Link:
 
 - Keep tone friendly, professional, and natural IN {language}
-- Mix sentences and bullets; add small friendly phrases if appropriate IN {language}
+- Mix sentences and bullets; add small friendly phrases if appropriate
 - Do NOT invent any data
-- If rows count more than 1, list the names and important details of up to 10 agencies, use numbers or bullets and emojis if appropriate
+- If multiple rows, list up to 10 agencies with key details
 - REMEMBER: Your ENTIRE response must be in {language}
-
-Feel free to:
-- Mix sentences and bullet points (in {language})
-- Add small friendly phrases like "يمكنك التواصل معهم بثقة." (Arabic) or "You can contact them confidently." (English)
-- Vary sentence structure per agency
-- Keep summary concise and readable
-- BUT ALWAYS IN {language} ONLY
 """
+
+
 
         try:
             response = self.client.beta.chat.completions.parse(
