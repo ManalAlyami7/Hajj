@@ -131,28 +131,27 @@ class LLMManager:
         return OpenAI(api_key=api_key)
     
     def build_chat_context(self, limit: int = 5, exclude_last_user: bool = True) -> List[Dict[str, str]]:
-        """
-        Build chat context from recent messages with metadata.
-        If exclude_last_user=True, the last user message will be skipped 
-        to avoid duplication when adding the current user input manually.
-        """
         if "chat_memory" not in st.session_state:
             return []
 
         recent = st.session_state.chat_memory[-limit:]
 
-        # 🔍 إذا بنستبعد آخر رسالة من المستخدم
         if exclude_last_user and recent and recent[-1]["role"] == "user":
             recent = recent[:-1]
 
         context = []
+        seen_messages = set()
         for msg in recent:
-            # تأكد نتجاهل أي عناصر غير دردشة
             if not isinstance(msg, dict) or "role" not in msg or "content" not in msg:
                 continue
+            key = f"{msg['role']}:{msg['content']}"
+            if key in seen_messages:
+                continue
+            seen_messages.add(key)
             context.append({"role": msg["role"], "content": msg["content"]})
 
         return context
+
 
 
     def update_last_company(self, company_name: Optional[str]):
@@ -210,11 +209,19 @@ class LLMManager:
             return True
 
         return False
+    
     def store_bot_reply(self, reply_text: str, intent: str, extracted_company: Optional[str] = None):
-        """Store assistant reply in chat memory with metadata"""
+        """Store assistant reply in chat memory with metadata, avoiding consecutive duplicates"""
         if "chat_memory" not in st.session_state:
             st.session_state.chat_memory = []
-        
+
+        # تحقق من الرد الأخير للبوت
+        if st.session_state.chat_memory:
+            last_msg = st.session_state.chat_memory[-1]
+            if last_msg["role"] == "assistant" and last_msg["content"] == reply_text:
+                logger.info("⚠️ Skipped duplicate assistant message in chat_memory.")
+                return
+
         st.session_state.chat_memory.append({
             "role": "assistant",
             "content": reply_text,
@@ -223,6 +230,7 @@ class LLMManager:
             "timestamp": str(datetime.now())
         })
         logger.info(f"💾 Stored assistant reply: {reply_text[:50]}... | Intent: {intent} | Company: {extracted_company or 'None'}")
+
 
 
 
@@ -811,7 +819,11 @@ class LLMManager:
         # ----------------------------
         # Build context from previous chat
         # ----------------------------
-        context_text = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in self.build_chat_context(limit=10)])
+        context_messages = self.build_chat_context(limit=10)
+        if context_messages and context_messages[-1]["role"] == "user":
+            context_messages = context_messages[:-1]  # استبعد آخر رسالة لأنها ستُرسل الآن كـ user_input
+
+        context_text = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in context_messages])
         
         # ----------------------------
         # Prepare prompt
