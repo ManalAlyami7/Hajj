@@ -245,8 +245,8 @@ CURRENT MESSAGE:
             response = self.client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You classify user intents for a Hajj agency verification system."},
-                    {"role": "user", "content": intent_prompt}],
+                    {"role": "system", "content": intent_prompt},
+                    {"role": "user", "content": user_input}],
                 response_format=IntentClassification,
                 temperature=0
             )
@@ -323,7 +323,6 @@ Response Guidelines:
    - Use emojies if needed
 
 
-User input: {user_input}
 Context: {context_string}
 
 Generate a focused, professional response that helps protect pilgrims from fraud."""
@@ -478,7 +477,6 @@ RESPONSE GUIDELINES:
 - If discussing costs or packages, mention that verification should be their first step
 - Be culturally sensitive to South Asian, Arab, and other Muslim communities
 
-USER QUESTION: {user_input}
 
 {f'RELEVANT CONTEXT: {context_string}' if context_string else ''}
 
@@ -535,14 +533,14 @@ Provide helpful, accurate information that keeps pilgrims safe, informed, and aw
         Generate SQL query from user input with structured output
         Returns: Dict with sql_query, query_type, filters, explanation, safety_checked
         """
-        sql_prompt = self._get_sql_system_prompt(language, context_string) + f"\n\nUser Question: {user_input}"
+        sql_prompt = self._get_sql_system_prompt(language, context_string) 
         
         try:
             response = self.client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are a SQL expert that generates safe queries for a Hajj agency database."},
-                    {"role": "user", "content": sql_prompt},
+                    {"role": "system", "content": sql_prompt},
+                    {"role": "user", "content": user_input},
         
                 ],
                 response_format=SQLQueryGeneration,
@@ -584,7 +582,6 @@ Your goal is to convert database results into natural spoken responses that soun
 
 ═══════════════════════════════════════════════════════════════
 🧭 INPUT CONTEXT
-User question: {user_input}
 Database results: {data_preview}
 Reference context: {context_string}
 ═══════════════════════════════════════════════════════════════
@@ -705,8 +702,8 @@ Keep it concise, warm, safe, and optimized for voice playback.
             response = self.client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant summarizing Hajj agency data in a friendly and structured way."},
-                    {"role": "user", "content": summary_prompt}
+                    {"role": "system", "content": summary_prompt},
+                    {"role": "user", "content": user_input}
                 ],
                 response_format=QuerySummary,
                 temperature=0.6
@@ -890,7 +887,6 @@ LIMIT 50;
     
     def ask_for_more_info(self, user_input: str, language: str, context_string=None) -> Dict:
         
-        is_arabic = language == "العربية"
         
         # Simple cutoff/ambiguous detection (words like 'you', 'me', or very short incomplete input)
         cutoff_keywords = ["you", "me", "i", "it", "this", "that", "check", "verify", "agency"]
@@ -901,7 +897,6 @@ LIMIT 50;
     You are a helpful Hajj verification assistant.
     Express willingness to help
     Make sure you help and understand the user
-    The user's question: "{user_input}" needs more details to provide accurate information.
     Context: {context_string}
 
     Examples of vague questions:
@@ -933,8 +928,9 @@ LIMIT 50;
             response = self.client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You help users provide more specific Hajj agency queries."},
-                    {"role": "user", "content": prompt}
+                    {"role": "system", "content": prompt},
+
+                    {"role": "user", "content": user_input}
                 ],
                 response_format=NEEDSInfoResponse,
                 temperature=0.7
