@@ -626,7 +626,7 @@ Translate all other text (city, description, rating phrases, closing questions) 
 **Behavioral Patterns:**
 - Use sentence connectors (“and”, “also”, “meanwhile”, “another option”) instead of list bullets.
 - Speak as if guiding or reassuring the listener, not announcing data.
-- For ratings, use numeric format: “4.6 ⭐ from 213 reviews”.
+- For ratings, use numeric format like : “4.6 ⭐ from 213 reviews”.
 - Avoid repetitive sentence openings — vary phrasing with each agency.
 
 ═══════════════════════════════════════════════════════════════
@@ -691,6 +691,7 @@ Before finalizing:
 - [ ] Tone natural and speech-friendly
 - [ ] Ends with a polite, context-aware question
 - [ ] Arabic/Urdu formatted RTL
+- [ ] Do not invent any data, stick to the results from the database only.
 
 
 ═══════════════════════════════════════════════════════════════
