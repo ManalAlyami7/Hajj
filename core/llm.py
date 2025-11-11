@@ -527,6 +527,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         search_name = user_input.lower().strip()  # نص السؤال بالكامل
 
         # أولًا، نجرب البحث الدقيق (الاسم بالكامل)
+        # البحث عن الشركة بالاسم الجزئي أو الكامل
         exact_matches = [
             row for row in sample_rows
             if search_name == row["hajj_company_en"].lower() or search_name == row["hajj_company_ar"].lower()
@@ -539,8 +540,16 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
                 row for row in sample_rows
                 if search_name in row["hajj_company_en"].lower() or search_name in row["hajj_company_ar"].lower()
             ]
+        # --- بعد تحديد matching_rows ---
+        if len(matching_rows) > 1:
+            if language == "العربية":
+                prompt_user = "لقد وجدت أكثر من شركة تطابق ما كتبته. ✨ يرجى تحديد اسم الشركة بالضبط من بين الخيارات التالية:\n"
+                prompt_user += "\n".join([f"- {row['hajj_company_en']}" for row in matching_rows])
+            else:
+                prompt_user = "I found multiple companies matching your input. ✨ Please specify the exact company name from the following options:\n"
+                prompt_user += "\n".join([f"- {row['hajj_company_en']}" for row in matching_rows])
 
-
+            return {"summary": prompt_user}
 
         # تحضير data_preview للأعمدة المطلوبة فقط
         data_preview = [
