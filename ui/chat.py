@@ -361,78 +361,90 @@ div[data-testid="stHorizontalBlock"] {
                         )
 
     def _play_message_audio_inline(self, text: str, idx: int):
-        """Play message audio using hidden HTML5 audio element"""
-        lang = st.session_state.get("language", "English")
+            """Play message audio using hidden HTML5 audio element"""
+            lang = st.session_state.get("language", "English")
 
-        try:
-            clean_text = re.sub(r'<[^>]+>', '', text)
-            clean_text = re.sub(r'\*\*([^\*]+)\*\*', r'\1', clean_text).strip()
-
-            if not clean_text:
-                st.warning("لا يوجد نص لقراءته" if lang == "العربية" else "No text to read")
-                st.session_state.audio_playing[idx] = False
-                st.session_state.pop(f"audio_trigger_{idx}", None)
-                return
-
-            tts_lang = "ar" if lang == "العربية" else "en"
-            audio_data = self.proc.text_to_speech(clean_text, tts_lang)
-
-            if audio_data:
-                audio_bytes = audio_data.getvalue() if hasattr(audio_data, "getvalue") else audio_data
+            try:
+                # Remove HTML tags
+                clean_text = re.sub(r'<[^>]+>', '', text)
                 
-                from io import BytesIO
-                from mutagen.mp3 import MP3
+                # Remove URLs (comprehensive pattern for http/https URLs with any characters)
+                clean_text = re.sub(r'https?://\S+', '', clean_text)
                 
-                if isinstance(audio_bytes, bytes):
-                    audio_file = BytesIO(audio_bytes)
+                # Remove www URLs without protocol
+                clean_text = re.sub(r'www\.\S+', '', clean_text)
+                
+                # Remove markdown bold
+                clean_text = re.sub(r'\*\*([^\*]+)\*\*', r'\1', clean_text)
+                
+                # Clean up extra whitespace
+                clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+
+                if not clean_text:
+                    st.warning("لا يوجد نص لقراءته" if lang == "العربية" else "No text to read")
+                    st.session_state.audio_playing[idx] = False
+                    st.session_state.pop(f"audio_trigger_{idx}", None)
+                    return
+
+                tts_lang = "ar" if lang == "العربية" else "en"
+                audio_data = self.proc.text_to_speech(clean_text, tts_lang)
+
+                if audio_data:
+                    audio_bytes = audio_data.getvalue() if hasattr(audio_data, "getvalue") else audio_data
+                    
+                    from io import BytesIO
+                    from mutagen.mp3 import MP3
+                    
+                    if isinstance(audio_bytes, bytes):
+                        audio_file = BytesIO(audio_bytes)
+                    else:
+                        audio_file = audio_bytes
+                    
+                    try:
+                        audio = MP3(audio_file)
+                        duration = audio.info.length
+                    except Exception:
+                        duration = 3.0
+                    
+                    # Store playback info
+                    st.session_state[f"audio_start_time_{idx}"] = time.time()
+                    st.session_state[f"audio_duration_{idx}"] = duration
+                    
+                    # Convert to base64 and play with hidden audio element
+                    audio_base64 = base64.b64encode(audio_bytes).decode()
+                    
+                    components.html(
+                        f"""
+                        <audio autoplay style="display:none;" id="audio_{idx}_{int(time.time()*1000)}">
+                            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+                        </audio>
+                        <script>
+                            var audio = document.querySelector('audio[id^="audio_{idx}_"]');
+                            if (audio) {{
+                                audio.play().catch(function(e) {{
+                                    console.error('Audio play failed:', e);
+                                }});
+                            }}
+                        </script>
+                        """,
+                        height=0,
+                    )
+                    
                 else:
-                    audio_file = audio_bytes
-                
-                try:
-                    audio = MP3(audio_file)
-                    duration = audio.info.length
-                except Exception:
-                    duration = 3.0
-                
-                # Store playback info
-                st.session_state[f"audio_start_time_{idx}"] = time.time()
-                st.session_state[f"audio_duration_{idx}"] = duration
-                
-                # Convert to base64 and play with hidden audio element
-                audio_base64 = base64.b64encode(audio_bytes).decode()
-                
-                components.html(
-                    f"""
-                    <audio autoplay style="display:none;" id="audio_{idx}_{int(time.time()*1000)}">
-                        <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-                    </audio>
-                    <script>
-                        var audio = document.querySelector('audio[id^="audio_{idx}_"]');
-                        if (audio) {{
-                            audio.play().catch(function(e) {{
-                                console.error('Audio play failed:', e);
-                            }});
-                        }}
-                    </script>
-                    """,
-                    height=0,
+                    st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
+                    st.session_state.audio_playing[idx] = False
+                    st.session_state.pop(f"audio_trigger_{idx}", None)
+
+            except Exception as e:
+                st.error(
+                    f"❌ خطأ في تشغيل الصوت: {str(e)}"
+                    if lang == "العربية"
+                    else f"❌ Audio error: {str(e)}"
                 )
-                
-            else:
-                st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
                 st.session_state.audio_playing[idx] = False
                 st.session_state.pop(f"audio_trigger_{idx}", None)
-
-        except Exception as e:
-            st.error(
-                f"❌ خطأ في تشغيل الصوت: {str(e)}"
-                if lang == "العربية"
-                else f"❌ Audio error: {str(e)}"
-            )
-            st.session_state.audio_playing[idx] = False
-            st.session_state.pop(f"audio_trigger_{idx}", None)
-            st.session_state.pop(f"audio_start_time_{idx}", None)
-            st.session_state.pop(f"audio_duration_{idx}", None)
+                st.session_state.pop(f"audio_start_time_{idx}", None)
+                st.session_state.pop(f"audio_duration_{idx}", None)
 
     def _copy_to_clipboard(self, text: str, idx: int):
         """Copy text to clipboard using pyperclip"""
