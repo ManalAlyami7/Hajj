@@ -307,7 +307,7 @@ div[data-testid="stHorizontalBlock"] {
 
     def _render_timestamp_and_actions(self, msg: Dict, text: str, idx: int) -> None:
         """Render timestamp with action buttons in a single row"""
-        lang = st.session_state.get("language", "English")
+        lang = st.session_state.get("language", "العربية")
         is_playing = self._check_and_update_audio_state(idx)
         
         # Create column layout
