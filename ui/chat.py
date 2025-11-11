@@ -6,27 +6,18 @@ Simple clipboard copy with fallback
 """
 
 import streamlit as st
-
 import pandas as pd
 from datetime import datetime
 import pytz
 import base64
 from utils.translations import t
 from utils.state import save_chat_memory
-from st_copy_to_clipboard import st_copy_to_clipboard
-
 from utils.validators import validate_user_input
-
 import uuid
 import streamlit.components.v1 as components
 import re
+import time
 from core.voice_processor import VoiceProcessor
-
-try:
-    from streamlit_js_eval import copy_to_clipboard as js_copy_to_clipboard
-    CLIPBOARD_AVAILABLE = True
-except ImportError:
-    CLIPBOARD_AVAILABLE = False
 
 class ChatInterface:
     """Manages professional chat interface and message display"""
@@ -34,7 +25,7 @@ class ChatInterface:
     def __init__(self, chat_graph, llm_manager):
         self.graph = chat_graph
         self.llm = llm_manager
-        self.proc= VoiceProcessor()
+        self.proc = VoiceProcessor()
         if "chat_memory" not in st.session_state:
             st.session_state.chat_memory = []
         if "pending_example" not in st.session_state:
@@ -51,10 +42,6 @@ class ChatInterface:
         """Render professional chat interface"""
         self._inject_professional_styles()
         self._display_chat_history()
-        
-        # if self._show_quick_actions():
-        #     self._display_quick_actions()
-        
         self._handle_user_input()
 
     # -------------------
@@ -155,44 +142,14 @@ class ChatInterface:
     color: var(--text-muted) !important;
 }
 
-/* Quick Actions Styling */
-.quick-actions-container {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    padding: 2rem;
-    border-radius: 20px;
-    border: 3px solid var(--primary-gold);
-    box-shadow: var(--shadow-md);
-    margin: 2rem 0;
-}
-
-.quick-actions-header {
-    text-align: center;
-    margin-bottom: 1.5rem;
-}
-
-.quick-actions-header h3 {
-    color: var(--primary-dark);
-    font-size: 1.8rem;
-    font-weight: 800;
-    margin: 0 0 0.5rem 0;
-    letter-spacing: -0.025em;
-}
-
-.quick-actions-header p {
-    color: var(--text-muted);
-    font-size: 1rem;
-    margin: 0;
-    font-weight: 500;
-}
-
-/* ---------------- Icon Buttons (Rounded Squares) ---------------- */
+/* Icon Buttons (Rounded Squares) */
 div[data-testid="column"], .stButton {
     padding: 0 !important;
     margin: 0 !important;
 }
 
 div[data-testid="stHorizontalBlock"] {
-    gap: 3px !important; /* Reduce spacing between buttons */
+    gap: 3px !important;
 }
 
 .stButton > button:has(img) {
@@ -225,7 +182,6 @@ div[data-testid="stHorizontalBlock"] {
     box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3) !important;
 }
 
-/* ---------------- Chat Message Action Buttons ---------------- */
 .stChatMessage div[data-testid="column"] > div > div > button {
     padding: 0 !important;
     border-radius: 10px !important;
@@ -263,105 +219,6 @@ div[data-testid="stHorizontalBlock"] {
     gap: 6px;
 }
 
-/* Toast Notification */
-.toast-notification {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-    color: white;
-    padding: 16px 28px;
-    border-radius: 16px;
-    border: 2px solid white;
-    z-index: 9999;
-    font-size: 1rem;
-    font-weight: 700;
-    box-shadow: var(--shadow-lg);
-    animation: slideUp 0.3s ease, fadeOut 0.3s ease 2.7s;
-}
-
-@keyframes slideUp {
-    from { bottom: -50px; opacity: 0; }
-    to { bottom: 30px; opacity: 1; }
-}
-
-@keyframes fadeOut {
-    to { opacity: 0; bottom: -50px; }
-}
-
-/* Results Card Styling */
-.results-card {
-    padding: 2rem;
-    margin: 1.5rem 0;
-    border-radius: 16px;
-    background: white;
-    border: 2px solid var(--border-light);
-    box-shadow: var(--shadow-md);
-    transition: all 0.3s ease;
-}
-
-.results-card:hover {
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-2px);
-}
-
-.results-card.authorized {
-    border-left: 6px solid var(--success-green);
-    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-}
-
-.results-card.unauthorized {
-    border-left: 6px solid var(--error-red);
-    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-}
-
-.results-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: start;
-    margin-bottom: 1.2rem;
-}
-
-.results-card-title {
-    color: var(--text-dark);
-    font-size: 1.25rem;
-    font-weight: 800;
-    line-height: 1.4;
-}
-
-.status-badge {
-    padding: 8px 18px;
-    border-radius: 24px;
-    font-size: 0.9rem;
-    font-weight: 700;
-    white-space: nowrap;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.status-badge.authorized {
-    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
-    color: white;
-    border: 2px solid #15803d;
-}
-
-.status-badge.unauthorized {
-    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    color: white;
-    border: 2px solid #b91c1c;
-}
-
-.results-card-content {
-    color: var(--text-dark);
-    line-height: 1.8;
-    font-size: 1rem;
-}
-
-.results-card-content strong {
-    color: var(--primary-dark);
-    font-weight: 700;
-}
-
 /* Loading Spinner */
 .stSpinner > div {
     border-color: var(--primary-gold) !important;
@@ -386,80 +243,23 @@ div[data-testid="stHorizontalBlock"] {
     background: linear-gradient(180deg, var(--primary-gold-dark) 0%, #9d7a1a 100%);
 }
 </style>
-
         """, unsafe_allow_html=True)
-
-    # -------------------
-    # Quick Actions
-    # -------------------
-    def _show_quick_actions(self) -> bool:
-        chat = st.session_state.chat_memory
-        lang = st.session_state.get("language", "English")
-        if len(chat) == 1:
-            first = chat[0]
-            return first.get("role") == "assistant" and first.get("content") == t("welcome_msg", lang)
-        return False
-
-    def _display_quick_actions(self):
-        """Display professional quick action buttons"""
-        lang = st.session_state.get("language", "English")
-        
-        st.markdown(f"""
-            <div class='quick-actions-container'>
-                <div class='quick-actions-header'>
-                    <h3>✨ {t('quick_actions', lang)}</h3>
-                    <p>Select a quick action to get started instantly</p>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
-        col1, col2 = st.columns(2)
-        actions = [
-            ("🔍", t("find_authorized", lang), "find_authorized", "user", t("show_authorized", lang)),
-            ("📊", t("show_stats", lang), "show_stats", "user", t("hajj_statistics", lang)),
-            ("🌍", t("find_by_country", lang), "find_by_country", "user", t("country_search", lang)),
-            ("❓", t("general_help", lang), "general_help", "user", t("help_message", lang)),
-        ]
-
-        with col1:
-            for icon, label, key, role, content in actions[:2]:
-                if st.button(f"{icon}  {label}", key=f"qa_{key}", use_container_width=True):
-                    self._add_message(role, content)
-                    st.session_state.pending_example = True
-                    st.session_state.processing_example = False
-                    st.rerun()
-
-        with col2:
-            for icon, label, key, role, content in actions[2:]:
-                if st.button(f"{icon}  {label}", key=f"qa_{key}", use_container_width=True):
-                    self._add_message(role, content)
-                    st.session_state.pending_example = True
-                    st.session_state.processing_example = False
-                    st.rerun()
 
     # -------------------
     # Chat History Display
     # -------------------
-
-                    
     def _safe_format_time(self, msg):
         """تنسيق الوقت بشكل آمن بدون أخطاء"""
         try:
             timestamp = msg.get('timestamp')
             if not timestamp:
                 return datetime.now().strftime("%I:%M %p")
-            
             return self._format_time(timestamp)
         except Exception:
             return datetime.now().strftime("%I:%M %p")
 
-    """
-Add this import at the top of your chat_interface.py file:
-from streamlit_autorefresh import st_autorefresh
-"""
     def _render_timestamp_and_actions(self, msg: dict, text: str, idx: int):
         """Render timestamp with action buttons in a single row"""
-        import time
         lang = st.session_state.get("language", "English")
         button_key_prefix = f"msg_{idx}"
         is_playing = st.session_state.audio_playing.get(idx, False)
@@ -490,11 +290,12 @@ from streamlit_autorefresh import st_autorefresh
                     st.session_state.pop(f"audio_duration_{idx}", None)
                     st.session_state.pop(f"audio_trigger_{idx}", None)
                     is_playing = False
-                    # Refresh the page once to update buttons
-                    st.rerun()
 
         # Create columns based on playing state
-        cols = st.columns([3, 0.4, 0.4, 0.4, 0.4] if is_playing else [3, 0.4, 0.4], gap ="small")
+        if is_playing:
+            cols = st.columns([3, 0.4, 0.4, 0.4, 0.4], gap="small")
+        else:
+            cols = st.columns([3, 0.4, 0.4], gap="small")
 
         # Timestamp
         with cols[0]:
@@ -514,7 +315,7 @@ from streamlit_autorefresh import st_autorefresh
             else:
                 st.button(f"![Play]({play_icon})", key=f"{button_key_prefix}_play_active", disabled=True)
 
-        # Stop button (visible only when playing)
+        # Stop and Replay buttons - only when playing
         if is_playing:
             with cols[2]:
                 if st.button(f"![Stop]({stop_icon})", key=f"{button_key_prefix}_stop", help=stop_tip):
@@ -524,23 +325,22 @@ from streamlit_autorefresh import st_autorefresh
                     st.session_state.pop(f"audio_trigger_{idx}", None)
                     st.rerun()
 
-        # Replay button (visible only when playing)
-        if is_playing:
             with cols[3]:
                 if st.button(f"![Replay]({replay_icon})", key=f"{button_key_prefix}_replay", help=replay_tip):
                     st.session_state[f"audio_trigger_{idx}"] = True
+                    st.session_state[f"audio_start_time_{idx}"] = time.time()
                     st.rerun()
 
         # Copy button
-        with (cols[4] if is_playing else cols[2]):
+        copy_col_index = 4 if is_playing else 2
+        with cols[copy_col_index]:
             if st.button(f"![Copy]({copy_icon})", key=f"{button_key_prefix}_copy", help=copy_tip):
-                js_copy_to_clipboard(text, "copy", "Copied!")
+                self._copy_to_clipboard(text, idx)
 
         # Play audio if triggered
         if is_playing and st.session_state.get(f"audio_trigger_{idx}", False):
-            self._play_message_audio(text, idx)
+            self._play_message_audio_inline(text, idx)
             st.session_state[f"audio_trigger_{idx}"] = False
-
 
     def _display_chat_history(self):
         """Display all messages with professional styling"""
@@ -560,13 +360,8 @@ from streamlit_autorefresh import st_autorefresh
                             unsafe_allow_html=True,
                         )
 
-
-    def _play_message_audio(self, text: str, idx: int):
-        """Play message audio once"""
-        import time
-        from io import BytesIO
-        from mutagen.mp3 import MP3
-        
+    def _play_message_audio_inline(self, text: str, idx: int):
+        """Play message audio using hidden HTML5 audio element"""
         lang = st.session_state.get("language", "English")
 
         try:
@@ -575,16 +370,19 @@ from streamlit_autorefresh import st_autorefresh
 
             if not clean_text:
                 st.warning("لا يوجد نص لقراءته" if lang == "العربية" else "No text to read")
+                st.session_state.audio_playing[idx] = False
+                st.session_state.pop(f"audio_trigger_{idx}", None)
                 return
 
             tts_lang = "ar" if lang == "العربية" else "en"
             audio_data = self.proc.text_to_speech(clean_text, tts_lang)
 
             if audio_data:
-                # Convert to bytes safely
                 audio_bytes = audio_data.getvalue() if hasattr(audio_data, "getvalue") else audio_data
                 
-                # Get audio duration
+                from io import BytesIO
+                from mutagen.mp3 import MP3
+                
                 if isinstance(audio_bytes, bytes):
                     audio_file = BytesIO(audio_bytes)
                 else:
@@ -594,28 +392,36 @@ from streamlit_autorefresh import st_autorefresh
                     audio = MP3(audio_file)
                     duration = audio.info.length
                 except Exception:
-                    # Fallback duration if MP3 parsing fails
                     duration = 3.0
                 
-                # Store when playback started and duration
+                # Store playback info
                 st.session_state[f"audio_start_time_{idx}"] = time.time()
                 st.session_state[f"audio_duration_{idx}"] = duration
                 
-                # Render hidden audio player
-                audio_base64 = self._audio_to_base64(audio_bytes)
-                st.markdown(
+                # Convert to base64 and play with hidden audio element
+                audio_base64 = base64.b64encode(audio_bytes).decode()
+                
+                components.html(
                     f"""
-                    <div style='display:none; visibility:hidden; height:0; width:0; position:absolute;'>
-                        <audio id="audio_{idx}" autoplay>
-                            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-                        </audio>
-                    </div>
+                    <audio autoplay style="display:none;" id="audio_{idx}_{int(time.time()*1000)}">
+                        <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+                    </audio>
+                    <script>
+                        var audio = document.querySelector('audio[id^="audio_{idx}_"]');
+                        if (audio) {{
+                            audio.play().catch(function(e) {{
+                                console.error('Audio play failed:', e);
+                            }});
+                        }}
+                    </script>
                     """,
-                    unsafe_allow_html=True
+                    height=0,
                 )
                 
             else:
                 st.error("❌ فشل في توليد الصوت" if lang == "العربية" else "❌ Failed to generate audio")
+                st.session_state.audio_playing[idx] = False
+                st.session_state.pop(f"audio_trigger_{idx}", None)
 
         except Exception as e:
             st.error(
@@ -623,67 +429,51 @@ from streamlit_autorefresh import st_autorefresh
                 if lang == "العربية"
                 else f"❌ Audio error: {str(e)}"
             )
-            # Clean up state on error
             st.session_state.audio_playing[idx] = False
             st.session_state.pop(f"audio_trigger_{idx}", None)
             st.session_state.pop(f"audio_start_time_{idx}", None)
             st.session_state.pop(f"audio_duration_{idx}", None)
 
-    def _audio_to_base64(self, audio_bytes):
-        """Convert audio bytes to base64 string"""
-        import base64
-        return base64.b64encode(audio_bytes).decode()
-
-
     def _copy_to_clipboard(self, text: str, idx: int):
-        """Copy text to clipboard using streamlit_js_eval (if available)"""
+        """Copy text to clipboard using JavaScript"""
         lang = st.session_state.get("language", "English")
-
-        # Clean text before copying
         clean_text = self._clean_text_for_copy(text)
-        st_copy_to_clipboard(clean_text)
-
-
-
-
-    def _copy_to_clipboard1(self, text: str, idx: int):
-        """Copy text automatically to clipboard when button is clicked"""
-        # Escape quotes to avoid breaking JS
-        escaped_text = text.replace('"', '\\"').replace("\n", "\\n")
         
-        st.markdown(f"""
+        # Escape text for JavaScript
+        escaped_text = clean_text.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r')
+        
+        # Use JavaScript to copy to clipboard
+        components.html(
+            f"""
             <script>
-                navigator.clipboard.writeText("{escaped_text}").then(function() {{
-                    console.log("Copied to clipboard");
-                }});
+                (function() {{
+                    const text = "{escaped_text}";
+                    navigator.clipboard.writeText(text).then(function() {{
+                        console.log('Text copied to clipboard');
+                    }}).catch(function(err) {{
+                        console.error('Failed to copy text: ', err);
+                    }});
+                }})();
             </script>
-        """, unsafe_allow_html=True)
+            """,
+            height=0,
+            width=0,
+        )
         
-        # Optional: show a small confirmation
-        lang = st.session_state.get("language", "English")
         if lang == "العربية":
-            st.caption("✔️ تم نسخ النص")
+            st.success("✅ تم نسخ النص إلى الحافظة", icon="✅")
         else:
-            st.caption("✔️ Copied to clipboard")
-
-        
+            st.success("✅ Text copied to clipboard", icon="✅")
 
     def _clean_text_for_copy(self, text: str) -> str:
-        """Clean text for copying - remove HTML and markdown formatting"""
-        # Remove HTML tags
+        """Clean text for copying"""
         clean = re.sub(r'<[^>]+>', '', text)
-        # Remove markdown bold
         clean = re.sub(r'\*\*([^\*]+)\*\*', r'\1', clean)
-        # Remove markdown italic
         clean = re.sub(r'\*([^\*]+)\*', r'\1', clean)
-        # Remove markdown headers
         clean = re.sub(r'^#+\s+', '', clean, flags=re.MULTILINE)
-        # Clean up extra whitespace
         clean = re.sub(r'\n\s*\n', '\n\n', clean)
-        
         return clean.strip()
 
-    # -------------------
     # -------------------
     # User Input Handling
     # -------------------
@@ -753,49 +543,25 @@ from streamlit_autorefresh import st_autorefresh
 
     def _handle_needs_info(self, info_request: str):
         st.markdown(info_request)
-        
-        # Get the index for the new message
         msg_idx = len(st.session_state.chat_memory)
-        
-        # Create the message object
         msg = {"role": "assistant", "content": info_request, "timestamp": self._get_current_time()}
-        
-        # Render timestamp and actions immediately
         self._render_timestamp_and_actions(msg, info_request, msg_idx)
-        
-        # Add to memory after rendering
         self._add_message("assistant", info_request)
 
     def _respond(self, content: str):
         st.markdown(content)
-        
-        # Get the index for the new message
         msg_idx = len(st.session_state.chat_memory)
-        
-        # Create the message object
         msg = {"role": "assistant", "content": content, "timestamp": self._get_current_time()}
-        
-        # Render timestamp and actions immediately
         self._render_timestamp_and_actions(msg, content, msg_idx)
-        
-        # Add to memory after rendering
         self._add_message("assistant", content)
 
     def _handle_database_results(self, state: dict):
         summary = state.get("summary", "")
         if summary:
             st.markdown(summary)
-            
-            # Get the index for the new message
             msg_idx = len(st.session_state.chat_memory)
-            
-            # Create the message object
             msg = {"role": "assistant", "content": summary, "timestamp": self._get_current_time()}
-            
-            # Render timestamp and actions immediately
             self._render_timestamp_and_actions(msg, summary, msg_idx)
-            
-            # Add to memory after rendering
             self._add_message("assistant", summary)
 
     # -------------------
