@@ -248,22 +248,18 @@ class LLMManager:
         # Detect follow-up
         # ----------------------------
         is_followup = self._is_followup_question(user_input)
-        # Detect if user is referring to a previous message
+         # Detect if user refers to a previous message
         previous_keywords = [
             "الرسالة الأخيرة", "ماذا قلت", "وش قلت", "جاوبتني", "ردك السابق", 
             "عيد آخر رد", "الرد الأخير", "last message", "previous message", "your last reply"
         ]
 
-        previous_msg_note = ""
         if any(kw in user_input.lower() for kw in previous_keywords):
-            previous_msg_note = "User asked about the previous message or previous reply."
             last_msg = None
-
-            if "chat_memory" in st.session_state:
-                for msg in reversed(st.session_state.chat_memory):
-                    if msg["role"] == "assistant":
-                        last_msg = msg["content"]
-                        break
+            for msg in reversed(chat_memory):
+                if msg["role"] == "assistant":
+                    last_msg = msg["content"]
+                    break
 
             if last_msg:
                 user_input = (
@@ -272,8 +268,6 @@ class LLMManager:
                     "Please answer accordingly."
                 )
                 logger.info("🔁 Added last assistant reply to context.")
-
-
 
         # Auto-enrich vague follow-up with last company
         if last_companies and is_followup:
@@ -365,16 +359,14 @@ class LLMManager:
             # ----------------------------
             # Update company memory
             # ----------------------------
-            if intent_data.extracted_company and intent_data.extracted_company not in last_companies:
-                st.session_state.mentioned_companies.append(intent_data.extracted_company)
-                logger.info(f"💾 Company memory updated: {intent_data.extracted_company}")
+            if intent_data.extracted_company:
+                self.update_last_company(intent_data.extracted_company)
 
             # ----------------------------
-            # Save user message
+            # Save user message (prevent duplicates)
             # ----------------------------
-            # Avoid duplicate user messages
-            # Avoid duplicate user messages
-            if not st.session_state.chat_memory or st.session_state.chat_memory[-1]["content"] != original_input:
+            recent_texts = [m["content"] for m in chat_memory[-3:]]  # check last 3 messages
+            if original_input not in recent_texts:
                 st.session_state.chat_memory.append({
                     "role": "user",
                     "content": original_input,
@@ -383,9 +375,7 @@ class LLMManager:
                     "timestamp": str(datetime.now())
                 })
             else:
-                logger.info("⚠️ Skipped duplicate user message in chat_memory.")
-
-
+                logger.info("⚠️ Skipped similar recent user message.")
 
             logger.info(f"Intent: {intent_data.intent} | Confidence: {intent_data.confidence} | Company: {intent_data.extracted_company or 'None'}")
             logger.info(f"Reasoning: {intent_data.reasoning}")
@@ -399,7 +389,7 @@ class LLMManager:
 
         except Exception as e:
             logger.error(f"Structured intent detection failed: {e}")
-            return self._fallback_intent_detection(user_input)
+            return self._fallback_intent_detection(original_input)
 
     
     def _fallback_intent_detection(self, user_input: str) -> Dict:
