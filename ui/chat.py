@@ -435,35 +435,50 @@ div[data-testid="stHorizontalBlock"] {
             st.session_state.pop(f"audio_duration_{idx}", None)
 
     def _copy_to_clipboard(self, text: str, idx: int):
-        """Copy text to clipboard using JavaScript"""
+        """Copy text to clipboard using simple method"""
         lang = st.session_state.get("language", "English")
         clean_text = self._clean_text_for_copy(text)
         
-        # Escape text for JavaScript
-        escaped_text = clean_text.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r')
+        # Simple escape for JSON
+        import json
+        escaped_text = json.dumps(clean_text)[1:-1]
         
-        # Use JavaScript to copy to clipboard
+        # Create unique ID
+        copy_id = f"copy_{idx}_{int(time.time() * 1000)}"
+        
+        # Simple copy method
         components.html(
             f"""
+            <textarea id="text_{copy_id}" style="position:absolute;left:-9999px;">{clean_text}</textarea>
             <script>
                 (function() {{
-                    const text = "{escaped_text}";
-                    navigator.clipboard.writeText(text).then(function() {{
-                        console.log('Text copied to clipboard');
-                    }}).catch(function(err) {{
-                        console.error('Failed to copy text: ', err);
-                    }});
+                    var text = {json.dumps(clean_text)};
+                    if (navigator.clipboard && navigator.clipboard.writeText) {{
+                        navigator.clipboard.writeText(text).then(function() {{
+                            console.log('Text copied');
+                        }}).catch(function(err) {{
+                            var textarea = document.getElementById('text_{copy_id}');
+                            if (textarea) {{
+                                textarea.select();
+                                document.execCommand('copy');
+                            }}
+                        }});
+                    }} else {{
+                        var textarea = document.getElementById('text_{copy_id}');
+                        if (textarea) {{
+                            textarea.select();
+                            document.execCommand('copy');
+                        }}
+                    }}
                 }})();
             </script>
             """,
             height=0,
-            width=0,
         )
         
-        if lang == "العربية":
-            st.success("✅ تم نسخ النص إلى الحافظة", icon="✅")
-        else:
-            st.success("✅ Text copied to clipboard", icon="✅")
+        # Show success message
+        success_msg = "✅ تم نسخ النص بنجاح" if lang == "العربية" else "✅ Text copied successfully"
+        st.toast(success_msg, icon="✅")
 
     def _clean_text_for_copy(self, text: str) -> str:
         """Clean text for copying"""
