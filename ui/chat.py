@@ -435,50 +435,27 @@ div[data-testid="stHorizontalBlock"] {
             st.session_state.pop(f"audio_duration_{idx}", None)
 
     def _copy_to_clipboard(self, text: str, idx: int):
-        """Copy text to clipboard using simple method"""
+        """Copy text to clipboard using pyperclip"""
         lang = st.session_state.get("language", "English")
         clean_text = self._clean_text_for_copy(text)
         
-        # Simple escape for JSON
-        import json
-        escaped_text = json.dumps(clean_text)[1:-1]
-        
-        # Create unique ID
-        copy_id = f"copy_{idx}_{int(time.time() * 1000)}"
-        
-        # Simple copy method
-        components.html(
-            f"""
-            <textarea id="text_{copy_id}" style="position:absolute;left:-9999px;">{clean_text}</textarea>
-            <script>
-                (function() {{
-                    var text = {json.dumps(clean_text)};
-                    if (navigator.clipboard && navigator.clipboard.writeText) {{
-                        navigator.clipboard.writeText(text).then(function() {{
-                            console.log('Text copied');
-                        }}).catch(function(err) {{
-                            var textarea = document.getElementById('text_{copy_id}');
-                            if (textarea) {{
-                                textarea.select();
-                                document.execCommand('copy');
-                            }}
-                        }});
-                    }} else {{
-                        var textarea = document.getElementById('text_{copy_id}');
-                        if (textarea) {{
-                            textarea.select();
-                            document.execCommand('copy');
-                        }}
-                    }}
-                }})();
-            </script>
-            """,
-            height=0,
-        )
-        
-        # Show success message
-        success_msg = "✅ تم نسخ النص بنجاح" if lang == "العربية" else "✅ Text copied successfully"
-        st.toast(success_msg, icon="✅")
+        try:
+            # Use pyperclip for reliable clipboard access
+            import pyperclip
+            pyperclip.copy(clean_text)
+            
+            success_msg = "✅ تم نسخ النص بنجاح" if lang == "العربية" else "✅ Text copied successfully"
+            st.toast(success_msg, icon="✅")
+        except ImportError:
+            # Fallback: Show text in a text area for manual copy
+            st.text_area(
+                "انسخ النص من هنا:" if lang == "العربية" else "Copy text from here:",
+                clean_text,
+                height=150,
+                key=f"copy_fallback_{idx}_{int(time.time() * 1000)}"
+            )
+        except Exception as e:
+            st.error(f"❌ خطأ في النسخ: {str(e)}" if lang == "العربية" else f"❌ Copy error: {str(e)}")
 
     def _clean_text_for_copy(self, text: str) -> str:
         """Clean text for copying"""
