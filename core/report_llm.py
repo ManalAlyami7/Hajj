@@ -3,7 +3,7 @@ import streamlit as st
 from openai import OpenAI
 import json
 
-class LLMManager:
+class RLLMManager:
     def __init__(self):
         self.client = self._get_client()
 
