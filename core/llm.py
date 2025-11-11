@@ -421,6 +421,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             
             logger.info(f"SQL generated - Type: {sql_data.query_type}, Safety: {sql_data.safety_checked}")
             logger.info(f"Explanation: {sql_data.explanation}")
+            print(sql_data.sql_query)
             
             if sql_data.sql_query and sql_data.safety_checked:
                 return {
@@ -645,7 +646,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
     - Name (Arabic / English):
     - City:
     - Country:
-    - Email:
+    - Email:*
     - Contact Info:
     - Rating:
     - Status: (Yes, Authorized / No, Not Authorized)
