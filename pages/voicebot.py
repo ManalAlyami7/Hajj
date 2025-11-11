@@ -712,7 +712,7 @@ if st.session_state.get('pending_audio'):
     st.session_state.status = t('voice_status_speaking', st.session_state.language)
 
     # Block for duration
-    time.sleep(duration)
+    time.sleep(duration+2)
 
     # Update state after playback ends
     st.session_state.is_speaking = False
