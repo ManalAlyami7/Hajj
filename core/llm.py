@@ -490,104 +490,105 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             "google_maps_link"
         ]
 
-        # نتحقق إذا سأل المستخدم عن عمود محدد
+        requested_columns = []
+
         if any(k in user_input.lower() for k in ["contact", "رقم التواصل"]):
-            requested_columns = ["contact_Info"]
-        elif any(k in user_input.lower() for k in ["email", "البريد الإلكتروني"]):
-            requested_columns = ["email"]
-        elif any(k in user_input.lower() for k in ["city", "المدينة"]):
-            requested_columns = ["city"]
-        elif any(k in user_input.lower() for k in ["country", "الدولة"]):
-            requested_columns = ["country"]
-        elif any(k in user_input.lower() for k in ["status", "الحالة", "authorization", "معتمد"]):
-            requested_columns = ["is_authorized"]
-        else:
-            # إذا لم يذكر عمود محدد → عرض كل الأعمدة
+            requested_columns.append("contact_Info")
+        if any(k in user_input.lower() for k in ["email", "البريد الإلكتروني"]):
+            requested_columns.append("email")
+        if any(k in user_input.lower() for k in ["city", "المدينة"]):
+            requested_columns.append("city")
+        if any(k in user_input.lower() for k in ["country", "الدولة"]):
+            requested_columns.append("country")
+        if any(k in user_input.lower() for k in ["status", "الحالة", "authorization", "معتمد"]):
+            requested_columns.append("is_authorized")
+        if any(k in user_input.lower() for k in ["map", "خرائط", "google maps"]):
+            requested_columns.append("google_maps_link")
+
+        # إذا لم يذكر المستخدم أي عمود محدد → عرض كل الأعمدة
+        if not requested_columns:
             requested_columns = all_columns
 
+
         summary_prompt = f"""
-You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
+    You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
 
-🚨 CRITICAL LANGUAGE RULE:
-- User question language: {language}
-- You MUST respond in {language} ONLY
-- If language is "العربية", respond COMPLETELY in Arabic
-- If language is "English", respond COMPLETELY in English
-- Do NOT mix languages in your response
+    🚨 CRITICAL LANGUAGE RULE:
+    - User question language: {language}
+    - You MUST respond in {language} ONLY
+    - If language is "العربية", respond COMPLETELY in Arabic
+    - If language is "English", respond COMPLETELY in English
+    - Do NOT mix languages in your response
 
-Your task:
-→ Summarize SQL query results clearly and naturally, with a warm, conversational tone that feels friendly and professional.
+    Your task:
+    → Summarize SQL query results clearly and naturally, with a warm, conversational tone that feels friendly and professional.
 
-User question: {user_input}
-Data: {data_preview}
+    User question: {user_input}
+    Data: {data_preview}
 
-Instructions:
-- ALWAYS respond in {language}
-- Always acknowledge the user's question in {language}
-- Arabic examples: "بناءً على البيانات، وجدت لك النتائج التالية:" أو "إليك ما وجدته:"
-- English examples: "Here are the results I found for you:" or "Based on the data, here's what I found:"
-- Be concise and clear
-- Highlight number of matching records
-- Provide actionable advice if relevant
-- Use emojis sparingly to enhance friendliness
-- Use a mix of sentences and bullet points
+    Instructions:
+    - ALWAYS respond in {language}
+    - Always acknowledge the user's question in {language}
+    - Arabic examples: "بناءً على البيانات، وجدت لك النتائج التالية:" أو "إليك ما وجدته:"
+    - English examples: "Here are the results I found for you:" or "Based on the data, here's what I found:"
+    - Be concise and clear
+    - Highlight number of matching records
+    - Provide actionable advice if relevant
+    - Use emojis sparingly to enhance friendliness
+    - Use a mix of sentences and bullet points
 
-Columns logic:
-- If the user specifically asks about a column (e.g., contact info, email, city, country, status):
-    → Provide ONLY that column's data
-- Otherwise, provide ALL default columns:
-    hajj_company_en, hajj_company_ar, formatted_address, 
-    city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
+    Columns to include in summary: {requested_columns}
 
-🚨 CRITICAL LANGUAGE-SPECIFIC RULES:
-- If {language} is "العربية":
-  * Translate ALL field names to Arabic
-  * city → المدينة
-  * country → الدولة
-  * email → البريد الإلكتروني
-  * contact_Info → رقم التواصل
-  * rating_reviews → التقييم
-  * is_authorized → مصرح / معتمد (translate "Yes" to "نعم، معتمد" and "No" to "لا، غير معتمد")
-  * formatted_address → العنوان
-  * google_maps_link → رابط خرائط جوجل
+    🚨 CRITICAL LANGUAGE-SPECIFIC RULES:
+    - If {language} is "العربية":
+    * Translate ALL field names to Arabic
+    * city → المدينة
+    * country → الدولة
+    * email → البريد الإلكتروني
+    * contact_Info → رقم التواصل
+    * rating_reviews → التقييم
+    * is_authorized → مصرح / معتمد (translate "Yes" to "نعم، معتمد" and "No" to "لا، غير معتمد")
+    * formatted_address → العنوان
+    * google_maps_link → رابط خرائط جوجل
 
-- If {language} is "English":
-  * Keep all field names in English
-  * is_authorized → translate to "Yes, Authorized" or "No, Not Authorized"
+    - If {language} is "English":
+    * Keep all field names in English
+    * is_authorized → translate to "Yes, Authorized" or "No, Not Authorized"
 
-Behavior based on user question:
-- Always include Google Maps Link if available
-- Ensure response is complete and readable, no truncated or missing information
-- You are designed to protect pilgrims from scams and help them verify Hajj agencies authorized by the Ministry of Hajj and Umrah
+    Behavior based on user question:
+    - Always include Google Maps Link if available
+    - Ensure response is complete and readable, no truncated or missing information
+    - You are designed to protect pilgrims from scams and help them verify Hajj agencies authorized by the Ministry of Hajj and Umrah
 
-🌍 OUTPUT FORMAT:
+    🌍 OUTPUT FORMAT:
 
-If {language} is "العربية", use this format:
-- الاسم (بالعربية / بالإنجليزية):
-- المدينة:
-- الدولة:
-- البريد الإلكتروني:
-- رقم التواصل:
-- التقييم:
-- الحالة: (نعم، معتمد / لا، غير معتمد)
-- رابط خرائط جوجل:
+    If {language} is "العربية", use this format:
+    - الاسم (بالعربية / بالإنجليزية):
+    - المدينة:
+    - الدولة:
+    - البريد الإلكتروني:
+    - رقم التواصل:
+    - التقييم:
+    - الحالة: (نعم، معتمد / لا، غير معتمد)
+    - رابط خرائط جوجل
 
-If {language} is "English", use this format:
-- Name (Arabic / English):
-- City:
-- Country:
-- Email:
-- Contact Info:
-- Rating:
-- Status: (Yes, Authorized / No, Not Authorized)
-- Google Maps Link:
+    If {language} is "English", use this format:
+    - Name (Arabic / English):
+    - City:
+    - Country:
+    - Email:
+    - Contact Info:
+    - Rating:
+    - Status: (Yes, Authorized / No, Not Authorized)
+    - Google Maps Link
 
-- Keep tone friendly, professional, and natural IN {language}
-- Mix sentences and bullets; add small friendly phrases if appropriate
-- Do NOT invent any data
-- If multiple rows, list up to 10 agencies with key details
-- REMEMBER: Your ENTIRE response must be in {language}
-"""
+    - Keep tone friendly, professional, and natural IN {language}
+    - Mix sentences and bullets; add small friendly phrases if appropriate
+    - Do NOT invent any data
+    - If multiple rows, list up to 10 agencies with key details
+    - REMEMBER: Your ENTIRE response must be in {language}
+    """
+
 
 
 
