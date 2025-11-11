@@ -1,7 +1,6 @@
 """
-LLM Manager Module
-Handles OpenAI API interactions for chat and TTS with structured outputs
-Enhanced with company memory tracking for context-aware conversations
+LLM Manager Module - Memory-Free Version
+Handles OpenAI API interactions with robust custom memory system
 """
 
 import random
@@ -13,18 +12,26 @@ from typing import Optional, List, Dict, Literal
 from pydantic import BaseModel, Field
 import logging
 import json
+import sqlite3
 from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def normalize_company_name(name: str) -> str:
+    """Normalize company names for consistent memory storage and search."""
+    if not name:
+        return ""
+    name = name.lower()
+    name = " ".join(name.split())
+    name = re.sub(r'[^\w\s]', '', name)
+    return name
 
 # -----------------------------
 # Pydantic Models for Structured Outputs
 # -----------------------------
 
 class IntentClassification(BaseModel):
-    """Structured output for intent detection"""
     intent: Literal["GREETING", "DATABASE", "GENERAL_HAJJ", "NEEDS_INFO"] = Field(
         description="The classified intent of the user's message"
     )
@@ -35,368 +42,237 @@ class IntentClassification(BaseModel):
     reasoning: str = Field(
         description="Brief explanation of why this intent was chosen"
     )
-    extracted_company: Optional[str] = Field(
-        None,
-        description="Company name mentioned in user input (if any). Extract Arabic or English name."
-    )
 
 
 class SQLQueryGeneration(BaseModel):
-    """Structured output for SQL query generation"""
-    sql_query: Optional[str] = Field(
-        None,
-        description="The generated SQL SELECT query, or None if no safe query can be generated"
-    )
-    query_type: Literal["simple", "aggregation", "complex", "no_sql"] = Field(
-        description="Type of query generated"
-    )
-    filters_applied: List[str] = Field(
-        default_factory=list,
-        description="List of filters or conditions applied in the query"
-    )
-    explanation: str = Field(
-        description="Human-readable explanation of what the query does"
-    )
-    safety_checked: bool = Field(
-        description="Whether the query passed safety validation"
-    )
-    extracted_company: Optional[str] = Field(
-        None,
-        description="Company name extracted from query context"
-    )
+    sql_query: Optional[str] = Field(None, description="The generated SQL SELECT query, or None if no safe query can be generated")
+    query_type: Literal["simple", "aggregation", "complex", "no_sql"] = Field(description="Type of query generated")
+    filters_applied: List[str] = Field(default_factory=list, description="List of filters or conditions applied in the query")
+    explanation: str = Field(description="Human-readable explanation of what the query does")
+    safety_checked: bool = Field(description="Whether the query passed safety validation")
 
 
 class QuerySummary(BaseModel):
-    """Structured output for query result summarization"""
-    summary: str = Field(
-        description="Natural language summary of the query results"
-    )
+    summary: str = Field(description="Natural language summary of the query results")
   
 
 class GreetingResponse(BaseModel):
-    """Structured output for greeting responses"""
-    greeting: str = Field(
-        description="The friendly greeting message"
-    )
-    tone: Literal["formal", "casual", "warm"] = Field(
-        description="Tone of the greeting"
-    )
-    includes_offer_to_help: bool = Field(
-        description="Whether the greeting includes an offer to help"
-    )
+    greeting: str = Field(description="The friendly greeting message")
+    tone: Literal["formal", "casual", "warm"] = Field(description="Tone of the greeting")
+    includes_offer_to_help: bool = Field(description="Whether the greeting includes an offer to help")
     
     
 class NEEDSInfoResponse(BaseModel):
-    """Structured output for needs info responses"""
-    needs_info: str = Field(
-        description="The message asking user for more specific information"
-    )
-    suggestions: List[str] = Field(
-        default_factory=list,
-        description="List of example queries the user could try"
-    )
-    missing_info: List[str] = Field(
-        default_factory=list,
-        description="List of specific information pieces needed"
-    )
-    sample_query: str = Field(
-        description="An example of a well-formed query"
-    )
-    user_lang: Literal["English", "العربية"] = Field(
-        description="Language to respond in"
-    )
+    needs_info: str = Field(description="The message asking user for more specific information")
+    suggestions: List[str] = Field(default_factory=list, description="List of example queries the user could try")
+    missing_info: List[str] = Field(default_factory=list, description="List of specific information pieces needed")
+    sample_query: str = Field(description="An example of a well-formed query")
+    user_lang: Literal["English", "العربية"] = Field(description="Language to respond in")
+
+
+class RobustMemory:
+    """بديل مضمون للذاكرة بدون Langchain"""
+    
+    def __init__(self, max_history=20):
+        self.max_history = max_history
+        self._init_session_state()
+    
+    def _init_session_state(self):
+        if "chat_memory" not in st.session_state:
+            st.session_state.chat_memory = []
+        if "last_company_name" not in st.session_state:
+            st.session_state.last_company_name = ""
+        if "conversation_context" not in st.session_state:
+            st.session_state.conversation_context = []
+    
+    def store_last_company(self, company_name: str):
+       
+        if company_name:
+            normalized_name = normalize_company_name(company_name)
+            st.session_state.last_company_name = normalized_name
+    
+    def get_last_company(self) -> str:
+     
+        return st.session_state.get("last_company_name", "")
+    
+    def add_message(self, role: str, content: str):
+        self._init_session_state()
+        message = {"role": role, "content": content, "timestamp": datetime.now().isoformat()}
+        st.session_state.chat_memory.append(message)
+        
+        if len(st.session_state.chat_memory) > self.max_history:
+            st.session_state.chat_memory = st.session_state.chat_memory[-self.max_history:]
+    
+    def get_recent_messages(self, limit: int = 10) -> List[Dict]:
+       
+        self._init_session_state()
+        return st.session_state.chat_memory[-limit:] if st.session_state.chat_memory else []
+    
+    def get_conversation_context(self, limit: Optional[int] = None) -> List[Dict[str, str]]:
+     
+        messages = self.get_recent_messages(limit or self.max_history)
+        return [{"role": msg["role"], "content": msg["content"]} for msg in messages]
+    
+    def clear_memory(self):
+       
+        st.session_state.chat_memory = []
+        st.session_state.last_company_name = ""
+        st.session_state.conversation_context = []
 
 
 class LLMManager:
-    """Manages OpenAI API calls with error handling, rate limiting, and context memory"""
+   
     
     def __init__(self):
-        """Initialize OpenAI client and company memory"""
-        self.client = self._get_client()
+        self.memory = RobustMemory(max_history=20)
+        self.client = self._init_openai_client()
+        
+        # أصوات TTS حسب اللغة
         self.voice_map = {
-            "العربية": "onyx",  # Deeper voice for Arabic
+            "العربية": "onyx",
             "English": "alloy"
         }
-        if "chat_memory" not in st.session_state:
-            st.session_state.chat_memory = []
     
-    @st.cache_resource
-    def _get_client(_self):
-        """Get cached OpenAI client"""
-        api_key = st.secrets.get("OPENAI_API_KEY") or st.secrets.get("key")
+    def _init_openai_client(self):
+        api_key = st.secrets.get("key")
         if not api_key:
             logger.error("OpenAI API key not found")
             st.warning("⚠️ OpenAI API key missing in Streamlit secrets")
             st.stop()
         return OpenAI(api_key=api_key)
     
-    def build_chat_context(self, limit: int = 5, exclude_last_user: bool = True) -> List[Dict[str, str]]:
-        if "chat_memory" not in st.session_state:
-            return []
-
-        recent = st.session_state.chat_memory[-limit:]
-
-        if exclude_last_user and recent and recent[-1]["role"] == "user":
-            recent = recent[:-1]
-
-        context = []
-        seen_messages = set()
-        for msg in recent:
-            if not isinstance(msg, dict) or "role" not in msg or "content" not in msg:
-                continue
-            key = f"{msg['role']}:{msg['content']}"
-            if key in seen_messages:
-                continue
-            seen_messages.add(key)
-            context.append({"role": msg["role"], "content": msg["content"]})
-
-        return context
-
-
-
-    def update_last_company(self, company_name: Optional[str]):
-        """
-        Update the last mentioned company in session state.
-        Enhancement: keep a history of all mentioned companies.
-        """
-        if company_name:
-            # Update last company
-            st.session_state["last_company_name"] = company_name
-
-            # Maintain full history of companies
-            if "mentioned_companies" not in st.session_state:
-                st.session_state["mentioned_companies"] = []
-            if company_name not in st.session_state["mentioned_companies"]:
-                st.session_state["mentioned_companies"].append(company_name)
-
-            logger.info(f"💾 Company memory updated: {company_name}")
-            logger.info(f"📜 Full company history: {st.session_state['mentioned_companies']}")
-
-    def _is_followup_question(self, text: str) -> bool:
-        """
-        Detect if a question is a follow-up based on:
-        - Short length with keywords
-        - Reference to previously mentioned companies
-        - Explicitly asking about previous messages
-        """
-        text_lower = text.lower().strip()
-
-        followup_keywords_ar = [
-            "موقع", "عنوان", "موجود", "معتمد", "مصرح", "رقم", "ايميل",
-            "تفاصيل", "تقييم", "خريطة", "وين", "كيف", "متى",
-            "هل هي", "هل هو", "فين", "ايش", "شنو", "موجودة",
-            "في الرياض", "في مكة", "في جدة", "في المدينة"
-        ]
-        followup_keywords_en = [
-            "location", "address", "where", "authorized", "phone", "email",
-            "details", "rating", "map", "is it", "contact", "info", "number",
-            "in riyadh", "in makkah", "in jeddah", "in medina", "there", "located"
-        ]
-
-        # Short questions with keywords
-        if len(text_lower.split()) <= 6 and any(kw in text_lower for kw in followup_keywords_ar + followup_keywords_en):
-            return True
-
-        # Check mentioned companies safely
-        mentioned_companies = st.session_state.get("mentioned_companies", [])
-        for company in mentioned_companies:
-            if company.strip().lower() in text_lower:
-                return True
-
-        # Explicit reference to previous messages
-        previous_refs = ["الرسالة الأخيرة", "ماذا قلت", "سابقًا", "last message", "previous message"]
-        if any(ref in text_lower for ref in previous_refs):
-            return True
-
-        return False
+    def store_last_company(self, company_name: str):
+        self.memory.store_last_company(company_name)
     
-    def store_bot_reply(self, reply_text: str, intent: str, extracted_company: Optional[str] = None):
-        """Store assistant reply in chat memory with metadata, avoiding consecutive duplicates"""
-        if "chat_memory" not in st.session_state:
-            st.session_state.chat_memory = []
-
-        # تحقق من الرد الأخير للبوت
-        if st.session_state.chat_memory:
-            last_msg = st.session_state.chat_memory[-1]
-            if last_msg["role"] == "assistant" and last_msg["content"] == reply_text:
-                logger.info("⚠️ Skipped duplicate assistant message in chat_memory.")
-                return
-
-        st.session_state.chat_memory.append({
-            "role": "assistant",
-            "content": reply_text,
-            "intent": intent,
-            "extracted_company": extracted_company,
-            "timestamp": str(datetime.now())
-        })
-        logger.info(f"💾 Stored assistant reply: {reply_text[:50]}... | Intent: {intent} | Company: {extracted_company or 'None'}")
-
-
-
-
+    def get_last_company(self) -> str:
+        return self.memory.get_last_company()
+    
+    def add_user_message(self, user_input: str):
+        self.memory.add_message("user", user_input)
+    
+    def add_assistant_message(self, assistant_reply: str):
+        self.memory.add_message("assistant", assistant_reply)
+    
+    def build_chat_context(self, limit: Optional[int] = None) -> List[Dict[str, str]]:
+        """بناء سياق المحادثة (واجهة متوافقة)"""
+        return self.memory.get_conversation_context(limit)
+    
+    def ask(self, user_input: str) -> str:
+        """
+        بديل عن conversation.predict مع الذاكرة المضمونة
+        """
+        try:
+            # بناء السياق من الذاكرة
+            context_messages = self.build_chat_context(limit=10)
+            
+            # إعداد الرسائل للنموذج
+            messages = []
+            
+            # إضافة رسائل السياق أولاً
+            for msg in context_messages:
+                messages.append({"role": msg["role"], "content": msg["content"]})
+            
+            # إضافة الرسالة الحالية
+            messages.append({"role": "user", "content": user_input})
+            
+            # استدعاء OpenAI مباشرة
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                temperature=0.4,
+                max_tokens=1000
+            )
+            
+            assistant_reply = response.choices[0].message.content.strip()
+            
+            # ✅ تخزين في الذاكرة - هذا كان ناقص!
+            self.add_user_message(user_input)
+            self.add_assistant_message(assistant_reply)
+            
+            return assistant_reply
+            
+        except Exception as e:
+            logger.error(f"Ask method failed: {e}")
+            return "I apologize, but I encountered an error. Please try again."
+    
     def detect_intent(self, user_input: str, language: str) -> Dict:
         """
-        Detect user intent using LLM with strong memory.
-        Remembers ALL previous user messages and all mentioned companies.
-        Returns: Dict with intent, confidence, reasoning, and extracted_company
+        Detect user intent using robust memory system
         """
-        # ----------------------------
-        # Initialize memory if missing
-        # ----------------------------
-        if "chat_memory" not in st.session_state:
-            st.session_state.chat_memory = []
-        if "mentioned_companies" not in st.session_state:
-            st.session_state.mentioned_companies = []
-
-        original_input = user_input
-        chat_memory = st.session_state.chat_memory
-        last_companies = st.session_state.mentioned_companies
-
-        # ----------------------------
-        # Detect follow-up
-        # ----------------------------
-        is_followup = self._is_followup_question(user_input)
-         # Detect if user refers to a previous message
-        previous_keywords = [
-            "الرسالة الأخيرة", "ماذا قلت", "وش قلت", "جاوبتني", "ردك السابق", 
-            "عيد آخر رد", "الرد الأخير", "last message", "previous message", "your last reply"
-        ]
-
-        if any(kw in user_input.lower() for kw in previous_keywords):
-            last_msg = None
-            for msg in reversed(chat_memory):
-                if msg["role"] == "assistant":
-                    last_msg = msg["content"]
-                    break
-
-            if last_msg:
-                user_input = (
-                    f"The user is asking about your previous answer. "
-                    f"Here was your last response:\n\n{last_msg}\n\n"
-                    "Please answer accordingly."
-                )
-                logger.info("🔁 Added last assistant reply to context.")
-
-        # Auto-enrich vague follow-up with last company
-        if last_companies and is_followup:
-            last_company = last_companies[-1]
-            if language == "العربية":
-                user_input = f"هل شركة {last_company} {original_input.strip()}"
-            else:
-                user_input = f"Is {last_company} {original_input.strip()}"
-            logger.info(f"🔗 Context auto-enriched: '{original_input}' → '{user_input}'")
-
-        # ----------------------------
-        # Build conversation context
-        # ----------------------------
-        context_text = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in chat_memory])
-
+        # بناء السياق من الذاكرة
+        context = self.build_chat_context(limit=5)
+        context_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in context])
+        
         intent_prompt = f"""
         You are a fraud-prevention assistant for Hajj pilgrims.
-        Use the full conversation history and all previously mentioned companies.
-        Focus on preventing fraud, verifying agencies, and guiding users accurately.
-
-        🧠 CONTEXT MEMORY:
-        - Previous messages:
-        {context_text if context_text else 'None'}
-        - Previously mentioned companies:
-        {', '.join(last_companies) if last_companies else 'None'}
-        - Note: If user asked about a previous message, include the last assistant reply.
-
-        🎯 FOLLOW-UP DETECTION:
-        - If user asks a follow-up question about a company or location:
-        Arabic examples: "وين موقعها؟", "هل هي معتمدة؟", "أعطني التفاصيل", "رقم التواصل؟", "هل موجودة في الرياض؟"
-        English examples: "Where is it located?", "Is it authorized?", "Give me details", "Contact number?", "Is it in Riyadh?"
-        - If a last_company exists, classify as DATABASE with high confidence (0.95+)
-        - Reasoning should mention: "Follow-up question about [company] - checking existence/details"
-
-        📋 INTENT CATEGORIES:
-        1. GREETING:
-        - Greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا
-        - No specific agency information
-        - User asks about capabilities/services or just wants to chat
-        2. DATABASE:
-        - Questions about verifying Hajj agencies
-        - Authorization, company details, locations, contacts
-        - Examples: "Is X authorized?", "Address/email/phone of Y", "Agencies in Riyadh or Mecca"
-        3. GENERAL_HAJJ:
-        - General Hajj questions (rituals, requirements, safety, procedures)
-        - Not about specific agencies
-        4. NEEDS_INFO:
-        - Vague or incomplete questions
-        - Examples: "I want to verify an agency" (which one?), "Tell me about Hajj companies" (specify which)
-
+    
+        📋 Classify this message into ONE of four categories:
+        
+        1️⃣ GREETING: Greetings, hello, hi, how are you, salam, السلام عليكم, مرحبا
+        
+        2️⃣ DATABASE: Questions about verifying specific Hajj agencies, authorization, company details, locations, contacts
+        
+        3️⃣ GENERAL_HAJJ: General Hajj-related questions (rituals, requirements, documents, safety, procedures)
+        
+        4️⃣ NEEDS_INFO: Vague messages that need more details
+        
         🔍 COMPANY EXTRACTION:
-        - Extract any company name mentioned in the user's message
-        - Examples:
-        "شركة جبل عمر" → "جبل عمر"
-        "Royal City Agency" → "Royal City"
-        "وكالة الهدى" → "الهدى"
-        "Al Safa Travel" → "Al Safa"
-
+        Extract any company name mentioned in the user's message and return it in 'extracted_company'.
+        
+        Examples of company mentions:
+        - "شركة جبل عمر" → extracted_company: "جبل عمر"
+        - "Royal City Agency" → extracted_company: "Royal City"
+        - "وكالة الهدى" → extracted_company: "الهدى"
+        - "Al Safa Travel" → extracted_company: "Al Safa"
+        
         🚨 CRITICAL CONTEXT:
         - 415 fake Hajj offices closed in 2025
         - 269,000+ unauthorized pilgrims stopped
-        - Mission: prevent fraud and protect pilgrims
-        - For DATABASE questions, we need company names or clear location criteria
-
-        Message to classify: {user_input}
-
-        Return JSON with:
-        - intent (GREETING, DATABASE, GENERAL_HAJJ, NEEDS_INFO)
-        - extracted_company (if any)
-        - confidence (0-1)
-        - reasoning
+        - Mission: prevent fraud, protect pilgrims
+        - For DATABASE questions, we need specific agency names or clear location criteria
+        
+        Conversation Context:
+        {context_text}
+        
+        User Message: {user_input}
+        
+        Classify the intent, provide confidence score, and explain your reasoning in JSON format.
+        Return JSON with: intent, confidence, reasoning, extracted_company
         """
-
-            # ----------------------------
-        # Call LLM
-        # ----------------------------
+        
         try:
-            response = self.client.beta.chat.completions.parse(
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You classify user intents and extract company names with full context."},
+                    {"role": "system", "content": "You are an intent classification expert. Always return valid JSON."},
                     {"role": "user", "content": intent_prompt}
                 ],
-                response_format=IntentClassification,
-                temperature=0
+                temperature=0.1,
+                response_format={"type": "json_object"}
             )
-            intent_data = response.choices[0].message.parsed
-
-            # ----------------------------
-            # Update company memory only
-            # ----------------------------
-            if intent_data.extracted_company:
-                self.update_last_company(intent_data.extracted_company)
-
-            logger.info(f"Intent: {intent_data.intent} | Confidence: {intent_data.confidence} | Company: {intent_data.extracted_company or 'None'}")
-            logger.info(f"Reasoning: {intent_data.reasoning}")
-
-            return {
-                "intent": intent_data.intent,
-                "confidence": intent_data.confidence,
-                "reasoning": intent_data.reasoning,
-                "extracted_company": intent_data.extracted_company
-            }
-
+            
+            intent_data = json.loads(response.choices[0].message.content)
+            logger.info(f"Intent detected: {intent_data.get('intent')}")
+            
+            # تخزين الشركة إذا وجدت
+            extracted_company = intent_data.get('extracted_company')
+            if extracted_company:
+                self.store_last_company(extracted_company)
+            
+            return intent_data
+            
         except Exception as e:
-            logger.error(f"Structured intent detection failed: {e}")
-            return self._fallback_intent_detection(original_input)
+            logger.error(f"Intent detection failed: {e}")
+            return self._fallback_intent_detection(user_input)
     
     def _fallback_intent_detection(self, user_input: str) -> Dict:
         """Fallback intent detection using heuristics when API fails"""
         ui = user_input.lower()
-        mentioned_companies = st.session_state.get("mentioned_companies", [])
         
         if any(g in ui for g in ["hello", "hi", "salam", "السلام", "مرحبا"]):
             intent = "GREETING"
         elif any(k in ui for k in ["company", "agency", "معتمد", "شركات", "authorized", "وكالة"]):
-            # Check if query is too vague
-            if len(ui.split()) < 4 and not any(specific in ui for specific in ["royal", "alhuda", "مكة", "جدة", "riyadh"]):
-                intent = "NEEDS_INFO"
-            else:
-                intent = "DATABASE"
+            intent = "DATABASE" if len(ui.split()) >= 4 else "NEEDS_INFO"
         else:
             intent = "GENERAL_HAJJ"
         
@@ -404,226 +280,223 @@ class LLMManager:
             "intent": intent,
             "confidence": 0.7,
             "reasoning": "Determined by keyword matching (fallback)",
-            "extracted_company": None
+            "extracted_company": ""
         }
-        
+    
     def generate_greeting(self, user_input: str, language: str) -> str:
-        """Generate natural greeting response with structured output and store in chat memory"""
-        is_arabic = language == "العربية"
+        """Generate natural greeting response using LLM memory automatically"""
+        context = self.build_chat_context(limit=5)
+        context_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in context])
         
-        system_prompt = """You are a friendly Hajj and fraud prevention assistant designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah. 
-        Generate a short, warm, natural greeting (max 3 sentences) that:
+        system_prompt = """
+        You are a friendly Hajj and fraud prevention assistant designed to protect pilgrims from scams and help them verify Hajj agencies authorized by the Ministry of Hajj and Umrah.
+        💡 INSTRUCTIONS:
+        - Use the full conversation context automatically (remember user's name, language, and previous messages).
+        - Respond in Arabic if the user input contains Arabic text; otherwise, respond in English.
+        - Generate a short, warm, natural greeting (max 3 sentences) that:
         - Acknowledges the user's greeting
         - Expresses willingness to help
         - Mentions you can help verify Hajj companies
         - Uses emojis appropriately
-        - Respond in Arabic **if the user input contains any Arabic text**, otherwise respond in English
-        Explain your reasoning and what you provide briefly.
-
-        Keep the response concise, friendly, and professional."""
-
-        try:
-            response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    *self.build_chat_context(limit=5),
-                    {"role": "user", "content": user_input}
-                ],
-                response_format=GreetingResponse,
-                temperature=0.7
-            )
-            
-            greeting_data = response.choices[0].message.parsed
-            greeting_text = greeting_data.greeting
-
-            logger.info(f"Greeting generated with tone: {greeting_data.tone}")
-
-            # ----------------------------
-            # Store assistant reply using store_bot_reply
-            # ----------------------------
-            self.store_bot_reply(reply_text=greeting_text, intent="GREETING")
-
-            return greeting_text
+        - Keep responses concise, friendly, and professional.
+        """
         
-        except Exception as e:
-            logger.error(f"Structured greeting generation failed: {e}")
-            fallback = "Hello! 👋 How can I help you today?" if not is_arabic else "السلام عليكم! 👋 كيف يمكنني مساعدتك؟"
-            self.store_bot_reply(reply_text=fallback, intent="GREETING")
-            return fallback
-
-
-    
-    def generate_general_answer(self, user_input: str, language: str) -> str:
-        """Generate answer for general Hajj questions with context and memory storage"""
-        system_prompt = """You are a helpful assistant specialized in Hajj information. 
-        Be concise, factual, and helpful. Focus on practical information.
-        Detect if the user's question is in Arabic or English, and respond in the same language.
-        You are designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah.
-        Avoid religious rulings or fatwa - stick to practical guidance."""
-
         try:
+            prompt = f"{system_prompt}\nConversation Context:\n{context_text}\n\nUser says: {user_input}"
+            
             response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    *self.build_chat_context(limit=5),
-                    {"role": "user", "content": user_input}
+                    {"role": "user", "content": prompt}
                 ],
-                temperature=0.6,
-                max_tokens=400
+                temperature=0.4,
+                max_tokens=200
             )
-
-            answer = response.choices[0].message.content.strip()
-
-            # ----------------------------
-            # Store assistant reply in memory
-            # ----------------------------
-            self.store_bot_reply(reply_text=answer, intent="GENERAL_HAJJ")
-
-            return answer
-
+            
+            greeting = response.choices[0].message.content.strip()
+            
+            # تحديث الذاكرة
+            self.add_user_message(user_input)
+            self.add_assistant_message(greeting)
+            
+            return greeting
+            
         except Exception as e:
-            logger.error(f"General answer generation failed: {e}")
-            fallback = "I encountered an error. Please try rephrasing your question."
-            self.store_bot_reply(reply_text=fallback, intent="GENERAL_HAJJ")
-            return fallback
-
-
+            logger.error(f"Greeting generation failed: {e}")
+            return "Hello! 👋 How can I help you today?" if language != "العربية" else "السلام عليكم! 👋 كيف يمكنني مساعدتك؟"
     
-    def generate_sql(self, user_input: str, language: str) -> Optional[Dict]:
-        """
-        Generate SQL query from user input with structured output, context awareness,
-        follow-up handling, and automatic memory storage.
-        Returns: Dict with sql_query, query_type, filters, explanation, safety_checked
-        """
-        # ----------------------------
-        # Retrieve last company and chat context
-        # ----------------------------
-        last_companies = st.session_state.get("mentioned_companies", [])
-        last_company = last_companies[-1] if last_companies else None
-
-        # Check if the input is a follow-up and enrich it with last company
-        if last_company and self._is_followup_question(user_input):
-            if language == "العربية":
-                user_input = f"هل شركة {last_company} {user_input.strip()}"
-            else:
-                user_input = f"Is {last_company} {user_input.strip()}"
-            logger.info(f"🔗 Context auto-enriched for SQL: '{user_input}'")
-
-        # Prepare SQL system prompt
-        sql_prompt = self._get_sql_system_prompt(language) + f"\n\nUser Question: {user_input}"
-
+    def generate_general_answer(self, user_input: str, language: str) -> str:
+        """Generate answer for general Hajj questions using robust memory system"""
+        context = self.build_chat_context(limit=5)
+        context_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in context])
+        
+        system_prompt = """You are a helpful assistant specialized in Hajj information. 
+        Be concise, factual, and helpful. Focus on practical information.
+        Detect if the user's question is in Arabic or English, and respond in the same language.
+        You are designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
+        Avoid religious rulings or fatwa - stick to practical guidance."""
+        
         try:
-            response = self.client.beta.chat.completions.parse(
+            prompt = f"{system_prompt}\nConversation Context:\n{context_text}\n\nUser asks: {user_input}"
+            
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are a SQL expert that generates safe queries for a Hajj agency database. Include context notes about previously mentioned companies."},
-                    {"role": "user", "content": sql_prompt},
-                    *self.build_chat_context(limit=5, exclude_last_user=True)
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
                 ],
-                response_format=SQLQueryGeneration,
-                temperature=0
+                temperature=0.4,
+                max_tokens=500
             )
-
-            sql_data = response.choices[0].message.parsed
-
-            # ----------------------------
-            # Update company memory if extracted from SQL context
-            # ----------------------------
-            if sql_data.extracted_company:
-                self.update_last_company(sql_data.extracted_company)
-
-            # ----------------------------
-            # Store assistant response in chat memory
-            # ----------------------------
-            if sql_data.sql_query and sql_data.safety_checked:
-                summary_text = f"SQL query generated safely: {sql_data.sql_query}"
-            else:
-                summary_text = f"Could not generate safe SQL. Reason: {sql_data.explanation}"
-
-            self.store_bot_reply(
-                reply_text=summary_text,
-                intent="DATABASE",
-                extracted_company=sql_data.extracted_company
-            )
-
-            if sql_data.sql_query and sql_data.safety_checked:
-                return {
-                    "sql_query": sql_data.sql_query,
-                    "query_type": sql_data.query_type,
-                    "filters": sql_data.filters_applied,
-                    "explanation": sql_data.explanation
-                }
-            else:
-                return None
-
+            
+            answer = response.choices[0].message.content.strip()
+            
+            # تحديث الذاكرة
+            self.add_user_message(user_input)
+            self.add_assistant_message(answer)
+            
+            return answer
+            
         except Exception as e:
-            logger.error(f"Structured SQL generation failed: {e}")
-            fallback = "⚠️ Could not generate SQL. Please rephrase your request."
-            self.store_bot_reply(reply_text=fallback, intent="DATABASE")
+            logger.error(f"General answer generation failed: {e}")
+            return "I encountered an error. Please try rephrasing your question." if language != "العربية" else "حدث خطأ. يرجى إعادة صياغة سؤالك."
+    
+    def generate_sql(self, user_input: str, language: str) -> Optional[Dict]:
+        """ 
+        Generate SQL query from user input with structured output and context awareness
+        using robust memory system.
+        Returns: Dict with sql_query, query_type, filters, explanation, safety_checked.
+        """
+        context = self.build_chat_context(limit=3)
+        context_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in context])
+        
+        sql_prompt = self._get_sql_system_prompt(language) + f"\n\nConversation Context:\n{context_text}\n\nUser Question: {user_input}"
+        
+        try:
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a SQL expert. Always return valid JSON."},
+                    {"role": "user", "content": sql_prompt}
+                ],
+                temperature=0.1,
+                response_format={"type": "json_object"}
+            )
+            
+            sql_data = json.loads(response.choices[0].message.content)
+            
+            return {
+                "sql_query": sql_data.get("sql_query"),
+                "query_type": sql_data.get("query_type"),
+                "filters": sql_data.get("filters_applied", []),
+                "explanation": sql_data.get("explanation")
+            } if sql_data.get("sql_query") and sql_data.get("safety_checked") else None
+            
+        except Exception as e:
+            logger.error(f"SQL generation failed: {e}")
             return None
-
-
     
     def generate_summary(self, user_input: str, language: str, row_count: int, sample_rows: List[Dict]) -> Dict:
-        """
-        Generate natural, friendly, and structured summary of query results.
-        Uses chat context, updates company memory, and stores assistant reply.
-        """
-        # ----------------------------
-        # Auto-detect language
-        # ----------------------------
-        detected_language = self._detect_language_from_text(user_input)
-        if detected_language:
-            language = detected_language
-            logger.info(f"🌐 Language auto-detected from input: {language}")
-
-        # ----------------------------
-        # Handle zero results
-        # ----------------------------
-        last_company = st.session_state.get("last_company_name", "")
-        location_keywords_ar = ["في", "الرياض", "جدة", "مكة", "المدينة"]
-        location_keywords_en = ["in", "riyadh", "jeddah", "makkah", "medina"]
-
+        """Generate natural, friendly, and structured summary of query results.
+           Uses robust memory system and normalizes company names for consistent memory handling.
+           Adds assistant-like sentences and recommendations based on user intent.
+           Auto-detects language from user input for accurate responses.
+           Handles missing or not found data intelligently.
+           Responds with only the requested columns unless "all info" is requested. """
         if row_count == 0:
-            is_location_query = any(kw in user_input.lower() for kw in location_keywords_ar + location_keywords_en)
-            if last_company and is_location_query:
-                fallback_summary = (
-                    f"لم أجد شركة {last_company} في الموقع المحدد. ✨\n\n"
-                    "هل تريد معرفة الموقع الفعلي لشركة {last_company}؟ أو البحث عن شركات أخرى؟"
-                    if language == "العربية" else
-                    f"I couldn't find {last_company} in the specified location. ✨\n\n"
-                    "Would you like to know the actual location of {last_company}? Or search for other authorized agencies?"
-                )
-            else:
-                fallback_summary = "No results found. Try rephrasing your question or broadening the search." if language == "English" else "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال."
-            
-            self.store_bot_reply(reply_text=fallback_summary, intent="DATABASE", extracted_company=last_company)
-            return {"summary": fallback_summary}
-
-        # ----------------------------
-        # Prepare data preview & prompt
-        # ----------------------------
+            return {"summary": "No results found." if language == "English" else "لم يتم العثور على نتائج."}
+        
+        # تخزين آخر شركة إذا وجدت
+        first_row = sample_rows[0]
+        last_agency = first_row.get("hajj_company_en") or first_row.get("hajj_company_ar")
+        if last_agency:
+            self.store_last_company(last_agency)
+        
+        context = self.build_chat_context(limit=3)
+        context_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in context])
         data_preview = json.dumps(sample_rows[:50], ensure_ascii=False)
-
+        
         summary_prompt = f"""
-        You are a multilingual fraud-prevention assistant for Hajj agencies.
-
+        You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
+        
+        🚨 CRITICAL LANGUAGE RULE:
+        - User question language: {language}
+        - You MUST respond in {language} ONLY
+        - If language is "العربية", respond COMPLETELY in Arabic
+        - If language is "English", respond COMPLETELY in English
+        - Do NOT mix languages in your response
+        
+        Your task:
+        → Summarize SQL query results clearly and naturally, with a warm, conversational tone that feels friendly and professional.
+        
         User question: {user_input}
         Data: {data_preview}
-
+        
         Instructions:
-        - Respond entirely in {language} (Arabic/English), matching user's language.
-        - Summarize the query results clearly, friendly, and professionally.
-        - Highlight number of matching records and key details.
-        - Include company name, address, city, country, contact info, rating, authorization status, and Google Maps link.
-        - Use sentences and bullet points, add small friendly phrases sparingly.
-        - Do NOT invent data.
-        - If multiple results, list up to 10 agencies with important details.
-        - If context is unclear or user did not specify a company, politely ask for clarification in {language}.
-
-        Output format ({language}):
+        - ALWAYS respond in {language}
+        - Always acknowledge the user's question in {language}
+        - Arabic examples: "بناءً على البيانات، وجدت لك النتائج التالية:" أو "إليك ما وجدته:"
+        - English examples: "Here are the results I found for you:" or "Based on the data, here's what I found:"
+        - Be concise and clear
+        - Highlight number of matching records
+        - Provide actionable advice if relevant
+        - Use emojis sparingly to enhance friendliness
+        - Use a mix of sentences and bullet points
+        
+        Behavior:
+        1️⃣ If the user mentions the word "agency" or "company" or "شركة" or "وكالة" in their question:
+           - Extract and summarize all available data for the agency/agencies that match the name mentioned.
+           - Use all default columns if they request "all information".
+           - Always include Google Maps Link.
+        
+        2️⃣ If the user does NOT mention "agency" or the context is unclear:
+           - Politely ask the user to clarify what they would like to know IN {language}.
+        
+        Columns to include in summary:
+        - hajj_company_en, hajj_company_ar, formatted_address, 
+        - city, country, email, contact_Info, rating_reviews, is_authorized,
+        - google_maps_link
+        
+        🚨 CRITICAL LANGUAGE-SPECIFIC RULES:
+        - If {language} is "العربية":
+          * Translate ALL field names to Arabic
+          * city → المدينة
+          * country → الدولة
+          * email → البريد الإلكتروني
+          * contact_Info → رقم التواصل
+          * rating_reviews → التقييم
+          * is_authorized → مصرح / معتمد (translate "Yes" to "نعم، معتمد" and "No" to "لا، غير معتمد")
+          * formatted_address → العنوان
+          * Google Maps Link → رابط خرائط جوجل
+        
+        - If {language} is "English":
+          * Keep all field names in English
+          * is_authorized → translate to "Yes, Authorized" or "No, Not Authorized"
+        
+        Behavior based on user question:
+        - If the user asks about a **specific column**, provide only that column's data IN {language}
+        - If the user asks for **all information** or does not specify, provide all default columns IN {language}
+        - ALWAYS respond in {language} - this is CRITICAL
+        - Include contact info and Google Maps link if available
+        - Ensure the response is complete and readable, no truncated or missing information
+        - You are designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
+        
+        - Always include Google Maps Link exactly as it appears in the column `google_maps_link`.
+        
+        🌍 OUTPUT FORMAT:
+        
+        If {language} is "العربية", use this format:
+        - الاسم (بالعربية / بالإنجليزية):
+        - المدينة:
+        - الدولة:
+        - البريد الإلكتروني:
+        - رقم التواصل:
+        - التقييم:
+        - الحالة: (نعم، معتمد / لا، غير معتمد)
+        - رابط خرائط جوجل:
+        
+        If {language} is "English", use this format:
         - Name (Arabic / English):
         - City:
         - Country:
@@ -631,56 +504,43 @@ class LLMManager:
         - Contact Info:
         - Rating:
         - Status: (Yes, Authorized / No, Not Authorized)
-        - Google Maps Link
-
-        Behavior:
-        - If user asks about a specific column, provide only that column's data.
-        - Always respond concisely, clearly, and in a friendly tone.
-        - Use chat context from previous messages if relevant.
+        - Google Maps Link:
+        
+        - Keep tone friendly, professional, and natural IN {language}
+        - Mix sentences and bullets; add small friendly phrases if appropriate IN {language}
+        - Do NOT invent any data
+        - If rows count more than 1, list the names and important details of up to 10 agencies, use numbers or bullets and emojis if appropriate
+        - REMEMBER: Your ENTIRE response must be in {language}
+        
+        Feel free to:
+        - Mix sentences and bullet points (in {language})
+        - Add small friendly phrases like "يمكنك التواصل معهم بثقة." (Arabic) or "You can contact them confidently." (English)
+        - Vary sentence structure per agency
+        - Keep summary concise and readable
+        - BUT ALWAYS IN {language} ONLY
         """
-
+        
         try:
-            response = self.client.beta.chat.completions.parse(
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You summarize Hajj agency data in a friendly and structured way."},
-                    *self.build_chat_context(limit=5, exclude_last_user=True),
-                    {"role": "user", "content": summary_prompt},
+                    {"role": "system", "content": f"You are a helpful assistant. Respond in {language} only."},
+                    {"role": "user", "content": summary_prompt}
                 ],
-                response_format=QuerySummary,
-                temperature=0.6
+                temperature=0.4,
+                max_tokens=800
             )
-
-            summary_data = response.choices[0].message.parsed
-            final_summary = summary_data.summary
-
-            # ----------------------------
-            # Update company memory if new company detected
-            # ----------------------------
-            if hasattr(summary_data, "extracted_company") and summary_data.extracted_company:
-                self.update_last_company(summary_data.extracted_company)
-
-            # ----------------------------
-            # Store assistant reply
-            # ----------------------------
-            self.store_bot_reply(reply_text=final_summary, intent="DATABASE", extracted_company=summary_data.extracted_company if hasattr(summary_data, "extracted_company") else last_company)
-
-            logger.info("Summary generated and stored successfully.")
-            return {"summary": final_summary}
-
+            
+            summary = response.choices[0].message.content.strip()
+            
+            return {"summary": summary}
+            
         except Exception as e:
-            logger.error(f"Structured summary generation failed: {e}")
-            fallback = f"📊 Found {row_count} matching records."
-            self.store_bot_reply(reply_text=fallback, intent="DATABASE")
-            return {"summary": fallback}
-
+            logger.error(f"Summary generation failed: {e}")
+            return {"summary": f"📊 Found {row_count} matching records."}
     def text_to_speech(self, text: str, language: str) -> Optional[io.BytesIO]:
-        """
-        Convert text to speech using OpenAI TTS
-        Returns BytesIO audio ready for st.audio
-        """
+        """تحويل النص إلى كلام (بدون تغيير)"""
         voice = self.voice_map.get(language, "alloy")
-        
         try:
             response = self.client.audio.speech.create(
                 model="tts-1",
@@ -688,24 +548,17 @@ class LLMManager:
                 input=text,
                 response_format="mp3"
             )
-            
             audio_bytes = io.BytesIO(response.content)
             audio_bytes.seek(0)
             return audio_bytes
-            
         except Exception as e:
             logger.error(f"TTS failed: {e}")
             return None
-    
     def _detect_language_from_text(self, text: str) -> Optional[str]:
-        """
-        Detect if text is Arabic or English based on character analysis
-        Returns: "العربية" or "English" or None
-        """
+        """كشف اللغة من النص (بدون تغيير)"""
         if not text:
             return None
         
-        # Count Arabic and English characters
         arabic_chars = sum(1 for c in text if '\u0600' <= c <= '\u06FF')
         english_chars = sum(1 for c in text if c.isalpha() and c.isascii())
         
@@ -713,162 +566,227 @@ class LLMManager:
         if total_chars == 0:
             return None
         
-        # If more than 30% Arabic characters, consider it Arabic
         if arabic_chars / total_chars > 0.3:
             return "العربية"
         else:
             return "English"
-    
     @staticmethod
     def _get_sql_system_prompt(language: str) -> str:
-        """Get concise SQL generation prompt with context awareness"""
+        """Get SQL generation system prompt with context awareness"""
         return f"""
-        You are a multilingual fraud-prevention assistant for Hajj agencies.
-        Your task: Generate a valid SQL SELECT query ONLY for the 'agencies' table based on user input.
-        Do NOT generalize to world data. Focus on company verification and location.
+        You are a multilingual SQL fraud-prevention expert protecting Hajj pilgrims.
 
-        Table: agencies
-        - hajj_company_ar, hajj_company_en, formatted_address, city, country,
-        - email, contact_Info, rating_reviews, is_authorized, google_maps_link, link_valid
+        🎯 MISSION: Generate an SQL query for database analysis on Hajj agencies.
+        Do NOT generalize to world data — always query from the table 'agencies'.
 
-        Rules:
-        1. Respond in the same language as user input ({language}).
-        2. If the user mentions a company, use flexible LIKE matching in both Arabic & English columns.
-        3. For follow-up questions, prioritize last mentioned company from context.
-        4. Handle locations (Mecca, Medina, Riyadh, Saudi Arabia, Pakistan, Egypt) using flexible LIKE.
-        5. "Authorized" → add `AND is_authorized = 'Yes'`.
-        6. Counts → use `SELECT COUNT(*)`; Distinct lists → use `SELECT DISTINCT column`.
-        7. Limit 100 rows unless COUNT or DISTINCT is used.
-        8. Return `NO_SQL` if no logical query can be formed.
+        TABLE STRUCTURE:
+        - hajj_company_ar
+        - hajj_company_en
+        - formatted_address
+        - city
+        - country
+        - email
+        - contact_Info
+        - rating_reviews
+        - is_authorized ('Yes' or 'No')
+        - google_maps_link
+        - link_valid (boolean)
 
-        Output: Only one valid SQL SELECT query.
+        --------------------------------------------
+        🔍 LANGUAGE DETECTION RULES:
+        1. Detect if the user's question is in Arabic or English. And respond in the same language.
+        2. Respond with SQL query **only**, no text.
+        3. Keep text fragments (LIKE clauses) in both Arabic and English for robustness.
+        4. Translate city and country if needed based on user language.
 
-        Examples:
-        - "هل شركة جبل عمر معتمدة؟" → SELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
+        --------------------------------------------
+        🚨 CRITICAL DATABASE CONTEXT:
+        - 415 fake offices closed in 2025
+        - 269,000+ unauthorized pilgrims stopped
+        - Database mixes Arabic, English, and typos.
+        - Always focus on verifying **authorization** and **agency location**, not world geography.
+
+        --------------------------------------------
+        📘 QUERY INTERPRETATION RULES:
+
+        1. "Authorized" → add `AND is_authorized = 'Yes'`
+        2. "Is X authorized?" → check `is_authorized` for company name
+        - If the user explicitly mentions a company or agency using any of these words:
+            ["شركة", "وكالة", "مؤسسة", "agency", "company", "travel", "tour", "establishment"]
+            then treat it as an exact company name request.
+            Use **flexible LIKE matching** with LOWER(TRIM()):
+            WHERE (LOWER(TRIM(hajj_company_ar)) LIKE LOWER('%الاسم%') 
+                    OR LOWER(TRIM(hajj_company_en)) LIKE LOWER('%name%'))
+        - Otherwise (for general keywords like "الحرمين" or "الهدى" without context),
+            use LIKE for partial matches.
+        3. "Number of ..." or "How many ..." → use `SELECT COUNT(*)`
+        4. "Countries" or "number of countries" → use:
+            - `SELECT COUNT(DISTINCT country)` if asking how many
+            - `SELECT DISTINCT country` if asking for list
+            - Always based on agencies table
+        5. "Cities" or "number of cities" → same logic as above but for `city`
+        6. Never assume or add "Saudi Arabia" unless mentioned explicitly.
+        7. When user asks about "countries that have agencies" → use `DISTINCT country` from `agencies`
+        8. Always return agency-related data only, not external or world data.
+
+        --------------------------------------------
+        🔗 FOLLOW-UP QUESTION HANDLING:
+        - If a context note mentions a previously mentioned company, focus the query on that company
+        - Use flexible LIKE matching to find the company in both Arabic and English columns
+        - Example: If context says "about جبل عمر", include:
+        WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%' 
+                OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
+
+        --------------------------------------------
+        🌍 LOCATION MATCHING PATTERNS:
+        Use flexible LIKE and LOWER() conditions for cities/countries.
+        Handle Arabic, English, and typos.
+
+        Mecca → (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%' OR LOWER(city) LIKE '%makka%')
+        Medina → (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%')
+        Riyadh → (city LIKE '%الرياض%' OR LOWER(city) LIKE '%riyadh%' OR LOWER(city) LIKE '%ar riyadh%')
+        Saudi Arabia → (country LIKE '%السعودية%' OR LOWER(country) LIKE '%saudi%' OR country LIKE '%المملكة%')
+        Pakistan → (country LIKE '%باكستان%' OR LOWER(country) LIKE '%pakistan%' OR country LIKE '%پاکستان%')
+        Egypt → (country LIKE '%مصر%' OR LOWER(country) LIKE '%egypt%')
+
+        --------------------------------------------
+        🏁 OUTPUT RULES:
+        - Output **only** one valid SQL SELECT query.
+        - If no logical SQL can be formed → output `NO_SQL`
+        - Always include LIMIT 100 unless COUNT or DISTINCT is used.
+
+        --------------------------------------------
+        ⚙️ COMPANY NAME MATCHING:
+        - Always normalize and deduplicate company names using LOWER(TRIM()).
+        - Use SELECT DISTINCT to avoid duplicates.
+        - Use flexible LIKE matching with wildcards: LIKE '%term%'
+
+        --------------------------------------------
+        ✅ EXAMPLES:
+
+        Q: "هل شركة جبل عمر معتمدة؟"
+        → SELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
         FROM agencies
-        WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%' OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
+        WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%' 
+            OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
         LIMIT 1;
 
-        - "وين موقعها؟" (follow-up about "جبل عمر") → SELECT formatted_address, city, country, google_maps_link
-        FROM agencies
-        WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%' OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
+        Q: "وين موقعها؟" (with context: about "جبل عمر")
+        → SELECT formatted_address, city, country, google_maps_link 
+        FROM agencies 
+        WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%'
+            OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
         LIMIT 1;
 
-        - "Authorized agencies in Makkah" → SELECT * FROM agencies
-        WHERE is_authorized = 'Yes' AND (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%')
-        LIMIT 25;
+        Q: "هل موجودة في الرياض؟" (with context: about "جبل عمر")
+        → SELECT hajj_company_en, hajj_company_ar, city, country, formatted_address
+        FROM agencies
+        WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%'
+            OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
+        AND (city LIKE '%الرياض%' OR LOWER(city) LIKE '%riyadh%')
+        LIMIT 1;
 
-        - "كم عدد الشركات في المدينة؟" → SELECT COUNT(*) FROM agencies
+        Q: "Authorized agencies in Makkah"
+        → SELECT * FROM agencies 
+        WHERE is_authorized = 'Yes' 
+        AND (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%') 
+        LIMIT 100;
+
+        Q: "كم عدد الشركات في المدينة؟"
+        → SELECT COUNT(*) FROM agencies 
         WHERE (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%');
+
+        Q: "How many countries have agencies?"
+        → SELECT COUNT(DISTINCT country) FROM agencies;
+
+        Q: "List of countries that have agencies"
+        → SELECT DISTINCT country FROM agencies LIMIT 100;
+
+        Q: "رقم التواصل؟" (with context: about "الهدى")
+        → SELECT contact_Info, hajj_company_ar, hajj_company_en 
+        FROM agencies 
+        WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%الهدى%'
+            OR LOWER(TRIM(hajj_company_en)) LIKE '%huda%')
+        LIMIT 1;
         """
-
-
+    
     @staticmethod
     def _extract_sql_from_response(response_text: str) -> Optional[str]:
-        """Extract SQL query from LLM response"""
+        """استخراج SQL من الرد (بدون تغيير)"""
         if not response_text:
             return None
         
-        # Try code blocks
         code_block_pattern = r'```(?:sql)?\s*(SELECT[\s\S]*?)```'
         match = re.search(code_block_pattern, response_text, re.IGNORECASE)
         if match:
             return match.group(1).strip().rstrip(';')
         
-        # Try plain SELECT
         select_pattern = r'(SELECT\s+.*?(?:;|$))'
         match = re.search(select_pattern, response_text, re.IGNORECASE | re.DOTALL)
         if match:
             return match.group(1).strip().rstrip(';')
-        
         if "NO_SQL" in response_text:
             return "NO_SQL"
-        
         return None
     
     def ask_for_more_info(self, user_input: str, language: str) -> Dict:
-        """Generate structured response asking user for more specific information, with full context memory"""
-        is_arabic = language == "العربية"
+        """طلب مزيد من المعلومات باستخدام الذاكرة"""
+        context = self.build_chat_context(limit=3)
+        context_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in context])
         
-        # ----------------------------
-        # Check for follow-up and last company
-        # ----------------------------
-        last_company = st.session_state.get("last_company_name", "")
-        is_followup = self._is_followup_question(user_input)
+        system_prompt = f"""
+        You are a helpful Hajj verification assistant.
+        Your task is to ask the user for more specific details if their question is vague.
+        Respond in {language} ONLY.
         
-        if last_company and is_followup and not any(word in user_input.lower() for word in ["agency", "شركة", "وكالة"]):
-            user_input += f" (Note: User previously asked about '{last_company}')"
-            logger.info(f"🔗 Follow-up question auto-enriched with last company: '{last_company}'")
-        
-        # ----------------------------
-        # Build context from previous chat
-        # ----------------------------
-        context_messages = self.build_chat_context(limit=10)
-        if context_messages and context_messages[-1]["role"] == "user":
-            context_messages = context_messages[:-1]  # استبعد آخر رسالة لأنها ستُرسل الآن كـ user_input
+        Instructions:
+        - Keep the response short (2-3 sentences), friendly, and professional.
+        - Ask for agency name, location (city/country/Google Maps link), and what they want to know.
+        - Provide one clear example of a well-formed question.
+        - Output ONLY valid JSON matching this structure:
 
-        context_text = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in context_messages])
-        
-        # ----------------------------
-        # Prepare prompt
-        # ----------------------------
-        prompt = f"""
-        You are a friendly Hajj verification assistant.
-        The user's question: "{user_input}" needs more details to provide accurate information.
-        Use previous conversation context:
-        {context_text if context_text else 'None'}
-
-        Ask politely for missing details:
-        - Agency/company name
-        - Location (city/country)
-        - Specific information they want
-
-        Use Arabic if user input is Arabic, otherwise English.
-        Keep it concise (2-3 sentences) and friendly.
-        Give a simple example of a clearer question.
+        {{
+            "needs_info": "<friendly message asking for more details>",
+            "suggestions": ["<example suggestion 1>", "<example suggestion 2>"],
+            "missing_info": ["<list missing pieces of info>"],
+            "sample_query": "<example of a well-formed query>"
+        }}
         """
+        
         try:
-            response = self.client.beta.chat.completions.parse(
+            prompt = f"{system_prompt}\nConversation Context:\n{context_text}\n\nUser's vague question: \"{user_input}\""
+            
+            response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You help users clarify their Hajj agency queries."},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user", "content": prompt}
                 ],
-                response_format=NEEDSInfoResponse,
-                temperature=0.7
+                temperature=0.3,
+                response_format={"type": "json_object"}
             )
             
-            info_data = response.choices[0].message.parsed
-            
-            # ----------------------------
-            # Update last company if extracted
-            # ----------------------------
-            if info_data.extracted_company:
-                self.update_last_company(info_data.extracted_company)
-            
-            # ----------------------------
-            # Store assistant reply
-            # ----------------------------
-            self.store_bot_reply(
-                reply_text=info_data.needs_info,
-                intent="NEEDS_INFO",
-                extracted_company=info_data.extracted_company if hasattr(info_data, 'extracted_company') else None
-            )
+            info_data = json.loads(response.choices[0].message.content)
             
             return {
-                "needs_info": info_data.needs_info,
-                "suggestions": info_data.suggestions,
-                "missing_info": info_data.missing_info,
-                "sample_query": info_data.sample_query
+                "needs_info": info_data.get("needs_info", ""),
+                "suggestions": info_data.get("suggestions", []),
+                "missing_info": info_data.get("missing_info", []),
+                "sample_query": info_data.get("sample_query", "")
             }
-        
+            
         except Exception as e:
             logger.error(f"More info prompt generation failed: {e}")
-            fallback = {
-                "needs_info": "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔" if is_arabic else "Could you provide more details? 🤔",
-                "suggestions": ["هل شركة الهدى للحج معتمدة؟", "أريد التحقق من وكالات الحج في مكة"] if is_arabic else ["Is Al Huda Hajj Agency authorized?", "Show me authorized agencies in Makkah"],
-                "missing_info": ["اسم الوكالة", "الموقع", "التفاصيل المحددة"] if is_arabic else ["agency name", "location", "specific details"],
-                "sample_query": "هل شركة الهدى للحج معتمدة؟" if is_arabic else "Is Al Huda Hajj Agency authorized?"
+            is_arabic = language == "العربية"
+            return {
+                "needs_info": "Could you provide more details? 🤔" if not is_arabic else "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔",
+                "suggestions": ["Is Al Huda Hajj Agency authorized?"] if not is_arabic else ["هل شركة الهدى للحج معتمدة؟"],
+                "missing_info": ["agency name", "location"] if not is_arabic else ["اسم الوكالة", "الموقع"],
+                "sample_query": "Is Al Huda Hajj Agency authorized?" if not is_arabic else "هل شركة الهدى للحج معتمدة؟"
             }
-            self.store_bot_reply(reply_text=fallback["needs_info"], intent="NEEDS_INFO")
-            return fallback
+    
+    
+    
+    
+    
+    
