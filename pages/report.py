@@ -384,6 +384,11 @@ def show_typing_indicator():
         <div class="typing-dot"></div>
     </div>
     """
+# -----------------------------
+# Enhanced Report Bot Functions 
+# -----------------------------
+
+# ... (show_progress_bar and show_typing_indicator remain the same) ...
 
 def render_report_bot():
     """Render the enhanced report bot chat interface"""
@@ -437,14 +442,25 @@ Thank you for your courage. Your report is a vital step in protecting the integr
     if prompt := st.chat_input("Enter the agency name or your response here...", key="report_chat_input"):
         step = st.session_state.report_step
 
-        # Show typing indicator
+        # Add user message immediately
+        st.session_state.report_messages.append({"role": "user", "content": prompt})
+
+        # Show typing indicator for LLM validation
         with st.chat_message("assistant"):
-            with st.spinner(show_typing_indicator()):
-                time.sleep(0.5) # Brief pause for better UX
+            # Use st.empty to show the indicator and replace it with the actual response later
+            typing_placeholder = st.empty()
+            typing_placeholder.markdown(show_typing_indicator(), unsafe_allow_html=True)
+            
+            # Brief pause for better UX while the LLM runs
+            time.sleep(0.5) 
                 
-                # Validate user input via LLM
-                llm_response = st.session_state.llm_manager.validate_user_input_llm(step, prompt)
-        
+            # Validate user input via LLM
+            llm_response = st.session_state.llm_manager.validate_user_input_llm(step, prompt)
+            
+            # Clear typing indicator (it will be replaced by the response)
+            typing_placeholder.empty()
+
+        # If validation fails, append the error and rerun
         if not llm_response.get("is_valid", False):
             feedback = llm_response.get('feedback', 'Invalid input. Please try again.')
             st.session_state.report_messages.append({
@@ -453,15 +469,13 @@ Thank you for your courage. Your report is a vital step in protecting the integr
             })
             st.rerun()
 
-        # Add user message
-        st.session_state.report_messages.append({"role": "user", "content": prompt})
+        # If validation succeeds, process the step
+        else:
+            data = st.session_state.complaint_data
 
-        # Step processing with enhanced feedback
-        data = st.session_state.complaint_data
-
-        if step == 1: # Agency name
-            data["agency_name"] = prompt
-            response = f"""✅ **Agency name recorded.**
+            if step == 1: # Agency name
+                data["agency_name"] = prompt
+                response = f"""✅ **Agency name recorded.**
 
 **Agency:** **{prompt}**
 
@@ -470,13 +484,12 @@ Thank you for your courage. Your report is a vital step in protecting the integr
 Next: **Which city is this agency located in?** (e.g., London, Jakarta, Cairo)
 
 *Providing the city assists authorities in locating and investigating the entity.*"""
-            st.session_state.report_messages.append({"role": "assistant", "content": response})
-            st.session_state.report_step = 2
-            st.rerun()
-        
-        elif step == 2: # City
-            data["city"] = prompt
-            response = f"""✅ **Location recorded.**
+                st.session_state.report_messages.append({"role": "assistant", "content": response})
+                st.session_state.report_step = 2
+            
+            elif step == 2: # City
+                data["city"] = prompt
+                response = f"""✅ **Location recorded.**
 
 📍 **Report Details So Far:**
 - **Agency:** {data['agency_name']}  
@@ -490,14 +503,13 @@ Next: **Which city is this agency located in?** (e.g., London, Jakarta, Cairo)
 - **When did it occur?** (Approximate dates)
 - **Any amounts or payments involved?**
 - **Promises made that were broken?**"""
-            st.session_state.report_messages.append({"role": "assistant", "content": response})
-            st.session_state.report_step = 3
-            st.rerun()
-        
-        elif step == 3: # Complaint details
-            data["complaint_text"] = prompt
-            preview = prompt[:150] + "..." if len(prompt) > 150 else prompt
-            response = f"""✅ **Complaint details recorded.**
+                st.session_state.report_messages.append({"role": "assistant", "content": response})
+                st.session_state.report_step = 3
+            
+            elif step == 3: # Complaint details
+                data["complaint_text"] = prompt
+                preview = prompt[:150] + "..." if len(prompt) > 150 else prompt
+                response = f"""✅ **Complaint details recorded.**
 
 📋 **Report Summary:**
 - **Agency:** {data['agency_name']}
@@ -514,52 +526,55 @@ Would you like to provide a secure contact method (email or phone) so authoritie
 - Type "**skip**" to submit anonymously
 
 *Your anonymity is guaranteed if you choose to skip this step.*"""
-            st.session_state.report_messages.append({"role": "assistant", "content": response})
-            st.session_state.report_step = 4
-            st.rerun()
-        
-        elif step == 4: # Contact info and Submission
+                st.session_state.report_messages.append({"role": "assistant", "content": response})
+                st.session_state.report_step = 4
             
-            contact = "" if prompt.lower() == "skip" else prompt
-            try:
-                # Prepare data for insertion
-                insert_data = {
-                    "agency_name": data["agency_name"],
-                    "city": data["city"],
-                    "complaint_text": data["complaint_text"],
-                    "user_contact": contact if contact else None,
-                    # Use a standard UTC timestamp for database
-                 "submission_date": datetime.now(pytz.utc).isoformat()
-                }
-
-                # Perform the Supabase insertion
-                response_data = supabase_client.table('complaints').insert(insert_data).execute()
+            elif step == 4: # Contact info and Submission
                 
-                if response_data.data:
-                    report_id = response_data.data[0]['id']
-                else:
-                    report_id = "N/A (Check DB)" 
+                contact = "" if prompt.lower() == "skip" else prompt
+                
+                try:
+                    # Prepare data for insertion (FIX 2: Using 'submission_date' as key)
+                    insert_data = {
+                        "agency_name": data["agency_name"],
+                        "city": data["city"],
+                        "complaint_text": data["complaint_text"],
+                        "user_contact": contact if contact else None,
+                        # Use a standard UTC timestamp for database
+                        "submission_date": datetime.now(pytz.utc).isoformat()
+                    }
 
-                contact_status = "with contact info" if contact else "anonymously"
-                response = f"""✅ **Report Successfully Filed!**
+                    # Perform the Supabase insertion
+                    response_data = supabase_client.table('complaints').insert(insert_data).execute()
+                    
+                    if response_data.data:
+                        report_id = response_data.data[0]['id']
+                    else:
+                        report_id = "N/A (Check DB)" 
+
+                    contact_status = "with contact info" if contact else "anonymously"
+                    response = f"""✅ **Report Successfully Filed!**
 
 Your report has been securely logged for investigation.
 
 **Reference ID:** **#{report_id}** (Submitted {contact_status})
 
 You are now being safely redirected to the main chat assistant."""
-                st.success("✅ Report submitted successfully!")
+                    st.success("✅ Report submitted successfully!")
+                    
+                    # Reset and exit
+                    st.session_state.report_messages.clear()
+                    st.session_state.report_step = 0
+                    st.session_state.complaint_data.clear()
+                    st.session_state.app_mode = "chat"
                 
-                # Reset and exit
-                st.session_state.report_messages.clear()
-                st.session_state.report_step = 0
-                st.session_state.complaint_data.clear()
-                st.session_state.app_mode = "chat"
-            except Exception as e:
-                response = f"❌ **Error Submitting Report:** A database error occurred: {str(e)}"
-                st.error("❌ Database Error! Please check Supabase credentials/connection.")
+                except Exception as e:
+                    response = f"❌ **Error Submitting Report:** A database error occurred: {str(e)}"
+                    st.error("❌ Database Error! Please check Supabase credentials/connection.")
+                
+                st.session_state.report_messages.append({"role": "assistant", "content": response})
+                # No need to rerun if we are changing app_mode, but rerun to show final message/state change
             
-            st.session_state.report_messages.append({"role": "assistant", "content": response})
             st.rerun() # Rerun to apply state change immediately
     
     # Enhanced Exit button in sidebar
