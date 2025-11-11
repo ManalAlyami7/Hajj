@@ -67,7 +67,7 @@ class SidebarInterface:
             self._render_examples,
             self._render_clear_button,
             self._render_features,
-            self._render_report,
+            #self._render_report,
             self._render_footer
         ]
         
