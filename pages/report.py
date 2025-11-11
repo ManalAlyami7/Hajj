@@ -55,15 +55,15 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Cairo:wght@400;600;700;800&display=swap');
 
-/* ===== Modern Sanctuary Theme Variables ===== */
+/* ===== Secure Reporting Theme Variables (Trust, Safety, Elegance) ===== */
 :root {
-    --color-primary: #a67c00; /* Deep Gold/Bronze */
-    --color-secondary: #1e3a8a; /* Elegant Deep Blue */
-    --color-background-light: #fdfdfd;
-    --color-background-mid: #f0f4f8;
+    --color-primary-authority: #1e3a8a; /* Deep Blue - Trust and Authority */
+    --color-secondary-security: #708090; /* Slate Gray - Security and Modernity */
+    --color-background-light: #ffffff;
+    --color-background-mid: #f5f7fa;
     --color-text-dark: #1a1f2e;
-    --color-text-mid: #64748b;
-    --color-border-subtle: #e2e8f0;
+    --color-text-mid: #4b5563;
+    --color-border-subtle: #e5e7eb;
 }
 
 /* ===== Global Styles ===== */
@@ -93,7 +93,7 @@ st.markdown("""
     margin-bottom: 2.5rem;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
     text-align: center;
-    border: 1px solid var(--color-border-subtle);
+    border: 1px solid var(--color-secondary-security); /* Subtle border */
     animation: fadeInDown 0.6s ease-out;
     position: relative;
     overflow: hidden;
@@ -106,7 +106,8 @@ st.markdown("""
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, var(--color-primary) 0%, #ffe082 50%, var(--color-primary) 100%);
+    /* Deep Blue shimmer for authority */
+    background: linear-gradient(90deg, var(--color-primary-authority) 0%, #a5b4fc 50%, var(--color-primary-authority) 100%);
     animation: shimmer 3s infinite;
 }
 
@@ -125,7 +126,8 @@ st.markdown("""
 }
 
 .title-highlight {
-    background: linear-gradient(135deg, var(--color-primary) 0%, #c5b057 100%);
+    /* Deep Blue highlight */
+    background: linear-gradient(135deg, var(--color-primary-authority) 0%, #3b82f6 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -140,15 +142,15 @@ st.markdown("""
 }
 
 .header-badge {
-    display: inline-block;
-    background-color: var(--color-secondary); /* Deep Blue */
+    /* Subtle Gray/Silver badge for security */
+    background-color: var(--color-secondary-security); 
     color: white;
     padding: 0.3rem 1.15rem;
     border-radius: 50px;
     font-size: 0.8rem;
     font-weight: 600;
     margin-top: 1rem;
-    box-shadow: 0 4px 10px rgba(30, 58, 138, 0.3);
+    box-shadow: 0 4px 10px rgba(112, 128, 144, 0.3);
 }
 
 /* ===== Progress Indicator - Clean and Clear ===== */
@@ -171,8 +173,9 @@ st.markdown("""
 }
 
 .progress-fill {
+    /* Deep Blue progress fill */
     height: 100%;
-    background: linear-gradient(90deg, var(--color-primary) 0%, #c5b057 100%);
+    background: linear-gradient(90deg, var(--color-primary-authority) 0%, #3b82f6 100%);
     border-radius: 10px;
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -186,21 +189,6 @@ st.markdown("""
 }
 
 /* ===== Elegant Modal - Safe and Controlled ===== */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: fadeIn 0.3s ease-out;
-}
-
 .modal-content {
     background: var(--color-background-light);
     border-radius: 16px;
@@ -209,13 +197,13 @@ st.markdown("""
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
     animation: slideInScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     text-align: center;
-    border: 2px solid var(--color-primary); /* Primary accent */
+    border: 2px solid var(--color-primary-authority); /* Deep Blue accent */
 }
 
 .modal-icon {
     font-size: 3rem;
     margin-bottom: 0.75rem;
-    color: var(--color-primary);
+    color: var(--color-primary-authority);
 }
 
 .modal-title {
@@ -249,30 +237,32 @@ st.markdown("""
 .stChatMessage:hover {
     transform: translateY(-1px);
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08) !important;
-    border-color: var(--color-primary);
+    border-color: var(--color-primary-authority);
 }
 
 /* User Message */
 .stChatMessage[data-testid*="user"] {
     background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
-    border-left: 4px solid var(--color-secondary); /* Deep Blue */
+    border-left: 4px solid var(--color-primary-authority); /* Deep Blue */
 }
 
-/* Assistant Message */
+/* Assistant Message - Subtle Gray/Blue for official replies */
 .stChatMessage[data-testid*="assistant"] {
-    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
-    border-left: 4px solid var(--color-primary); /* Deep Gold */
+    background: linear-gradient(135deg, #f9fafb 0%, #eff6ff 100%) !important;
+    border-left: 4px solid var(--color-secondary-security); /* Slate Gray */
 }
 
-/* Bot Message - Safe, Trustworthy Report Box */
+/* Bot Message - Safe, Trustworthy Report Box - The "Inner Room" */
 .bot-message {
-    background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%) !important;
-    border: 2px solid var(--color-secondary) !important;
-    border-left: 6px solid var(--color-secondary) !important; 
+    /* Subtle light blue background for the inner room */
+    background: linear-gradient(135deg, #f0f8ff 0%, #e0f2fe 100%) !important;
+    border: 2px solid var(--color-primary-authority) !important;
+    border-left: 6px solid var(--color-primary-authority) !important; /* Strong authority line */ 
     color: var(--color-text-dark) !important;
     padding: 1.5rem;
     border-radius: 12px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    font-weight: 500;
 }
 
 .bot-message * {
@@ -281,7 +271,7 @@ st.markdown("""
 
 /* ===== Typing Indicator ===== */
 .typing-dot {
-    background: var(--color-primary);
+    background: var(--color-primary-authority);
 }
 
 /* ===== Elegant Sidebar ===== */
@@ -302,25 +292,26 @@ st.markdown("""
 [data-testid="stSidebar"] h1,
 [data-testid="stSidebar"] h2,
 [data-testid="stSidebar"] h3 {
-    color: var(--color-secondary) !important;
+    color: var(--color-primary-authority) !important;
     font-weight: 700;
 }
 
 [data-testid="stSidebar"] .stButton > button {
-    background: linear-gradient(135deg, var(--color-primary) 0%, #c5b057 100%) !important;
+    /* Blue button for action and trust */
+    background: linear-gradient(135deg, var(--color-primary-authority) 0%, #3b82f6 100%) !important;
     color: white !important;
     border: none !important;
     border-radius: 10px !important;
     padding: 0.8rem 1.25rem !important;
     font-weight: 600 !important;
     font-size: 0.95rem !important;
-    box-shadow: 0 4px 10px rgba(166, 124, 0, 0.3);
+    box-shadow: 0 4px 10px rgba(30, 58, 138, 0.3);
 }
 
 [data-testid="stSidebar"] .stButton > button:hover {
-    background: linear-gradient(135deg, #c5b057 0%, var(--color-primary) 100%) !important;
+    background: linear-gradient(135deg, #3b82f6 0%, var(--color-primary-authority) 100%) !important;
     transform: translateY(-2px);
-    box-shadow: 0 6px 15px rgba(166, 124, 0, 0.5);
+    box-shadow: 0 6px 15px rgba(30, 58, 138, 0.5);
 }
 
 /* ===== Enhanced Chat Input ===== */
@@ -332,29 +323,29 @@ st.markdown("""
 }
 
 .stChatInput > div:focus-within {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(166, 124, 0, 0.1);
-    transform: none; /* Removed aggressive transform */
+    border-color: var(--color-primary-authority);
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+    transform: none; 
 }
 
 /* ===== Success/Error Messages - Muted and Clear ===== */
 .stSuccess {
     background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-    border-left: 4px solid #059669; /* Muted Green */
+    border-left: 4px solid #059669; 
 }
 
 .stError {
     background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-    border-left: 4px solid #b91c1c; /* Muted Red */
+    border-left: 4px solid #b91c1c; 
 }
 
-/* ===== Custom Scrollbar - Elegant Gold Accent ===== */
+/* ===== Custom Scrollbar - Blue Accent ===== */
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, var(--color-primary) 0%, #c5b057 100%);
+    background: linear-gradient(180deg, var(--color-primary-authority) 0%, #3b82f6 100%);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #c5b057 0%, var(--color-primary) 100%);
+    background: linear-gradient(180deg, #3b82f6 0%, var(--color-primary-authority) 100%);
 }
 
 /* Minor animation tweaks for elegance */
@@ -367,7 +358,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# Enhanced Report Bot Functions (No changes needed here, only in the rendering below)
+# Enhanced Report Bot Functions 
 # -----------------------------
 def show_progress_bar(step, total_steps=4):
     """Display progress indicator"""
@@ -416,15 +407,15 @@ def render_report_bot():
         st.session_state.report_messages = [
             {
                 "role": "assistant",
-                "content": """🙏 **Welcome to the Secure Reporting System**
+                "content": """🛡️ **Welcome to the Confidential Reporting Office**
 
-Thank you for helping to protect your fellow pilgrims. Your report on suspicious activities is confidential, safe, and vital for ensuring the integrity of the Hajj experience.
+Thank you for your courage. Your report is a vital step in protecting the integrity of Hajj and Umrah. This is a secure, private channel.
 
-**This is a fully encrypted and secure conversation.**"""
+**Your report is strictly confidential and will be reviewed by relevant authorities.**"""
             },
             {
                 "role": "assistant",
-                "content": """To begin, please tell me: **What is the name of the agency you want to report?**"""
+                "content": """To begin, please tell me: **What is the full name of the agency you want to report?**"""
             }
         ]
         st.session_state.report_step = 1
@@ -443,7 +434,7 @@ Thank you for helping to protect your fellow pilgrims. Your report on suspicious
                 st.markdown(message["content"])
     
     # Chat input with enhanced UX
-    if prompt := st.chat_input("Type your response here...", key="report_chat_input"):
+    if prompt := st.chat_input("Enter the agency name or your response here...", key="report_chat_input"):
         step = st.session_state.report_step
 
         # Show typing indicator
@@ -466,28 +457,26 @@ Thank you for helping to protect your fellow pilgrims. Your report on suspicious
         st.session_state.report_messages.append({"role": "user", "content": prompt})
 
         # Step processing with enhanced feedback
-        # --- FIX 2: Define data for easier access within the step logic ---
         data = st.session_state.complaint_data
-        # ---------------------------------------------------------------
 
         if step == 1: # Agency name
             data["agency_name"] = prompt
-            response = f"""✅ **Agency name recorded successfully**
+            response = f"""✅ **Agency name recorded.**
 
-**Agency:** {prompt}
+**Agency:** **{prompt}**
 
 ---
 
-Now, please tell me: **Which city is this agency located in?**
+Next: **Which city is this agency located in?** (e.g., London, Jakarta, Cairo)
 
-*This helps authorities identify the specific location.*"""
+*Providing the city assists authorities in locating and investigating the entity.*"""
             st.session_state.report_messages.append({"role": "assistant", "content": response})
             st.session_state.report_step = 2
             st.rerun()
         
         elif step == 2: # City
             data["city"] = prompt
-            response = f"""✅ **Location recorded successfully**
+            response = f"""✅ **Location recorded.**
 
 📍 **Report Details So Far:**
 - **Agency:** {data['agency_name']}  
@@ -495,14 +484,12 @@ Now, please tell me: **Which city is this agency located in?**
 
 ---
 
-Now, please describe the suspicious activity in detail:
-- What happened?
-- When did it occur? (dates)
-- Any amounts or payments involved?
-- Promises made by the agency?
-- Any other relevant details?
+**Crucial Step:** Please describe the suspicious activity in detail. The more comprehensive your description, the more effective the investigation will be.
 
-*The more details you provide, the better authorities can investigate.*"""
+- **What happened?** (False advertising, canceled trip, overcharging)
+- **When did it occur?** (Approximate dates)
+- **Any amounts or payments involved?**
+- **Promises made that were broken?**"""
             st.session_state.report_messages.append({"role": "assistant", "content": response})
             st.session_state.report_step = 3
             st.rerun()
@@ -510,23 +497,23 @@ Now, please describe the suspicious activity in detail:
         elif step == 3: # Complaint details
             data["complaint_text"] = prompt
             preview = prompt[:150] + "..." if len(prompt) > 150 else prompt
-            response = f"""✅ **Complaint details recorded**
+            response = f"""✅ **Complaint details recorded.**
 
-📋 **Complete Report Summary:**
+📋 **Report Summary:**
 - **Agency:** {data['agency_name']}
 - **City:** {data['city']}
-- **Details:** {preview}
+- **Details:** *{preview}*
 
 ---
 
-**Final Optional Step:**
+**Final Optional Step (Secure Follow-up):**
 
-Would you like to provide contact information (email or phone) so authorities can follow up with you if needed?
+Would you like to provide a secure contact method (email or phone) so authorities can follow up for clarification, if necessary?
 
-- Type your contact info to provide it
+- Type your **contact info** (email/phone) to provide it
 - Type "**skip**" to submit anonymously
 
-*Your choice will not affect the processing of your report.*"""
+*Your anonymity is guaranteed if you choose to skip this step.*"""
             st.session_state.report_messages.append({"role": "assistant", "content": response})
             st.session_state.report_step = 4
             st.rerun()
@@ -540,7 +527,7 @@ Would you like to provide contact information (email or phone) so authorities ca
                     "agency_name": data["agency_name"],
                     "city": data["city"],
                     "complaint_text": data["complaint_text"],
-                    "user_contact": contact if contact else None, # Supabase handles NULLs better with None
+                    "user_contact": contact if contact else None,
                     # Use a standard UTC timestamp for database
                     "created_at": datetime.now(pytz.utc).isoformat()
                 }
@@ -548,21 +535,19 @@ Would you like to provide contact information (email or phone) so authorities ca
                 # Perform the Supabase insertion
                 response_data = supabase_client.table('complaints').insert(insert_data).execute()
                 
-                # Check for errors and get the ID from the response (assuming primary key is 'id')
                 if response_data.data:
                     report_id = response_data.data[0]['id']
                 else:
-                    # Fallback for ID if the response structure is unexpected
                     report_id = "N/A (Check DB)" 
 
                 contact_status = "with contact info" if contact else "anonymously"
-                response = f"""✅ **Report Submitted!**
+                response = f"""✅ **Report Successfully Filed!**
 
-Thank you for your courage! Your report has been securely logged.
+Your report has been securely logged for investigation.
 
-**Reference ID:** #{report_id} ({contact_status})
+**Reference ID:** **#{report_id}** (Submitted {contact_status})
 
-You are now being redirected to the main chat."""
+You are now being safely redirected to the main chat assistant."""
                 st.success("✅ Report submitted successfully!")
                 
                 # Reset and exit
@@ -571,47 +556,42 @@ You are now being redirected to the main chat."""
                 st.session_state.complaint_data.clear()
                 st.session_state.app_mode = "chat"
             except Exception as e:
-                response = f"❌ **Error Submitting Report to Supabase:** {str(e)}"
+                response = f"❌ **Error Submitting Report:** A database error occurred: {str(e)}"
                 st.error("❌ Database Error! Please check Supabase credentials/connection.")
-            # --- SUPABASE INTEGRATION END ---
-
+            
             st.session_state.report_messages.append({"role": "assistant", "content": response})
             st.rerun() # Rerun to apply state change immediately
     
     # Enhanced Exit button in sidebar
     with st.sidebar:
         st.markdown("---")
-        # Updated Title for elegance
-        st.markdown("### 🔒 Secure Reporting Access")
-        st.markdown("Your session is secure and encrypted.")
+        # Updated Title for elegance and security
+        st.markdown("### 🔒 Secure Reporting Channel")
+        st.markdown("All communication is encrypted and confidential.")
         st.markdown("---")
         
-        # Updated button style
-        if st.button("🚪 Return to Guidance Chat", use_container_width=True, type="secondary"):
+        if st.button("🚪 Exit Reporting Channel", use_container_width=True, type="secondary"):
             st.session_state.show_exit_modal = True
             st.rerun()
 
 def render_exit_modal():
     """Render enhanced exit confirmation modal"""
-    # NOTE: The modal style in the CSS was updated to reflect the new primary color
     st.markdown("""
     <div class="modal-overlay">
         <div class="modal-content">
             <div class="modal-icon">⚠️</div>
-            <div class="modal-title">Return to Main Chat?</div>
+            <div class="modal-title">Exit Secure Reporting?</div>
             <div class="modal-text">
-                Your current progress will be lost and you'll return to the main chat assistant.
+                Your current progress will be deleted and you'll return to the main chat.
                 Are you sure you want to leave this safe reporting process?
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # The buttons are outside the markdown, so they need a bit of custom styling in the CSS for the modal
     col1, col2 = st.columns(2)
     with col1:
-        # Changed type to 'secondary' to make it less alarming than 'primary' (red)
-        if st.button("✅ Yes, Return", use_container_width=True, type="secondary", key="modal_yes"):
+        if st.button("✅ Yes, Exit", use_container_width=True, type="secondary", key="modal_yes"):
             st.session_state.app_mode = "chat"
             st.session_state.report_messages = []
             st.session_state.report_step = 0
@@ -621,7 +601,6 @@ def render_exit_modal():
             time.sleep(1)
             st.rerun()
     with col2:
-        # Default button
         if st.button("❌ No, Stay", use_container_width=True, key="modal_no"):
             st.session_state.show_exit_modal = False
             st.rerun()
@@ -644,18 +623,18 @@ def main():
     lang = st.session_state.language
     is_rtl = lang in ['العربية', 'اردو']
     
-    # Updated text for Trustworthy, Safe, Elegant, Modern theme
-    header_title = "Pilgrim Guidance Sanctuary"
-    subtitle_text = "Your Trusted and Secure Platform for Hajj & Umrah Assistance"
-    badge_text = "🕋 Safe • Trusted • Elegant"
+    # Updated text for Trustworthy, Safe, Elegant, Modern Reporting theme
+    header_title = "Confidential Reporting Office"
+    subtitle_text = "Secure and Encrypted Channel for Filing Agency Complaints"
+    badge_text = "🔒 Trustworthy • Secure • Official"
     
     st.markdown(f"""
-    <div class="header-container{' rtl' if is_rtl else ''}" style="background: linear-gradient(135deg, #fdfdfd 0%, #f0f4f8 100%); border-color: var(--color-primary);">
+    <div class="header-container{' rtl' if is_rtl else ''}" style="background: linear-gradient(135deg, #fdfdfd 0%, #f0f4f8 100%); border-color: var(--color-primary-authority);">
         <h1 class="main-title" style="color: var(--color-text-dark);">
-            🕋 <span class="title-highlight" style="background: linear-gradient(135deg, var(--color-primary) 0%, #c5b057 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{header_title}</span>
+            🛡️ <span class="title-highlight" style="background: linear-gradient(135deg, var(--color-primary-authority) 0%, #3b82f6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{header_title}</span>
         </h1>
         <p class="subtitle" style="color: var(--color-text-mid);">{subtitle_text}</p>
-        <div class="header-badge" style="background: linear-gradient(135deg, var(--color-secondary) 0%, #3b5790 100%);">
+        <div class="header-badge" style="background: linear-gradient(135deg, var(--color-primary-authority) 0%, #3b82f6 100%);">
             {badge_text}
         </div>
     </div>
