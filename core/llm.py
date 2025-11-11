@@ -533,14 +533,13 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         ]
 
         if exact_matches:
-            # إذا وجدنا تطابق دقيق، نرجع هذه النتائج فقط
             matching_rows = exact_matches
         else:
-            # البحث الجزئي: أي شركة تحتوي على النص المدخل
             matching_rows = [
                 row for row in sample_rows
                 if search_name in row["hajj_company_en"].lower() or search_name in row["hajj_company_ar"].lower()
             ]
+
 
 
         # تحضير data_preview للأعمدة المطلوبة فقط
