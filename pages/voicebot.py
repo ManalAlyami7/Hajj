@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 def initialize_session_state():
     """Initialize all required session states"""
     defaults = {
-        "language": 'English',
+        "language": 'العربية',
         "font_size": 'normal',  # normal, large, extra-large
         "high_contrast": False,
         "last_audio_hash": None,
