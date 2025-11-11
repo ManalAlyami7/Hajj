@@ -1,87 +1,110 @@
 """
 Professional Voicebot Sidebar Component Module
-Enhanced with formal design, RTL support, and accessibility
-Professional LIGHT color scheme matching chat interface
+Refactored for improved maintainability and organization
 """
+
 import time
 import streamlit as st
+from datetime import datetime
+from typing import Dict, List, Optional
+
 from utils.translations import t
 
 
-# -----------------------------
-# CONFIGURATION
-# -----------------------------
+# ============================================================================
+# CONSTANTS
+# ============================================================================
 LANGUAGE_CONFIG = {
     "English": {'code': 'English', 'rtl': False},
     "العربية": {'code': 'العربية', 'rtl': True},
     "اردو": {'code': 'اردو', 'rtl': True}
 }
 
+FONT_SIZE_CONFIG = {
+    'normal': 0,
+    'large': 1,
+    'extra-large': 2
+}
 
-def render_sidebar(memory, language_code: str):
+
+# ============================================================================
+# PUBLIC INTERFACE
+# ============================================================================
+def render_sidebar(memory, language_code: str) -> None:
     """Render the complete professional sidebar with all controls"""
     with st.sidebar:
-        is_rtl = _is_rtl_language(language_code)
+        renderer = VoicebotSidebarRenderer(memory, language_code)
+        renderer.render()
+
+
+# ============================================================================
+# VOICEBOT SIDEBAR RENDERER CLASS
+# ============================================================================
+class VoicebotSidebarRenderer:
+    """Handles rendering of voicebot sidebar components"""
+    
+    def __init__(self, memory, language_code: str):
+        self.memory = memory
+        self.language_code = language_code
+        self.is_rtl = self._is_rtl_language(language_code)
+    
+    # ------------------------------------------------------------------------
+    # MAIN RENDER METHOD
+    # ------------------------------------------------------------------------
+    def render(self) -> None:
+        """Render all sidebar sections"""
+        self._inject_professional_styles()
+        self._render_all_sections()
+    
+    def _render_all_sections(self) -> None:
+        """Render all sidebar sections with dividers"""
+        sections = [
+            self._render_header,
+            self._render_navigation_buttons,
+            self._render_language_section,
+            self._render_accessibility_section,
+            self._render_sample_questions,
+            self._render_memory_section,
+            self._render_footer
+        ]
         
-        # Inject professional LIGHT theme sidebar styling
-        _inject_professional_light_styles(is_rtl)
-        
-        # Header Section
-        _render_header(language_code)
-        _render_divider()
-
-        # Navigation
-        _render_navigation_buttons(language_code)
-        _render_divider()
-
-        # Language Selection
-        _render_language_section(language_code)
-        _render_divider()
-
-        # Accessibility
-        _render_accessibility_section(language_code)
-        _render_divider()
-
-        # Sample Questions
-        _render_sample_questions(language_code)
-        _render_divider()
-
-        # Memory Status
-        _render_memory_section(memory, language_code)
-        _render_divider()
-        
-        # Footer
-        _render_footer(language_code)
-
-
-# -----------------------------
-# PROFESSIONAL LIGHT STYLING
-# -----------------------------
-def _inject_professional_light_styles(is_rtl: bool):
-    """Inject enhanced professional LIGHT CSS for voicebot sidebar"""
-    st.markdown(f"""
+        for i, section in enumerate(sections):
+            section()
+            if i < len(sections) - 1:
+                self._render_divider()
+    
+    # ------------------------------------------------------------------------
+    # STYLING
+    # ------------------------------------------------------------------------
+    def _inject_professional_styles(self) -> None:
+        """Inject enhanced professional CSS for voicebot sidebar"""
+        st.markdown(self._get_professional_css(), unsafe_allow_html=True)
+    
+    def _get_professional_css(self) -> str:
+        """Return professional CSS as string"""
+        return f"""
     <style>
-    /* ===== Sidebar Base Styling - MATCHING CHAT SIDEBAR ===== */
+    /* ===== Sidebar Base Styling ===== */
     [data-testid="stSidebar"] {{
-        left: {'auto !important' if is_rtl else '0 !important'};
-        right: {'0 !important' if is_rtl else 'auto !important'};
+        left: {'auto !important' if self.is_rtl else '0 !important'};
+        right: {'0 !important' if self.is_rtl else 'auto !important'};
         background: linear-gradient(180deg, #0f1419 0%, #1a1f2e 100%) !important;
-        border-right: {'none' if is_rtl else '2px solid #d4af37'} !important;
-        border-left: {'2px solid #d4af37' if is_rtl else 'none'} !important;
+        border-right: {'none' if self.is_rtl else '2px solid #d4af37'} !important;
+        border-left: {'2px solid #d4af37' if self.is_rtl else 'none'} !important;
     }}
 
     [data-testid="stSidebar"] > div:first-child {{
-        {'transform: translateX(0) !important;' if is_rtl else ''}
+        {'transform: translateX(0) !important;' if self.is_rtl else ''}
     }}
 
     [data-testid="stSidebar"] .block-container {{
-        direction: {'rtl' if is_rtl else 'ltr'};
+        direction: {'rtl' if self.is_rtl else 'ltr'};
         padding: 2rem 1.5rem;
     }}
 
-    /* ===== Text Colors - WHITE ON DARK BACKGROUND ===== */
+    /* ===== Text Colors ===== */
     [data-testid="stSidebar"] .stMarkdown {{
-        text-align: {'right' if is_rtl else 'left'};
+        text-align: {'right' if self.is_rtl else 'left'};
         color: #f8fafc !important;
     }}
 
@@ -91,7 +114,7 @@ def _inject_professional_light_styles(is_rtl: bool):
         color: #f8fafc !important;
     }}
 
-    /* ===== Headers - GOLD ON DARK ===== */
+    /* ===== Headers ===== */
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {{
         color: #d4af37 !important;
@@ -116,7 +139,7 @@ def _inject_professional_light_styles(is_rtl: bool):
         font-weight: 500;
     }}
 
-    /* ===== Selectbox Styling - MATCHING CHAT ===== */
+    /* ===== Selectbox Styling ===== */
     [data-testid="stSidebar"] .stSelectbox > div > div {{
         background: rgba(212, 175, 55, 0.1);
         border: 2px solid rgba(212, 175, 55, 0.4);
@@ -136,7 +159,7 @@ def _inject_professional_light_styles(is_rtl: bool):
         font-weight: 700 !important;
     }}
 
-    /* ===== Checkbox Styling - MATCHING CHAT ===== */
+    /* ===== Checkbox Styling ===== */
     [data-testid="stSidebar"] .stCheckbox {{
         color: #f8fafc;
     }}
@@ -150,7 +173,7 @@ def _inject_professional_light_styles(is_rtl: bool):
         color: #f8fafc !important;
     }}
 
-    /* ===== Button Styling - MATCHING CHAT EXACTLY ===== */
+    /* ===== Button Styling ===== */
     [data-testid="stSidebar"] .stButton > button {{
         width: 100%;
         padding: 0.9rem 1.25rem;
@@ -172,7 +195,7 @@ def _inject_professional_light_styles(is_rtl: bool):
         box-shadow: 0 5px 14px rgba(212, 175, 55, 0.4);
     }}
 
-    /* ===== Primary Button - MATCHING CHAT ===== */
+    /* ===== Primary Button ===== */
     [data-testid="stSidebar"] button[kind="primary"] {{
         background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
         color: white !important;
@@ -184,7 +207,7 @@ def _inject_professional_light_styles(is_rtl: bool):
         box-shadow: 0 5px 16px rgba(212, 175, 55, 0.5);
     }}
 
-    /* ===== Secondary Buttons - MATCHING CHAT ===== */
+    /* ===== Secondary Buttons ===== */
     [data-testid="stSidebar"] button[kind="secondary"] {{
         background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
         color: white !important;
@@ -198,8 +221,8 @@ def _inject_professional_light_styles(is_rtl: bool):
 
     /* ===== Collapsed Control Button ===== */
     [data-testid="collapsedControl"] {{
-        left: {'0.5rem !important' if is_rtl else 'auto !important'};
-        right: {'auto !important' if is_rtl else '0.5rem !important'};
+        left: {'0.5rem !important' if self.is_rtl else 'auto !important'};
+        right: {'auto !important' if self.is_rtl else '0.5rem !important'};
         background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
         color: white !important;
         border-radius: 0.5rem !important;
@@ -211,13 +234,13 @@ def _inject_professional_light_styles(is_rtl: bool):
         transform: scale(1.05) !important;
     }}
 
-    /* ===== Memory Panel - LIGHT ===== */
+    /* ===== Memory Panel ===== */
     .memory-panel {{
         background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(212, 175, 55, 0.04) 100%);
         padding: 1.5rem;
         border-radius: 16px;
-        border-right: {'4px solid #d4af37' if is_rtl else 'none'};
-        border-left: {'none' if is_rtl else '4px solid #d4af37'};
+        border-right: {'4px solid #d4af37' if self.is_rtl else 'none'};
+        border-left: {'none' if self.is_rtl else '4px solid #d4af37'};
         margin-top: 0.75rem;
         transition: all 0.3s ease;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -233,7 +256,7 @@ def _inject_professional_light_styles(is_rtl: bool):
         display: flex;
         justify-content: space-between;
         margin-bottom: 0.75rem;
-        direction: {'rtl' if is_rtl else 'ltr'};
+        direction: {'rtl' if self.is_rtl else 'ltr'};
         align-items: center;
     }}
 
@@ -254,7 +277,7 @@ def _inject_professional_light_styles(is_rtl: bool):
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }}
 
-    /* ===== Sample Questions - LIGHT ===== */
+    /* ===== Sample Questions ===== */
     .sample-question {{
         background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(212, 175, 55, 0.04) 100%);
         padding: 1rem 1.25rem;
@@ -264,8 +287,8 @@ def _inject_professional_light_styles(is_rtl: bool):
         border: 2px solid rgba(212, 175, 55, 0.25);
         color: #1f2937;
         transition: all 0.3s ease;
-        text-align: {'right' if is_rtl else 'left'};
-        direction: {'rtl' if is_rtl else 'ltr'};
+        text-align: {'right' if self.is_rtl else 'left'};
+        direction: {'rtl' if self.is_rtl else 'ltr'};
         font-weight: 600;
         line-height: 1.6;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
@@ -274,7 +297,7 @@ def _inject_professional_light_styles(is_rtl: bool):
     .sample-question:hover {{
         background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
         border-color: rgba(212, 175, 55, 0.5);
-        transform: translateX({'-8px' if is_rtl else '8px'});
+        transform: translateX({'-8px' if self.is_rtl else '8px'});
         box-shadow: 0 4px 12px rgba(212, 175, 55, 0.2);
     }}
 
@@ -287,15 +310,15 @@ def _inject_professional_light_styles(is_rtl: bool):
 
     /* ===== Main content adjustment ===== */
     .main .block-container {{
-        margin-right: {'21rem !important' if is_rtl else '1rem !important'};
-        margin-left: {'1rem !important' if is_rtl else '1rem !important'};
+        margin-right: {'21rem !important' if self.is_rtl else '1rem !important'};
+        margin-left: {'1rem !important' if self.is_rtl else '1rem !important'};
     }}
 
     [data-testid="stSidebar"][aria-expanded="false"] ~ .main .block-container {{
-        margin-right: {'1rem !important' if is_rtl else 'auto'};
+        margin-right: {'1rem !important' if self.is_rtl else 'auto'};
     }}
 
-    /* ===== Header Styling - LIGHT ===== */
+    /* ===== Header Styling ===== */
     .sidebar-header {{
         text-align: center;
         padding: 1.5rem 0 2rem 0;
@@ -331,7 +354,7 @@ def _inject_professional_light_styles(is_rtl: bool):
         font-weight: 600;
     }}
 
-    /* ===== Footer Styling - DARK THEME ===== */
+    /* ===== Footer Styling ===== */
     .sidebar-footer {{
         text-align: center;
         padding-top: 1.5rem;
@@ -349,7 +372,7 @@ def _inject_professional_light_styles(is_rtl: bool):
         color: #94a3b8 !important;
     }}
 
-    /* ===== Scrollbar Styling - DARK THEME ===== */
+    /* ===== Scrollbar Styling ===== */
     [data-testid="stSidebar"] ::-webkit-scrollbar {{
         width: 8px;
     }}
@@ -368,241 +391,240 @@ def _inject_professional_light_styles(is_rtl: bool):
         background: linear-gradient(180deg, #e6c345 0%, #c9a527 100%);
     }}
     </style>
-    """, unsafe_allow_html=True)
-
-
-# -----------------------------
-# HELPER FUNCTIONS
-# -----------------------------
-def _render_divider():
-    """Render a professional divider line"""
-    st.markdown("<hr style='margin-top:1.5rem; border-color:rgba(212, 175, 55, 0.3); border-width: 2px;'>", 
-                unsafe_allow_html=True)
-
-
-def _get_current_language_display(language_code: str) -> str:
-    """Get the display name for the current language code"""
-    for display_name, config in LANGUAGE_CONFIG.items():
-        if config['code'] == language_code:
-            return display_name
-    return "English"
-
-
-def _is_rtl_language(language_code: str) -> bool:
-    """Check if the given language code is RTL"""
-    for config in LANGUAGE_CONFIG.values():
-        if config['code'] == language_code:
-            return config['rtl']
-    return False
-
-
-# -----------------------------
-# HEADER SECTION
-# -----------------------------
-def _render_header(language_code: str):
-    """Render professional header"""
-    st.markdown(f"""
-    <div class="sidebar-header">
-        <span class="sidebar-icon">🎙️</span>
-        <h2 class="sidebar-title">{t('voice_main_title', language_code).replace('🕋 ', '')}</h2>
-        <p class="sidebar-subtitle">{t('assistant_subtitle', language_code)}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# -----------------------------
-# LANGUAGE SELECTION
-# -----------------------------
-def _render_language_section(language_code: str):
-    """Render professional language selector"""
-    st.markdown(f"### {t('language_title', language_code)}")
-    st.caption(t('feat_multilingual_desc', language_code))
-
-    language_options = {
-        "English": 'English',
-        "العربية": 'العربية',
-        "اردو": 'اردو'
-    }
-
-    current_lang_display = _get_current_language_display(language_code)
+    """
     
-    selected_language = st.selectbox(
-        t('language_title', language_code),
-        options=list(language_options.keys()),
-        index=list(language_options.keys()).index(current_lang_display),
-        label_visibility="collapsed",
-        key="voicebot_lang_selector"
-    )
-
-    new_language_code = language_options[selected_language]
-    if new_language_code != language_code:
-        st.session_state.language = new_language_code
-        st.session_state.is_rtl = _is_rtl_language(new_language_code)
-        st.rerun()
-
-
-# -----------------------------
-# ACCESSIBILITY SECTION
-# -----------------------------
-def _render_accessibility_section(language_code: str):
-    """Render professional accessibility controls"""
-    st.markdown(f"### {t('accessibility_title', language_code)}")
-    st.caption(t('accessibility_desc', language_code))
-
-    font_labels = [
-        t('font_normal', language_code), 
-        t('font_large', language_code), 
-        t('font_extra_large', language_code)
-    ]
-    font_values = ['normal', 'large', 'extra-large']
-    
-    if 'font_size' not in st.session_state:
-        st.session_state.font_size = 'normal'
-    
-    current_index = font_values.index(st.session_state.font_size)
-
-    selected_font = st.selectbox(
-        t('font_size_label', language_code),
-        options=font_labels,
-        index=current_index
-    )
-
-    selected_index = font_labels.index(selected_font)
-    new_font_size = font_values[selected_index]
-    
-    if new_font_size != st.session_state.font_size:
-        st.session_state.font_size = new_font_size
-        st.rerun()
-
-    st.markdown("")
-
-    if 'high_contrast' not in st.session_state:
-        st.session_state.high_contrast = False
-
-    high_contrast = st.checkbox(
-        t('contrast_label', language_code),
-        value=st.session_state.high_contrast,
-        help=t('contrast_help', language_code)
-    )
-
-    if high_contrast != st.session_state.high_contrast:
-        st.session_state.high_contrast = high_contrast
-        st.rerun()
-
-
-# -----------------------------
-# SAMPLE QUESTIONS
-# -----------------------------
-def _render_sample_questions(language_code: str):
-    """Render professional sample questions"""
-    st.markdown(f"### {t('examples_title', language_code)}")
-    st.caption(t('examples_caption', language_code))
-
-    try:
-        sample_questions = t('sample_questions', language_code)
-        
-        for i, question in enumerate(sample_questions):
-            st.markdown(f"""
-            <div class="sample-question">
-                <strong>{i+1}.</strong> {question}
-            </div>
-            """, unsafe_allow_html=True)
-    except Exception as e:
-        st.error(f"Error loading sample questions: {str(e)}")
-
-
-# -----------------------------
-# MEMORY SECTION
-# -----------------------------
-def _render_memory_section(memory, language_code: str):
-    """Render professional memory status"""
-    st.markdown(f"### {t('memory_status_title', language_code)}")
-    st.caption(t('memory_status_desc', language_code))
-
-    try:
-        memory_summary = memory.get_memory_summary()
-        
-        st.markdown(f"""
-        <div class="memory-panel">
-            <div class="memory-panel-row">
-                <span class="memory-label">📝 {t('voice_memory_messages', language_code)}</span>
-                <strong class="memory-value">{memory_summary['total_messages']}</strong>
-            </div>
-            <div class="memory-panel-row">
-                <span class="memory-label">⏱️ {t('voice_session_duration', language_code)}</span>
-                <strong class="memory-value">{memory_summary['session_duration']}</strong>
-            </div>
+    # ------------------------------------------------------------------------
+    # SECTION RENDERERS
+    # ------------------------------------------------------------------------
+    def _render_header(self) -> None:
+        """Render professional header"""
+        header_html = f"""
+        <div class="sidebar-header">
+            <span class="sidebar-icon">🎙️</span>
+            <h2 class="sidebar-title">{t('voice_main_title', self.language_code).replace('🕋 ', '')}</h2>
+            <p class="sidebar-subtitle">{t('assistant_subtitle', self.language_code)}</p>
         </div>
-        """, unsafe_allow_html=True)
+        """
+        st.markdown(header_html, unsafe_allow_html=True)
+    
+    def _render_navigation_buttons(self) -> None:
+        """Render professional navigation buttons"""
+        st.markdown(f"### {t('mode_title', self.language_code)}")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button(
+                f"💬 {t('mode_chatbot', self.language_code)}", 
+                key="nav_chatbot", 
+                use_container_width=True, 
+                type="primary"
+            ):
+                self._navigate_to_page("app.py")
+        
+        with col2:
+            if st.button(
+                f"🎙️ {t('mode_voicebot', self.language_code)}", 
+                key="nav_voicebot", 
+                use_container_width=True, 
+                type="primary"
+            ):
+                st.info("Current page")
+    
+    def _render_language_section(self) -> None:
+        """Render professional language selector"""
+        st.markdown(f"### {t('language_title', self.language_code)}")
+        st.caption(t('feat_multilingual_desc', self.language_code))
 
+        current_lang_display = self._get_current_language_display()
+        
+        selected_language = st.selectbox(
+            t('language_title', self.language_code),
+            options=list(LANGUAGE_CONFIG.keys()),
+            index=list(LANGUAGE_CONFIG.keys()).index(current_lang_display),
+            label_visibility="collapsed",
+            key="voicebot_lang_selector"
+        )
+
+        new_language_code = LANGUAGE_CONFIG[selected_language]['code']
+        if new_language_code != self.language_code:
+            self._handle_language_change(new_language_code)
+    
+    def _render_accessibility_section(self) -> None:
+        """Render professional accessibility controls"""
+        st.markdown(f"### {t('accessibility_title', self.language_code)}")
+        st.caption(t('accessibility_desc', self.language_code))
+
+        self._render_font_size_selector()
         st.markdown("")
-        
-        if st.button(f"🗑️ {t('voice_clear_memory', language_code)}", use_container_width=True, type="secondary"):
-            _clear_memory_and_state(memory, language_code)
-            
-    except Exception as e:
-        st.error(f"Error loading memory: {str(e)}")
-
-
-def _clear_memory_and_state(memory, language_code: str):
-    """Clear memory with professional feedback"""
-    try:
-        memory.clear_memory()
-        
-        keys_to_clear = [
-            'current_transcript', 
-            'current_response', 
-            'current_metadata',
-            'last_audio_hash', 
-            'pending_audio', 
-            'pending_audio_bytes'
+        self._render_contrast_toggle()
+    
+    def _render_font_size_selector(self) -> None:
+        """Render font size selector"""
+        font_labels = [
+            t('font_normal', self.language_code), 
+            t('font_large', self.language_code), 
+            t('font_extra_large', self.language_code)
         ]
+        font_values = ['normal', 'large', 'extra-large']
         
-        for key in keys_to_clear:
-            if key in st.session_state:
-                st.session_state[key] = None if 'audio' in key else ""
+        if 'font_size' not in st.session_state:
+            st.session_state.font_size = 'normal'
         
-        st.success(t('memory_cleared', language_code))
-        time.sleep(1)
+        current_index = FONT_SIZE_CONFIG.get(st.session_state.font_size, 0)
+
+        selected_font = st.selectbox(
+            t('font_size_label', self.language_code),
+            options=font_labels,
+            index=current_index
+        )
+
+        selected_index = font_labels.index(selected_font)
+        new_font_size = font_values[selected_index]
+        
+        if new_font_size != st.session_state.font_size:
+            st.session_state.font_size = new_font_size
+            st.rerun()
+    
+    def _render_contrast_toggle(self) -> None:
+        """Render high contrast toggle"""
+        if 'high_contrast' not in st.session_state:
+            st.session_state.high_contrast = False
+
+        high_contrast = st.checkbox(
+            t('contrast_label', self.language_code),
+            value=st.session_state.high_contrast,
+            help=t('contrast_help', self.language_code)
+        )
+
+        if high_contrast != st.session_state.high_contrast:
+            st.session_state.high_contrast = high_contrast
+            st.rerun()
+    
+    def _render_sample_questions(self) -> None:
+        """Render professional sample questions"""
+        st.markdown(f"### {t('examples_title', self.language_code)}")
+        st.caption(t('examples_caption', self.language_code))
+
+        try:
+            sample_questions = t('sample_questions', self.language_code)
+            
+            for i, question in enumerate(sample_questions):
+                question_html = f"""
+                <div class="sample-question">
+                    <strong>{i+1}.</strong> {question}
+                </div>
+                """
+                st.markdown(question_html, unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"Error loading sample questions: {str(e)}")
+    
+    def _render_memory_section(self) -> None:
+        """Render professional memory status"""
+        st.markdown(f"### {t('memory_status_title', self.language_code)}")
+        st.caption(t('memory_status_desc', self.language_code))
+
+        try:
+            memory_summary = self.memory.get_memory_summary()
+            
+            memory_html = f"""
+            <div class="memory-panel">
+                <div class="memory-panel-row">
+                    <span class="memory-label">📝 {t('voice_memory_messages', self.language_code)}</span>
+                    <strong class="memory-value">{memory_summary['total_messages']}</strong>
+                </div>
+                <div class="memory-panel-row">
+                    <span class="memory-label">⏱️ {t('voice_session_duration', self.language_code)}</span>
+                    <strong class="memory-value">{memory_summary['session_duration']}</strong>
+                </div>
+            </div>
+            """
+            st.markdown(memory_html, unsafe_allow_html=True)
+
+            st.markdown("")
+            
+            if st.button(
+                f"🗑️ {t('voice_clear_memory', self.language_code)}", 
+                use_container_width=True, 
+                type="secondary"
+            ):
+                self._clear_memory()
+                
+        except Exception as e:
+            st.error(f"Error loading memory: {str(e)}")
+    
+    def _render_footer(self) -> None:
+        """Render professional footer"""
+        year = datetime.now().year
+        
+        footer_html = f"""
+        <div class="sidebar-footer">
+            <p>© {year} {t('footer_title_voice', self.language_code)}</p>
+            <p style="margin-top: 0.5rem;">
+                {t('footer_powered', self.language_code)} <strong>{t('footer_tech', self.language_code)}</strong>
+            </p>
+        </div>
+        """
+        st.markdown(footer_html, unsafe_allow_html=True)
+    
+    # ------------------------------------------------------------------------
+    # HELPER METHODS
+    # ------------------------------------------------------------------------
+    @staticmethod
+    def _render_divider() -> None:
+        """Render a professional divider line"""
+        divider_html = "<hr style='margin-top:1.5rem; border-color:rgba(212, 175, 55, 0.3); border-width: 2px;'>"
+        st.markdown(divider_html, unsafe_allow_html=True)
+    
+    def _get_current_language_display(self) -> str:
+        """Get the display name for the current language code"""
+        for display_name, config in LANGUAGE_CONFIG.items():
+            if config['code'] == self.language_code:
+                return display_name
+        return "English"
+    
+    @staticmethod
+    def _is_rtl_language(language_code: str) -> bool:
+        """Check if the given language code is RTL"""
+        for config in LANGUAGE_CONFIG.values():
+            if config['code'] == language_code:
+                return config['rtl']
+        return False
+    
+    @staticmethod
+    def _navigate_to_page(page_path: str) -> None:
+        """Navigate to a page"""
+        try:
+            st.switch_page(page_path)
+        except Exception:
+            st.rerun()
+    
+    def _handle_language_change(self, new_language_code: str) -> None:
+        """Handle language change"""
+        st.session_state.language = new_language_code
+        st.session_state.is_rtl = self._is_rtl_language(new_language_code)
         st.rerun()
-    except Exception as e:
-        st.error(f"Error clearing memory: {str(e)}")
-
-
-# -----------------------------
-# NAVIGATION SECTION
-# -----------------------------
-def _render_navigation_buttons(lang):
-    """Render professional navigation buttons"""
-    st.markdown(f"### {t('mode_title', lang)}")
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button(f"💬 {t('mode_chatbot', lang)}", key="nav_chatbot", use_container_width=True, type="primary"):
-            try:
-                st.switch_page("app.py")
-            except Exception:
-                st.rerun()
-    
-    with col2:
-        if st.button(f"🎙️ {t('mode_voicebot', lang)}", key="nav_voicebot", use_container_width=True, type="primary"):
-            st.info("Current page")
-
-
-# -----------------------------
-# FOOTER SECTION
-# -----------------------------
-def _render_footer(language_code: str):
-    """Render professional footer"""
-    from datetime import datetime
-    year = datetime.now().year
-    
-    st.markdown(f"""
-    <div class="sidebar-footer">
-        <p>© {year} {t('footer_title_voice',language_code)}</p>
-        <p style="margin-top: 0.5rem;">
-            {t('footer_powered',language_code)} <strong>{t('footer_tech', language_code)}</strong>
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    def _clear_memory(self) -> None:
+        """Clear memory with professional feedback"""
+        try:
+            self.memory.clear_memory()
+            
+            keys_to_clear = [
+                'current_transcript', 
+                'current_response', 
+                'current_metadata',
+                'last_audio_hash', 
+                'pending_audio', 
+                'pending_audio_bytes'
+            ]
+            
+            for key in keys_to_clear:
+                if key in st.session_state:
+                    st.session_state[key] = None if 'audio' in key else ""
+            
+            st.success(t('memory_cleared', self.language_code))
+            time.sleep(1)
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error clearing memory: {str(e)}")

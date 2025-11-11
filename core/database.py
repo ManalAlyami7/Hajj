@@ -177,16 +177,19 @@ class DatabaseManager:
     
     def search_agency_fuzzy(self, search_term: str) -> pd.DataFrame:
         """
-        Smart search:
-        1. Try exact match (as entered)
-        2. Try exact match (after cleaning)
-        3. If nothing found, fallback to fuzzy match
-        Also updates session memory with last search context.
+        Smart search for Hajj agencies:
+        1️⃣ Exact match
+        2️⃣ Cleaned exact match
+        3️⃣ Fuzzy match
+        
+        Handles zero, single, or multiple results.
+        Updates session memory only when a single company is found.
         """
         original_term = search_term.strip().lower()
         if len(original_term) < 2:
             return pd.DataFrame()
 
+        # تنظيف النص
         cleaned_term = (
             original_term
             .replace("شركة", "")
@@ -197,9 +200,9 @@ class DatabaseManager:
             .strip()
         )
 
-        # Internal helper
+        # --- Internal helper: save last company ---
         def _save_last_company(row, df_source: pd.DataFrame):
-            """Store full memory of the last agency search"""
+            """Store last company search in session state"""
             memory = {
                 "last_company_name_ar": row.get("hajj_company_ar", ""),
                 "last_company_name_en": row.get("hajj_company_en", ""),
@@ -218,7 +221,7 @@ class DatabaseManager:
             else:
                 st.session_state["chat_memory"].update(memory)
 
-        # --- 1️⃣ Exact match ---
+        # --- Query templates ---
         exact_query = """
         SELECT DISTINCT 
             hajj_company_en, hajj_company_ar, formatted_address,
@@ -228,19 +231,6 @@ class DatabaseManager:
         OR LOWER(TRIM(hajj_company_ar)) = LOWER(:term)
         LIMIT 10
         """
-        df, error = self.execute_query(exact_query, {"term": original_term})
-        if isinstance(df, pd.DataFrame) and not df.empty:
-            _save_last_company(df.iloc[0], df)
-            return df
-
-        # --- 2️⃣ Cleaned exact match ---
-        if cleaned_term and cleaned_term != original_term:
-            df, error = self.execute_query(exact_query, {"term": cleaned_term})
-            if isinstance(df, pd.DataFrame) and not df.empty:
-                _save_last_company(df.iloc[0], df)
-                return df
-
-        # --- 3️⃣ Fuzzy match ---
         fuzzy_query = """
         SELECT DISTINCT 
             hajj_company_en, hajj_company_ar, formatted_address,
@@ -252,9 +242,30 @@ class DatabaseManager:
         OR LOWER(country) LIKE LOWER(:term)
         LIMIT 50
         """
-        df, error = self.execute_query(fuzzy_query, {"term": f"%{cleaned_term or original_term}%"} )
+
+        # --- 1️⃣ Exact match ---
+        df, error = self.execute_query(exact_query, {"term": original_term})
         if isinstance(df, pd.DataFrame) and not df.empty:
-            _save_last_company(df.iloc[0], df)
+            if len(df) == 1:
+                _save_last_company(df.iloc[0], df)
             return df
 
+        # --- 2️⃣ Cleaned exact match ---
+        if cleaned_term and cleaned_term != original_term:
+            df, error = self.execute_query(exact_query, {"term": cleaned_term})
+            if isinstance(df, pd.DataFrame) and not df.empty:
+                if len(df) == 1:
+                    _save_last_company(df.iloc[0], df)
+                return df
+
+        # --- 3️⃣ Fuzzy match ---
+        term_to_search = f"%{cleaned_term or original_term}%"
+        df, error = self.execute_query(fuzzy_query, {"term": term_to_search})
+        if isinstance(df, pd.DataFrame) and not df.empty:
+            if len(df) == 1:
+                _save_last_company(df.iloc[0], df)
+            # إذا نتائج متعددة، لا تحفظ أي شركة حتى يختار المستخدم
+            return df
+
+        # --- صفر نتائج ---
         return pd.DataFrame()

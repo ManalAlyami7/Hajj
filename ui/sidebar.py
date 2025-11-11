@@ -1,17 +1,46 @@
 """
 Professional Sidebar Interface Module
-Enhanced with formal design, statistics, and navigation
-Fixed color scheme with proper contrast
-Complete version with Urdu language support and all translations working
+Refactored for improved maintainability and organization
 """
 
 import streamlit as st
-from utils.translations import t
-from utils.state import save_chat_memory, clear_chat_memory
 from datetime import datetime
+from typing import Dict, List, Tuple
 import pytz
 
+from utils.translations import t
+from utils.state import save_chat_memory, clear_chat_memory
 
+
+# ============================================================================
+# CONSTANTS
+# ============================================================================
+RIYADH_TZ = pytz.timezone('Asia/Riyadh')
+
+STAT_ICONS = {
+    'total': '🏢',
+    'authorized': '✅',
+    'countries': '🌍',
+    'cities': '🏙️'
+}
+
+FEATURE_ICONS = {
+    'feat_ai': '🤖',
+    'feat_multilingual': '🌐',
+    'feat_viz': '📈',
+    'feat_secure': '🔐'
+}
+
+LANGUAGE_OPTIONS = {
+    "English 🇬🇧": "English",
+    "العربية 🇸🇦": "العربية",
+    "اردو 🇵🇰": "اردو"
+}
+
+
+# ============================================================================
+# SIDEBAR INTERFACE CLASS
+# ============================================================================
 class SidebarInterface:
     """Manages professional sidebar display and interactions"""
     
@@ -19,39 +48,50 @@ class SidebarInterface:
         """Initialize with database manager"""
         self.db = db_manager
     
-    def render(self):
+    # ------------------------------------------------------------------------
+    # PUBLIC INTERFACE
+    # ------------------------------------------------------------------------
+    def render(self) -> None:
         """Render complete professional sidebar"""
         with st.sidebar:
             self._inject_sidebar_styles()
-            
-            self._render_header()
-            st.markdown("---")
-            
-            self._render_navigation_buttons()
-            st.markdown("---")
-            
-            self._render_language_selector()
-            st.markdown("---")
-            
-            self._render_stats()
-            st.markdown("---")
-            
-            self._render_examples()
-            st.markdown("---")
-            
-            self._render_clear_button()
-            st.markdown("---")
-            
-            self._render_features()
-            st.markdown("---")
-            self._render_report()
-            st.markdown("---")
-            
-            self._render_footer()
+            self._render_all_sections()
     
-    def _inject_sidebar_styles(self):
-        """Inject professional sidebar CSS with fixed colors"""
-        st.markdown("""
+    def _render_all_sections(self) -> None:
+        """Render all sidebar sections in order"""
+        sections = [
+            self._render_header,
+            self._render_navigation_buttons,
+            self._render_language_selector,
+            self._render_stats,
+            self._render_examples,
+            self._render_clear_button,
+            self._render_features,
+            self._render_report,
+            self._render_footer
+        ]
+        
+        for i, section in enumerate(sections):
+            section()
+            if i < len(sections) - 1:
+                self._render_divider()
+    
+    @staticmethod
+    def _render_divider() -> None:
+        """Render professional divider line"""
+        st.markdown("---")
+    
+    # ------------------------------------------------------------------------
+    # STYLING
+    # ------------------------------------------------------------------------
+    def _inject_sidebar_styles(self) -> None:
+        """Inject professional sidebar CSS"""
+        st.markdown(self._get_sidebar_css(), unsafe_allow_html=True)
+    
+    @staticmethod
+    def _get_sidebar_css() -> str:
+        """Return sidebar CSS as string"""
+        return """
         <style>
         /* Sidebar Base Styling */
         [data-testid="stSidebar"] {
@@ -295,7 +335,8 @@ class SidebarInterface:
             margin: 0.5rem 0;
         }
         </style>
-        """, unsafe_allow_html=True)
+        """
+    
     def _render_report(self):
         lang = st.session_state.language
 
@@ -303,120 +344,153 @@ class SidebarInterface:
             st.session_state.app_mode = "report"
             st.switch_page("pages/report.py")
     
-    def _render_header(self):
+    # ------------------------------------------------------------------------
+    # HEADER SECTION
+    # ------------------------------------------------------------------------
+    def _render_header(self) -> None:
         """Render professional sidebar header"""
         lang = st.session_state.language
-        st.markdown(f"""
+        header_html = f"""
         <div class="sidebar-header">
             <span class="sidebar-icon">🕋</span>
             <h2 class="sidebar-title">{t('assistant_title', lang).replace('🕋 ', '')}</h2>
             <p class="sidebar-subtitle">{t('assistant_subtitle', lang)}</p>
         </div>
-        """, unsafe_allow_html=True)
+        """
+        st.markdown(header_html, unsafe_allow_html=True)
     
-    def _render_navigation_buttons(self):
+    # ------------------------------------------------------------------------
+    # NAVIGATION SECTION
+    # ------------------------------------------------------------------------
+    def _render_navigation_buttons(self) -> None:
         """Render professional navigation buttons"""
         lang = st.session_state.language
         
-        # إضافة النص المترجم للعنوان
-        mode_title = t('mode_title', lang)
-        st.markdown(f"<h3>{mode_title}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3>{t('mode_title', lang)}</h3>", unsafe_allow_html=True)
         
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button(f"💬 {t('mode_chatbot', lang)}", key="nav_chatbot", use_container_width=True):
-                try:
-                    st.switch_page("app.py")
-                except Exception:
-                    st.rerun()
+            if st.button(
+                f"💬 {t('mode_chatbot', lang)}", 
+                key="nav_chatbot", 
+                use_container_width=True
+            ):
+                self._navigate_to_page("app.py")
         
         with col2:
-            if st.button(f"🎙️ {t('mode_voicebot', lang)}", key="nav_voicebot", use_container_width=True):
-                try:
-                    st.switch_page("pages/voicebot.py")
-                except Exception:
-                    st.info(t('voicebot_unavailable', lang))
+            if st.button(
+                f"🎙️ {t('mode_voicebot', lang)}", 
+                key="nav_voicebot", 
+                use_container_width=True
+            ):
+                self._navigate_to_page("pages/voicebot.py", t('voicebot_unavailable', lang))
     
-    def _render_language_selector(self):
+    @staticmethod
+    def _navigate_to_page(page_path: str, fallback_message: str = None) -> None:
+        """Navigate to a page with fallback"""
+        try:
+            st.switch_page(page_path)
+        except Exception:
+            if fallback_message:
+                st.info(fallback_message)
+            else:
+                st.rerun()
+    
+    # ------------------------------------------------------------------------
+    # LANGUAGE SECTION
+    # ------------------------------------------------------------------------
+    def _render_language_selector(self) -> None:
         """Render professional language toggle"""
         lang = st.session_state.language
         
-        # إضافة النص المترجم للعنوان
-        language_title = t('language_title', lang)
-        st.markdown(f"<h3>{language_title}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3>{t('language_title', lang)}</h3>", unsafe_allow_html=True)
         
-        # إضافة الأردية للخيارات
+        current_index = self._get_current_language_index(lang)
+        
         language_choice = st.radio(
             "",
-            ["English 🇬🇧", "العربية 🇸🇦", "اردو 🇵🇰"],
-            index=0 if lang == "English" else (1 if lang == "العربية" else 2),
+            list(LANGUAGE_OPTIONS.keys()),
+            index=current_index,
             horizontal=True,
             label_visibility="collapsed",
             key="chatbot_lang_selector"
         )
         
-        # تحديد اللغة الجديدة
-        if "اردو" in language_choice:
-            new_language = "اردو"
-        elif "العربية" in language_choice:
-            new_language = "العربية"
-        else:
-            new_language = "English"
+        new_language = LANGUAGE_OPTIONS[language_choice]
         
-        if new_language != st.session_state.language:
-            st.session_state.language = new_language
-            
-            if len(st.session_state.chat_memory) <= 1:
-                st.session_state.chat_memory = [{
-                    "role": "assistant",
-                    "content": t("welcome_msg", new_language),
-                    "timestamp": self._get_current_time()
-                }]
-                #save_chat_memory()
-            
-            st.rerun()
+        if new_language != lang:
+            self._handle_language_change(new_language)
     
-    def _render_stats(self):
+    @staticmethod
+    def _get_current_language_index(current_lang: str) -> int:
+        """Get index of current language in options"""
+        language_list = list(LANGUAGE_OPTIONS.values())
+        try:
+            return language_list.index(current_lang)
+        except ValueError:
+            return 0
+    
+    def _handle_language_change(self, new_language: str) -> None:
+        """Handle language change and update chat"""
+        st.session_state.language = new_language
+        
+        if len(st.session_state.chat_memory) <= 1:
+            st.session_state.chat_memory = [{
+                "role": "assistant",
+                "content": t("welcome_msg", new_language),
+                "timestamp": self._get_current_time()
+            }]
+        
+        st.rerun()
+    
+    # ------------------------------------------------------------------------
+    # STATS SECTION
+    # ------------------------------------------------------------------------
+    def _render_stats(self) -> None:
         """Render professional database statistics"""
         lang = st.session_state.language
         
-        # إضافة النص المترجم للعنوان
-        stats_title = t('stats_title', lang)
-        st.markdown(f"<h3>{stats_title}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3>{t('stats_title', lang)}</h3>", unsafe_allow_html=True)
         
         stats = self.db.get_stats()
-        
-        stat_items = [
-            ("total", "total_agencies", "🏢"),
-            ("authorized", "authorized", "✅"),
-            ("countries", "countries", "🌍"),
-            ("cities", "cities", "🏙️")
-        ]
+        stat_items = self._get_stat_items()
         
         for key, label_key, icon in stat_items:
-            st.markdown(f"""
-            <div class="stat-card">
-                <div style="font-size: 2.5rem;">{icon}</div>
-                <div class="stat-number">{stats.get(key, 0):,}</div>
-                <div class="stat-label">{t(label_key, lang)}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            self._render_stat_card(stats, key, label_key, icon, lang)
     
-    def _render_examples(self):
+    @staticmethod
+    def _get_stat_items() -> List[Tuple[str, str, str]]:
+        """Get list of stat items to display"""
+        return [
+            ("total", "total_agencies", STAT_ICONS['total']),
+            ("authorized", "authorized", STAT_ICONS['authorized']),
+            ("countries", "countries", STAT_ICONS['countries']),
+            ("cities", "cities", STAT_ICONS['cities'])
+        ]
+    
+    @staticmethod
+    def _render_stat_card(stats: Dict, key: str, label_key: str, icon: str, lang: str) -> None:
+        """Render a single stat card"""
+        stat_html = f"""
+        <div class="stat-card">
+            <div style="font-size: 2.5rem;">{icon}</div>
+            <div class="stat-number">{stats.get(key, 0):,}</div>
+            <div class="stat-label">{t(label_key, lang)}</div>
+        </div>
+        """
+        st.markdown(stat_html, unsafe_allow_html=True)
+    
+    # ------------------------------------------------------------------------
+    # EXAMPLES SECTION
+    # ------------------------------------------------------------------------
+    def _render_examples(self) -> None:
         """Render professional example questions"""
         lang = st.session_state.language
         
-        # إضافة النص المترجم للعنوان
-        examples_title = t('examples_title', lang)
-        st.markdown(f"<h3>{examples_title}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3>{t('examples_title', lang)}</h3>", unsafe_allow_html=True)
         
-        example_questions = [
-            ("ex_all_auth", "ex_all_auth_q"),
-            ("ex_saudi", "ex_saudi_q"),
-            ("ex_by_country", "ex_by_country_q"),
-            ("ex_emails", "ex_emails_q"),
-        ]
+        example_questions = self._get_example_questions()
         
         for i, (display_key, question_key) in enumerate(example_questions):
             if st.button(
@@ -424,18 +498,34 @@ class SidebarInterface:
                 key=f"example_{i}",
                 use_container_width=True
             ):
-                question_text = t(question_key, lang)
-                st.session_state.chat_memory.append({
-                    "role": "user",
-                    "content": question_text,
-                    "timestamp": self._get_current_time()
-                })
-                
-                st.session_state.pending_example = True
-                #save_chat_memory()
-                st.rerun()
+                self._handle_example_click(question_key, lang)
     
-    def _render_clear_button(self):
+    @staticmethod
+    def _get_example_questions() -> List[Tuple[str, str]]:
+        """Get list of example questions"""
+        return [
+            ("ex_all_auth", "ex_all_auth_q"),
+            ("ex_saudi", "ex_saudi_q"),
+            ("ex_by_country", "ex_by_country_q"),
+            ("ex_emails", "ex_emails_q"),
+        ]
+    
+    def _handle_example_click(self, question_key: str, lang: str) -> None:
+        """Handle example question click"""
+        question_text = t(question_key, lang)
+        st.session_state.chat_memory.append({
+            "role": "user",
+            "content": question_text,
+            "timestamp": self._get_current_time()
+        })
+        
+        st.session_state.pending_example = True
+        st.rerun()
+    
+    # ------------------------------------------------------------------------
+    # CLEAR BUTTON SECTION
+    # ------------------------------------------------------------------------
+    def _render_clear_button(self) -> None:
         """Render professional clear chat button"""
         lang = st.session_state.language
         
@@ -444,58 +534,80 @@ class SidebarInterface:
             use_container_width=True,
             type="secondary"
         ):
-            st.session_state.chat_memory = [{
-                "role": "assistant",
-                "content": t("welcome_msg", lang),
-                "timestamp": self._get_current_time()
-            }]
-            st.session_state.last_result_df = None
-            st.session_state.pending_example = False
-            clear_chat_memory()
-            st.rerun()
+            self._clear_chat(lang)
     
-    def _render_features(self):
+    def _clear_chat(self, lang: str) -> None:
+        """Clear chat history and reset state"""
+        st.session_state.chat_memory = [{
+            "role": "assistant",
+            "content": t("welcome_msg", lang),
+            "timestamp": self._get_current_time()
+        }]
+        st.session_state.last_result_df = None
+        st.session_state.pending_example = False
+        clear_chat_memory()
+        st.rerun()
+    
+    # ------------------------------------------------------------------------
+    # FEATURES SECTION
+    # ------------------------------------------------------------------------
+    def _render_features(self) -> None:
         """Render professional features section"""
         lang = st.session_state.get("language", "English")
         
-        # إضافة النص المترجم للعنوان
-        features_title = t('features_title', lang)
-        st.markdown(f"<h3>{features_title}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3>{t('features_title', lang)}</h3>", unsafe_allow_html=True)
 
-        features = [
-            ("feat_ai", "feat_ai_desc", "🤖"),
-            ("feat_multilingual", "feat_multilingual_desc", "🌐"),
-            ("feat_viz", "feat_viz_desc", "📈"),
-            ("feat_secure", "feat_secure_desc", "🔐")
-        ]
+        features = self._get_features()
 
-        for icon_key, desc_key, emoji in features:
-            st.markdown(f"""
-            <div class="feature-item">
-                <div class="feature-icon">{emoji}</div>
-                <div class="feature-content">
-                    <div class="feature-title">{t(icon_key, lang)}</div>
-                    <div class="feature-desc">{t(desc_key, lang)}</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+        for title_key, desc_key, emoji in features:
+            self._render_feature_item(title_key, desc_key, emoji, lang)
     
-    def _render_footer(self):
+    @staticmethod
+    def _get_features() -> List[Tuple[str, str, str]]:
+        """Get list of features to display"""
+        return [
+            ("feat_ai", "feat_ai_desc", FEATURE_ICONS['feat_ai']),
+            ("feat_multilingual", "feat_multilingual_desc", FEATURE_ICONS['feat_multilingual']),
+            ("feat_viz", "feat_viz_desc", FEATURE_ICONS['feat_viz']),
+            ("feat_secure", "feat_secure_desc", FEATURE_ICONS['feat_secure'])
+        ]
+    
+    @staticmethod
+    def _render_feature_item(title_key: str, desc_key: str, emoji: str, lang: str) -> None:
+        """Render a single feature item"""
+        feature_html = f"""
+        <div class="feature-item">
+            <div class="feature-icon">{emoji}</div>
+            <div class="feature-content">
+                <div class="feature-title">{t(title_key, lang)}</div>
+                <div class="feature-desc">{t(desc_key, lang)}</div>
+            </div>
+        </div>
+        """
+        st.markdown(feature_html, unsafe_allow_html=True)
+    
+    # ------------------------------------------------------------------------
+    # FOOTER SECTION
+    # ------------------------------------------------------------------------
+    def _render_footer(self) -> None:
         """Render professional footer"""
         lang = st.session_state.get("language", "English")
         year = datetime.now().year
         
-        st.markdown(f"""
+        footer_html = f"""
         <div class="sidebar-footer">
             <p>© {year} {t('assistant_title', lang).replace('🕋 ', '')}</p>
             <p style="margin-top: 0.5rem;">
                 {t('footer_powered', lang)} <strong>{t('footer_chat', lang)}</strong>
             </p>
         </div>
-        """, unsafe_allow_html=True)
+        """
+        st.markdown(footer_html, unsafe_allow_html=True)
     
+    # ------------------------------------------------------------------------
+    # TIME UTILITIES
+    # ------------------------------------------------------------------------
     @staticmethod
     def _get_current_time() -> float:
-        """Get current timestamp"""
-        riyadh_tz = pytz.timezone('Asia/Riyadh')
-        return datetime.now(riyadh_tz).timestamp()
+        """Get current timestamp in Riyadh timezone"""
+        return datetime.now(RIYADH_TZ).timestamp()
