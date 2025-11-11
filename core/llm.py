@@ -365,25 +365,10 @@ class LLMManager:
             intent_data = response.choices[0].message.parsed
 
             # ----------------------------
-            # Update company memory
+            # Update company memory only
             # ----------------------------
             if intent_data.extracted_company:
                 self.update_last_company(intent_data.extracted_company)
-
-            # ----------------------------
-            # Save user message (prevent duplicates)
-            # ----------------------------
-            recent_texts = [m["content"] for m in chat_memory[-3:]]  # check last 3 messages
-            if original_input not in recent_texts:
-                st.session_state.chat_memory.append({
-                    "role": "user",
-                    "content": original_input,
-                    "intent": intent_data.intent,
-                    "extracted_company": intent_data.extracted_company,
-                    "timestamp": str(datetime.now())
-                })
-            else:
-                logger.info("⚠️ Skipped similar recent user message.")
 
             logger.info(f"Intent: {intent_data.intent} | Confidence: {intent_data.confidence} | Company: {intent_data.extracted_company or 'None'}")
             logger.info(f"Reasoning: {intent_data.reasoning}")
@@ -398,7 +383,6 @@ class LLMManager:
         except Exception as e:
             logger.error(f"Structured intent detection failed: {e}")
             return self._fallback_intent_detection(original_input)
-
     
     def _fallback_intent_detection(self, user_input: str) -> Dict:
         """Fallback intent detection using heuristics when API fails"""
