@@ -181,11 +181,12 @@ class DatabaseManager:
         1. Try exact match (as entered)
         2. Try exact match (after cleaning)
         3. If nothing found, fallback to fuzzy match
+        Also updates session memory with last search context.
         """
         original_term = search_term.strip().lower()
         if len(original_term) < 2:
             return pd.DataFrame()
-        
+
         cleaned_term = (
             original_term
             .replace("شركة", "")
@@ -195,14 +196,28 @@ class DatabaseManager:
             .replace("travel", "")
             .strip()
         )
-    
-        def _save_last_company(row):
-            st.session_state["last_company_name"] = (
-                row["hajj_company_ar"].strip()
-                if pd.notna(row["hajj_company_ar"]) and row["hajj_company_ar"].strip()
-                else row["hajj_company_en"].strip()
-            )
-    
+
+        # Internal helper
+        def _save_last_company(row, df_source: pd.DataFrame):
+            """Store full memory of the last agency search"""
+            memory = {
+                "last_company_name_ar": row.get("hajj_company_ar", ""),
+                "last_company_name_en": row.get("hajj_company_en", ""),
+                "last_city": row.get("city", ""),
+                "last_country": row.get("country", ""),
+                "last_email": row.get("email", ""),
+                "last_contact": row.get("contact_Info", ""),
+                "last_rating": row.get("rating_reviews", ""),
+                "last_authorized": row.get("is_authorized", ""),
+                "last_result_rows": df_source.to_dict(orient="records"),
+                "last_intent": "DATABASE",
+            }
+            # Merge into session memory
+            if "chat_memory" not in st.session_state:
+                st.session_state["chat_memory"] = memory
+            else:
+                st.session_state["chat_memory"].update(memory)
+
         # --- 1️⃣ Exact match ---
         exact_query = """
         SELECT DISTINCT 
@@ -210,21 +225,21 @@ class DatabaseManager:
             city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
         FROM agencies
         WHERE LOWER(TRIM(hajj_company_en)) = LOWER(:term)
-           OR LOWER(TRIM(hajj_company_ar)) = LOWER(:term)
+        OR LOWER(TRIM(hajj_company_ar)) = LOWER(:term)
         LIMIT 10
         """
         df, error = self.execute_query(exact_query, {"term": original_term})
         if isinstance(df, pd.DataFrame) and not df.empty:
-            _save_last_company(df.iloc[0])
+            _save_last_company(df.iloc[0], df)
             return df
-    
+
         # --- 2️⃣ Cleaned exact match ---
         if cleaned_term and cleaned_term != original_term:
             df, error = self.execute_query(exact_query, {"term": cleaned_term})
             if isinstance(df, pd.DataFrame) and not df.empty:
-                _save_last_company(df.iloc[0])
+                _save_last_company(df.iloc[0], df)
                 return df
-    
+
         # --- 3️⃣ Fuzzy match ---
         fuzzy_query = """
         SELECT DISTINCT 
@@ -232,15 +247,14 @@ class DatabaseManager:
             city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
         FROM agencies
         WHERE LOWER(TRIM(hajj_company_en)) LIKE LOWER(:term)
-           OR LOWER(TRIM(hajj_company_ar)) LIKE LOWER(:term)
-           OR LOWER(city) LIKE LOWER(:term)
-           OR LOWER(country) LIKE LOWER(:term)
+        OR LOWER(TRIM(hajj_company_ar)) LIKE LOWER(:term)
+        OR LOWER(city) LIKE LOWER(:term)
+        OR LOWER(country) LIKE LOWER(:term)
         LIMIT 50
         """
-        df, error = self.execute_query(fuzzy_query, {"term": f"%{cleaned_term or original_term}%"})
+        df, error = self.execute_query(fuzzy_query, {"term": f"%{cleaned_term or original_term}%"} )
         if isinstance(df, pd.DataFrame) and not df.empty:
-            _save_last_company(df.iloc[0])
+            _save_last_company(df.iloc[0], df)
             return df
-    
-        return pd.DataFrame()
 
+        return pd.DataFrame()
