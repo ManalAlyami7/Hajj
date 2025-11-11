@@ -168,7 +168,7 @@ def get_session_info() -> Dict:
         Dictionary with session info
     """
     return {
-        "language": st.session_state.get("language", "English"),
+        "language": st.session_state.get("language", "العربية"),
         "message_count": len(st.session_state.get("chat_memory", [])),
         "has_results": st.session_state.get("last_result_df") is not None,
         "pending_example": st.session_state.get("pending_example", False)
