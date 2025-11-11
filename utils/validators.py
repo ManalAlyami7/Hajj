@@ -8,7 +8,7 @@ import re
 from utils.translations import t
 
 
-def validate_user_input(user_input: str, language: str = "English") -> Tuple[bool, Optional[str]]:
+def validate_user_input(user_input: str, language: str = "العربية") -> Tuple[bool, Optional[str]]:
     """
     Validate and sanitize user input
     
