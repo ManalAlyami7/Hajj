@@ -443,8 +443,8 @@ class LLMManager:
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_input},
-                    *self.build_chat_context()
+                    *self.build_chat_context(limit=5),
+                    {"role": "user", "content": user_input}
                 ],
                 response_format=GreetingResponse,
                 temperature=0.7
@@ -483,8 +483,8 @@ class LLMManager:
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_input},
-                    *self.build_chat_context()
+                    *self.build_chat_context(limit=5),
+                    {"role": "user", "content": user_input}
                 ],
                 temperature=0.6,
                 max_tokens=400
@@ -536,7 +536,7 @@ class LLMManager:
                 messages=[
                     {"role": "system", "content": "You are a SQL expert that generates safe queries for a Hajj agency database. Include context notes about previously mentioned companies."},
                     {"role": "user", "content": sql_prompt},
-                    *self.build_chat_context(limit=5)
+                    *self.build_chat_context(limit=5, exclude_last_user=True)
                 ],
                 response_format=SQLQueryGeneration,
                 temperature=0
@@ -660,8 +660,8 @@ class LLMManager:
                 model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You summarize Hajj agency data in a friendly and structured way."},
+                    *self.build_chat_context(limit=5, exclude_last_user=True),
                     {"role": "user", "content": summary_prompt},
-                    *self.build_chat_context(limit=5)
                 ],
                 response_format=QuerySummary,
                 temperature=0.6
