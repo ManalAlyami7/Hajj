@@ -8,6 +8,7 @@ TRANSLATIONS = {
     "English": {
         # Page
         "page_title": "Hajj Chatbot",
+        # ... rest of translations
         "main_title": "Hajj Data Intelligence",
         "subtitle": "Ask anything about Hajj companies worldwide • AI-powered • Real-time data",
         

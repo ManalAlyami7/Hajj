@@ -58,6 +58,12 @@ class ChatInterface:
         for key, default_value in defaults.items():
             if key not in st.session_state:
                 st.session_state[key] = default_value
+        
+        # Add welcome message if chat is empty - باللغة العربية افتراضياً
+        if not st.session_state.chat_memory:
+            lang = st.session_state.get("language", "العربية")
+            welcome_msg = t("welcome_msg", lang)
+            self._add_message("assistant", welcome_msg)
 
     # ------------------------------------------------------------------------
     # PUBLIC INTERFACE
@@ -424,7 +430,7 @@ div[data-testid="stHorizontalBlock"] {
     # ------------------------------------------------------------------------
     def _play_message_audio_inline(self, text: str, idx: int) -> None:
         """Play message audio using hidden HTML5 audio element"""
-        lang = st.session_state.get("language", "English")
+        lang = st.session_state.get("language", "العربية")
 
         try:
             clean_text = self._clean_text_for_audio(text)
@@ -529,7 +535,7 @@ div[data-testid="stHorizontalBlock"] {
     # ------------------------------------------------------------------------
     def _copy_to_clipboard(self, text: str, idx: int) -> None:
         """Copy text to clipboard using pyperclip"""
-        lang = st.session_state.get("language", "English")
+        lang = st.session_state.get("language", "العربية")
         clean_text = self._clean_text_for_copy(text)
         
         try:
@@ -573,7 +579,7 @@ div[data-testid="stHorizontalBlock"] {
     # ------------------------------------------------------------------------
     def _handle_user_input(self) -> None:
         """Handle user input from chat or examples"""
-        lang = st.session_state.get("language", "English")
+        lang = st.session_state.get("language", "العربية")
         user_input, should_process = self._get_user_input()
         
         if should_process and user_input:
@@ -591,7 +597,7 @@ div[data-testid="stHorizontalBlock"] {
             should_process = True
         
         # Check for new chat input
-        chat_input = st.chat_input(t("input_placeholder", st.session_state.get("language", "English")))
+        chat_input = st.chat_input(t("input_placeholder", st.session_state.get("language", "العربية")))
         if chat_input:
             user_input = chat_input
             should_process = True
@@ -712,7 +718,7 @@ div[data-testid="stHorizontalBlock"] {
 
     def _handle_error_response(self) -> None:
         """Handle error when no valid response"""
-        lang = st.session_state.get("language", "English")
+        lang = st.session_state.get("language", "العربية")
         err = t("general_error", lang)
         st.error(err)
         self._add_message("assistant", err)
