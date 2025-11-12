@@ -1,75 +1,52 @@
 """
-Voice Graph Module - FIXED
-LangGraph workflow for voice assistant interactions
+Voice Graph Module - LangGraph workflow for voice assistant
 """
 
-from typing import Dict, Optional, TypedDict, Annotated, Literal, List
+from typing import Dict, Optional, TypedDict, Literal, List
 from langgraph.graph import StateGraph, END
-import operator
 import logging
-
-logger = logging.getLogger(__name__)
 
 from core.graph import ChatGraph
 from core.voice_processor import VoiceProcessor, VoiceQueryProcessor
 from core.voice_llm import LLMManager
 from core.database import DatabaseManager
 
+logger = logging.getLogger(__name__)
 
 
-# -----------------------------
-# State Definition
-# -----------------------------
 class VoiceAssistantState(TypedDict):
-    """Enhanced state for voice assistant workflow"""
+    """State for voice assistant workflow"""
     # Input
     audio_bytes: bytes
-
+    
     # Transcription
     transcript: str
     detected_language: str
     transcription_confidence: float
-
-    # Intent
-    user_input: str
-    intent: str
-    intent_confidence: float
-    intent_reasoning: str
-    is_arabic: bool
-    urgency: str
-
-    # Response
-    response: str
-    response_tone: str
-    key_points: List[str]
-    suggested_actions: List[str]
-    includes_warning: bool
-    verification_steps: List[str]
-    official_sources: List[str]
-# --- Required fields ---
-
+    
+    # User input
     user_input: str
     language: str
-
-    # --- Intent understanding ---
+    
+    # Intent
     intent: Optional[str]
     intent_confidence: Optional[float]
     intent_reasoning: Optional[str]
-    is_vague: Optional[bool]
-
-    # --- SQL / Database-related fields ---
+    
+    # SQL
     sql_query: Optional[str]
     sql_params: Optional[Dict]
     sql_query_type: Optional[str]
     sql_filters: Optional[List[str]]
     sql_explanation: Optional[str]
-    
     sql_error: Optional[str]
+    
+    # Results
     result_rows: Optional[List[Dict]]
     columns: Optional[List[str]]
     row_count: Optional[int]
-
-    # --- Generated content ---
+    
+    # Responses
     summary: Optional[str]
     greeting_text: Optional[str]
     general_answer: Optional[str]
@@ -77,42 +54,32 @@ class VoiceAssistantState(TypedDict):
     suggestions: Optional[List[str]]
     missing_info: Optional[List[str]]
     sample_query: Optional[str]
-
-    # --- Interaction / reasoning support ---
     
-    # Audio output
+    # Output
+    response: str
     response_audio: bytes
-
+    
     # Error handling
     error: str
-
+    
     # Context
-    messages_history: Annotated[list, operator.add]
     conversation_context: str
 
 
-# -----------------------------
-# Voice Graph Builder
-# -----------------------------
 class VoiceGraphBuilder:
     """Builds LangGraph workflow for voice assistant"""
 
     def __init__(self, voice_processor):
-
         self.processor = voice_processor
         self.voice_llm = LLMManager()
         self.db_manager = DatabaseManager()
         self.graph = ChatGraph(self.db_manager, self.voice_llm)
         self.query_proc = VoiceQueryProcessor(self.db_manager, self.voice_llm)
 
-    # -----------------------------
-    # Node Functions
-    # -----------------------------
-
     def transcribe_audio_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
-        """Node: Transcribe audio to text"""
+        """Transcribe audio to text"""
         try:
-            logger.info("Transcribing audio input")
+            logger.info("Transcribing audio")
             result = self.processor.transcribe_audio(state["audio_bytes"])
 
             if "error" in result:
@@ -126,96 +93,85 @@ class VoiceGraphBuilder:
                 state["transcription_confidence"] = result["confidence"]
 
         except Exception as e:
-            error_msg = f"Transcription node error: {str(e)}"
-            logger.error(error_msg)
-            state["error"] = error_msg
+            logger.error(f"Transcription error: {e}")
+            state["error"] = str(e)
             state["user_input"] = ""
             state["transcript"] = ""
 
         return state
 
     def detect_intent_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
-        """Node: Detect intent"""
-        logger.info("Detecting intent from user input")
-        """Detect user intent with structured output"""
+        """Detect user intent"""
+        logger.info("Detecting intent")
         user_input = state["user_input"]
         language = state["language"]
-        context_string = state['conversation_context'] if 'conversation_context' in state else ""
+        context = state.get('conversation_context', "")
         
-        intent_result = self.voice_llm.detect_intent(user_input, language, context_string)
+        intent_result = self.voice_llm.detect_intent(user_input, language, context)
         
         return {
             "intent": intent_result["intent"],
             "intent_confidence": intent_result["confidence"],
             "intent_reasoning": intent_result["reasoning"],
-            # "is_vague": self._is_vague_input(user_input)
         }
-    
 
     def handle_greeting_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
-        """Node: Greeting response"""
-        logger.info("Handling greeting intent")
+        """Generate greeting response"""
+        logger.info("Handling greeting")
         state['user_input'] = state.get('transcript', '')
         state['language'] = state.get('detected_language', 'en')
-        """Generate greeting response"""
+        
         greeting = self.voice_llm.generate_greeting(
             state["user_input"],
             state["language"],
-            state["conversation_context"] if 'conversation_context' in state else ""
+            state.get("conversation_context", "")
         )
         return {"greeting_text": greeting}
 
     def generate_sql_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
-        logger.info("Generating SQL query from user input")
-        """Node: Generate SQL query"""
+        """Generate SQL query"""
+        logger.info("Generating SQL")
         state['user_input'] = state.get('transcript', '')
         state['language'] = state.get('detected_language', 'en')
-        context_string = state['conversation_context'] if 'conversation_context' in state else ""
-        agency_names = self.query_proc.get_agency_names()
-        matched_names = self.query_proc.correct_transcript(state['user_input'], agency_names)
-        if len(matched_names) == 1:
-                cleaned_text = matched_names[0]
-        else:
-                # multiple possible matches
-                cleaned_text = ", ".join(matched_names)
-
-
-
+        context = state.get('conversation_context', "")
         
+        # Correct agency names
+        agency_names = self.query_proc.get_all_agency_names()
+        matches = process.extract(
+            state['user_input'],
+            agency_names,
+            scorer=fuzz.token_sort_ratio,
+            score_cutoff=80,
+            limit=1
+        )
+        
+        cleaned_text = matches[0][0] if matches else state['user_input']
 
         sql_result = self.voice_llm.generate_sql(
             cleaned_text,
             state["language"],
-            context_string
+            context
         )
+        
         return {
             "sql_query": sql_result.get("sql_query"),
             "sql_query_type": sql_result.get("query_type"),
             "sql_filters": sql_result.get("filters"),
             "sql_explanation": sql_result.get("explanation"),
         }
-        
-    
+
     def generate_ask_for_info_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
-        """Node: Generate ask for more info"""
-        logger.info("Generating ask for more info from user input")
+        """Ask for more information"""
+        logger.info("Asking for more info")
         state['user_input'] = state.get('transcript', '')
-        
-        # FIX: Convert language code to full language name
-        detected_lang = state.get('detected_language', 'en')
-        logger.info(f"Detected language code: {detected_lang}")
-        state['language'] = detected_lang
-        
-        logger.info(f"Ask for info - language: {state['language']}")
+        state['language'] = state.get('detected_language', 'en')
         
         response = self.voice_llm.ask_for_more_info(
             state["user_input"],
             state["language"],
-            state["conversation_context"] if 'conversation_context' in state else ""
-            
+            state.get("conversation_context", "")
         )
         
-        # FIXED: Update the state object directly instead of returning a new dict
         state["needs_info"] = response.get("needs_info")
         state["suggestions"] = response.get("suggestions", [])
         state["missing_info"] = response.get("missing_info", [])
@@ -223,95 +179,77 @@ class VoiceGraphBuilder:
         state["summary"] = None
         state["result_rows"] = []
         
-        logger.info(f"NEEDS_INFO response set: {state['needs_info'][:50] if state['needs_info'] else 'None'}")
-        
         return state
 
     def execute_sql_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
-        """Node: Execute SQL query"""
-        logger.info("Executing SQL query")
+        """Execute SQL query"""
+        logger.info("Executing SQL")
         state['sql_params'] = state.get('sql_params', {})
         state['sql_query'] = state.get('sql_query', '')
         return self.graph._node_execute_sql(state)
 
     def summary_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
-        """Node: Summarize SQL results"""
-        logger.info("Summarizing SQL results")
-        state['result_rows'] = state.get('result_rows', [])
-        state['columns'] = state.get('columns', [])
-        row_count = state.get("row_count", 0)
-        rows = state.get("result_rows", [])
+        """Summarize SQL results"""
+        logger.info("Summarizing results")
+        
         summary_result = self.voice_llm.generate_summary(
             state["user_input"],
             state["language"],
-            row_count,
-            rows,
-            state["conversation_context"] if 'conversation_context' in state else ""
+            state.get("row_count", 0),
+            state.get("result_rows", []),
+            state.get("conversation_context", "")
         )
         
-        return {
-            "summary": summary_result["summary"],
-        }
-
+        return {"summary": summary_result["summary"]}
 
     def handle_general_hajj_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
-        logger.info("Handling general Hajj questions")
-        """Node: Handle general questions"""
+        """Handle general Hajj questions"""
+        logger.info("Handling general question")
         state['user_input'] = state.get('transcript', '')
         state['language'] = state.get('detected_language', 'en')
+        
         answer = self.voice_llm.generate_general_answer(
             state["user_input"],
             state["language"], 
-            state["conversation_context"] if 'conversation_context' in state else ""
+            state.get("conversation_context", "")
         )
         return {"general_answer": answer}
-        
 
     def text_to_speech_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
-        logger.info("Converting text response to audio")
-        """Node: Convert response text to audio"""
+        """Convert text to audio"""
+        logger.info("Converting to speech")
+        
         try:
-            logger.info(f"TTS Node - needs_info: {state.get('needs_info')}")
-            logger.info(f"TTS Node - greeting_text: {state.get('greeting_text')}")
-            logger.info(f"TTS Node - summary: {state.get('summary')}")
-            logger.info(f"TTS Node - general_answer: {state.get('general_answer')}")
-
             state['response'] = (
                 state.get('needs_info') or
-                state.get('greeting_text')
-                or state.get('summary')
-                or state.get('general_answer')
-                or "I'm here! How can I assist you today?"
+                state.get('greeting_text') or
+                state.get('summary') or
+                state.get('general_answer') or
+                "I'm here! How can I assist you today?"
             )
 
             audio_bytes = self.processor.text_to_speech(
                 state.get("response", ""),
                 state.get("detected_language", "en")
             )
+            
             if audio_bytes:
                 state["response_audio"] = audio_bytes
             else:
-                logger.warning("TTS generation returned no audio")
+                logger.warning("TTS returned no audio")
 
         except Exception as e:
-            logger.error(f"TTS node error: {e}")
+            logger.error(f"TTS error: {e}")
 
         return state
 
-    # -----------------------------
-    # Router Function
-    # -----------------------------
     @staticmethod
     def route_intent(state: VoiceAssistantState) -> Literal["respond_greeting", "generate_sql", "respond_general", "needs_info"]:
-        """Route based on detected intent"""
+        """Route based on intent"""
         return state.get("intent", "needs_info")
 
-       
-    # -----------------------------
-    # Build Graph
-    # -----------------------------
     def build(self):
-        """Build and compile the voice assistant graph"""
+        """Build and compile the graph"""
         workflow = StateGraph(VoiceAssistantState)
 
         # Add nodes
@@ -336,8 +274,7 @@ class VoiceGraphBuilder:
                 "GREETING": "respond_greeting",
                 "GENERAL_HAJJ": "respond_general",
                 "DATABASE": "generate_sql",
-                "NEEDS_INFO": "needs_info"  # Placeholder for future node
-            
+                "NEEDS_INFO": "needs_info"
             }
         )
 
@@ -346,7 +283,7 @@ class VoiceGraphBuilder:
         workflow.add_edge("execute_sql", "summarize_results")
         workflow.add_edge("summarize_results", "tts")
 
-        # Greeting and general go straight to TTS
+        # Direct to TTS
         workflow.add_edge("needs_info", "tts")
         workflow.add_edge("respond_greeting", "tts")
         workflow.add_edge("respond_general", "tts")
