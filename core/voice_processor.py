@@ -266,26 +266,7 @@ class VoiceQueryProcessor:
         return text  # Fallback to original
 
 
-    def _detect_language(self, text: str) -> str:
-        """Detect language: arabic, english, urdu, or mixed."""
-        arabic_chars = sum(1 for ch in text if "\u0600" <= ch <= "\u06FF")
-        latin_chars = sum(1 for ch in text if ch.isalpha() and ord(ch) < 128)
-        total_alpha = len([ch for ch in text if ch.isalpha()])
-        
-        if total_alpha == 0:
-            return "unknown"
-        
-        arabic_pct = arabic_chars / total_alpha
-        latin_pct = latin_chars / total_alpha
-        
-        if arabic_pct > 0.6:
-            return "arabic"
-        elif latin_pct > 0.8:
-            return "english"
-        elif arabic_pct > 0.2 and latin_pct > 0.2:
-            return "mixed"
-        else:
-            return "english"
+  
             
 
 
@@ -324,6 +305,296 @@ class VoiceProcessor:
             st.stop()
         return AsyncOpenAI(api_key=api_key)
 
+    def _detect_language(self, text: str) -> str:
+        """
+        Enhanced language detection: Arabic, English, Urdu, and mixed variants.
+        
+        Challenge: Urdu uses Arabic script + additional characters
+        Solution: Look for Urdu-specific characters and common Urdu words
+        """
+        
+        # Count character types
+        arabic_chars = sum(1 for ch in text if "\u0600" <= ch <= "\u06FF")
+        
+        # Urdu-specific characters (not used in Arabic)
+        urdu_specific = sum(1 for ch in text if ch in [
+            'ٹ',  # U+0679 - Urdu retroflex T
+            'ڈ',  # U+0688 - Urdu retroflex D
+            'ڑ',  # U+0691 - Urdu retroflex R
+            'ں',  # U+06BA - Urdu noon ghunna
+            'ہ',  # U+06C1 - Urdu gol he
+            'ھ',  # U+06BE - Urdu do-chashmi he
+            'ے',  # U+06D2 - Urdu ye
+            'ۓ',  # U+06D3 - Urdu ye barree with hamza
+            'پ',  # U+067E - Urdu pe (also in Persian)
+            'چ',  # U+0686 - Urdu che (also in Persian)
+            'ژ',  # U+0698 - Urdu zhe (also in Persian)
+            'گ',  # U+06AF - Urdu gaf (also in Persian)
+        ])
+        
+        latin_chars = sum(1 for ch in text if ch.isalpha() and ord(ch) < 128)
+        total_alpha = len([ch for ch in text if ch.isalpha()])
+        
+        if total_alpha == 0:
+            return "unknown"
+        
+        # Calculate percentages
+        arabic_pct = arabic_chars / total_alpha
+        latin_pct = latin_chars / total_alpha
+        urdu_indicator = urdu_specific / max(arabic_chars, 1)  # Ratio of Urdu chars to total Arabic-script chars
+        
+        # Detection logic
+        
+        # 1. Check for Urdu-specific characters (strongest signal)
+        if urdu_specific > 0 and arabic_pct > 0.3:
+            return "urdu"
+        
+        # 2. Check for common Urdu words (if no specific characters found)
+        if arabic_pct > 0.3:
+            urdu_keywords = self._contains_urdu_keywords(text)
+            arabic_keywords = self._contains_arabic_keywords(text)
+            
+            if urdu_keywords and not arabic_keywords:
+                return "urdu"
+            elif arabic_keywords and not urdu_keywords:
+                return "arabic"
+            elif urdu_keywords and arabic_keywords:
+                # Mixed or ambiguous - default to urdu if user base is primarily Urdu
+                return "urdu"  # or "mixed_arabic_urdu"
+            else:
+                # No clear keywords, use script percentage
+                return "arabic"  # Default for Arabic script without clear indicators
+        
+        # 3. Pure Latin script
+        if latin_pct > 0.8:
+            # Check for Roman Urdu patterns
+            if self._is_roman_urdu(text):
+                return "roman_urdu"
+            return "english"
+        
+        # 4. Mixed scripts (Arabizi / code-mixing)
+        if arabic_pct > 0.2 and latin_pct > 0.2:
+            if urdu_specific > 0:
+                return "mixed_urdu"
+            return "mixed_arabic"
+        
+        # 5. Default fallback
+        return "english"
+
+
+    def _contains_urdu_keywords(self, text: str) -> bool:
+        """
+        Check for common Urdu words/patterns.
+        These are words commonly used in Urdu but not in Arabic.
+        """
+        urdu_keywords = [
+            'ہے',      # hai (is)
+            'کا',      # ka (of/possessive)
+            'کی',      # ki (of/possessive feminine)
+            'کے',      # ke (of/plural)
+            'میں',     # mein (in/I)
+            'نے',      # ne (ergative marker)
+            'کو',      # ko (to/accusative)
+            'سے',      # se (from/with)
+            'پر',      # par (on)
+            'اور',     # aur (and)
+            'یا',      # ya (or)
+            'کیا',     # kya (what/did)
+            'کہ',      # ke/keh (that)
+            'تھا',     # tha (was)
+            'تھی',     # thi (was feminine)
+            'گیا',     # gaya (went/past)
+            'آیا',     # aya (came)
+            'ہوں',     # hoon (am)
+            'ہو',      # ho (are)
+            'چاہیے',   # chahiye (should/want)
+            'لیے',     # liye (for)
+            'بھی',     # bhi (also)
+            'ابھی',    # abhi (now)
+            'کیوں',    # kyun (why)
+            'کیسے',    # kaise (how)
+            'کہاں',    # kahan (where)
+            'کب',      # kab (when)
+        ]
+        
+        text_lower = text.lower()
+        return any(keyword in text_lower for keyword in urdu_keywords)
+
+
+    def _contains_arabic_keywords(self, text: str) -> bool:
+        """
+        Check for common Arabic words/patterns.
+        These are words commonly used in Arabic but not in Urdu.
+        """
+        arabic_keywords = [
+            'في',      # fi (in)
+            'من',      # min (from)
+            'إلى',     # ila (to)
+            'على',     # ala (on)
+            'هذا',     # hatha (this)
+            'هذه',     # hathihi (this feminine)
+            'الذي',    # alladhi (who/which)
+            'التي',    # allati (who/which feminine)
+            'كان',     # kana (was)
+            'يكون',    # yakoon (is/will be)
+            'ليس',     # laysa (is not)
+            'لا',      # la (no)
+            'نعم',     # naam (yes)
+            'كيف',     # kayfa (how)
+            'أين',     # ayna (where)
+            'متى',     # mata (when)
+            'لماذا',   # limatha (why)
+            'ماذا',    # matha (what)
+            'هل',      # hal (question particle)
+            'قد',      # qad (indeed/already)
+            'لقد',     # laqad (indeed)
+        ]
+        
+        text_lower = text.lower()
+        return any(keyword in text_lower for keyword in arabic_keywords)
+
+
+    def _is_roman_urdu(self, text: str) -> bool:
+        """
+        Detect Roman Urdu (Urdu written in Latin script).
+        
+        Common patterns:
+        - Transliterated words: hai, hoon, ka, ki, ke, mein, ne, ko, se
+        - Common Urdu phrases in Latin script
+        """
+        text_lower = text.lower()
+        
+        # Common Roman Urdu words
+        roman_urdu_patterns = [
+            r'\bhai\b',       # is
+            r'\bhoon\b',      # am
+            r'\bho\b',        # are
+            r'\bka\b',        # of
+            r'\bki\b',        # of (fem)
+            r'\bke\b',        # of (plural)
+            r'\bmein\b',      # in/I
+            r'\bne\b',        # ergative
+            r'\bko\b',        # to
+            r'\bse\b',        # from/with
+            r'\bpar\b',       # on
+            r'\baur\b',       # and
+            r'\bkya\b',       # what
+            r'\bkeh\b',       # that
+            r'\btha\b',       # was
+            r'\bthi\b',       # was (fem)
+            r'\bgaya\b',      # went
+            r'\baya\b',       # came
+            r'\bchahiye\b',   # should/want
+            r'\bliye\b',      # for
+            r'\bbhi\b',       # also
+            r'\babhi\b',      # now
+            r'\bkyun\b',      # why
+            r'\bkaise\b',     # how
+            r'\bkahan\b',     # where
+            r'\bkab\b',       # when
+            r'\bmujhe\b',     # to me
+            r'\btumhe\b',     # to you
+            r'\bunhe\b',      # to them
+            r'\bhamein\b',    # to us
+            r'\bnahi\b',      # no/not
+        ]
+        
+        import re
+        matches = sum(1 for pattern in roman_urdu_patterns if re.search(pattern, text_lower))
+        
+        # If 2+ Roman Urdu words found, likely Roman Urdu
+        return matches >= 2
+
+
+    def _detect_language_advanced(self, text: str) -> dict:
+        """
+        Advanced language detection with detailed breakdown.
+        Returns dict with primary language and confidence scores.
+        """
+        
+        # Character analysis
+        arabic_chars = sum(1 for ch in text if "\u0600" <= ch <= "\u06FF")
+        urdu_specific = sum(1 for ch in text if ch in 'ٹڈڑںہھےۓپچژگ')
+        latin_chars = sum(1 for ch in text if ch.isalpha() and ord(ch) < 128)
+        total_alpha = len([ch for ch in text if ch.isalpha()])
+        
+        if total_alpha == 0:
+            return {"language": "unknown", "confidence": 0.0}
+        
+        # Percentages
+        arabic_pct = arabic_chars / total_alpha
+        latin_pct = latin_chars / total_alpha
+        urdu_char_ratio = urdu_specific / max(arabic_chars, 1)
+        
+        # Keyword analysis
+        urdu_kw = self._contains_urdu_keywords(text)
+        arabic_kw = self._contains_arabic_keywords(text)
+        roman_urdu = self._is_roman_urdu(text)
+        
+        # Decision logic with confidence
+        result = {"language": "unknown", "confidence": 0.0, "details": {}}
+        
+        # Urdu detection (high confidence)
+        if urdu_specific >= 2 and arabic_pct > 0.3:
+            result = {
+                "language": "urdu",
+                "confidence": 0.95,
+                "details": {
+                    "urdu_specific_chars": urdu_specific,
+                    "arabic_script_pct": arabic_pct
+                }
+            }
+        
+        # Urdu detection (medium confidence via keywords)
+        elif urdu_kw and not arabic_kw and arabic_pct > 0.3:
+            result = {
+                "language": "urdu",
+                "confidence": 0.85,
+                "details": {"detected_via": "keywords"}
+            }
+        
+        # Arabic detection
+        elif arabic_kw and not urdu_kw and arabic_pct > 0.5:
+            result = {
+                "language": "arabic",
+                "confidence": 0.90,
+                "details": {"detected_via": "keywords"}
+            }
+        
+        # Generic Arabic script (ambiguous)
+        elif arabic_pct > 0.6 and urdu_specific == 0:
+            result = {
+                "language": "arabic",  # Default assumption
+                "confidence": 0.70,
+                "details": {"note": "could be Arabic or Urdu"}
+            }
+        
+        # Roman Urdu
+        elif roman_urdu:
+            result = {
+                "language": "roman_urdu",
+                "confidence": 0.85,
+                "details": {"detected_via": "transliteration"}
+            }
+        
+        # English
+        elif latin_pct > 0.8:
+            result = {
+                "language": "english",
+                "confidence": 0.90,
+                "details": {"latin_pct": latin_pct}
+            }
+        
+        # Mixed scripts
+        elif arabic_pct > 0.2 and latin_pct > 0.2:
+            base_lang = "urdu" if urdu_specific > 0 else "arabic"
+            result = {
+                "language": f"mixed_{base_lang}_english",
+                "confidence": 0.75,
+                "details": {"arabic_pct": arabic_pct, "latin_pct": latin_pct}
+            }
+        
+        return result
 
 
     # --- Audio Transcription (OPTIMIZED) --------------------------------------
