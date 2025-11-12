@@ -43,190 +43,7 @@ class VoiceQueryProcessor:
         self.voice_llm = voice_llm
         self.client = self.voice_llm._get_client()
 
-    def get_agency_names(self):
-        # Get agency names from DB (Arabic + English)
-        engine = self.db._create_engine()
-        with engine.connect() as conn:
-            result = conn.execute(text("SELECT hajj_company_ar, hajj_company_en FROM agencies"))
-            return [ar or en for ar, en in result.fetchall() if ar or en]
-
-
-    def correct_transcript(self, raw_text, agency_names, threshold=80):
-        
-        # Step 2: Fuzzy match to all agency names locally
-        matches = process.extract(
-            raw_text,            # text to match
-            agency_names,            # list of names
-            scorer=fuzz.token_sort_ratio,
-            score_cutoff=threshold   # only matches above threshold
-        )
-
-        # Return all matched names (official names)
-        matched_names = [match[0] for match in matches]
-        return matched_names if matched_names else [raw_text]
-
-
-
-
-class VoiceProcessor:
-    """
-    Optimized Voice Processor with OpenAI streaming.
-    Drop-in replacement with 2x performance improvement.
-    """
-    
-    def __init__(self):
-        """Initialize Voice Processor with OpenAI client, database, and LLM manager."""
-        self.client = self._get_client()
-        self.async_client = self._get_async_client()
-        self.db = DatabaseManager()
-        self.voice_llm = LLMManager()
-
-    # --- Internal Methods -----------------------------------------------------
-    @st.cache_resource
-    def _get_client(_self):
-        """Get cached OpenAI client (sync version for compatibility)."""
-        api_key = st.secrets.get("OPENAI_API_KEY") or st.secrets.get("key")
-        if not api_key:
-            logger.error("OpenAI API key not found in Streamlit secrets.")
-            st.error("⚠️ Please add your `OPENAI_API_KEY` to Streamlit secrets.")
-            st.stop()
-        return OpenAI(api_key=api_key)
-    
-    @st.cache_resource
-    def _get_async_client(_self):
-        """Get cached async OpenAI client for streaming."""
-        api_key = st.secrets.get("OPENAI_API_KEY") or st.secrets.get("key")
-        if not api_key:
-            logger.error("OpenAI API key not found in Streamlit secrets.")
-            st.error("⚠️ Please add your `OPENAI_API_KEY` to Streamlit secrets.")
-            st.stop()
-        return AsyncOpenAI(api_key=api_key)
-
-
-
-    # --- Audio Transcription (OPTIMIZED) --------------------------------------
-    def transcribe_audio(self, audio_bytes: bytes, conversation_context: list = None) -> Dict:
-        """Transcribe recorded audio with intelligent prompting for 7000+ agencies."""
-        try:
-            audio_file = io.BytesIO(audio_bytes)
-            audio_file.name = "audio.wav"
-            logger.info("🎙️ Sending audio for transcription...")
-
-            proc = VoiceQueryProcessor(self.db, self.voice_llm)
-            
-            # Get SMART agency subset for prompt (not all 7000!)
-            relevant_agencies = proc.get_relevant_agencies_for_prompt(
-                conversation_context=conversation_context,
-                limit=15
-            )
-            
-            # Build optimized prompt with strategic subset
-            context_prompt = self._build_whisper_prompt(
-                agency_names=relevant_agencies,
-                conversation_context=conversation_context
-            )
-
-            transcript = self.client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file,
-                response_format="text",
-                temperature=0.0,
-                language=None,
-                prompt=context_prompt
-            )
-            
-            text = transcript if isinstance(transcript, str) else getattr(transcript, "text", "")
-            language = self._detect_language(text)
-            
-            # POST-PROCESSING: Match against FULL 7000+ database
-            cleaned_text = proc.correct_transcript_large_scale(
-                raw_text=text,
-                threshold=82  # Slightly higher for large dataset
-            )
-
-            result = {
-                "text": cleaned_text.strip(),
-                "language": language,
-                "confidence": 1.0,
-                "duration": 0,
-                "original_text": text
-            }
-
-            logger.info(f"🎙️ Transcribed: '{text[:60]}...' → '{cleaned_text[:60]}...'")
-            return result
-
-        except Exception as e:
-            logger.error(f"❌ Transcription failed: {e}")
-            return {"text": "", "language": "en", "confidence": 0.0, "error": str(e)}
-
-
-    def _build_whisper_prompt(
-        self, 
-        agency_names: list,  # Only 10-15 strategic names
-        conversation_context: list = None,
-        max_chars: int = 800  # Conservative limit
-    ) -> str:
-        """
-        Build Whisper prompt with STRATEGIC agency subset (not all 7000!).
-        
-        Strategy for large datasets:
-        - Use prompt for: domain vocabulary + top/relevant agencies
-        - Use post-processing for: full fuzzy matching against all 7000+
-        """
-        
-        # Core domain vocabulary (spelling guidance)
-        domain_keywords = [
-            "Hajj", "Umrah", "pilgrimage", "authorized", "licensed", "verified",
-            "agency", "operator", "booking", "package", "visa", "registration",
-            "Makkah", "Madinah", "Saudi Arabia"
-        ]
-        
-        # Multilingual terms
-        arabic_terms = ["حج", "عمرة", "مرخص", "شركة", "وكالة"]
-        urdu_terms = ["منظور شدہ", "ایجنسی", "پیکج"]
-        
-        prompt_parts = []
-        
-        # 1. Domain context (MOST IMPORTANT for spelling)
-        prompt_parts.append(
-            "Hajj and Umrah agency verification query. "
-            "User asking about pilgrimage agencies, authorization status, packages, or bookings."
-        )
-        
-        # 2. Include strategic agency subset (10-15 names max)
-        if agency_names and len(agency_names) > 0:
-            # Limit to ~8 names to stay under token budget
-            top_names = agency_names[:8]
-            agency_str = ", ".join(top_names)
-            prompt_parts.append(f"Example agencies: {agency_str}.")
-        
-        # 3. Key terminology (guides spelling of common words)
-        prompt_parts.append(
-            f"Terms: {', '.join(domain_keywords[:10])}."
-        )
-        
-        # 4. Conversation context (if available)
-        if conversation_context and len(conversation_context) > 0:
-            last_msg = conversation_context[-1]
-            if isinstance(last_msg, str) and len(last_msg) < 80:
-                prompt_parts.append(f"Context: {last_msg[:70]}")
-        
-        # 5. Multilingual indicator
-        prompt_parts.append("Languages: English, Arabic, Urdu.")
-        
-        # Combine and enforce length limit
-        full_prompt = " ".join(prompt_parts)
-        
-        if len(full_prompt) > max_chars:
-            # Minimal fallback
-            full_prompt = (
-                f"Hajj agency query. Examples: {', '.join(agency_names[:5])}. "
-                f"Terms: Hajj, Umrah, authorized, licensed, booking, visa."
-            )
-        
-        return full_prompt
-
-
+ 
     def get_relevant_agencies_for_prompt(
         self, 
         conversation_context: list = None,
@@ -470,6 +287,167 @@ class VoiceProcessor:
         else:
             return "english"
             
+
+
+
+class VoiceProcessor:
+    """
+    Optimized Voice Processor with OpenAI streaming.
+    Drop-in replacement with 2x performance improvement.
+    """
+    
+    def __init__(self):
+        """Initialize Voice Processor with OpenAI client, database, and LLM manager."""
+        self.client = self._get_client()
+        self.async_client = self._get_async_client()
+        self.db = DatabaseManager()
+        self.voice_llm = LLMManager()
+
+    # --- Internal Methods -----------------------------------------------------
+    @st.cache_resource
+    def _get_client(_self):
+        """Get cached OpenAI client (sync version for compatibility)."""
+        api_key = st.secrets.get("OPENAI_API_KEY") or st.secrets.get("key")
+        if not api_key:
+            logger.error("OpenAI API key not found in Streamlit secrets.")
+            st.error("⚠️ Please add your `OPENAI_API_KEY` to Streamlit secrets.")
+            st.stop()
+        return OpenAI(api_key=api_key)
+    
+    @st.cache_resource
+    def _get_async_client(_self):
+        """Get cached async OpenAI client for streaming."""
+        api_key = st.secrets.get("OPENAI_API_KEY") or st.secrets.get("key")
+        if not api_key:
+            logger.error("OpenAI API key not found in Streamlit secrets.")
+            st.error("⚠️ Please add your `OPENAI_API_KEY` to Streamlit secrets.")
+            st.stop()
+        return AsyncOpenAI(api_key=api_key)
+
+
+
+    # --- Audio Transcription (OPTIMIZED) --------------------------------------
+    def transcribe_audio(self, audio_bytes: bytes, conversation_context: list = None) -> Dict:
+        """Transcribe recorded audio with intelligent prompting for 7000+ agencies."""
+        try:
+            audio_file = io.BytesIO(audio_bytes)
+            audio_file.name = "audio.wav"
+            logger.info("🎙️ Sending audio for transcription...")
+
+            proc = VoiceQueryProcessor(self.db, self.voice_llm)
+            
+            # Get SMART agency subset for prompt (not all 7000!)
+            relevant_agencies = proc.get_relevant_agencies_for_prompt(
+                conversation_context=conversation_context,
+                limit=15
+            )
+            
+            # Build optimized prompt with strategic subset
+            context_prompt = self._build_whisper_prompt(
+                agency_names=relevant_agencies,
+                conversation_context=conversation_context
+            )
+
+            transcript = self.client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file,
+                response_format="text",
+                temperature=0.0,
+                language=None,
+                prompt=context_prompt
+            )
+            
+            text = transcript if isinstance(transcript, str) else getattr(transcript, "text", "")
+            language = self._detect_language(text)
+            
+            # POST-PROCESSING: Match against FULL 7000+ database
+            cleaned_text = proc.correct_transcript_large_scale(
+                raw_text=text,
+                threshold=82  # Slightly higher for large dataset
+            )
+
+            result = {
+                "text": cleaned_text.strip(),
+                "language": language,
+                "confidence": 1.0,
+                "duration": 0,
+                "original_text": text
+            }
+
+            logger.info(f"🎙️ Transcribed: '{text[:60]}...' → '{cleaned_text[:60]}...'")
+            return result
+
+        except Exception as e:
+            logger.error(f"❌ Transcription failed: {e}")
+            return {"text": "", "language": "en", "confidence": 0.0, "error": str(e)}
+
+
+    def _build_whisper_prompt(
+        self, 
+        agency_names: list,  # Only 10-15 strategic names
+        conversation_context: list = None,
+        max_chars: int = 800  # Conservative limit
+    ) -> str:
+        """
+        Build Whisper prompt with STRATEGIC agency subset (not all 7000!).
+        
+        Strategy for large datasets:
+        - Use prompt for: domain vocabulary + top/relevant agencies
+        - Use post-processing for: full fuzzy matching against all 7000+
+        """
+        
+        # Core domain vocabulary (spelling guidance)
+        domain_keywords = [
+            "Hajj", "Umrah", "pilgrimage", "authorized", "licensed", "verified",
+            "agency", "operator", "booking", "package", "visa", "registration",
+            "Makkah", "Madinah", "Saudi Arabia"
+        ]
+        
+        # Multilingual terms
+        arabic_terms = ["حج", "عمرة", "مرخص", "شركة", "وكالة"]
+        urdu_terms = ["منظور شدہ", "ایجنسی", "پیکج"]
+        
+        prompt_parts = []
+        
+        # 1. Domain context (MOST IMPORTANT for spelling)
+        prompt_parts.append(
+            "Hajj and Umrah agency verification query. "
+            "User asking about pilgrimage agencies, authorization status, packages, or bookings."
+        )
+        
+        # 2. Include strategic agency subset (10-15 names max)
+        if agency_names and len(agency_names) > 0:
+            # Limit to ~8 names to stay under token budget
+            top_names = agency_names[:8]
+            agency_str = ", ".join(top_names)
+            prompt_parts.append(f"Example agencies: {agency_str}.")
+        
+        # 3. Key terminology (guides spelling of common words)
+        prompt_parts.append(
+            f"Terms: {', '.join(domain_keywords[:10])}."
+        )
+        
+        # 4. Conversation context (if available)
+        if conversation_context and len(conversation_context) > 0:
+            last_msg = conversation_context[-1]
+            if isinstance(last_msg, str) and len(last_msg) < 80:
+                prompt_parts.append(f"Context: {last_msg[:70]}")
+        
+        # 5. Multilingual indicator
+        prompt_parts.append("Languages: English, Arabic, Urdu.")
+        
+        # Combine and enforce length limit
+        full_prompt = " ".join(prompt_parts)
+        
+        if len(full_prompt) > max_chars:
+            # Minimal fallback
+            full_prompt = (
+                f"Hajj agency query. Examples: {', '.join(agency_names[:5])}. "
+                f"Terms: Hajj, Umrah, authorized, licensed, booking, visa."
+            )
+        
+        return full_prompt
+
 
     def preprocess_phone_numbers(self, text: str) -> str:
         """
