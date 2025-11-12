@@ -120,11 +120,11 @@ class VoiceQueryProcessor:
     def correct_transcript_large_scale(
     self, 
     raw_text: str,
-    threshold: int = 90  # ✅ INCREASED from 82 to 90
+    threshold: int = 85  # ✅ Balanced threshold
 ) -> str:
         """
         Optimized transcript correction that PRESERVES THE FULL QUERY.
-        Replaces agency name in context instead of returning just the name.
+        Handles partial agency names and transliteration variations.
         """
         all_agencies = self.get_all_agency_names()
         
@@ -132,41 +132,74 @@ class VoiceQueryProcessor:
         agency_set = {name.lower(): name for name in all_agencies}
         raw_lower = raw_text.lower().strip()
         
-        # Check if the ENTIRE text is just an agency name
         if raw_lower in agency_set:
             match = agency_set[raw_lower]
             logger.info(f"✅ Exact match (full text): {match}")
             return match
         
         # Stage 1: Check if ANY agency name appears as EXACT substring
-        # This catches cases where the transcription is already correct
         for agency in all_agencies:
             agency_lower = agency.lower()
-            # Must be exact substring with word boundaries
             if agency_lower in raw_lower:
-                # Verify it's a real match, not just partial word overlap
                 import re
-                # Use word boundaries to avoid false positives
                 pattern = r'\b' + re.escape(agency_lower) + r'\b'
-                if re.search(pattern, raw_lower):
+                if re.search(pattern, raw_lower, re.IGNORECASE):
                     logger.info(f"✅ Exact substring match: {agency} (no correction needed)")
-                    return raw_text  # ✅ Return original - it's already correct!
+                    return raw_text
         
         # Stage 2: Extract potential agency name from query
         candidate = self._extract_agency_mention(raw_text)
         
         if not candidate or len(candidate) < 3:
-            # No agency name detected, return original
             logger.info(f"ℹ️ No agency name detected in query")
             return raw_text
         
-        # Stage 3: Fuzzy match on extracted candidate (STRICT THRESHOLD)
+        # ✅ NEW: Stage 2.5 - Check for PARTIAL name matches
+        # Many users say partial names like "Namaa al-Barakah" instead of full name
+        # Match against agency name BEGINNINGS
+        candidate_lower = candidate.lower()
+        
+        best_partial_match = None
+        best_partial_score = 0
+        
+        for agency in all_agencies:
+            agency_lower = agency.lower()
+            agency_words = agency_lower.split()
+            candidate_words = candidate_lower.split()
+            
+            # Check if candidate matches the BEGINNING of agency name
+            if len(candidate_words) <= len(agency_words):
+                # Compare word by word from the start
+                match_count = 0
+                for cw, aw in zip(candidate_words, agency_words):
+                    # Use fuzzy matching for each word to handle "Namaa"/"Nama"/"Namma"
+                    word_similarity = fuzz.ratio(cw, aw)
+                    if word_similarity >= 80:  # Allow slight variations
+                        match_count += 1
+                
+                # If most words match, it's likely this agency
+                match_ratio = match_count / len(candidate_words) if candidate_words else 0
+                
+                if match_ratio >= 0.7:  # At least 70% of words match
+                    # Calculate overall similarity
+                    overall_score = fuzz.token_sort_ratio(candidate_lower, agency_lower)
+                    
+                    if overall_score > best_partial_score:
+                        best_partial_score = overall_score
+                        best_partial_match = agency
+        
+        if best_partial_match and best_partial_score >= 75:
+            corrected = self._replace_agency_in_query(raw_text, candidate, best_partial_match)
+            logger.info(f"✅ Partial name match: {best_partial_match} (score: {best_partial_score}) → replaced in context")
+            return corrected
+        
+        # Stage 3: Standard fuzzy match on extracted candidate
         matches = process.extract(
             candidate,
             all_agencies,
             scorer=fuzz.token_sort_ratio,
-            score_cutoff=threshold,  # Now 90 instead of 82
-            limit=3  # Get top 3 to check for ambiguity
+            score_cutoff=threshold,
+            limit=3
         )
         
         if matches:
@@ -174,36 +207,31 @@ class VoiceQueryProcessor:
             matched_agency = best_match[0]
             match_score = best_match[1]
             
-            # ✅ NEW: Check if there are multiple similar matches (ambiguous)
+            # Check for ambiguity
             if len(matches) > 1:
                 second_score = matches[1][1]
-                # If top 2 matches are very close, it's ambiguous - don't correct
                 if abs(match_score - second_score) < 5:
                     logger.warning(f"⚠️ Ambiguous match: {matched_agency} vs {matches[1][0]} - keeping original")
                     return raw_text
             
-            # ✅ NEW: Verify the match makes sense (not too different)
-            # Check if key words are preserved
+            # Verify word overlap
             candidate_words = set(candidate.lower().split())
             matched_words = set(matched_agency.lower().split())
             
-            # At least 50% word overlap required
-            if len(candidate_words & matched_words) / len(candidate_words) < 0.5:
+            if len(candidate_words & matched_words) / len(candidate_words) < 0.4:
                 logger.warning(f"⚠️ Low word overlap between '{candidate}' and '{matched_agency}' - keeping original")
                 return raw_text
             
-            # Replace the garbled agency name with corrected one IN CONTEXT
             corrected = self._replace_agency_in_query(raw_text, candidate, matched_agency)
             logger.info(f"✅ Fuzzy match: {matched_agency} (score: {match_score}) → replaced in context")
             return corrected
         
-        # Stage 4: Only use partial match for VERY specific cases
-        # Lower threshold but require higher word overlap
+        # Stage 4: Try token_set_ratio (better for partial matches)
         matches = process.extract(
             candidate,
             all_agencies,
-            scorer=fuzz.partial_ratio,
-            score_cutoff=85,  # ✅ Higher threshold for partial matches
+            scorer=fuzz.token_set_ratio,  # ✅ Better for subset matching
+            score_cutoff=80,
             limit=1
         )
         
@@ -211,16 +239,11 @@ class VoiceQueryProcessor:
             matched_agency = matches[0][0]
             match_score = matches[0][1]
             
-            # Verify word overlap
-            candidate_words = set(candidate.lower().split())
-            matched_words = set(matched_agency.lower().split())
-            
-            if len(candidate_words & matched_words) / len(candidate_words) >= 0.6:
-                corrected = self._replace_agency_in_query(raw_text, candidate, matched_agency)
-                logger.warning(f"⚠️ Partial match: {matched_agency} (score: {match_score}) → replaced in context")
-                return corrected
+            corrected = self._replace_agency_in_query(raw_text, candidate, matched_agency)
+            logger.info(f"✅ Token set match: {matched_agency} (score: {match_score}) → replaced in context")
+            return corrected
         
-        # No match found - return original
+        # No confident match found
         logger.info(f"ℹ️ No confident match found, returning original: {raw_text}")
         return raw_text
 
