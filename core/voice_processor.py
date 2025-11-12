@@ -103,68 +103,371 @@ class VoiceProcessor:
 
 
     # --- Audio Transcription (OPTIMIZED) --------------------------------------
-    def transcribe_audio(self, audio_bytes: bytes) -> Dict:
-        """Transcribe recorded audio into text and detect language (OPTIMIZED)."""
+    def transcribe_audio(self, audio_bytes: bytes, conversation_context: list = None) -> Dict:
+        """Transcribe recorded audio with intelligent prompting for 7000+ agencies."""
         try:
             audio_file = io.BytesIO(audio_bytes)
             audio_file.name = "audio.wav"
             logger.info("🎙️ Sending audio for transcription...")
 
-            # Context prompt to guide Whisper transcription
-            # This helps with domain-specific terms and reduces errors
+            proc = VoiceQueryProcessor(self.db, self.voice_llm)
+            
+            # Get SMART agency subset for prompt (not all 7000!)
+            relevant_agencies = proc.get_relevant_agencies_for_prompt(
+                conversation_context=conversation_context,
+                limit=15
+            )
+            
+            # Build optimized prompt with strategic subset
+            context_prompt = self._build_whisper_prompt(
+                agency_names=relevant_agencies,
+                conversation_context=conversation_context
+            )
 
-
-            # OPTIMIZATION: Use text format instead of verbose_json (faster)
-            # OPTIMIZATION: Set temperature to 0 for faster, deterministic results
             transcript = self.client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_file,
-                response_format="text",  # FASTER than verbose_json
-                temperature=0.0,  # More deterministic = faster
-                language=None,  # Auto-detect language
-                #prompt=context_prompt  # NEW: Contextual guidance for better accuracy
+                response_format="text",
+                temperature=0.0,
+                language=None,
+                prompt=context_prompt
             )
             
             text = transcript if isinstance(transcript, str) else getattr(transcript, "text", "")
+            language = self._detect_language(text)
             
-            # Auto-detect language from text
-            language = "arabic" if any("\u0600" <= ch <= "\u06FF" for ch in text) else "english"
-            
-            # Fix common transcription errors for "Hajj" (keep as fallback)
-            proc = VoiceQueryProcessor(self.db, self.voice_llm)
-
-            agency_names = proc.get_agency_names()
-
-
-            matched_names = proc.correct_transcript(text, agency_names)
-
-            if len(matched_names) == 1:
-                cleaned_text = matched_names[0]
-            else:
-                # multiple possible matches
-                cleaned_text = ", ".join(matched_names)
-
-
+            # POST-PROCESSING: Match against FULL 7000+ database
+            cleaned_text = proc.correct_transcript_large_scale(
+                raw_text=text,
+                threshold=82  # Slightly higher for large dataset
+            )
 
             result = {
                 "text": cleaned_text.strip(),
                 "language": language,
                 "confidence": 1.0,
-                "duration": 0  # Not available in text format
+                "duration": 0,
+                "original_text": text
             }
 
-            logger.info(f"🎙️ Transcribed: '{text[:60]}...' (lang: {language})")
+            logger.info(f"🎙️ Transcribed: '{text[:60]}...' → '{cleaned_text[:60]}...'")
             return result
 
         except Exception as e:
             logger.error(f"❌ Transcription failed: {e}")
-            return {
-                "text": "",
-                "language": "en",
-                "confidence": 0.0,
-                "error": str(e)
-            }
+            return {"text": "", "language": "en", "confidence": 0.0, "error": str(e)}
+
+
+    def _build_whisper_prompt(
+        self, 
+        agency_names: list,  # Only 10-15 strategic names
+        conversation_context: list = None,
+        max_chars: int = 800  # Conservative limit
+    ) -> str:
+        """
+        Build Whisper prompt with STRATEGIC agency subset (not all 7000!).
         
+        Strategy for large datasets:
+        - Use prompt for: domain vocabulary + top/relevant agencies
+        - Use post-processing for: full fuzzy matching against all 7000+
+        """
+        
+        # Core domain vocabulary (spelling guidance)
+        domain_keywords = [
+            "Hajj", "Umrah", "pilgrimage", "authorized", "licensed", "verified",
+            "agency", "operator", "booking", "package", "visa", "registration",
+            "Makkah", "Madinah", "Saudi Arabia"
+        ]
+        
+        # Multilingual terms
+        arabic_terms = ["حج", "عمرة", "مرخص", "شركة", "وكالة"]
+        urdu_terms = ["منظور شدہ", "ایجنسی", "پیکج"]
+        
+        prompt_parts = []
+        
+        # 1. Domain context (MOST IMPORTANT for spelling)
+        prompt_parts.append(
+            "Hajj and Umrah agency verification query. "
+            "User asking about pilgrimage agencies, authorization status, packages, or bookings."
+        )
+        
+        # 2. Include strategic agency subset (10-15 names max)
+        if agency_names and len(agency_names) > 0:
+            # Limit to ~8 names to stay under token budget
+            top_names = agency_names[:8]
+            agency_str = ", ".join(top_names)
+            prompt_parts.append(f"Example agencies: {agency_str}.")
+        
+        # 3. Key terminology (guides spelling of common words)
+        prompt_parts.append(
+            f"Terms: {', '.join(domain_keywords[:10])}."
+        )
+        
+        # 4. Conversation context (if available)
+        if conversation_context and len(conversation_context) > 0:
+            last_msg = conversation_context[-1]
+            if isinstance(last_msg, str) and len(last_msg) < 80:
+                prompt_parts.append(f"Context: {last_msg[:70]}")
+        
+        # 5. Multilingual indicator
+        prompt_parts.append("Languages: English, Arabic, Urdu.")
+        
+        # Combine and enforce length limit
+        full_prompt = " ".join(prompt_parts)
+        
+        if len(full_prompt) > max_chars:
+            # Minimal fallback
+            full_prompt = (
+                f"Hajj agency query. Examples: {', '.join(agency_names[:5])}. "
+                f"Terms: Hajj, Umrah, authorized, licensed, booking, visa."
+            )
+        
+        return full_prompt
+
+
+    def get_relevant_agencies_for_prompt(
+        self, 
+        conversation_context: list = None,
+        limit: int = 15
+    ) -> list:
+        """
+        Get STRATEGIC subset of agencies for Whisper prompt.
+        
+        Strategies (in priority order):
+        1. Recently mentioned agencies (from conversation)
+        2. Most popular/frequently queried agencies (if you track this)
+        3. Agencies from user's region/city (if available)
+        4. Random sample of well-known agencies
+        
+        Returns:
+            List of ~10-15 agency names for prompt
+        """
+        
+        relevant_names = []
+        
+        # Strategy 1: Extract agencies from recent conversation
+        if conversation_context:
+            all_agency_names = self.get_all_agency_names()  # Cached
+            for msg in conversation_context[-3:]:  # Last 3 messages
+                if isinstance(msg, str):
+                    for agency in all_agency_names:
+                        if agency.lower() in msg.lower():
+                            if agency not in relevant_names:
+                                relevant_names.append(agency)
+                                if len(relevant_names) >= limit:
+                                    return relevant_names
+        
+        # Strategy 2: Get top agencies by query frequency
+        top_agencies = self._get_top_agencies(limit=limit)
+        for agency in top_agencies:
+            if agency not in relevant_names:
+                relevant_names.append(agency)
+                if len(relevant_names) >= limit:
+                    return relevant_names
+        
+        # Strategy 3: Fallback to random diverse sample
+        if len(relevant_names) < limit:
+            all_names = self.get_all_agency_names()
+            import random
+            sample_size = min(limit - len(relevant_names), len(all_names))
+            relevant_names.extend(random.sample(all_names, sample_size))
+        
+        return relevant_names[:limit]
+
+
+    def _get_top_agencies(self, limit: int = 20) -> list:
+        """
+        Get most popular agencies (by query count, if tracked).
+        Otherwise, return agencies alphabetically or by registration date.
+        """
+        engine = self.db._create_engine()
+        
+        try:
+            with engine.connect() as conn:
+                # Option A: If you track query counts
+                # result = conn.execute(text("""
+                #     SELECT hajj_company_en, hajj_company_ar 
+                #     FROM agencies 
+                #     ORDER BY query_count DESC 
+                #     LIMIT :limit
+                # """), {"limit": limit})
+                
+                # Option B: Fallback - get by ID (older = more established)
+                result = conn.execute(text("""
+                    SELECT hajj_company_en, hajj_company_ar 
+                    FROM agencies 
+                    ORDER BY id ASC 
+                    LIMIT :limit
+                """), {"limit": limit})
+                
+                names = []
+                for en, ar in result.fetchall():
+                    if en and en.strip():
+                        names.append(en.strip())
+                    if ar and ar.strip() and ar != en:
+                        names.append(ar.strip())
+                
+                return names[:limit]
+        
+        except Exception as e:
+            logger.warning(f"Could not fetch top agencies: {e}")
+            return []
+
+
+    @lru_cache(maxsize=1)
+    def get_all_agency_names(self) -> list:
+        """
+        Get ALL 7000+ agency names (CACHED for performance).
+        Used for post-processing fuzzy matching.
+        """
+        engine = self.db._create_engine()
+        
+        with engine.connect() as conn:
+            result = conn.execute(
+                text("SELECT hajj_company_ar, hajj_company_en FROM agencies")
+            )
+            
+            names = []
+            for ar, en in result.fetchall():
+                if ar and ar.strip():
+                    names.append(ar.strip())
+                if en and en.strip() and en != ar:
+                    names.append(en.strip())
+            
+            logger.info(f"📊 Cached {len(names)} agency names")
+            return names
+
+
+    def correct_transcript_large_scale(
+        self, 
+        raw_text: str,
+        threshold: int = 82
+    ) -> str:
+        """
+        Optimized transcript correction for 7000+ agencies.
+        
+        Performance optimizations:
+        1. Quick exact match check (O(n) with set lookup)
+        2. Extract potential agency mentions using NLP
+        3. Fuzzy match ONLY on extracted candidates
+        4. Use rapidfuzz for speed (10-100x faster than fuzzywuzzy)
+        """
+        
+        from rapidfuzz import process, fuzz
+        
+        # Get all agency names (cached)
+        all_agencies = self.get_all_agency_names()
+        
+        # Stage 0: Quick exact match (case-insensitive set lookup)
+        agency_set = {name.lower(): name for name in all_agencies}
+        raw_lower = raw_text.lower().strip()
+        
+        if raw_lower in agency_set:
+            match = agency_set[raw_lower]
+            logger.info(f"✅ Exact match: {match}")
+            return match
+        
+        # Stage 1: Check if ANY agency name appears in text
+        for agency in all_agencies:
+            if agency.lower() in raw_lower or raw_lower in agency.lower():
+                logger.info(f"✅ Substring match: {agency}")
+                return agency
+        
+        # Stage 2: Extract potential agency name from query
+        # (Only match the likely agency portion, not the whole query)
+        candidate = self._extract_agency_mention(raw_text)
+        
+        if not candidate:
+            candidate = raw_text
+        
+        # Stage 3: Fuzzy match with optimizations
+        # Use rapidfuzz (much faster than fuzzywuzzy for large datasets)
+        matches = process.extract(
+            candidate,
+            all_agencies,
+            scorer=fuzz.token_sort_ratio,
+            score_cutoff=threshold,
+            limit=1  # Only need best match
+        )
+        
+        if matches:
+            best_match = matches[0]
+            logger.info(f"✅ Fuzzy match: {best_match[0]} (score: {best_match[1]})")
+            return best_match[0]
+        
+        # Stage 4: Fallback - partial match with lower threshold
+        matches = process.extract(
+            candidate,
+            all_agencies,
+            scorer=fuzz.partial_ratio,
+            score_cutoff=70,
+            limit=1
+        )
+        
+        if matches:
+            best_match = matches[0]
+            logger.warning(f"⚠️ Low-confidence match: {best_match[0]} (score: {best_match[1]})")
+            return best_match[0]
+        
+        # No match found
+        logger.info(f"ℹ️ No agency match, returning original: {raw_text}")
+        return raw_text
+
+
+    def _extract_agency_mention(self, text: str) -> str:
+        """
+        Extract likely agency name from query using heuristics.
+        
+        Examples:
+        - "Is Al Tayyar authorized?" → "Al Tayyar"
+        - "Check Royal Hajj Company for me" → "Royal Hajj Company"
+        - "مرخص شركة الحج المباركة" → "شركة الحج المباركة"
+        """
+        
+        # Remove common query phrases (case-insensitive)
+        noise_patterns = [
+            r'\b(is|are|check|verify|find|show|tell me about|what about)\b',
+            r'\b(authorized|licensed|verified|approved|legitimate)\b',
+            r'\b(hajj|umrah|agency|company|operator)\b',
+            r'\b(for me|please|thanks)\b',
+            r'[?!.]',
+        ]
+        
+        import re
+        cleaned = text
+        for pattern in noise_patterns:
+            cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE)
+        
+        cleaned = cleaned.strip()
+        
+        # If remaining text is reasonable length, use it
+        if 3 <= len(cleaned) <= 100:
+            return cleaned
+        
+        return text  # Fallback to original
+
+
+    def _detect_language(self, text: str) -> str:
+        """Detect language: arabic, english, urdu, or mixed."""
+        arabic_chars = sum(1 for ch in text if "\u0600" <= ch <= "\u06FF")
+        latin_chars = sum(1 for ch in text if ch.isalpha() and ord(ch) < 128)
+        total_alpha = len([ch for ch in text if ch.isalpha()])
+        
+        if total_alpha == 0:
+            return "unknown"
+        
+        arabic_pct = arabic_chars / total_alpha
+        latin_pct = latin_chars / total_alpha
+        
+        if arabic_pct > 0.6:
+            return "arabic"
+        elif latin_pct > 0.8:
+            return "english"
+        elif arabic_pct > 0.2 and latin_pct > 0.2:
+            return "mixed"
+        else:
+            return "english"
+            
 
     def preprocess_phone_numbers(self, text: str) -> str:
         """
