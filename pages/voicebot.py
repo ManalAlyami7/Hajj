@@ -46,7 +46,7 @@ def initialize_session_state():
         "current_transcript": "",
         "current_response": "",
         "current_metadata": {},
-        "status": t("voice_status_ready", "English"),  # default language is English
+        "status": t("voice_status_ready", "العربية"),  # default language is English
         "sidebar_state": "expanded",
     }
     for k, v in defaults.items():
