@@ -638,7 +638,7 @@ class VoiceProcessor:
             )
 
             result = {
-                "text": cleaned_text.strip(),
+                "text": text.strip(),
                 "language": language,
                 "confidence": 1.0,
                 "duration": 0,
