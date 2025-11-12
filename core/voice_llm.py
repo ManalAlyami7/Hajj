@@ -771,6 +771,8 @@ Keep it concise, warm, safe, and optimized for voice playback.
     - is_authorized ('Yes' or 'No')
     - google_maps_link
     - link_valid (boolean)
+    - المدينة(city but in Arabic)
+    - الدولة (country but in Arabic)
 
 
 
