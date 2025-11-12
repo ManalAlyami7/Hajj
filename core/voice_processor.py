@@ -12,6 +12,8 @@ import logging
 import difflib
 from sqlalchemy import text
 from num2words import num2words
+from functools import lru_cache
+
 import re
 
 
