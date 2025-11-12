@@ -5,6 +5,7 @@ Voice Graph Module - LangGraph workflow for voice assistant
 from typing import Dict, Optional, TypedDict, Literal, List
 from langgraph.graph import StateGraph, END
 import logging
+from rapidfuzz import process, fuzz  # ✅ Make sure this is here
 
 from core.graph import ChatGraph
 from core.voice_processor import VoiceProcessor, VoiceQueryProcessor
@@ -129,26 +130,24 @@ class VoiceGraphBuilder:
         return {"greeting_text": greeting}
 
     def generate_sql_node(self, state: VoiceAssistantState) -> VoiceAssistantState:
-        """Generate SQL query"""
+        """Generate SQL query with agency name correction"""
         logger.info("Generating SQL")
         state['user_input'] = state.get('transcript', '')
         state['language'] = state.get('detected_language', 'en')
         context = state.get('conversation_context', "")
         
-        # Correct agency names
-        agency_names = self.query_proc.get_all_agency_names()
-        matches = process.extract(
-            state['user_input'],
-            agency_names,
-            scorer=fuzz.token_sort_ratio,
-            score_cutoff=80,
-            limit=1
+        # ✅ USE THE PROPER METHOD from VoiceQueryProcessor
+        # This preserves the full query while correcting agency names
+        cleaned_text = self.query_proc.correct_transcript_large_scale(
+            raw_text=state['user_input'],
+            threshold=82
         )
         
-        cleaned_text = matches[0][0] if matches else state['user_input']
+        logger.info(f"Original: {state['user_input']}")
+        logger.info(f"Cleaned: {cleaned_text}")
 
         sql_result = self.voice_llm.generate_sql(
-            cleaned_text,
+            cleaned_text,  # Use corrected text
             state["language"],
             context
         )
