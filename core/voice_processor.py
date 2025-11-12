@@ -117,29 +117,47 @@ class VoiceQueryProcessor:
             logger.warning(f"Could not fetch top agencies: {e}")
             return []
 
-    def correct_transcript_large_scale(self, raw_text: str, threshold: int = 82) -> str:
-        """Optimized transcript correction for 7000+ agencies"""
+    def correct_transcript_large_scale(
+        self, 
+        raw_text: str,
+        threshold: int = 82
+    ) -> str:
+        """
+        Optimized transcript correction that PRESERVES THE FULL QUERY.
+        Replaces agency name in context instead of returning just the name.
+        """
         all_agencies = self.get_all_agency_names()
         
-        # Stage 0: Exact match
+        # Stage 0: Quick exact match
         agency_set = {name.lower(): name for name in all_agencies}
         raw_lower = raw_text.lower().strip()
         
+        # Check if the ENTIRE text is just an agency name
         if raw_lower in agency_set:
             match = agency_set[raw_lower]
-            logger.info(f"✅ Exact match: {match}")
+            logger.info(f"✅ Exact match (full text): {match}")
             return match
         
-        # Stage 1: Substring match
+        # Stage 1: Check if ANY agency name appears as substring
         for agency in all_agencies:
-            if agency.lower() in raw_lower or raw_lower in agency.lower():
-                logger.info(f"✅ Substring match: {agency}")
-                return agency
+            agency_lower = agency.lower()
+            if agency_lower in raw_lower:
+                # Find the position and replace in original text
+                # Use case-insensitive search but preserve surrounding context
+                import re
+                pattern = re.compile(re.escape(agency_lower), re.IGNORECASE)
+                corrected = pattern.sub(agency, raw_text, count=1)
+                logger.info(f"✅ Substring match: {agency} → replaced in context")
+                return corrected
         
-        # Stage 2: Extract candidate
-        candidate = self._extract_agency_mention(raw_text) or raw_text
+        # Stage 2: Extract potential agency name from query
+        candidate = self._extract_agency_mention(raw_text)
         
-        # Stage 3: Fuzzy match
+        if not candidate or len(candidate) < 3:
+            # No agency name detected, return original
+            return raw_text
+        
+        # Stage 3: Fuzzy match on extracted candidate
         matches = process.extract(
             candidate,
             all_agencies,
@@ -149,11 +167,15 @@ class VoiceQueryProcessor:
         )
         
         if matches:
-            best_match = matches[0]
-            logger.info(f"✅ Fuzzy match: {best_match[0]} (score: {best_match[1]})")
-            return best_match[0]
+            matched_agency = matches[0][0]
+            match_score = matches[0][1]
+            
+            # Replace the garbled agency name with corrected one IN CONTEXT
+            corrected = self._replace_agency_in_query(raw_text, candidate, matched_agency)
+            logger.info(f"✅ Fuzzy match: {matched_agency} (score: {match_score}) → replaced in context")
+            return corrected
         
-        # Stage 4: Partial match fallback
+        # Stage 4: Fallback - partial match with lower threshold
         matches = process.extract(
             candidate,
             all_agencies,
@@ -163,32 +185,86 @@ class VoiceQueryProcessor:
         )
         
         if matches:
-            best_match = matches[0]
-            logger.warning(f"⚠️ Low-confidence match: {best_match[0]} (score: {best_match[1]})")
-            return best_match[0]
+            matched_agency = matches[0][0]
+            match_score = matches[0][1]
+            
+            corrected = self._replace_agency_in_query(raw_text, candidate, matched_agency)
+            logger.warning(f"⚠️ Low-confidence match: {matched_agency} (score: {match_score}) → replaced in context")
+            return corrected
         
-        logger.info(f"ℹ️ No agency match: {raw_text}")
+        # No match found - return original
+        logger.info(f"ℹ️ No agency match, returning original: {raw_text}")
         return raw_text
 
+
+    def _replace_agency_in_query(self, original_query: str, extracted_part: str, corrected_name: str) -> str:
+        """
+        Replace the extracted agency mention with the corrected name in the original query.
+        Preserves the rest of the query text.
+        
+        Example:
+            original: "Is Al Raja Travels authorized?"
+            extracted: "Al Raja Travels"
+            corrected: "Al-Rajah Travels"
+            result: "Is Al-Rajah Travels authorized?"
+        """
+        import re
+        
+        # Try exact replacement first (case-insensitive)
+        pattern = re.compile(re.escape(extracted_part), re.IGNORECASE)
+        result = pattern.sub(corrected_name, original_query, count=1)
+        
+        # If no replacement happened, try fuzzy word-by-word
+        if result == original_query:
+            # Split into words and find approximate position
+            words = original_query.split()
+            extracted_words = extracted_part.split()
+            
+            # Find best matching sequence
+            for i in range(len(words) - len(extracted_words) + 1):
+                window = ' '.join(words[i:i+len(extracted_words)])
+                similarity = fuzz.ratio(window.lower(), extracted_part.lower())
+                
+                if similarity > 70:  # Found approximate match
+                    # Replace this window
+                    words[i:i+len(extracted_words)] = [corrected_name]
+                    result = ' '.join(words)
+                    break
+        
+        return result
+
     def _extract_agency_mention(self, text: str) -> str:
-        """Extract likely agency name from query"""
+        """
+        Extract likely agency name from query, preserving multi-word names.
+        
+        Examples:
+            "Is Al Tayyar authorized?" → "Al Tayyar"
+            "Check Royal Hajj Company for me" → "Royal Hajj Company"
+            "مرخص شركة الحج المباركة" → "شركة الحج المباركة"
+        """
+        import re
+        
+        # Remove common query phrases
         noise_patterns = [
-            r'\b(is|are|check|verify|find|show|tell me about|what about)\b',
-            r'\b(authorized|licensed|verified|approved|legitimate)\b',
-            r'\b(hajj|umrah|agency|company|operator)\b',
-            r'\b(for me|please|thanks|thank you)\b',
-            r'[?!.]',
+            r'\b(is|are|was|were|check|verify|find|show|tell me about|what about|give me)\b',
+            r'\b(authorized|licensed|verified|approved|legitimate|registered)\b',
+            r'\b(hajj|umrah|agency|company|operator|travel|travels|tourism)\b',
+            r'\b(for me|please|thanks|thank you|kya|hai|mujhe|chahiye)\b',
+            r'[?!.،؟]',
         ]
         
         cleaned = text
         for pattern in noise_patterns:
-            cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE)
+            cleaned = re.sub(pattern, ' ', cleaned, flags=re.IGNORECASE)
         
-        cleaned = cleaned.strip()
+        # Clean up extra spaces
+        cleaned = ' '.join(cleaned.split())
         
-        if 3 <= len(cleaned) <= 100:
-            return cleaned
+        # If result is reasonable, return it
+        if 3 <= len(cleaned) <= 100 and cleaned.strip():
+            return cleaned.strip()
         
+        # Fallback: return original
         return text
 
 
