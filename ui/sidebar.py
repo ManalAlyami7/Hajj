@@ -1,6 +1,6 @@
 """
 Professional Sidebar Interface Module
-Refactored for improved maintainability and organization
+Enhanced with sleek top-corner report button
 """
 
 import streamlit as st
@@ -55,6 +55,7 @@ class SidebarInterface:
         """Render complete professional sidebar"""
         with st.sidebar:
             self._inject_sidebar_styles()
+            self._render_report_button()  # Top corner button
             self._render_all_sections()
     
     def _render_all_sections(self) -> None:
@@ -67,7 +68,6 @@ class SidebarInterface:
             self._render_examples,
             self._render_clear_button,
             self._render_features,
-            #self._render_report,
             self._render_footer
         ]
         
@@ -80,6 +80,79 @@ class SidebarInterface:
     def _render_divider() -> None:
         """Render professional divider line"""
         st.markdown("---")
+    
+    # ------------------------------------------------------------------------
+    # REPORT BUTTON (TOP CORNER)
+    # ------------------------------------------------------------------------
+    def _render_report_button(self) -> None:
+        """Render sleek report button in top corner"""
+        lang = st.session_state.language
+        
+        # Get appropriate text based on language
+        report_text = {
+            "English": "Report Agency",
+            "العربية": "الإبلاغ",
+            "اردو": "رپورٹ کریں"
+        }.get(lang, "Report Agency")
+        
+        # Render compact report button with custom styling
+        st.markdown("""
+        <style>
+        .report-corner-btn {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 999999;
+            padding: 0.6rem 1rem;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: 2px solid #dc2626;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+            transition: all 0.3s ease;
+            text-align: center;
+            letter-spacing: 0.025em;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        
+        .report-corner-btn:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            border-color: #b91c1c;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.6);
+        }
+        
+        .report-corner-btn::before {
+            content: '🛡️';
+            font-size: 1.1rem;
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .report-corner-btn {
+                top: 0.75rem;
+                right: 0.75rem;
+                padding: 0.5rem 0.8rem;
+                font-size: 0.8rem;
+            }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Use st.button with custom CSS
+        if st.button(
+            f"🛡️ {report_text}",
+            key="report_corner_btn",
+            help="File a confidential complaint about an agency",
+            type="secondary"
+        ):
+            st.session_state.app_mode = "report"
+            st.switch_page("pages/report.py")
     
     # ------------------------------------------------------------------------
     # STYLING
@@ -170,16 +243,24 @@ class SidebarInterface:
             box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
         }
         
+        /* Enhanced Report Button Styling (secondary type) */
         [data-testid="stSidebar"] button[kind="secondary"] {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-            border: 2px solid #dc2626;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+            color: white !important;
+            border: 2px solid #dc2626 !important;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+            padding: 0.6rem 1rem !important;
+            font-size: 0.85rem !important;
+            border-radius: 20px !important;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4) !important;
+            margin-bottom: 1rem !important;
         }
         
         [data-testid="stSidebar"] button[kind="secondary"]:hover {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            border-color: #b91c1c;
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+            border-color: #b91c1c !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.6) !important;
         }
         
         /* Stat Cards */
@@ -336,13 +417,6 @@ class SidebarInterface:
         }
         </style>
         """
-    
-    def _render_report(self):
-        lang = st.session_state.language
-
-        if st.button(f"{t('report', lang)}", use_container_width=True, type= "secondary"):
-            st.session_state.app_mode = "report"
-            st.switch_page("pages/report.py")
     
     # ------------------------------------------------------------------------
     # HEADER SECTION
@@ -532,7 +606,7 @@ class SidebarInterface:
         if st.button(
             f"🗑️ {t('clear_chat', lang)}",
             use_container_width=True,
-            type="secondary"
+            type="primary"
         ):
             self._clear_chat(lang)
     
