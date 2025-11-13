@@ -63,6 +63,311 @@ def get_supabase_client() -> Optional[Client]:
         st.error("⚠️ Database connection failed. Please contact support.")
         st.stop()
     return client
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Cairo:wght@400;600;700;800&display=swap');
+
+/* ===== Secure Reporting Theme Variables (Trust, Safety, Elegance) ===== */
+:root {
+    --color-primary-authority: #1e3a8a; /* Deep Blue - Trust and Authority */
+    --color-secondary-security: #708090; /* Slate Gray - Security and Modernity */
+    --color-background-light: #ffffff;
+    --color-background-mid: #f5f7fa;
+    --color-text-dark: #1a1f2e;
+    --color-text-mid: #4b5563;
+    --color-border-subtle: #e5e7eb;
+}
+
+/* ===== Global Styles ===== */
+* {
+    font-family: 'Poppins', 'Cairo', sans-serif;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Main Background - Elegant and Clean ===== */
+.main {
+    background-color: var(--color-background-mid);
+    background-attachment: fixed;
+}
+
+.block-container {
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+    max-width: 1400px;
+}
+
+/* ===== Elegant Header - Trustworthy and Modern ===== */
+.header-container {
+    background: linear-gradient(135deg, var(--color-background-light) 0%, var(--color-background-mid) 100%);
+    backdrop-filter: blur(15px);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+    text-align: center;
+    border: 1px solid var(--color-secondary-security); /* Subtle border */
+    animation: fadeInDown 0.6s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.header-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    /* Deep Blue shimmer for authority */
+    background: linear-gradient(90deg, var(--color-primary-authority) 0%, #a5b4fc 50%, var(--color-primary-authority) 100%);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.main-title {
+    font-size: 3.2rem;
+    font-weight: 900;
+    color: var(--color-text-dark);
+    margin: 0;
+    letter-spacing: -1px;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.title-highlight {
+    /* Deep Blue highlight */
+    background: linear-gradient(135deg, var(--color-primary-authority) 0%, #3b82f6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.subtitle {
+    color: var(--color-text-mid);
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+    font-weight: 400;
+    line-height: 1.6;
+}
+
+.header-badge {
+    /* Subtle Gray/Silver badge for security */
+    background-color: var(--color-secondary-security); 
+    color: white;
+    padding: 0.3rem 1.15rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    box-shadow: 0 4px 10px rgba(112, 128, 144, 0.3);
+}
+
+/* ===== Progress Indicator - Clean and Clear ===== */
+.progress-container {
+    background: var(--color-background-light);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--color-border-subtle);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--color-border-subtle);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+    /* Deep Blue progress fill */
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary-authority) 0%, #3b82f6 100%);
+    border-radius: 10px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progress-text {
+    display: flex;
+    justify-content: space-between;
+    color: var(--color-text-mid);
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* ===== Elegant Modal - Safe and Controlled ===== */
+.modal-content {
+    background: var(--color-background-light);
+    border-radius: 16px;
+    padding: 2.5rem;
+    max-width: 450px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+    animation: slideInScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    text-align: center;
+    border: 2px solid var(--color-primary-authority); /* Deep Blue accent */
+}
+
+.modal-icon {
+    font-size: 3rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-primary-authority);
+}
+
+.modal-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--color-text-dark);
+    margin-bottom: 0.75rem;
+}
+
+.modal-text {
+    color: var(--color-text-mid);
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+}
+
+/* ===== Refined Chat Messages ===== */
+.stChatMessage {
+    background: var(--color-background-light) !important;
+    backdrop-filter: blur(8px);
+    border-radius: 16px !important;
+    padding: 1.5rem !important;
+    margin: 1rem 0 !important;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid var(--color-border-subtle);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    animation: slideInUp 0.4s ease-out;
+}
+
+.stChatMessage:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08) !important;
+    border-color: var(--color-primary-authority);
+}
+
+/* User Message */
+.stChatMessage[data-testid*="user"] {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+    border-left: 4px solid var(--color-primary-authority); /* Deep Blue */
+}
+
+/* Assistant Message - Subtle Gray/Blue for official replies */
+.stChatMessage[data-testid*="assistant"] {
+    background: linear-gradient(135deg, #f9fafb 0%, #eff6ff 100%) !important;
+    border-left: 4px solid var(--color-secondary-security); /* Slate Gray */
+}
+
+/* Bot Message - Safe, Trustworthy Report Box - The "Inner Room" */
+.bot-message {
+    /* Subtle light blue background for the inner room */
+    background: linear-gradient(135deg, #f0f8ff 0%, #e0f2fe 100%) !important;
+    border: 2px solid var(--color-primary-authority) !important;
+    border-left: 6px solid var(--color-primary-authority) !important; /* Strong authority line */ 
+    color: var(--color-text-dark) !important;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    font-weight: 500;
+}
+
+.bot-message * {
+    color: var(--color-text-dark) !important;
+}
+
+/* ===== Typing Indicator ===== */
+.typing-dot {
+    background: var(--color-primary-authority);
+}
+
+/* ===== Elegant Sidebar ===== */
+[data-testid="stSidebar"] {
+    background: var(--color-background-light);
+    border-right: 1px solid var(--color-border-subtle);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+}
+
+[data-testid="stSidebar"] *,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] div,
+[data-testid="stSidebar"] label {
+    color: var(--color-text-dark) !important;
+}
+
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {
+    color: var(--color-primary-authority) !important;
+    font-weight: 700;
+}
+
+[data-testid="stSidebar"] .stButton > button {
+    /* Blue button for action and trust */
+    background: linear-gradient(135deg, var(--color-primary-authority) 0%, #3b82f6 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 0.8rem 1.25rem !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    box-shadow: 0 4px 10px rgba(30, 58, 138, 0.3);
+}
+
+[data-testid="stSidebar"] .stButton > button:hover {
+    background: linear-gradient(135deg, #3b82f6 0%, var(--color-primary-authority) 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(30, 58, 138, 0.5);
+}
+
+/* ===== Enhanced Chat Input ===== */
+.stChatInput > div {
+    border-radius: 16px;
+    border: 1px solid var(--color-border-subtle);
+    background: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.stChatInput > div:focus-within {
+    border-color: var(--color-primary-authority);
+    box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+    transform: none; 
+}
+
+/* ===== Success/Error Messages - Muted and Clear ===== */
+.stSuccess {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border-left: 4px solid #059669; 
+}
+
+.stError {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border-left: 4px solid #b91c1c; 
+}
+
+/* ===== Custom Scrollbar - Blue Accent ===== */
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--color-primary-authority) 0%, #3b82f6 100%);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #3b82f6 0%, var(--color-primary-authority) 100%);
+}
+
+/* Minor animation tweaks for elegance */
+@keyframes slideInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 
 # =============================================================================
