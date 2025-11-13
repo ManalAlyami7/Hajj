@@ -1,6 +1,7 @@
 """
 Hajj Complaint Reporting Bot - Main Application
 Enhanced UX with intelligent exit handling for all scenarios
+Updated to match Supabase schema with status field
 """
 
 import streamlit as st
@@ -19,6 +20,17 @@ from core.report_llm import RLLMManager
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# CONSTANTS
+# =============================================================================
+COMPLAINT_STATUS = {
+    "pending": "Pending Review",
+    "under_investigation": "Under Investigation",
+    "resolved": "Resolved",
+    "closed": "Closed"
+}
 
 
 # =============================================================================
@@ -64,6 +76,8 @@ def submit_complaint_to_db(
 ) -> Tuple[bool, str]:
     """
     Submit complaint to database with proper error handling
+    Matches Supabase schema: id, agency_name, city, complaint_text, 
+                            user_contact, submission_date, status
     
     Args:
         data: Dictionary containing agency_name, city, complaint_text
@@ -74,16 +88,20 @@ def submit_complaint_to_db(
         tuple: (success: bool, message: str)
     """
     try:
+        # Prepare insert data matching your schema
         insert_data = {
             "agency_name": data["agency_name"],
             "city": data["city"],
             "complaint_text": data["complaint_text"],
-            "user_contact": contact if contact else None,
-            "submission_date": datetime.now(pytz.utc).isoformat()
+            "user_contact": contact if contact else None,  # NULL if empty
+            "submission_date": datetime.now(pytz.utc).strftime('%Y-%m-%d %H:%M:%S'),  # timestamp format
+            "status": "pending"  # Default status for new complaints
         }
 
+        # Insert into complaints table
         response = supabase_client.table('complaints').insert(insert_data).execute()
         
+        # Check if insertion was successful
         if response.data and len(response.data) > 0:
             report_id = response.data[0].get('id', 'N/A')
             contact_status = "with secure contact" if contact else "anonymously"
@@ -595,6 +613,8 @@ Thank you for your courage. Your report is vital in protecting Hajj and Umrah in
                     "content": f"""✅ **Report Successfully Filed**
 
 {message}
+
+**Status:** Pending Review
 
 Your report is now with the relevant authorities. Redirecting to main chat..."""
                 })
