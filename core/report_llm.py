@@ -1,16 +1,13 @@
 # core/report_llm.py - IMPROVED VERSION
-<<<<<<< HEAD
 """
 Enhanced LLM Manager for Report Validation
 Provides robust validation with better error handling and structured prompts
 """
-=======
 
 “””
 Enhanced LLM Manager for Report Validation
 Provides robust validation with better error handling and structured prompts
 “””
->>>>>>> 811a0bbcb131767a25cbefbfacdf655bb0dac92d
 
 import streamlit as st
 from openai import OpenAI
@@ -19,7 +16,6 @@ from typing import Dict
 import logging
 
 # Configure logging
-<<<<<<< HEAD
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -94,7 +90,6 @@ RESPONSE FORMAT (JSON only, no markdown):
 {{
   "is_valid": true/false,
   "feedback": "Brief, friendly message (max 100 chars)"
-=======
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(**name**)
@@ -102,7 +97,7 @@ logger = logging.getLogger(**name**)
 class RLLMManager:
 “”“Manages LLM interactions for report validation with enhanced error handling”””
 
-```
+
 def __init__(self):
     self.client = self._get_client()
     self.model = "gpt-4o-mini"
@@ -149,7 +144,7 @@ def validate_user_input_llm(self, step: int, user_input: str) -> Dict[str, any]:
 
     # Enhanced prompt with clearer structure and examples
     prompt = f"""You are validating user input for a secure complaint reporting system.
-```
+
 
 INPUT TYPE: {role}
 USER INPUT: “{user_input}”
@@ -172,12 +167,10 @@ RESPONSE FORMAT (JSON only, no markdown):
 {{
 “is_valid”: true/false,
 “feedback”: “Brief, friendly message (max 100 chars)”
->>>>>>> 811a0bbcb131767a25cbefbfacdf655bb0dac92d
 }}
 
 EXAMPLES:
 
-<<<<<<< HEAD
 Valid agency: {{"is_valid": true, "feedback": "Agency name recorded successfully."}}
 Invalid agency: {{"is_valid": false, "feedback": "Please enter the full agency name."}}
 
@@ -237,7 +230,6 @@ Invalid contact: {{"is_valid": false, "feedback": "Please enter a valid email/ph
                 "is_valid": False,
                 "feedback": "Validation service temporarily unavailable. Please try again."
             }
-=======
 Valid agency: {{“is_valid”: true, “feedback”: “Agency name recorded successfully.”}}
 Invalid agency: {{“is_valid”: false, “feedback”: “Please enter the full agency name.”}}
 
@@ -251,7 +243,6 @@ Valid contact: {{“is_valid”: true, “feedback”: “Contact information re
 Invalid contact: {{“is_valid”: false, “feedback”: “Please enter a valid email/phone or type ‘skip’.”}}
 “””
 
-```
     try:
         response = self.client.chat.completions.create(
             model=self.model,
@@ -298,5 +289,4 @@ Invalid contact: {{“is_valid”: false, “feedback”: “Please enter a vali
             "is_valid": False,
             "feedback": "Validation service temporarily unavailable. Please try again."
         }
-```
->>>>>>> 811a0bbcb131767a25cbefbfacdf655bb0dac92d
+
