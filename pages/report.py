@@ -870,75 +870,17 @@ def get_exit_context() -> Dict[str, any]:
 
 
 def render_exit_modal(lang: str = "العربية"):
-    """Render intelligent exit confirmation modal"""
-    
+    """Render exit confirmation modal"""
     context = get_exit_context()
     status = context["status"]
     
-    st.markdown("""
-    <style>
-    .modal-overlay-backdrop {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(0, 0, 0, 0.75);
-        z-index: 999998;
-        backdrop-filter: blur(4px);
-        animation: fadeIn 0.3s ease-out;
-    }
-    
-    .modal-popup {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 999999;
-        background: white;
-        border-radius: 20px;
-        padding: 2.5rem;
-        max-width: 550px;
-        width: 90%;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-        animation: slideInScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-    
-    @keyframes slideInScale {
-        from {
-            opacity: 0;
-            transform: translate(-50%, -48%) scale(0.9);
-        }
-        to {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    st.markdown('<div class="modal-overlay-backdrop"></div>', unsafe_allow_html=True)
-    
     if status == "not_started":
-        st.markdown(f"""
-        <div class="modal-popup">
-            <div class="modal-popup-icon">👋</div>
-            <div class="modal-popup-title">{t("modal_return_chat", lang)}</div>
-            <div class="modal-popup-text">
-                {t("modal_not_started_desc", lang)}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.warning("⚠️ " + t("modal_return_chat", lang))
+        st.info(t("modal_not_started_desc", lang))
         
-        st.markdown("<br><br><br><br><br><br>", unsafe_allow_html=True)
         col1, col2 = st.columns([1, 1])
         with col1:
-            if st.button(t("modal_yes_return", lang), use_container_width=True, key="modal_yes"):
+            if st.button("✅ " + t("modal_yes_return", lang), use_container_width=True, key="modal_yes", type="primary"):
                 st.session_state.app_mode = "chat"
                 st.session_state.report_messages = []
                 st.session_state.report_step = 0
@@ -947,117 +889,65 @@ def render_exit_modal(lang: str = "العربية"):
                 clear_draft()
                 st.switch_page("app.py")
         with col2:
-            if st.button(t("modal_stay_file", lang), use_container_width=True, type="primary", key="modal_no"):
+            if st.button("📝 " + t("modal_stay_file", lang), use_container_width=True, key="modal_no"):
                 st.session_state.show_exit_modal = False
                 st.rerun()
     
     elif status == "just_started":
-        st.markdown(f"""
-        <div class="modal-popup">
-            <div class="modal-popup-icon">⚠️</div>
-            <div class="modal-popup-title">{t("modal_exit_title", lang)}</div>
-            <div class="modal-popup-text">
-                {t("exit_just_started", lang)}
-            </div>
-            <div class="modal-progress-box">
-                <strong>{t("current_progress", lang)}: {context['progress_pct']}%</strong>
-                <div class="modal-progress-bar-container">
-                    <div class="modal-progress-bar-fill" style="width: {context['progress_pct']}%; background: #3b82f6;"></div>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.warning("⚠️ " + t("modal_exit_title", lang))
+        st.info(t("exit_just_started", lang))
         
-        st.markdown("<br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
-            if st.button(t("modal_save_draft", lang), use_container_width=True, key="modal_save"):
+            if st.button("💾 " + t("modal_save_draft", lang), use_container_width=True, key="modal_save"):
                 save_draft_to_session(st.session_state.complaint_data, st.session_state.report_step)
                 st.session_state.app_mode = "chat"
-                st.session_state.report_messages = []
-                st.session_state.report_step = 0
-                st.session_state.complaint_data = {}
                 st.session_state.show_exit_modal = False
-                st.success(t("draft_saved_success", lang))
-                time.sleep(1.5)
-                st.switch_page("app.py") 
+                clear_draft()
+                st.switch_page("app.py")
         with col2:
-            if st.button(t("modal_discard_exit", lang), use_container_width=True, type="secondary", key="modal_discard"):
+            if st.button("🗑️ " + t("modal_discard_exit", lang), use_container_width=True, key="modal_discard"):
                 st.session_state.app_mode = "chat"
-                st.session_state.report_messages = []
-                st.session_state.report_step = 0
-                st.session_state.complaint_data = {}
                 st.session_state.show_exit_modal = False
                 clear_draft()
                 st.switch_page("app.py")
         with col3:
-            if st.button(t("modal_continue", lang), use_container_width=True, type="primary", key="modal_no"):
+            if st.button("↩️ " + t("modal_continue", lang), use_container_width=True, type="primary", key="modal_no"):
                 st.session_state.show_exit_modal = False
                 st.rerun()
     
     elif status in ["partial", "almost_complete"]:
         urgency_emoji = "🚨" if status == "almost_complete" else "⚠️"
-        urgency_color = "#dc2626" if status == "almost_complete" else "#f59e0b"
         
-        exit_message = t("exit_partial" if status == "partial" else "exit_almost_complete", lang)
+        st.error(urgency_emoji + " " + t("modal_significant_progress", lang))
+        st.warning(t("modal_important", lang))
         
-        st.markdown(f"""
-        <div class="modal-popup" style="border: 3px solid {urgency_color};">
-            <div class="modal-popup-icon">{urgency_emoji}</div>
-            <div class="modal-popup-title">{t("modal_significant_progress", lang)}</div>
-            <div class="modal-popup-text">
-                {exit_message}
-            </div>
-            <div class="modal-progress-box">
-                <strong>{t("current_progress", lang)}: {context['progress_pct']}%</strong>
-                <div class="modal-progress-bar-container">
-                    <div class="modal-progress-bar-fill" style="width: {context['progress_pct']}%; background: {urgency_color};"></div>
-                </div>
-            </div>
-            <div class="modal-popup-text" style="color: {urgency_color}; font-weight: 700; margin-top: 1rem;">
-                {t("modal_important", lang)}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
-            if st.button(t("modal_save_and_exit", lang), use_container_width=True, type="primary", key="modal_save"):
+            if st.button("💾 " + t("modal_save_and_exit", lang), use_container_width=True, type="primary", key="modal_save"):
                 save_draft_to_session(st.session_state.complaint_data, st.session_state.report_step)
                 st.session_state.app_mode = "chat"
-                st.session_state.report_messages = []
-                st.session_state.report_step = 0
-                st.session_state.complaint_data = {}
                 st.session_state.show_exit_modal = False
-                st.success(t("draft_saved_resume", lang))
-                time.sleep(1.5)
+                clear_draft()
                 st.switch_page("app.py")
         with col2:
-            if st.button(t("modal_discard_progress", lang), use_container_width=True, type="secondary", key="modal_discard"):
+            if st.button("🗑️ " + t("modal_discard_progress", lang), use_container_width=True, key="modal_discard"):
                 if st.session_state.get("confirm_discard_modal", False):
                     st.session_state.app_mode = "chat"
-                    st.session_state.report_messages = []
-                    st.session_state.report_step = 0
-                    st.session_state.complaint_data = {}
                     st.session_state.show_exit_modal = False
                     st.session_state.confirm_discard_modal = False
                     clear_draft()
-                    st.info(t("progress_discarded", lang))
-                    time.sleep(1)
-                    st.rerun()
+                    st.switch_page("app.py")
                 else:
                     st.session_state.confirm_discard_modal = True
-                    st.switch_page("app.py")
+                    st.warning(t("modal_confirm_discard", lang))
+                    st.rerun()
         with col3:
-            if st.button(t("modal_continue_filing", lang), use_container_width=True, type="primary", key="modal_no"):
+            if st.button("✍️ " + t("modal_continue_filing", lang), use_container_width=True, type="primary", key="modal_no"):
                 st.session_state.show_exit_modal = False
                 st.rerun()
         
-        if st.session_state.get("confirm_discard_modal", False):
-            st.warning(t("modal_confirm_discard", lang))
-
-
+        
 def render_draft_resume_prompt(lang: str = "العربية"):
     """Show prompt to resume from saved draft"""
     draft = load_draft_from_session()
