@@ -1162,6 +1162,7 @@ def render_draft_resume_prompt(lang: str = "العربية"):
 # MAIN REPORT BOT INTERFACE
 # =============================================================================
 
+
 def render_report_bot():
     """Render the enhanced secure report bot interface with multi-language support"""
     
