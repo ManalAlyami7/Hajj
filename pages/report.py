@@ -1189,7 +1189,7 @@ def render_report_bot():
     db_manager = st.session_state.get("db_manager", None)
     
     # Initial welcome messages
-    if st.session_state.report_step == 0:
+    if st.session_state.report_step == 0 or st.session_state.get("report_last_lang") != lang:
         st.session_state.report_messages = [
             {
                 "role": "assistant",
