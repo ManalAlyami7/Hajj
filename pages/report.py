@@ -829,8 +829,12 @@ def get_exit_context() -> Dict[str, any]:
     """Analyze current state to determine exit context"""
     step = st.session_state.get("report_step", 0)
     data = st.session_state.get("complaint_data", {})
+    messages = st.session_state.get("report_messages", [])
     
-    if step == 0 or step == 1 and len(st.session_state.get("report_messages", [])) <= 2:
+    # Count only user messages (actual input)
+    user_messages = [m for m in messages if m.get("role") == "user"]
+    
+    if step == 0 or (step == 1 and len(user_messages) == 0):
         return {
             "status": "not_started",
             "show_save": False,
@@ -941,7 +945,7 @@ def render_exit_modal(lang: str = "العربية"):
                 st.session_state.complaint_data = {}
                 st.session_state.show_exit_modal = False
                 clear_draft()
-                st.rerun()
+                st.switch_page("app.py")
         with col2:
             if st.button(t("modal_stay_file", lang), use_container_width=True, type="primary", key="modal_no"):
                 st.session_state.show_exit_modal = False
@@ -976,7 +980,7 @@ def render_exit_modal(lang: str = "العربية"):
                 st.session_state.show_exit_modal = False
                 st.success(t("draft_saved_success", lang))
                 time.sleep(1.5)
-                st.rerun()
+                st.switch_page("app.py") 
         with col2:
             if st.button(t("modal_discard_exit", lang), use_container_width=True, type="secondary", key="modal_discard"):
                 st.session_state.app_mode = "chat"
@@ -985,7 +989,7 @@ def render_exit_modal(lang: str = "العربية"):
                 st.session_state.complaint_data = {}
                 st.session_state.show_exit_modal = False
                 clear_draft()
-                st.rerun()
+                st.switch_page("app.py")
         with col3:
             if st.button(t("modal_continue", lang), use_container_width=True, type="primary", key="modal_no"):
                 st.session_state.show_exit_modal = False
@@ -1028,7 +1032,7 @@ def render_exit_modal(lang: str = "العربية"):
                 st.session_state.show_exit_modal = False
                 st.success(t("draft_saved_resume", lang))
                 time.sleep(1.5)
-                st.rerun()
+                st.switch_page("app.py")
         with col2:
             if st.button(t("modal_discard_progress", lang), use_container_width=True, type="secondary", key="modal_discard"):
                 if st.session_state.get("confirm_discard_modal", False):
@@ -1044,7 +1048,7 @@ def render_exit_modal(lang: str = "العربية"):
                     st.rerun()
                 else:
                     st.session_state.confirm_discard_modal = True
-                    st.rerun()
+                    st.switch_page("app.py")
         with col3:
             if st.button(t("modal_continue_filing", lang), use_container_width=True, type="primary", key="modal_no"):
                 st.session_state.show_exit_modal = False
