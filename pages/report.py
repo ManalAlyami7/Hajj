@@ -63,6 +63,12 @@ def get_supabase_client() -> Optional[Client]:
         st.error("⚠️ Database connection failed. Please contact support.")
         st.stop()
     return client
+
+
+# =============================================================================
+# CSS STYLING
+# =============================================================================
+
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Cairo:wght@400;600;700;800&display=swap');
@@ -105,7 +111,7 @@ st.markdown("""
     margin-bottom: 2.5rem;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
     text-align: center;
-    border: 1px solid var(--color-secondary-security); /* Subtle border */
+    border: 1px solid var(--color-secondary-security);
     animation: fadeInDown 0.6s ease-out;
     position: relative;
     overflow: hidden;
@@ -118,7 +124,6 @@ st.markdown("""
     left: 0;
     right: 0;
     height: 4px;
-    /* Deep Blue shimmer for authority */
     background: linear-gradient(90deg, var(--color-primary-authority) 0%, #a5b4fc 50%, var(--color-primary-authority) 100%);
     animation: shimmer 3s infinite;
 }
@@ -138,7 +143,6 @@ st.markdown("""
 }
 
 .title-highlight {
-    /* Deep Blue highlight */
     background: linear-gradient(135deg, var(--color-primary-authority) 0%, #3b82f6 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -154,7 +158,6 @@ st.markdown("""
 }
 
 .header-badge {
-    /* Subtle Gray/Silver badge for security */
     background-color: var(--color-secondary-security); 
     color: white;
     padding: 0.3rem 1.15rem;
@@ -185,7 +188,6 @@ st.markdown("""
 }
 
 .progress-fill {
-    /* Deep Blue progress fill */
     height: 100%;
     background: linear-gradient(90deg, var(--color-primary-authority) 0%, #3b82f6 100%);
     border-radius: 10px;
@@ -209,7 +211,7 @@ st.markdown("""
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
     animation: slideInScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     text-align: center;
-    border: 2px solid var(--color-primary-authority); /* Deep Blue accent */
+    border: 2px solid var(--color-primary-authority);
 }
 
 .modal-icon {
@@ -252,24 +254,20 @@ st.markdown("""
     border-color: var(--color-primary-authority);
 }
 
-/* User Message */
 .stChatMessage[data-testid*="user"] {
     background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
-    border-left: 4px solid var(--color-primary-authority); /* Deep Blue */
+    border-left: 4px solid var(--color-primary-authority);
 }
 
-/* Assistant Message - Subtle Gray/Blue for official replies */
 .stChatMessage[data-testid*="assistant"] {
     background: linear-gradient(135deg, #f9fafb 0%, #eff6ff 100%) !important;
-    border-left: 4px solid var(--color-secondary-security); /* Slate Gray */
+    border-left: 4px solid var(--color-secondary-security);
 }
 
-/* Bot Message - Safe, Trustworthy Report Box - The "Inner Room" */
 .bot-message {
-    /* Subtle light blue background for the inner room */
     background: linear-gradient(135deg, #f0f8ff 0%, #e0f2fe 100%) !important;
     border: 2px solid var(--color-primary-authority) !important;
-    border-left: 6px solid var(--color-primary-authority) !important; /* Strong authority line */ 
+    border-left: 6px solid var(--color-primary-authority) !important;
     color: var(--color-text-dark) !important;
     padding: 1.5rem;
     border-radius: 12px;
@@ -281,7 +279,6 @@ st.markdown("""
     color: var(--color-text-dark) !important;
 }
 
-/* ===== Typing Indicator ===== */
 .typing-dot {
     background: var(--color-primary-authority);
 }
@@ -309,7 +306,6 @@ st.markdown("""
 }
 
 [data-testid="stSidebar"] .stButton > button {
-    /* Blue button for action and trust */
     background: linear-gradient(135deg, var(--color-primary-authority) 0%, #3b82f6 100%) !important;
     color: white !important;
     border: none !important;
@@ -360,12 +356,10 @@ st.markdown("""
     background: linear-gradient(180deg, #3b82f6 0%, var(--color-primary-authority) 100%);
 }
 
-/* Minor animation tweaks for elegance */
 @keyframes slideInUp {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -374,43 +368,201 @@ st.markdown("""
 # DATABASE OPERATIONS
 # =============================================================================
 
+def check_agency_in_sqlite(agency_name: str, db_manager) -> Tuple[bool, Dict]:
+    """
+    Check if agency exists in SQLite agencies table
+    Checks both Arabic and English names
+    
+    Args:
+        agency_name: Name of the agency to check
+        db_manager: DatabaseManager instance from main app
+    
+    Returns:
+        tuple: (exists: bool, agency_info: dict)
+    """
+    try:
+        # Normalize agency name for fuzzy matching
+        normalized_name = agency_name.strip().lower()
+        
+        # Try exact match in both English and Arabic columns
+        query = """
+        SELECT hajj_company_en, hajj_company_ar, city, country, 
+               email, contact_Info, rating_reviews, is_authorized,
+               google_maps_link, formatted_address
+        FROM agencies 
+        WHERE LOWER(hajj_company_en) = ? OR LOWER(hajj_company_ar) = ?
+        """
+        
+        result = db_manager.execute_query(query, (normalized_name, normalized_name))
+        
+        if result and len(result) > 0:
+            agency = result[0]
+            return True, {
+                "name_en": agency[0],
+                "name_ar": agency[1],
+                "city": agency[2],
+                "country": agency[3],
+                "email": agency[4],
+                "contact_info": agency[5],
+                "rating": agency[6],
+                "is_authorized": agency[7],
+                "maps_link": agency[8],
+                "address": agency[9]
+            }
+        
+        # Try fuzzy match (contains) in both columns
+        fuzzy_query = """
+        SELECT hajj_company_en, hajj_company_ar, city, country, 
+               email, contact_Info, rating_reviews, is_authorized,
+               google_maps_link, formatted_address
+        FROM agencies 
+        WHERE LOWER(hajj_company_en) LIKE ? OR LOWER(hajj_company_ar) LIKE ?
+        LIMIT 1
+        """
+        
+        result = db_manager.execute_query(fuzzy_query, (f"%{normalized_name}%", f"%{normalized_name}%"))
+        
+        if result and len(result) > 0:
+            agency = result[0]
+            return True, {
+                "name_en": agency[0],
+                "name_ar": agency[1],
+                "city": agency[2],
+                "country": agency[3],
+                "email": agency[4],
+                "contact_info": agency[5],
+                "rating": agency[6],
+                "is_authorized": agency[7],
+                "maps_link": agency[8],
+                "address": agency[9]
+            }
+        
+        return False, {}
+        
+    except Exception as e:
+        logger.error(f"Error checking agency in SQLite: {e}")
+        return False, {}
+
+
+def check_agency_exists_in_supabase(
+    agency_name: str, 
+    city: str, 
+    supabase_client: Client
+) -> bool:
+    """
+    Check if agency+city combination already exists in Supabase complaints table
+    
+    Args:
+        agency_name: Name of the agency
+        city: City location
+        supabase_client: Initialized Supabase client
+    
+    Returns:
+        bool: True if already exists, False otherwise
+    """
+    try:
+        # Check if this exact agency+city combo exists in complaints
+        response = supabase_client.table('complaints').select('id').ilike(
+            'agency_name', agency_name
+        ).ilike('city', city).limit(1).execute()
+        
+        exists = response.data and len(response.data) > 0
+        
+        if exists:
+            logger.info(f"Agency '{agency_name}' in '{city}' already exists in Supabase complaints")
+        
+        return exists
+        
+    except Exception as e:
+        logger.error(f"Error checking Supabase for agency: {e}")
+        return False  # On error, allow insertion (safer)
+
+
 def submit_complaint_to_db(
     data: Dict, 
     contact: str, 
-    supabase_client: Client
+    supabase_client: Client,
+    db_manager = None
 ) -> Tuple[bool, str]:
     """
-    Submit complaint to database with proper error handling
-    Matches Supabase schema: id, agency_name, city, complaint_text, 
-                            user_contact, submission_date, status
+    Submit complaint to database with proper error handling and duplicate prevention
+    
+    Checks:
+    1. If agency exists in SQLite -> use official name
+    2. If agency+city combo exists in Supabase complaints -> reject duplicate
+    3. If all checks pass -> insert to Supabase
     
     Args:
         data: Dictionary containing agency_name, city, complaint_text
         contact: User contact info (email/phone) or empty string
         supabase_client: Initialized Supabase client
+        db_manager: DatabaseManager instance for SQLite operations
     
     Returns:
         tuple: (success: bool, message: str)
     """
     try:
-        # Prepare insert data matching your schema
+        agency_name = data["agency_name"]
+        city = data["city"]
+        agency_found_in_sqlite = False
+        
+        # Step 1: Check if agency exists in SQLite
+        if db_manager:
+            exists, agency_info = check_agency_in_sqlite(agency_name, db_manager)
+            
+            if exists:
+                agency_found_in_sqlite = True
+                logger.info(f"Agency found in SQLite: {agency_info.get('name_en', agency_name)}")
+                
+                # Use the official English name from database
+                agency_name_official = agency_info.get('name_en') or agency_info.get('name_ar') or agency_name
+                
+                # Check authorization status
+                is_authorized = agency_info.get('is_authorized', 'No')
+                if is_authorized == 'Yes':
+                    logger.warning(f"Report filed against AUTHORIZED agency: {agency_name_official}")
+                
+                # Use database city if available
+                if agency_info.get('city'):
+                    city = agency_info['city']
+                
+                # Override agency name with official name
+                agency_name = agency_name_official
+                
+                logger.info(f"Using official name: {agency_name}, City: {city}")
+            else:
+                logger.info(f"Agency NOT found in SQLite: {agency_name}")
+        
+        # Step 2: Check if this agency+city already exists in Supabase complaints
+        already_exists = check_agency_exists_in_supabase(agency_name, city, supabase_client)
+        
+        if already_exists:
+            logger.warning(f"Duplicate prevented: '{agency_name}' in '{city}' already in complaints")
+            return False, "This agency in this city has already been reported. Duplicate entry prevented."
+        
+        # Step 3: Prepare insert data for Supabase complaints table
         insert_data = {
-            "agency_name": data["agency_name"],
-            "city": data["city"],
+            "agency_name": agency_name,
+            "city": city,
             "complaint_text": data["complaint_text"],
-            "user_contact": contact if contact else None,  # NULL if empty
-            "submission_date": datetime.now(pytz.utc).strftime('%Y-%m-%d %H:%M:%S'),  # timestamp format
-            "status": "pending"  # Default status for new complaints
+            "user_contact": contact if contact else None,
+            "submission_date": datetime.now(pytz.utc).strftime('%Y-%m-%d %H:%M:%S'),
+            "status": "pending"
         }
 
-        # Insert into complaints table
+        # Step 4: Insert into Supabase complaints table
         response = supabase_client.table('complaints').insert(insert_data).execute()
         
         # Check if insertion was successful
         if response.data and len(response.data) > 0:
             report_id = response.data[0].get('id', 'N/A')
             contact_status = "with secure contact" if contact else "anonymously"
-            return True, f"Report #{report_id} filed {contact_status}"
+            
+            # Build success message
+            if agency_found_in_sqlite:
+                return True, f"Report #{report_id} filed {contact_status} (Agency verified in database)"
+            else:
+                return True, f"Report #{report_id} filed {contact_status} (New agency - under review)"
         else:
             logger.error("Supabase insert returned no data")
             return False, "Database insert failed - no data returned"
@@ -531,25 +683,119 @@ def get_exit_context() -> Dict[str, any]:
 
 
 def render_exit_modal():
-    """Render intelligent exit confirmation modal based on progress"""
+    """Render intelligent exit confirmation modal as a true popup overlay"""
     
     context = get_exit_context()
     status = context["status"]
     
+    # Inject modal CSS for true popup overlay
+    st.markdown("""
+    <style>
+    .modal-overlay-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.75);
+        z-index: 999998;
+        backdrop-filter: blur(4px);
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    .modal-popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 999999;
+        background: white;
+        border-radius: 20px;
+        padding: 2.5rem;
+        max-width: 550px;
+        width: 90%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        animation: slideInScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes slideInScale {
+        from {
+            opacity: 0;
+            transform: translate(-50%, -48%) scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+    }
+    
+    .modal-popup-icon {
+        font-size: 4rem;
+        text-align: center;
+        margin-bottom: 1rem;
+        animation: pulse 2s infinite;
+    }
+    
+    .modal-popup-title {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #1a1f2e;
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    
+    .modal-popup-text {
+        color: #4b5563;
+        font-size: 1.05rem;
+        line-height: 1.6;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .modal-progress-box {
+        background: #f3f4f6;
+        padding: 1rem;
+        border-radius: 12px;
+        margin: 1rem 0;
+    }
+    
+    .modal-progress-bar-container {
+        background: #e5e7eb;
+        height: 10px;
+        border-radius: 5px;
+        margin-top: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .modal-progress-bar-fill {
+        height: 100%;
+        border-radius: 5px;
+        transition: width 0.6s ease;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Render backdrop
+    st.markdown('<div class="modal-overlay-backdrop"></div>', unsafe_allow_html=True)
+    
     # Scenario 1: Not started or just viewed welcome
     if status == "not_started":
         st.markdown("""
-        <div class="modal-overlay">
-            <div class="modal-content">
-                <div class="modal-icon">👋</div>
-                <div class="modal-title">Return to Main Chat?</div>
-                <div class="modal-text">
-                    You haven't started filing a report yet. You can return anytime to file a complaint.
-                </div>
+        <div class="modal-popup">
+            <div class="modal-popup-icon">👋</div>
+            <div class="modal-popup-title">Return to Main Chat?</div>
+            <div class="modal-popup-text">
+                You haven't started filing a report yet. You can return anytime to file a complaint.
             </div>
         </div>
         """, unsafe_allow_html=True)
         
+        st.markdown("<br><br><br><br><br><br>", unsafe_allow_html=True)
         col1, col2 = st.columns([1, 1])
         with col1:
             if st.button("✅ Yes, Return to Chat", use_container_width=True, key="modal_yes"):
@@ -568,19 +814,22 @@ def render_exit_modal():
     # Scenario 2: Just started (minimal progress)
     elif status == "just_started":
         st.markdown(f"""
-        <div class="modal-overlay">
-            <div class="modal-content">
-                <div class="modal-icon">⚠️</div>
-                <div class="modal-title">Exit Reporting?</div>
-                <div class="modal-text">
-                    {context['message']}
-                    <br><br>
-                    <strong>Progress: {context['progress_pct']}%</strong>
+        <div class="modal-popup">
+            <div class="modal-popup-icon">⚠️</div>
+            <div class="modal-popup-title">Exit Reporting?</div>
+            <div class="modal-popup-text">
+                {context['message']}
+            </div>
+            <div class="modal-progress-box">
+                <strong>Progress: {context['progress_pct']}%</strong>
+                <div class="modal-progress-bar-container">
+                    <div class="modal-progress-bar-fill" style="width: {context['progress_pct']}%; background: #3b82f6;"></div>
                 </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
         
+        st.markdown("<br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             if st.button("💾 Save Draft", use_container_width=True, key="modal_save"):
@@ -613,28 +862,25 @@ def render_exit_modal():
         urgency_color = "#dc2626" if status == "almost_complete" else "#f59e0b"
         
         st.markdown(f"""
-        <div class="modal-overlay">
-            <div class="modal-content" style="border-color: {urgency_color};">
-                <div class="modal-icon">{urgency_emoji}</div>
-                <div class="modal-title">You Have Significant Progress!</div>
-                <div class="modal-text">
-                    {context['message']}
-                    <br><br>
-                    <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; margin-top: 0.5rem;">
-                        <strong>Progress: {context['progress_pct']}%</strong>
-                        <div style="background: #e5e7eb; height: 8px; border-radius: 4px; margin-top: 0.5rem;">
-                            <div style="background: {urgency_color}; height: 100%; width: {context['progress_pct']}%; border-radius: 4px;"></div>
-                        </div>
-                    </div>
-                    <br>
-                    <strong style="color: {urgency_color};">⏰ Your report is important!</strong> Consider saving a draft to continue later.
+        <div class="modal-popup" style="border: 3px solid {urgency_color};">
+            <div class="modal-popup-icon">{urgency_emoji}</div>
+            <div class="modal-popup-title">You Have Significant Progress!</div>
+            <div class="modal-popup-text">
+                {context['message']}
+            </div>
+            <div class="modal-progress-box">
+                <strong>Progress: {context['progress_pct']}%</strong>
+                <div class="modal-progress-bar-container">
+                    <div class="modal-progress-bar-fill" style="width: {context['progress_pct']}%; background: {urgency_color};"></div>
                 </div>
+            </div>
+            <div class="modal-popup-text" style="color: {urgency_color}; font-weight: 700; margin-top: 1rem;">
+                ⏰ Your report is important! Consider saving a draft to continue later.
             </div>
         </div>
         """, unsafe_allow_html=True)
         
-        st.markdown("<br>", unsafe_allow_html=True)
-        
+        st.markdown("<br><br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             if st.button("💾 Save Draft & Exit", use_container_width=True, type="primary", key="modal_save"):
@@ -649,21 +895,28 @@ def render_exit_modal():
                 st.rerun()
         with col2:
             if st.button("🗑️ Discard Progress", use_container_width=True, type="secondary", key="modal_discard"):
-                st.warning("⚠️ Are you sure? This will delete all your progress.")
-                if st.button("⚠️ Yes, Discard Everything", key="confirm_discard", type="secondary"):
+                if st.session_state.get("confirm_discard_modal", False):
                     st.session_state.app_mode = "chat"
                     st.session_state.report_messages = []
                     st.session_state.report_step = 0
                     st.session_state.complaint_data = {}
                     st.session_state.show_exit_modal = False
+                    st.session_state.confirm_discard_modal = False
                     clear_draft()
                     st.info("Progress discarded.")
                     time.sleep(1)
+                    st.rerun()
+                else:
+                    st.session_state.confirm_discard_modal = True
                     st.rerun()
         with col3:
             if st.button("✍️ Continue Filing", use_container_width=True, type="primary", key="modal_no"):
                 st.session_state.show_exit_modal = False
                 st.rerun()
+        
+        # Show confirmation for discard
+        if st.session_state.get("confirm_discard_modal", False):
+            st.warning("⚠️ Are you sure? Click 'Discard Progress' again to confirm.")
 
 
 def render_draft_resume_prompt():
@@ -720,46 +973,46 @@ def render_draft_resume_prompt():
             
             # Reconstruct messages based on saved data
             st.session_state.report_messages = [
-                {"role": "assistant", "content": "🛡️ **Welcome back!** Resuming your saved draft..."}
+                {"role": "assistant", "content": "🛡️ <strong>Welcome back!</strong> Resuming your saved draft..."}
             ]
             
             if "agency_name" in data:
                 st.session_state.report_messages.append({
                     "role": "assistant", 
-                    "content": f"✅ **Agency:** {data['agency_name']}"
+                    "content": f"✅ <strong>Agency:</strong> {data['agency_name']}"
                 })
             if "city" in data:
                 st.session_state.report_messages.append({
                     "role": "assistant",
-                    "content": f"✅ **City:** {data['city']}"
+                    "content": f"✅ <strong>City:</strong> {data['city']}"
                 })
             if "complaint_text" in data:
                 preview = data['complaint_text'][:150] + "..." if len(data['complaint_text']) > 150 else data['complaint_text']
                 st.session_state.report_messages.append({
                     "role": "assistant",
-                    "content": f"✅ **Details:** {preview}"
+                    "content": f"✅ <strong>Details:</strong> {preview}"
                 })
             
             # Add next step prompt
             if step == 1:
                 st.session_state.report_messages.append({
                     "role": "assistant",
-                    "content": "**Step 1 of 4:** What is the **full name** of the agency you want to report?"
+                    "content": "<strong>Step 1 of 4:</strong> What is the <strong>full name</strong> of the agency you want to report?"
                 })
             elif step == 2:
                 st.session_state.report_messages.append({
                     "role": "assistant",
-                    "content": "**Step 2 of 4:** Which **city** is this agency located in?"
+                    "content": "<strong>Step 2 of 4:</strong> Which <strong>city</strong> is this agency located in?"
                 })
             elif step == 3:
                 st.session_state.report_messages.append({
                     "role": "assistant",
-                    "content": "**Step 3 of 4:** Please describe the incident in detail."
+                    "content": "<strong>Step 3 of 4:</strong> Please describe the incident in detail."
                 })
             elif step == 4:
                 st.session_state.report_messages.append({
                     "role": "assistant",
-                    "content": "**Step 4 of 4 (Optional):** Provide contact info or type 'skip'."
+                    "content": "<strong>Step 4 of 4 (Optional):</strong> Provide contact info or type 'skip'."
                 })
             
             clear_draft()
@@ -798,23 +1051,26 @@ def render_report_bot():
     if "llm_manager" not in st.session_state:
         st.session_state.llm_manager = RLLMManager()
 
-    # Get database client
+    # Get database clients
     supabase_client = get_supabase_client()
+    
+    # Get SQLite database manager from session state
+    db_manager = st.session_state.get("db_manager", None)
     
     # Initial welcome messages (shown only at start)
     if st.session_state.report_step == 0:
         st.session_state.report_messages = [
             {
                 "role": "assistant",
-                "content": """🛡️ **Welcome to the Confidential Reporting Office**
+                "content": """🛡️ <strong>Welcome to the Confidential Reporting Office</strong>
 
 Thank you for your courage. Your report is vital in protecting Hajj and Umrah integrity.
 
-**All information is encrypted and confidential.**"""
+<strong>All information is encrypted and confidential.</strong>"""
             },
             {
                 "role": "assistant",
-                "content": """**Step 1 of 4:** What is the **full name** of the agency you want to report?"""
+                "content": """<strong>Step 1 of 4:</strong> What is the <strong>full name</strong> of the agency you want to report?"""
             }
         ]
         st.session_state.report_step = 1
@@ -859,7 +1115,7 @@ Thank you for your courage. Your report is vital in protecting Hajj and Umrah in
             feedback = validation.get('feedback', 'Invalid input. Please try again.')
             st.session_state.report_messages.append({
                 "role": "assistant",
-                "content": f"⚠️ **Validation Issue**\n\n{feedback}"
+                "content": f"⚠️ <strong>Validation Issue</strong><br><br>{feedback}"
             })
             st.rerun()
             return
@@ -871,9 +1127,9 @@ Thank you for your courage. Your report is vital in protecting Hajj and Umrah in
             data["agency_name"] = prompt
             st.session_state.report_messages.append({
                 "role": "assistant",
-                "content": f"""✅ **Agency recorded:** {prompt}
+                "content": f"""✅ <strong>Agency recorded:</strong> {prompt}
 
-**Step 2 of 4:** Which **city** is this agency located in?"""
+<strong>Step 2 of 4:</strong> Which <strong>city</strong> is this agency located in?"""
             })
             st.session_state.report_step = 2
             
@@ -881,9 +1137,9 @@ Thank you for your courage. Your report is vital in protecting Hajj and Umrah in
             data["city"] = prompt
             st.session_state.report_messages.append({
                 "role": "assistant",
-                "content": f"""✅ **Location recorded:** {prompt}
+                "content": f"""✅ <strong>Location recorded:</strong> {prompt}
 
-**Step 3 of 4:** Please describe the incident in detail:
+<strong>Step 3 of 4:</strong> Please describe the incident in detail:
 - What happened?
 - When? (approximate date)
 - Any amounts or payments involved?
@@ -896,52 +1152,61 @@ Thank you for your courage. Your report is vital in protecting Hajj and Umrah in
             preview = prompt[:150] + "..." if len(prompt) > 150 else prompt
             st.session_state.report_messages.append({
                 "role": "assistant",
-                "content": f"""✅ **Details recorded**
+                "content": f"""✅ <strong>Details recorded</strong>
 
-**Summary:**
+<strong>Summary:</strong>
 - Agency: {data['agency_name']}
 - City: {data['city']}
 - Details: {preview}
 
-**Step 4 of 4 (Optional):** Provide contact info for follow-up, or type "**skip**" to remain anonymous."""
+<strong>Step 4 of 4 (Optional):</strong> Provide contact info for follow-up, or type "<strong>skip</strong>" to remain anonymous."""
             })
             st.session_state.report_step = 4
             
         elif step == 4:  # Final submission
             contact = "" if prompt.lower() in ["skip", "anonymous"] else prompt
             
-            success, message = submit_complaint_to_db(data, contact, supabase_client)
+            # Submit with SQLite check and insert
+            success, message = submit_complaint_to_db(
+                data, 
+                contact, 
+                supabase_client,
+                db_manager  # Pass SQLite DB manager
+            )
             
             if success:
                 st.session_state.report_messages.append({
                     "role": "assistant",
-                    "content": f"""✅ **Report Successfully Filed**
+                    "content": f"""✅ <strong>Report Successfully Filed</strong>
 
 {message}
 
-**Status:** Pending Review
+<strong>Status:</strong> Pending Review
 
 Your report is now with the relevant authorities. Redirecting to main chat..."""
                 })
                 st.success("✅ Report submitted successfully!")
-                clear_draft()  # Clear any saved drafts
+                clear_draft()
                 time.sleep(2)
                 
-                # Reset all report state
                 st.session_state.report_messages.clear()
                 st.session_state.report_step = 0
                 st.session_state.complaint_data.clear()
                 st.session_state.app_mode = "chat"
             else:
+                # Show error in modal instead
+                st.error(f"❌ {message}")
                 st.session_state.report_messages.append({
                     "role": "assistant",
-                    "content": f"""❌ **Submission Error**
+                    "content": f"""❌ <strong>Submission Failed</strong>
 
 {message}
 
-Please try again or contact technical support if the issue persists."""
+Please try again or modify your submission."""
                 })
-                st.error("❌ Database error occurred")
+                # Don't clear step, allow user to try again
+                st.rerun()
+                return
         
         st.rerun()
     
