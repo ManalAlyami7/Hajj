@@ -4,6 +4,7 @@ Key Fix: Improved company name matching in generate_summary()
 - Now uses extracted_company from context instead of raw user input
 - Better fuzzy matching with normalized text
 - Handles both Arabic and English company names
+Added Urdu language detection and response generation
 """
 
 import random
@@ -116,7 +117,8 @@ class LLMManager:
         self.client = self._get_client()
         self.voice_map = {
             "العربية": "onyx",
-            "English": "alloy"
+            "English": "alloy",
+            "اردو": "nova"  # Nova voice for Urdu
         }
         if "chat_memory" not in st.session_state:
             st.session_state.chat_memory = []
@@ -168,8 +170,14 @@ class LLMManager:
                 "details", "rating", "map", "is it", "contact", "info", "number",
                 "in riyadh", "in makkah", "in jeddah", "in medina", "there", "located"
             ]
+
+            # Urdu follow-up keywords
+            followup_keywords_ur = [
+                "کہاں", "پتہ", "مقام", "نمبر", "ای میل", "تفصیل", "رابطہ",
+                "منظور شدہ", "مجاز", "کیا ہے", "ریاض میں", "مکہ میں", "جدہ میں"
+            ]
             
-            all_keywords = followup_keywords_ar + followup_keywords_en
+            all_keywords = followup_keywords_ar + followup_keywords_en + followup_keywords_ur
             return any(kw in text_lower for kw in all_keywords)
         
         return False
@@ -184,6 +192,8 @@ class LLMManager:
         if last_company and self._is_followup_question(user_input):
             if language == "العربية":
                 user_input = f"هل شركة {last_company} {original_input.strip()}"
+            elif language == "اردو":
+                user_input = f"کیا {last_company} {original_input.strip()}"
             else:
                 user_input = f"Is {last_company} {original_input.strip()}"
             logger.info(f"🔗 Context auto-enriched: '{original_input}' → '{user_input}'")
@@ -199,6 +209,7 @@ Last company mentioned in conversation: {last_company if last_company else 'None
 If user asks a follow-up question like:
 - Arabic: "وين موقعها؟" / "هل هي معتمدة؟" / "أعطني التفاصيل" / "رقم التواصل؟" / "هل موجودة في الرياض؟"
 - English: "Where is it located?" / "Is it authorized?" / "Give me details" / "Contact number?" / "Is it in Riyadh?"
+- Urdu: "یہ کہاں ہے؟" / "کیا یہ منظور شدہ ہے؟" / "تفصیل دیں" / "رابطہ نمبر؟" / "کیا ریاض میں ہے؟"
 
 AND there's a last_company in memory, then:
 1. Classify as DATABASE
@@ -209,7 +220,7 @@ AND there's a last_company in memory, then:
 📋 Classify this message into ONE of four categories:
 
 1️⃣ GREETING: 
-- Greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا
+- Greetings like hello, hi, how are you, salam, السلام عليكم, مرحبا, السلام علیکم, آداب
 - No specific agency information is provided
 - User asks about your capabilities or services
 - User just wants to chat or start conversation
@@ -245,7 +256,8 @@ Examples of company mentions:
 - "وكالة الهدى" → extracted_company: "الهدى"
 - "Al Safa Travel" → extracted_company: "Al Safa"
 - "jabal omar" → extracted_company: "jabal omar"
-- "Jabal Omar" → extracted_company: "Jabal Omar"
+- "جبل عمر کمپنی" → extracted_company: "جبل عمر"
+- "الہدیٰ ایجنسی" → extracted_company: "الہدیٰ"
 
 🚨 CRITICAL CONTEXT:
 - 415 fake Hajj offices closed in 2025
@@ -314,6 +326,7 @@ Classify the intent, extract company name if mentioned, provide confidence score
     def generate_greeting(self, user_input: str, language: str) -> str:
         """Generate natural greeting response with structured output"""
         is_arabic = language == "العربية"
+        is_urdu = language == "اردو"
         
         system_prompt = """You are a friendly Hajj and fraud prevention assistant designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah. 
 Generate a short, warm, natural greeting (max 3 sentences) that:
@@ -321,7 +334,9 @@ Generate a short, warm, natural greeting (max 3 sentences) that:
 - Expresses willingness to help
 - Mentions you can help verify Hajj companies
 - Uses emojis appropriately
-- Respond in Arabic **if the user input contains any Arabic text**, otherwise respond in English
+- Respond in Arabic if the user input contains Arabic text
+- Respond in Urdu if the user input contains Urdu text (اردو)
+- Otherwise respond in English
 Explain your reasoning and what you provide briefly.
 
 Keep the response concise, friendly, and professional."""
@@ -345,13 +360,18 @@ Keep the response concise, friendly, and professional."""
             
         except Exception as e:
             logger.error(f"Structured greeting generation failed: {e}")
-            return "Hello! 👋 How can I help you today?" if not is_arabic else "السلام عليكم! 👋 كيف يمكنني مساعدتك؟"
+            if is_urdu:
+                return "السلام علیکم! 👋 میں آپ کی کیسے مدد کر سکتا ہوں؟"
+            elif is_arabic:
+                return "السلام عليكم! 👋 كيف يمكنني مساعدتك؟"
+            else:
+                return "Hello! 👋 How can I help you today?"
     
     def generate_general_answer(self, user_input: str, language: str) -> str:
         """Generate answer for general Hajj questions"""
         system_prompt = """You are a helpful assistant specialized in Hajj information. 
 Be concise, factual, and helpful. Focus on practical information.
-Detect if the user's question is in Arabic or English, and respond in the same language.
+Detect if the user's question is in Arabic, English, or Urdu, and respond in the same language.
 You are designed to protect pilgrims from scams and help them verify hajj agencies authorized from Ministry of Hajj and Umrah
 Avoid religious rulings or fatwa - stick to practical guidance."""
         
@@ -388,7 +408,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             response = self.client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are a SQL expert that generates safe queries for a Hajj agency database. Pay special attention to context notes about previously mentioned companies."},
+                    {"role": "system", "content": "You are a SQL expert that generates safe queries for a Hajj agency database. Pay special attention to context notes about previously mentioned companies. Support Arabic, English, and Urdu queries."},
                     {"role": "user", "content": sql_prompt},
                     *self.build_chat_context()
                 ],
@@ -443,15 +463,23 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         if row_count == 0:
             location_keywords_ar = ["في", "الرياض", "جدة", "مكة", "المدينة"]
             location_keywords_en = ["in", "riyadh", "jeddah", "makkah", "medina"]
-            is_location_query = any(kw in user_input.lower() for kw in location_keywords_ar + location_keywords_en)
+            location_keywords_ur = ["میں", "ریاض", "جدہ", "مکہ", "مدینہ"]
+            is_location_query = any(kw in user_input.lower() for kw in location_keywords_ar + location_keywords_en + location_keywords_ur)
 
             if last_company and is_location_query:
                 if language == "العربية":
                     return {"summary": f"لم أجد شركة {last_company} في الموقع المحدد. ✨\n\nهل تريد معرفة الموقع الفعلي لشركة {last_company}؟ أو البحث عن شركات أخرى معتمدة؟"}
+                elif language == "اردو":
+                    return {"summary": f"مجھے {last_company} مخصوص جگہ پر نہیں ملی۔ ✨\n\nکیا آپ {last_company} کی اصل جگہ جاننا چاہتے ہیں؟ یا دوسری منظور شدہ ایجنسیاں تلاش کرنا چاہتے ہیں؟"}
                 else:
                     return {"summary": f"I couldn't find {last_company} in the specified location. ✨\n\nWould you like to know the actual location of {last_company}? Or search for other authorized agencies in that area?"}
             else:
-                return {"summary": "No results found. Try rephrasing your question or broadening the search." if language == "English" else "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال."}
+                if language == "اردو":
+                    return {"summary": "کوئی نتیجہ نہیں ملا۔ براہ کرم اپنا سوال دوبارہ لکھیں۔"}
+                elif language == "العربية":
+                    return {"summary": "لم يتم العثور على نتائج. حاول إعادة صياغة السؤال."}
+                else:
+                    return {"summary": "No results found. Try rephrasing your question or broadening the search."}
         
         # Prepare requested columns
         all_columns = [
@@ -469,21 +497,21 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
 
         requested_columns = []
         user_input_lower = user_input.lower()
-        if any(k in user_input_lower for k in ["contact details", "تفاصيل الاتصال"]):
+        if any(k in user_input_lower for k in ["contact details", "تفاصیل رابطہ", "تفاصيل الاتصال"]):
             requested_columns.extend(["email", "contact_Info", "google_maps_link"])
-        if any(k in user_input_lower for k in ["address", "العنوان"]):
+        if any(k in user_input_lower for k in ["address", "پتہ", "العنوان"]):
             requested_columns.append("formatted_address")
-        if any(k in user_input_lower for k in ["contact", "رقم التواصل"]):
+        if any(k in user_input_lower for k in ["contact", "رابطہ نمبر", "رقم التواصل"]):
             requested_columns.append("contact_Info")
-        if any(k in user_input_lower for k in ["email", "البريد الإلكتروني"]):
+        if any(k in user_input_lower for k in ["email", "ای میل", "البريد الإلكتروني"]):
             requested_columns.append("email")
-        if any(k in user_input_lower for k in ["city", "المدينة"]):
+        if any(k in user_input_lower for k in ["city", "شہر", "المدينة"]):
             requested_columns.append("city")
-        if any(k in user_input_lower for k in ["country", "الدولة"]):
+        if any(k in user_input_lower for k in ["country", "ملک", "الدولة"]):
             requested_columns.append("country")
-        if any(k in user_input_lower for k in ["status", "الحالة", "authorization", "معتمد"]):
+        if any(k in user_input_lower for k in ["status", "حالت", "الحالة", "authorization", "منظور شدہ", "معتمد"]):
             requested_columns.append("is_authorized")
-        if any(k in user_input_lower for k in ["map", "رابط قوقل ماب", "google maps links"]):
+        if any(k in user_input_lower for k in ["map", "نقشہ", "رابط قوقل ماب", "google maps links"]):
             requested_columns.append("google_maps_link")
         if not requested_columns:
             requested_columns = all_columns
@@ -492,7 +520,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         search_name = last_company.lower().strip() if last_company else user_input.lower().strip()
         
         # Remove common prefixes/suffixes for better matching
-        search_name = re.sub(r'\b(company|agency|شركة|وكالة|مؤسسة)\b', '', search_name, flags=re.IGNORECASE).strip()
+        search_name = re.sub(r'\b(company|agency|شركة|وكالة|مؤسسة|کمپنی|ایجنسی)\b', '', search_name, flags=re.IGNORECASE).strip()
         
         logger.info(f"🔍 Searching for company: '{search_name}'")
         
@@ -505,7 +533,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             
             # Clean names for better matching
             name_en_clean = re.sub(r'\b(company|agency|establishment)\b', '', name_en, flags=re.IGNORECASE).strip()
-            name_ar_clean = re.sub(r'\b(شركة|وكالة|مؤسسة)\b', '', name_ar).strip()
+            name_ar_clean = re.sub(r'\b(شركة|وكالة|مؤسسة|کمپنی|ایجنسی)\b', '', name_ar).strip()
             
             score_en = max(
                 fuzz.token_set_ratio(search_name, name_en),
@@ -536,7 +564,10 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
 
         # Handle multiple matches
         elif len(matching_rows) > 1:
-            if language == "العربية":
+            if language == "اردو":
+                prompt_user = f"مجھے {len(matching_rows)} کمپنیاں ملیں جو آپ کی تلاش سے مماثل ہیں۔ ✨ براہ کرم درج ذیل آپشنز میں سے صحیح کمپنی کا نام بتائیں:\n"
+                prompt_user += "\n".join([f"- {row['hajj_company_en']} ({row['hajj_company_ar']})" for row in matching_rows[:5]])
+            elif language == "العربية":
                 prompt_user = f"لقد وجدت {len(matching_rows)} شركات قد تطابق ما كتبته. ✨ يرجى تحديد اسم الشركة بالضبط من بين الخيارات التالية:\n"
                 prompt_user += "\n".join([f"- {row['hajj_company_en']} ({row['hajj_company_ar']})" for row in matching_rows[:5]])
             else:
@@ -555,6 +586,7 @@ You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
 - User question language: {language}
 - You MUST respond in {language} ONLY
 - If language is "العربية", respond COMPLETELY in Arabic
+- If language is "اردو", respond COMPLETELY in Urdu
 - If language is "English", respond COMPLETELY in English
 - Do NOT mix languages in your response
 
@@ -568,6 +600,7 @@ Instructions:
 - ALWAYS respond in {language}
 - Always acknowledge the user's question in {language}
 - Arabic examples: "بناءً على البيانات، وجدت لك النتائج التالية:" أو "إليك ما وجدته:"
+- Urdu examples: "ڈیٹا کی بنیاد پر، میں نے آپ کے لیے یہ نتائج پائے:" یا "یہ ہے جو مجھے ملا:"
 - English examples: "Here are the results I found for you:" or "Based on the data, here's what I found:"
 - Be concise and clear
 - Highlight number of matching records
@@ -596,6 +629,17 @@ Columns to include in summary: {requested_columns}
 * formatted_address → العنوان
 * google_maps_link → رابط خرائط جوجل
 
+- If {language} is "اردو":
+* Translate ALL field names to Urdu
+* city → شہر
+* country → ملک
+* email → ای میل
+* contact_Info → رابطہ نمبر
+* rating_reviews → درجہ بندی
+* is_authorized → منظور شدہ / مجاز (translate "Yes" to "جی ہاں، منظور شدہ" and "No" to "نہیں، غیر منظور شدہ")
+* formatted_address → پتہ
+* google_maps_link → گوگل میپس لنک
+
 - If {language} is "English":
 * Keep all field names in English
 * is_authorized → translate to "Yes, Authorized" or "No, Not Authorized"
@@ -616,6 +660,16 @@ If {language} is "العربية", use this format:
 - التقييم:
 - الحالة: (نعم، معتمد / لا، غير معتمد)
 - رابط خرائط جوجل
+
+If {language} is "اردو", use this format:
+- نام (عربی / انگریزی):
+- شہر:
+- ملک:
+- ای میل:
+- رابطہ نمبر:
+- درجہ بندی:
+- حالت: (جی ہاں، منظور شدہ / نہیں، غیر منظور شدہ)
+- گوگل میپس لنک
 
 If {language} is "English", use this format:
 - Name (Arabic / English):
@@ -653,7 +707,12 @@ If {language} is "English", use this format:
 
         except Exception as e:
             logger.error(f"❌ Structured summary generation failed: {e}")
-            return {"summary": f"📊 Found {row_count} matching records."}
+            if language == "اردو":
+                return {"summary": f"📊 {row_count} مماثل ریکارڈز ملے۔"}
+            elif language == "العربية":
+                return {"summary": f"📊 تم العثور على {row_count} سجلات متطابقة."}
+            else:
+                return {"summary": f"📊 Found {row_count} matching records."}
 
     def text_to_speech(self, text: str, language: str) -> Optional[io.BytesIO]:
         """Convert text to speech using OpenAI TTS"""
@@ -678,18 +737,24 @@ If {language} is "English", use this format:
     def _detect_language_from_text(self, text: str) -> Optional[str]:
         """
         Detect if text is Arabic or English based on character analysis
-        Returns: "العربية" or "English" or None
+        Returns: "العربية" or "English" or "اردو" or None
         """
         if not text:
             return None
         
         # Count Arabic and English characters
         arabic_chars = sum(1 for c in text if '\u0600' <= c <= '\u06FF')
+        # Urdu-specific Unicode ranges (overlaps with Arabic but has additional characters)
+        urdu_specific_chars = sum(1 for c in text if c in 'ٹڈڑںھےۓپچژکگ')
         english_chars = sum(1 for c in text if c.isalpha() and c.isascii())
         
         total_chars = arabic_chars + english_chars
         if total_chars == 0:
             return None
+        
+        # If Urdu-specific characters detected, consider it Urdu
+        if urdu_specific_chars > 0:
+            return "اردو"
         
         # If more than 30% Arabic characters, consider it Arabic
         if arabic_chars / total_chars > 0.3:
@@ -700,29 +765,31 @@ If {language} is "English", use this format:
     def ask_for_more_info(self, user_input: str, language: str) -> Dict:
         """Generate structured response asking user for more specific information"""
         is_arabic = language == "العربية"
+        is_urdu = language == "اردو"
         
         last_company = st.session_state.get("last_company_name", "")
         
         # If there's a company in memory but user didn't mention it, add context
-        if last_company and "agency" not in user_input.lower() and "شركة" not in user_input and "وكالة" not in user_input:
+        # If there's a company in memory but user didn't mention it, add context
+        if last_company and "agency" not in user_input.lower() and "شركة" not in user_input and "وكالة" not in user_input and "کمپنی" not in user_input and "ایجنسی" not in user_input:
             user_input += f" (Note: User was previously asking about '{last_company}')"
             
         prompt = f"""You are a helpful Hajj verification assistant.
 The user's question: "{user_input}" needs more details to provide accurate information.
 
 Examples of vague questions:
-- "I want to verify an agency" (which agency?)
-- "Tell me about Hajj companies" (what specifically?)
-- "Is this authorized?" (which company?)
-- "Check this company" (need company name)
-- "وين موقعها؟" without context (which company's location?)
+- English: "I want to verify an agency" (which agency?) / "Tell me about Hajj companies" (what specifically?) / "Is this authorized?" (which company?) / "Check this company" (need company name)
+- Arabic: "أريد التحقق من وكالة" (أي وكالة؟) / "أخبرني عن شركات الحج" (ماذا تحديداً؟) / "هل هذه معتمدة؟" (أي شركة؟) / "وين موقعها؟" without context (which company's location?)
+- Urdu: "میں ایک ایجنسی کی تصدیق کرنا چاہتا ہوں" (کون سی ایجنسی؟) / "مجھے حج کمپنیوں کے بارے میں بتائیں" (خاص طور پر کیا؟) / "کیا یہ منظور شدہ ہے؟" (کون سی کمپنی؟) / "یہ کہاں ہے؟" without context (which company's location?)
 
 Ask for specific details in a friendly way. Focus on:
 1. Agency name (if verifying a company)
 2. Location (city/country)
 3. What specifically they want to know
 
-Use Arabic if user input is Arabic, otherwise English.
+Use Urdu if user input is Urdu (contains اردو script characters like ٹ، ڈ، ڑ، پ، چ)
+Use Arabic if user input is Arabic (contains العربية script)
+Otherwise use English
 Keep it brief but friendly (2-3 sentences max).
 Add a simple example of a more specific question.
 """
@@ -749,7 +816,14 @@ Add a simple example of a more specific question.
         except Exception as e:
             logger.error(f"More info prompt generation failed: {e}")
             # Fallback with minimal structured response
-            if is_arabic:
+            if is_urdu:
+                return {
+                    "needs_info": "معاف کیجیے، کیا آپ مزید تفصیلات فراہم کر سکتے ہیں؟ 🤔 مثال کے طور پر، آپ کس کمپنی کی تصدیق کرنا چاہتے ہیں؟",
+                    "suggestions": ["کیا الہدیٰ حج ایجنسی منظور شدہ ہے؟", "مجھے مکہ میں حج ایجنسیاں دکھائیں", "جبل عمر کمپنی کا پتہ کیا ہے؟"],
+                    "missing_info": ["ایجنسی کا نام", "مقام", "مخصوص تفصیلات"],
+                    "sample_query": "کیا الہدیٰ حج ایجنسی منظور شدہ ہے؟"
+                }
+            elif is_arabic:
                 return {
                     "needs_info": "عذراً، هل يمكنك تقديم المزيد من التفاصيل؟ 🤔 على سبيل المثال، ما اسم الشركة التي تريد التحقق منها؟",
                     "suggestions": ["هل شركة الهدى للحج معتمدة؟", "أريد التحقق من وكالات الحج في مكة", "ما هو عنوان شركة جبل عمر؟"],
@@ -788,9 +862,9 @@ TABLE STRUCTURE:
 
 --------------------------------------------
 🔍 LANGUAGE DETECTION RULES:
-1. Detect if the user's question is in Arabic or English. And respond in the same language.
+1. Detect if the user's question is in Arabic, English, or Urdu. And respond in the same language.
 2. Respond with SQL query **only**, no text.
-3. Keep text fragments (LIKE clauses) in both Arabic and English for robustness.
+3. Keep text fragments (LIKE clauses) in Arabic, English, and Urdu for robustness
 4. Translate city and country if needed based on user language.
 
 --------------------------------------------
@@ -803,22 +877,22 @@ TABLE STRUCTURE:
 --------------------------------------------
 📘 QUERY INTERPRETATION RULES:
 
-1. "Authorized" → add `AND is_authorized = 'Yes'`
-2. "Is X authorized?" → check `is_authorized` for company name
+1. "Authorized" / "معتمد" / "منظور شدہ" → add `AND is_authorized = 'Yes'`
+2. "Is X authorized?" / "هل X معتمد؟" / "کیا X منظور شدہ ہے؟" → check `is_authorized` for company name
    - If the user explicitly mentions a company or agency using any of these words:
-       ["شركة", "وكالة", "مؤسسة", "agency", "company", "travel", "tour", "establishment"]
+       ["شركة", "وكالة", "مؤسسة", "agency", "company", "travel", "tour", "establishment", "کمپنی", "ایجنسی"]
        then treat it as an exact company name request.
        Use **flexible LIKE matching** with LOWER(TRIM()):
        WHERE (LOWER(TRIM(hajj_company_ar)) LIKE LOWER('%الاسم%') 
               OR LOWER(TRIM(hajj_company_en)) LIKE LOWER('%name%'))
-   - Otherwise (for general keywords like "الحرمين" or "الهدى" without context),
+   - Otherwise (for general keywords like "الحرمين" or "الهدى" or "الہدیٰ" without context),
        use LIKE for partial matches.
-3. "Number of ..." or "How many ..." → use `SELECT COUNT(*)`
-4. "Countries" or "number of countries" → use:
+3. "Number of ..." or "How many ..." or "كم عدد" or "کتنے" → use `SELECT COUNT(*)`
+4. "Countries" or "number of countries" or "الدول" or "ممالک" → use:
     - `SELECT COUNT(DISTINCT country)` if asking how many
     - `SELECT DISTINCT country` if asking for list
     - Always based on agencies table
-5. "Cities" or "number of cities" → same logic as above but for `city`
+5. "Cities" or "number of cities" or "المدن" or "شہر" → same logic as above but for `city`
 6. Never assume or add "Saudi Arabia" unless mentioned explicitly.
 7. When user asks about "countries that have agencies" → use `DISTINCT country` from `agencies`
 8. Always return agency-related data only, not external or world data.
@@ -834,14 +908,16 @@ TABLE STRUCTURE:
 --------------------------------------------
 🌍 LOCATION MATCHING PATTERNS:
 Use flexible LIKE and LOWER() conditions for cities/countries.
-Handle Arabic, English, and typos.
+Handle Arabic, English, Urdu, and typos.
 
-Mecca → (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%' OR LOWER(city) LIKE '%makka%')
-Medina → (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%')
-Riyadh → (city LIKE '%الرياض%' OR LOWER(city) LIKE '%riyadh%' OR LOWER(city) LIKE '%ar riyadh%')
-Saudi Arabia → (country LIKE '%السعودية%' OR LOWER(country) LIKE '%saudi%' OR country LIKE '%المملكة%')
-Pakistan → (country LIKE '%باكستان%' OR LOWER(country) LIKE '%pakistan%' OR country LIKE '%پاکستان%')
+Mecca → (city LIKE '%مكة%' OR city LIKE '%مکہ%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%' OR LOWER(city) LIKE '%makka%')
+Medina → (city LIKE '%المدينة%' OR city LIKE '%مدینہ%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%')
+Riyadh → (city LIKE '%الرياض%' OR city LIKE '%ریاض%' OR LOWER(city) LIKE '%riyadh%' OR LOWER(city) LIKE '%ar riyadh%')
+Saudi Arabia → (country LIKE '%السعودية%' OR country LIKE '%سعودی عرب%' OR LOWER(country) LIKE '%saudi%' OR country LIKE '%المملكة%')
+Pakistan → (country LIKE '%باكستان%' OR country LIKE '%پاکستان%' OR LOWER(country) LIKE '%pakistan%')
 Egypt → (country LIKE '%مصر%' OR LOWER(country) LIKE '%egypt%')
+India → (country LIKE '%الهند%' OR country LIKE '%انڈیا%' OR country LIKE '%بھارت%' OR LOWER(country) LIKE '%india%')
+Indonesia → (country LIKE '%إندونيسيا%' OR country LIKE '%انڈونیشیا%' OR LOWER(country) LIKE '%indonesia%')
 
 --------------------------------------------
 🏁 OUTPUT RULES:
@@ -865,10 +941,24 @@ WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%'
        OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
 LIMIT 1;
 
+Q: "کیا جبل عمر منظور شدہ ہے؟"
+→ SELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
+FROM agencies
+WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%' 
+       OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
+LIMIT 1;
+
 Q: "is jabal omar authorized?"
 → SELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
 FROM agencies
 WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%' 
+       OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
+LIMIT 1;
+
+Q: "یہ کہاں ہے؟" (with context: about "جبل عمر")
+→ SELECT formatted_address, city, country, google_maps_link 
+FROM agencies 
+WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%'
        OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
 LIMIT 1;
 
@@ -877,6 +967,14 @@ Q: "وين موقعها؟" (with context: about "جبل عمر")
 FROM agencies 
 WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%'
        OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
+LIMIT 1;
+
+Q: "کیا یہ ریاض میں ہے؟" (with context: about "جبل عمر")
+→ SELECT hajj_company_en, hajj_company_ar, city, country, formatted_address
+FROM agencies
+WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%'
+       OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
+  AND (city LIKE '%الرياض%' OR city LIKE '%ریاض%' OR LOWER(city) LIKE '%riyadh%')
 LIMIT 1;
 
 Q: "هل موجودة في الرياض؟" (with context: about "جبل عمر")
@@ -893,12 +991,32 @@ WHERE is_authorized = 'Yes'
   AND (city LIKE '%مكة%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%') 
 LIMIT 100;
 
+Q: "مکہ میں منظور شدہ ایجنسیاں"
+→ SELECT * FROM agencies 
+WHERE is_authorized = 'Yes' 
+  AND (city LIKE '%مكة%' OR city LIKE '%مکہ%' OR LOWER(city) LIKE '%mecca%' OR LOWER(city) LIKE '%makkah%') 
+LIMIT 100;
+
 Q: "كم عدد الشركات في المدينة؟"
 → SELECT COUNT(*) FROM agencies 
 WHERE (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%');
 
+Q: "مدینہ میں کتنی کمپنیاں ہیں؟"
+→ SELECT COUNT(*) FROM agencies 
+WHERE (city LIKE '%المدينة%' OR city LIKE '%مدینہ%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%');
+
 Q: "How many countries have agencies?"
 → SELECT COUNT(DISTINCT country) FROM agencies;
+
+Q: "کتنے ممالک میں ایجنسیاں ہیں؟"
+→ SELECT COUNT(DISTINCT country) FROM agencies;
+
+Q: "رابطہ نمبر؟" (with context: about "الهدى")
+→ SELECT contact_Info, hajj_company_ar, hajj_company_en 
+FROM agencies 
+WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%الهدى%'
+       OR LOWER(TRIM(hajj_company_en)) LIKE '%huda%')
+LIMIT 1;
 
 Q: "List of countries that have agencies"
 → SELECT DISTINCT country FROM agencies LIMIT 100;
