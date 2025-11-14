@@ -1179,6 +1179,7 @@ def render_report_bot():
         st.session_state.report_messages = []
         st.session_state.report_step = 0
         st.session_state.complaint_data = {}
+        st.session_state.report_last_lang = None
     
     # Initialize LLM manager
     if "llm_manager" not in st.session_state:
@@ -1201,6 +1202,7 @@ def render_report_bot():
             }
         ]
         st.session_state.report_step = 1
+        st.session_state.report_last_lang = lang
     
     # Show progress bar
     if st.session_state.report_step > 0:
