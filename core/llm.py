@@ -306,10 +306,11 @@ Classify the intent, extract company name if mentioned, provide confidence score
         """Fallback intent detection using heuristics when API fails"""
         ui = user_input.lower()
         
-        if any(g in ui for g in ["hello", "hi", "salam", "السلام", "مرحبا"]):
+        # Urdu greetings
+        if any(g in ui for g in ["hello", "hi", "salam", "السلام", "مرحبا", "آداب", "السلام علیکم"]):
             intent = "GREETING"
-        elif any(k in ui for k in ["company", "agency", "معتمد", "شركات", "authorized", "وكالة"]):
-            if len(ui.split()) < 4 and not any(specific in ui for specific in ["royal", "alhuda", "مكة", "جدة", "riyadh"]):
+        elif any(k in ui for k in ["company", "agency", "معتمد", "شركات", "authorized", "وكالة", "کمپنی", "ایجنسی", "منظور شدہ"]):
+            if len(ui.split()) < 4 and not any(specific in ui for specific in ["royal", "alhuda", "مكة", "جدة", "riyadh", "مکہ"]):
                 intent = "NEEDS_INFO"
             else:
                 intent = "DATABASE"
