@@ -1203,6 +1203,19 @@ def render_report_bot():
         ]
         st.session_state.report_step = 1
         st.session_state.report_last_lang = lang
+    # Handle language change during active session
+    elif st.session_state.get("report_last_lang") != lang and len(st.session_state.report_messages) <= 2:
+        st.session_state.report_messages = [
+            {
+                "role": "assistant",
+                "content": t("report_welcome", lang)
+            },
+            {
+                "role": "assistant",
+                "content": t("report_step_1", lang)
+            }
+        ]
+        st.session_state.report_last_lang = lang
     
     # Show progress bar
     if st.session_state.report_step > 0:
