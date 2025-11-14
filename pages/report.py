@@ -1189,8 +1189,8 @@ def render_report_bot():
     supabase_client = get_supabase_client()
     db_manager = st.session_state.get("db_manager", None)
     
-    # Initial welcome messages
-    if st.session_state.report_step == 0 or st.session_state.get("report_last_lang") != lang:
+    # Initial welcome messages - only on first load
+    if st.session_state.report_step == 0:
         st.session_state.report_messages = [
             {
                 "role": "assistant",
