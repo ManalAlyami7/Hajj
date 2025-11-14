@@ -17,7 +17,7 @@ from supabase import create_client, Client
 
 # Import core modules
 from core.report_llm import RLLMManager
-from core.translations import t, LANGUAGE_MAP
+from utils.translations import t, LANGUAGE_MAP
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
