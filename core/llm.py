@@ -398,10 +398,43 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         
         last_company = st.session_state.get("last_company_name", "")
         
-        if last_company and self._is_followup_question(user_input):
-            context_note = f"\n\n⚠️ IMPORTANT CONTEXT: User is asking a follow-up question about '{last_company}' (mentioned previously in conversation). Generate SQL query specifically for this company."
+        # Detect specific field requests
+        field_mapping = {
+            "rating": "rating_reviews",
+            "تقييم": "rating_reviews", 
+            "درجہ بندی": "rating_reviews",
+            "contact": "contact_Info",
+            "رقم": "contact_Info",
+            "نمبر": "contact_Info",
+            "email": "email",
+            "ايميل": "email",
+            "ای میل": "email",
+            "address": "formatted_address",
+            "عنوان": "formatted_address",
+            "پتہ": "formatted_address",
+            "location": 'city, country, "المدينة", "الدولة", formatted_address' if language == "العربية" else "city, country, formatted_address",
+            "موقع": '"المدينة", "الدولة", formatted_address', 
+            "مقام": '"المدينة", "الدولة", formatted_address',
+            "المدينة": '"المدينة"',  
+            "الدولة": '"الدولة"',  
+            }
+        
+        requested_fields = []
+        user_lower = user_input.lower()
+        for keyword, field in field_mapping.items():
+            if keyword in user_lower:
+                requested_fields.append(field)
+        
+        # Build SELECT clause
+        if requested_fields:
+            select_clause = f"SELECT {', '.join(set(requested_fields))}, hajj_company_ar, hajj_company_en"
         else:
-            context_note = ""
+            select_clause = "SELECT *"
+        
+        if last_company and self._is_followup_question(user_input):
+            context_note = f"\n\n⚠️ IMPORTANT CONTEXT: User is asking a follow-up question about '{last_company}' (mentioned previously in conversation). Generate SQL query specifically for this company using this SELECT clause: {select_clause}"
+        else:
+            context_note = f"\n\n💡 Use this SELECT clause: {select_clause}"
         
         sql_prompt = self._get_sql_system_prompt(language) + f"\n\nUser Question: {user_input}{context_note}"
         
@@ -440,16 +473,17 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         except Exception as e:
             logger.error(f"Structured SQL generation failed: {e}")
             return None
-    
+        
     def generate_summary(self, user_input: str, language: str, row_count: int, sample_rows: List[Dict]) -> Dict:
         """
-        🔧 FIXED VERSION - Improved company name matching
+        🔧 FIXED VERSION v2 - Improved company name matching + LLM-powered responses
         
         KEY CHANGES:
         1. Uses extracted_company from session state instead of raw user input
         2. Better fuzzy matching with normalized company names
         3. Handles partial matches more intelligently
         4. Fallback to showing all results if exact match fails
+        5. Always uses LLM with focused prompts for all question types
         """
         
         # Auto-detect language from user input
@@ -459,6 +493,18 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             logger.info(f"🌐 Language auto-detected from input: {language}")
         
         last_company = st.session_state.get("last_company_name", "")
+        
+        # Detect if user asking for specific field only
+        specific_field_request = None
+        user_lower = user_input.lower()
+        if any(kw in user_lower for kw in ["rating", "تقييم", "درجہ بندی", "كم عدد التقييمات"]):
+            specific_field_request = "rating"
+        elif any(kw in user_lower for kw in ["contact", "رقم", "نمبر", "phone"]):
+            specific_field_request = "contact"
+        elif any(kw in user_lower for kw in ["email", "ايميل", "ای میل"]):
+            specific_field_request = "email"
+        elif any(kw in user_lower for kw in ["address", "عنوان", "پتہ"]):
+            specific_field_request = "address"
         
         # Handle zero rows
         if row_count == 0:
@@ -493,31 +539,49 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             "contact_Info",
             "rating_reviews",
             "is_authorized",
-            "google_maps_link"
+            "google_maps_link",
+            '"المدينة"',  
+            '"الدولة"'
         ]
 
         requested_columns = []
         user_input_lower = user_input.lower()
+
         if any(k in user_input_lower for k in ["contact details", "تفاصیل رابطہ", "تفاصيل الاتصال"]):
-            requested_columns.extend(["email", "contact_Info", "google_maps_link"])
+            requested_columns.extend(["email", "contact_info", "google_maps_link"])  # 🔧 تغيير contact_Info
+
         if any(k in user_input_lower for k in ["address", "پتہ", "العنوان"]):
             requested_columns.append("formatted_address")
-        if any(k in user_input_lower for k in ["contact", "رابطہ نمبر", "رقم التواصل"]):
-            requested_columns.append("contact_Info")
+
+        if any(k in user_input_lower for k in ["contact", "رابطہ نمبر", "رقم التواصل", "تواصل"]):
+            requested_columns.append("contact_info")  # 🔧 تغيير contact_Info
+
         if any(k in user_input_lower for k in ["email", "ای میل", "البريد الإلكتروني"]):
             requested_columns.append("email")
-        if any(k in user_input_lower for k in ["city", "شہر", "المدينة"]):
-            requested_columns.append("city")
-        if any(k in user_input_lower for k in ["country", "ملک", "الدولة"]):
-            requested_columns.append("country")
+
+        # 🆕 إضافة: دعم الأعمدة العربية
+        if any(k in user_input_lower for k in ["city", "شہر", "المدينة", "مدينة"]):
+            if language == "العربية":
+                requested_columns.append('"المدينة"')  # 🆕 استخدام العمود العربي
+            else:
+                requested_columns.append("city")
+
+        if any(k in user_input_lower for k in ["country", "ملک", "الدولة", "دولة", "بلد"]):
+            if language == "العربية":
+                requested_columns.append('"الدولة"')  # 🆕 استخدام العمود العربي
+            else:
+                requested_columns.append("country")
+
         if any(k in user_input_lower for k in ["status", "حالت", "الحالة", "authorization", "منظور شدہ", "معتمد"]):
             requested_columns.append("is_authorized")
-        if any(k in user_input_lower for k in ["map", "نقشہ", "رابط قوقل ماب", "google maps links"]):
+
+        if any(k in user_input_lower for k in ["map", "نقشہ", "رابط قوقل ماب", "google maps links", "خريطة"]):
             requested_columns.append("google_maps_link")
+
         if not requested_columns:
             requested_columns = all_columns
 
-        # 🔧 FIX: Use extracted company name for better matching
+        # Use extracted company name for better matching
         search_name = last_company.lower().strip() if last_company else user_input.lower().strip()
         
         # Remove common prefixes/suffixes for better matching
@@ -576,126 +640,146 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
                 prompt_user += "\n".join([f"- {row['hajj_company_en']} ({row['hajj_company_ar']})" for row in matching_rows[:5]])
             return {"summary": prompt_user}
 
-        # 🔧 FIX: Always send full data to LLM, but control what to display via prompt
         # Prepare FULL data for context (not just requested columns)
         data_preview = matching_rows[:50]  # Send all columns
         data_preview_json = json.dumps(data_preview, ensure_ascii=False)
 
+        # Build focused instruction for LLM based on specific field request
+        if specific_field_request:
+            if specific_field_request == "rating":
+                focus_instruction = f"\n\n🎯 CRITICAL: User is asking ONLY about RATING/REVIEWS\n- Show ONLY: rating_reviews field\n- Format: Simple, direct answer about rating\n- Example Arabic: 'تقييم الشركة هو: 3.7 (3 تقييمات)'\n- Example English: 'The company rating is: 3.7 (3 reviews)'\n- DO NOT show: address, email, contact, city, country unless asked"
+            elif specific_field_request == "contact":
+                focus_instruction = f"\n\n🎯 CRITICAL: User is asking ONLY about CONTACT NUMBER\n- Show ONLY: contact_Info field\n- Format: Direct phone number answer\n- Example Arabic: 'رقم التواصل: +966...'\n- DO NOT show other fields"
+            elif specific_field_request == "email":
+                focus_instruction = f"\n\n🎯 CRITICAL: User is asking ONLY about EMAIL\n- Show ONLY: email field\n- Format: Direct email answer\n- DO NOT show other fields"
+            elif specific_field_request == "address":
+                if language == "العربية":
+                    focus_instruction = f'\n\n🎯 CRITICAL: User is asking ONLY about ADDRESS/LOCATION\n- Show ONLY: formatted_address, "المدينة", "الدولة", google_maps_link\n- Format: Address with map link\n- Use Arabic columns for city and country\n- DO NOT show: email, contact, rating'
+                else:
+                    focus_instruction = f"\n\n🎯 CRITICAL: User is asking ONLY about ADDRESS/LOCATION\n- Show ONLY: formatted_address, city, country, google_maps_link\n- Format: Address with map link\n- DO NOT show: email, contact, rating"
+            else:
+                focus_instruction = "\n\n🎯 Show all relevant information"
+        
         # But tell LLM to focus only on requested columns
         if requested_columns and len(requested_columns) <= 3:  # Specific question
-            focus_instruction = f"\n\n🎯 USER ASKED SPECIFICALLY ABOUT: {', '.join(requested_columns)}\n- Display ONLY these fields in your response\n- Do NOT show other fields (city, country, email, etc.) unless they are in the requested list\n- Keep the response focused and concise"
+            if not specific_field_request:  # If we didn't already set focus_instruction
+                focus_instruction = f"\n\n🎯 USER ASKED SPECIFICALLY ABOUT: {', '.join(requested_columns)}\n- Display ONLY these fields in your response\n- Do NOT show other fields (city, country, email, etc.) unless they are in the requested list\n- Keep the response focused and concise"
         else:  # General question
-            focus_instruction = "\n\n🎯 This is a general query - show all relevant information"
+            if not specific_field_request:  # If we didn't already set focus_instruction
+                focus_instruction = "\n\n🎯 This is a general query - show all relevant information"
 
         summary_prompt = f"""
-You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
+    You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
 
-🚨 CRITICAL LANGUAGE RULE:
-- User question language: {language}
-- You MUST respond in {language} ONLY
-- If language is "العربية", respond COMPLETELY in Arabic
-- If language is "اردو", respond COMPLETELY in Urdu
-- If language is "English", respond COMPLETELY in English
-- Do NOT mix languages in your response
+    🚨 CRITICAL LANGUAGE RULE:
+    - User question language: {language}
+    - You MUST respond in {language} ONLY
+    - If language is "العربية", respond COMPLETELY in Arabic
+    - If language is "اردو", respond COMPLETELY in Urdu
+    - If language is "English", respond COMPLETELY in English
+    - Do NOT mix languages in your response
 
-Your task:
-→ Summarize SQL query results clearly and naturally, with a warm, conversational tone that feels friendly and professional.
+    Your task:
+    → Summarize SQL query results clearly and naturally, with a warm, conversational tone that feels friendly and professional.
 
-User question: {user_input}
-Data: {data_preview_json}
-{focus_instruction}
+    User question: {user_input}
+    Data: {data_preview_json}
+    {focus_instruction}
 
-Instructions:
-- ALWAYS respond in {language}
-- Always acknowledge the user's question in {language}
-- Arabic examples: "بناءً على البيانات، وجدت لك النتائج التالية:" أو "إليك ما وجدته:"
-- Urdu examples: "ڈیٹا کی بنیاد پر، میں نے آپ کے لیے یہ نتائج پائے:" یا "یہ ہے جو مجھے ملا:"
-- English examples: "Here are the results I found for you:" or "Based on the data, here's what I found:"
-- Be concise and clear
-- Highlight number of matching records
-- Provide actionable advice if relevant
-- Use emojis sparingly to enhance friendliness
-- Use a mix of sentences and bullet points
+    Instructions:
+    - ALWAYS respond in {language}
+    - Always acknowledge the user's question in {language}
+    - Arabic examples: "بناءً على البيانات، وجدت لك النتائج التالية:" أو "إليك ما وجدته:"
+    - Urdu examples: "ڈیٹا کی بنیاد پر، میں نے آپ کے لیے یہ نتائج پائے:" یا "یہ ہے جو مجھے ملا:"
+    - English examples: "Here are the results I found for you:" or "Based on the data, here's what I found:"
+    - Be concise and clear - especially for single-field questions, keep it SHORT (1-2 lines)
+    - Highlight number of matching records ONLY if multiple companies found
+    - Provide actionable advice if relevant
+    - Use emojis sparingly to enhance friendliness
+    - For single-field questions (rating, contact, email): Answer in 1-2 sentences maximum
+    - For general questions: Use a mix of sentences and bullet points
 
-Important behavior for company search:
-- If the user mentions a company/agency name:
-    * Display all companies whose names match or partially match the search term.
-    * If there are multiple matches, include a short friendly note explaining that there are multiple companies and all relevant options are shown.
-    * Always include the Google Maps link if available.
-    * Limit listing to up to 10 companies.
+    Important behavior for company search:
+    - If the user mentions a company/agency name:
+        * Display all companies whose names match or partially match the search term.
+        * If there are multiple matches, include a short friendly note explaining that there are multiple companies and all relevant options are shown.
+        * Always include the Google Maps link if available.
+        * Limit listing to up to 10 companies.
 
-Columns to include in summary: {requested_columns}
+    Columns to include in summary: {requested_columns}
 
-🚨 CRITICAL LANGUAGE-SPECIFIC RULES:
-- If {language} is "العربية":
-* Translate ALL field names to Arabic
-* city → المدينة
-* country → الدولة
-* email → البريد الإلكتروني
-* contact_Info → رقم التواصل
-* rating_reviews → التقييم
-* is_authorized → مصرح / معتمد (translate "Yes" to "نعم، معتمد" and "No" to "لا، غير معتمد")
-* formatted_address → العنوان
-* google_maps_link → رابط خرائط جوجل
+    🚨 CRITICAL LANGUAGE-SPECIFIC RULES:
+    - If {language} is "العربية":
+    * Translate ALL field names to Arabic
+    * Use "المدينة" column for city data (NOT city column)  # 🆕
+    * Use "الدولة" column for country data (NOT country column)  # 🆕
+    * city → المدينة (from "المدينة" column)
+    * country → الدولة (from "الدولة" column)
+    * email → البريد الإلكتروني
+    * contact_Info → رقم التواصل
+    * rating_reviews → التقييم
+    * is_authorized → مصرح / معتمد (translate "Yes" to "نعم، معتمد" and "No" to "لا، غير معتمد")
+    * formatted_address → العنوان
+    * google_maps_link → رابط خرائط جوجل
 
-- If {language} is "اردو":
-* Translate ALL field names to Urdu
-* city → شہر
-* country → ملک
-* email → ای میل
-* contact_Info → رابطہ نمبر
-* rating_reviews → درجہ بندی
-* is_authorized → منظور شدہ / مجاز (translate "Yes" to "جی ہاں، منظور شدہ" and "No" to "نہیں، غیر منظور شدہ")
-* formatted_address → پتہ
-* google_maps_link → گوگل میپس لنک
+    - If {language} is "اردو":
+    * Translate ALL field names to Urdu
+    * city → شہر
+    * country → ملک
+    * email → ای میل
+    * contact_Info → رابطہ نمبر
+    * rating_reviews → درجہ بندی
+    * is_authorized → منظور شدہ / مجاز (translate "Yes" to "جی ہاں، منظور شدہ" and "No" to "نہیں، غیر منظور شدہ")
+    * formatted_address → پتہ
+    * google_maps_link → گوگل میپس لنک
 
-- If {language} is "English":
-* Keep all field names in English
-* is_authorized → translate to "Yes, Authorized" or "No, Not Authorized"
+    - If {language} is "English":
+    * Keep all field names in English
+    * is_authorized → translate to "Yes, Authorized" or "No, Not Authorized"
 
-Behavior based on user question:
-- Always include Google Maps Link if available
-- Ensure response is complete and readable, no truncated or missing information
-- You are designed to protect pilgrims from scams and help them verify Hajj agencies authorized by the Ministry of Hajj and Umrah
+    Behavior based on user question:
+    - Always include Google Maps Link if available
+    - Ensure response is complete and readable, no truncated or missing information
+    - You are designed to protect pilgrims from scams and help them verify Hajj agencies authorized by the Ministry of Hajj and Umrah
 
-🌍 OUTPUT FORMAT:
+    🌍 OUTPUT FORMAT:
 
-If {language} is "العربية", use this format:
-- الاسم (بالعربية / بالإنجليزية):
-- المدينة:
-- الدولة:
-- البريد الإلكتروني:
-- رقم التواصل:
-- التقييم:
-- الحالة: (نعم، معتمد / لا، غير معتمد)
-- رابط خرائط جوجل
+    If {language} is "العربية", use this format:
+    - الاسم (بالعربية / بالإنجليزية):
+    - المدينة:
+    - الدولة:
+    - البريد الإلكتروني:
+    - رقم التواصل:
+    - التقييم:
+    - الحالة: (نعم، معتمد / لا، غير معتمد)
+    - رابط خرائط جوجل
 
-If {language} is "اردو", use this format:
-- نام (عربی / انگریزی):
-- شہر:
-- ملک:
-- ای میل:
-- رابطہ نمبر:
-- درجہ بندی:
-- حالت: (جی ہاں، منظور شدہ / نہیں، غیر منظور شدہ)
-- گوگل میپس لنک
+    If {language} is "اردو", use this format:
+    - نام (عربی / انگریزی):
+    - شہر:
+    - ملک:
+    - ای میل:
+    - رابطہ نمبر:
+    - درجہ بندی:
+    - حالت: (جی ہاں، منظور شدہ / نہیں، غیر منظور شدہ)
+    - گوگل میپس لنک
 
-If {language} is "English", use this format:
-- Name (Arabic / English):
-- City:
-- Country:
-- Email:
-- Contact Info:
-- Rating:
-- Status: (Yes, Authorized / No, Not Authorized)
-- Google Maps Link
+    If {language} is "English", use this format:
+    - Name (Arabic / English):
+    - City:
+    - Country:
+    - Email:
+    - Contact Info:
+    - Rating:
+    - Status: (Yes, Authorized / No, Not Authorized)
+    - Google Maps Link
 
-- Keep tone friendly, professional, and natural IN {language}
-- Mix sentences and bullets; add small friendly phrases if appropriate
-- Do NOT invent any data
-- If multiple rows, list up to 10 agencies with key details
-- REMEMBER: Your ENTIRE response must be in {language}
-"""
+    - Keep tone friendly, professional, and natural IN {language}
+    - Mix sentences and bullets; add small friendly phrases if appropriate
+    - Do NOT invent any data
+    - If multiple rows, list up to 10 agencies with key details
+    - REMEMBER: Your ENTIRE response must be in {language}
+    """
 
         try:
             response = self.client.beta.chat.completions.parse(
@@ -868,8 +952,15 @@ TABLE STRUCTURE:
 - is_authorized ('Yes' or 'No')
 - google_maps_link
 - link_valid (boolean)
-- المدينة(city but in Arabic)
-- الدولة (country but in Arabic)
+- "المدينة" (city in Arabic - use this for Arabic queries)  
+- "الدولة" (country in Arabic - use this for Arabic queries)  
+
+--------------------------------------------
+🎯 LANGUAGE-SPECIFIC COLUMN USAGE:
+- For Arabic queries: Use "المدينة" and "الدولة" columns
+- For English/Urdu queries: Use city and country columns
+- Example Arabic: SELECT "المدينة", "الدولة" FROM agencies WHERE...
+- Example English: SELECT city, country FROM agencies WHERE...
 
 --------------------------------------------
 🔍 LANGUAGE DETECTION RULES:
@@ -1010,7 +1101,20 @@ LIMIT 100;
 
 Q: "كم عدد الشركات في المدينة؟"
 → SELECT COUNT(*) FROM agencies 
-WHERE (city LIKE '%المدينة%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%');
+WHERE ("المدينة" LIKE '%المدينة%' OR "المدينة" LIKE '%مدینہ%' OR LOWER(city) LIKE '%medina%' OR LOWER(city) LIKE '%madinah%');
+
+Q: "وكالات معتمدة في الرياض"
+→ SELECT hajj_company_ar, hajj_company_en, "المدينة", "الدولة", formatted_address, is_authorized 
+FROM agencies 
+WHERE is_authorized = TRUE 
+  AND ("المدينة" LIKE '%الرياض%' OR "المدينة" LIKE '%ریاض%' OR LOWER(city) LIKE '%riyadh%') 
+LIMIT 100;
+
+Q: "شركات في السعودية"
+→ SELECT hajj_company_ar, hajj_company_en, "المدينة", "الدولة" 
+FROM agencies 
+WHERE ("الدولة" LIKE '%السعودية%' OR "الدولة" LIKE '%سعودی%' OR LOWER(country) LIKE '%saudi%') 
+LIMIT 100;
 
 Q: "مدینہ میں کتنی کمپنیاں ہیں؟"
 → SELECT COUNT(*) FROM agencies 
