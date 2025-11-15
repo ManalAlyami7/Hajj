@@ -1028,20 +1028,61 @@ Indonesia → (country LIKE '%إندونيسيا%' OR country LIKE '%انڈون�
 - Always include LIMIT 100 unless COUNT or DISTINCT is used.
 
 --------------------------------------------
-⚙️ COMPANY NAME MATCHING:
-- Always normalize and deduplicate company names using LOWER(TRIM()).
-- Use SELECT DISTINCT to avoid duplicates.
-- Use flexible LIKE matching with wildcards: LIKE '%term%'
+⚙️ COMPANY NAME MATCHING (CRITICAL):
+**This is the MOST IMPORTANT rule for accurate results**
+
+- Split company name into individual KEY words (ignore common words like شركة, مؤسسة, وكالة, company, agency)
+- Use separate LIKE condition for EACH key word with AND operator
+- This handles extra words, different word order, spaces, and variations
+- Always use LOWER() for case-insensitive matching
+- Use LIMIT 100 (not LIMIT 1) to catch all variations
+
+❌ WRONG Pattern (too strict):
+WHERE LOWER(hajj_company_ar) LIKE '%شركة%اثراء%الجود%لخدمات%الحجاج%'
+(This fails if words not consecutive or have extra text between them)
+
+✅ CORRECT Pattern (flexible):
+WHERE (LOWER(hajj_company_ar) LIKE '%اثراء%' 
+       AND LOWER(hajj_company_ar) LIKE '%الجود%' 
+       AND LOWER(hajj_company_ar) LIKE '%لخدمات%' 
+       AND LOWER(hajj_company_ar) LIKE '%الحجاج%')
+   OR (LOWER(hajj_company_en) LIKE '%athraa%' 
+       AND LOWER(hajj_company_en) LIKE '%jood%')
+
+Real Examples:
+1. User asks: "اثراء الجود لخدمات الحجاج"
+   Should match ALL of these:
+   - "شركة اثراء الجود لخدمات الحجاج شركة شخص واحد" ✅
+   - "اثراء الجود - خدمات الحجاج والعمرة" ✅
+   - "مؤسسة اثراء الجود للحج" ✅
+   
+   Query: 
+   WHERE (LOWER(hajj_company_ar) LIKE '%اثراء%' 
+          AND LOWER(hajj_company_ar) LIKE '%الجود%')
+
+2. User asks: "jabal omar"
+   Should match:
+   - "Jabal Omar Development Company" ✅
+   - "JABAL OMAR - REAL ESTATE" ✅
+   
+   Query:
+   WHERE (LOWER(hajj_company_en) LIKE '%jabal%' 
+          AND LOWER(hajj_company_en) LIKE '%omar%')
+
+3. User asks: "الهدى للحج"
+   Query:
+   WHERE (LOWER(hajj_company_ar) LIKE '%الهدى%' 
+          AND LOWER(hajj_company_ar) LIKE '%الحج%')
 
 --------------------------------------------
 ✅ EXAMPLES:
 
 Q: "هل شركة جبل عمر معتمدة؟"
-→ SELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
+→ SELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_info, rating_reviews, is_authorized, google_maps_link
 FROM agencies
-WHERE (LOWER(TRIM(hajj_company_ar)) LIKE '%جبل%عمر%' 
-       OR LOWER(TRIM(hajj_company_en)) LIKE '%jabal%omar%')
-LIMIT 1;
+WHERE (LOWER(hajj_company_ar) LIKE '%جبل%' AND LOWER(hajj_company_ar) LIKE '%عمر%'
+       OR LOWER(hajj_company_en) LIKE '%jabal%' AND LOWER(hajj_company_en) LIKE '%omar%')
+LIMIT 100;
 
 Q: "کیا جبل عمر منظور شدہ ہے؟"
 → SELECT DISTINCT hajj_company_en, hajj_company_ar, formatted_address, city, country, email, contact_Info, rating_reviews, is_authorized, google_maps_link
