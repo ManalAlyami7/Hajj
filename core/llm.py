@@ -160,21 +160,24 @@ class LLMManager:
         
         if len(text_lower.split()) <= 6:
             followup_keywords_ar = [
-                "موقع", "عنوان", "موجود", "معتمد", "مصرح", "رقم", "ايميل", 
+                "موقع", "عنوان", "موجود", "معتمد", "مصرح", "رقم", "ايميل", "بريد",
                 "تفاصيل", "تقييم", "خريطة","تفاصيل", "تقييم", "تقييمات", "مراجعات", "نجوم", "النجوم", "جيد",
-                "وين", "كيف", "متى", "هل هي", "هل هو", "فين", "ايش", "شنو", "موجودة",
-                "في الرياض", "في مكة", "في جدة", "في المدينة"
+                "وين", "كيف", "متى", "هل هي", "هل هو", "فين", "ايش", "شنو", "موجودة",  "وسائل التواصل", "طرق التواصل", "رقم التواصل",
+                "في الرياض", "في مكة", "في جدة", "في المدينة","خريطة", "خرائط", "قوقل", "جوجل", "رابط الخريطة", "رابط قوقل",
             ]
             followup_keywords_en = [
-                "location", "address", "where", "authorized", "phone", "email", 
-                "details", "rating","reviews", "stars", "good", "map", "is it", "contact", "info", "number",
-                "in riyadh", "in makkah", "in jeddah", "in medina", "there", "located"
+                "location", "address", "where", "authorized", "phone", "email", "mail",
+                "details", "rating","reviews", "stars", "good", "map","map", "maps", "google maps", "map link" ,"is it", "contact", "info", "number",
+                "city", "country", "contact methods", "contact details", "phone number",
+                "in riyadh", "in makkah", "in jeddah", "in medina", "there", "located",
             ]
 
             # Urdu follow-up keywords
             followup_keywords_ur = [
                 "کہاں", "پتہ", "مقام", "نمبر", "ای میل", "تفصیل", "رابطہ",
-                "منظور شدہ", "مجاز", "کیا ہے", "ریٹنگ", "اسٹار", "جائزے", "اچھی","ریاض میں", "مکہ میں", "جدہ میں"
+                 "شہر", "ملک", "رابطے کے طریقے", "رابطہ نمبر",
+                "منظور شدہ", "مجاز", "کیا ہے", "ریٹنگ", "اسٹار", "جائزے", "اچھی","ریاض میں", "مکہ میں", "جدہ میں", "مدینہ میں",
+                 "نقشہ", "گوگل میپس", "نقشے کا لنک", 
             ]
             
             all_keywords = followup_keywords_ar + followup_keywords_en + followup_keywords_ur
@@ -422,6 +425,42 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             "address": "formatted_address",
             "عنوان": "formatted_address",
             "پتہ": "formatted_address",
+            "contact": "contact_info",
+            "phone": "contact_info",
+            "رقم": "contact_info",
+            "تواصل": "contact_info",
+            "هاتف": "contact_info",
+            "نمبر": "contact_info",
+            "رابطہ": "contact_info",
+            "email": "email",
+            "ايميل": "email",
+            "بريد": "email",
+            "ای میل": "email",
+            "contact methods": "contact_info, email",
+            "contact details": "contact_info, email",
+            "وسائل التواصل": "contact_info, email",
+            "طرق التواصل": "contact_info, email",
+            "معلومات التواصل": "contact_info, email",
+            "رابطے کے طریقے": "contact_info, email",
+            "city": '"المدينة", city' if language == "العربية" else "city",
+            "المدينة": '"المدينة"',
+            "شہر": '"المدينة", city',
+            "country": '"الدولة", country' if language == "العربية" else "country",
+            "الدولة": '"الدولة"',
+            "ملک": '"الدولة", country',
+            "address": "formatted_address",
+            "عنوان": "formatted_address",
+            "پتہ": "formatted_address",
+            "google maps": "google_maps_link",
+            "maps": "google_maps_link",
+            "map": "google_maps_link",
+            "خرائط": "google_maps_link",
+            "قوقل": "google_maps_link",
+            "جوجل": "google_maps_link",
+            "خريطة": "google_maps_link",
+            "رابط الخريطة": "google_maps_link",
+            "گوگل میپس": "google_maps_link",
+            "نقشہ": "google_maps_link",
             "location": 'city, country, "المدينة", "الدولة", formatted_address' if language == "العربية" else "city, country, formatted_address",
             "موقع": '"المدينة", "الدولة", formatted_address', 
             "مقام": '"المدينة", "الدولة", formatted_address',
@@ -507,6 +546,8 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         # Detect if user asking for specific field only
         specific_field_request = None
         user_lower = user_input.lower()
+
+        # Rating/reviews
         if any(kw in user_lower for kw in [
             # English
             "rating", "stars", "reviews", "how many reviews", "what is the rating", "is its rating good",
@@ -516,12 +557,64 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             "ریٹنگ", "اسٹار", "جائزے", "کتنے جائزے", "ریٹنگ کیا ہے", "کیا ریٹنگ اچھی ہے", "کتنے اسٹار", "درجہ بندی"
         ]):
             specific_field_request = "rating"
-        elif any(kw in user_lower for kw in ["contact", "رقم", "نمبر", "phone"]):
+
+            # Contact number
+        elif any(kw in user_lower for kw in [
+            "contact number", "phone number", "phone", "contact",
+            "رقم التواصل", "رقم الهاتف", "رقم", "تواصل", "هاتف",
+            "رابطہ نمبر", "فون نمبر", "نمبر"
+        ]) and not any(kw in user_lower for kw in ["email", "ايميل", "ای میل", "وسائل"]):
             specific_field_request = "contact"
-        elif any(kw in user_lower for kw in ["email", "ايميل", "ای میل"]):
+
+            # Email
+        elif any(kw in user_lower for kw in [
+            "email", "e-mail", "mail",
+            "البريد الإلكتروني", "الإيميل", "ايميل", "بريد",
+            "ای میل", "میل"
+        ]) and not any(kw in user_lower for kw in ["contact", "رقم", "وسائل"]):
             specific_field_request = "email"
-        elif any(kw in user_lower for kw in ["address", "عنوان", "پتہ"]):
+
+            # Contact methods (both email + contact)
+        elif any(kw in user_lower for kw in [
+            "contact methods", "contact details", "contact info", "how to contact",
+            "وسائل التواصل", "طرق التواصل", "معلومات التواصل", "كيف اتواصل",
+            "رابطے کے طریقے", "رابطے کی تفصیلات"
+        ]):
+            specific_field_request = "contact_methods"
+             # City
+        elif any(kw in user_lower for kw in [
+            "what city", "which city", "city",
+            "ما هي المدينة", "أي مدينة", "في أي مدينة", "المدينة",
+            "کون سا شہر", "شہر کیا ہے", "کس شہر میں"
+        ]) and not any(kw in user_lower for kw in ["country", "الدولة", "ملک"]):
+            specific_field_request = "city"
+
+        # Country
+        elif any(kw in user_lower for kw in [
+            "what country", "which country", "country",
+            "ما هي الدولة", "أي دولة", "في أي دولة", "الدولة", "البلد",
+            "کون سا ملک", "ملک کیا ہے", "کس ملک میں"
+        ]) and not any(kw in user_lower for kw in ["city", "المدينة", "شہر"]):
+            specific_field_request = "country"
+
+       # Address
+        elif any(kw in user_lower for kw in [
+            "address", "full address",
+            "العنوان", "عنوان كامل",
+            "پتہ", "مکمل پتہ"
+        ]):
             specific_field_request = "address"
+
+        # Google Maps link
+        elif any(kw in user_lower for kw in [
+            # English
+            "google maps", "maps link", "map link", "location link",
+            # Arabic
+            "خرائط قوقل", "قوقل ماب", "رابط الخريطة", "رابط قوقل", "رابط خرائط", "خرائط جوجل", "جوجل ماب",
+            # Urdu
+            "گوگل میپس", "نقشہ لنک", "نقشے کا لنک"
+        ]):
+            specific_field_request = "maps"
         
         # Handle zero rows
         if row_count == 0:
@@ -699,6 +792,79 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
                     focus_instruction = f'\n\n🎯 CRITICAL: User is asking ONLY about ADDRESS/LOCATION\n- Show ONLY: formatted_address, "المدينة", "الدولة", google_maps_link\n- Format: Address with map link\n- Use Arabic columns for city and country\n- DO NOT show: email, contact, rating'
                 else:
                     focus_instruction = f"\n\n🎯 CRITICAL: User is asking ONLY about ADDRESS/LOCATION\n- Show ONLY: formatted_address, city, country, google_maps_link\n- Format: Address with map link\n- DO NOT show: email, contact, rating"
+            elif specific_field_request == "maps":
+                    focus_instruction = f"""
+                🎯 CRITICAL: User is asking ONLY about GOOGLE MAPS LINK
+                - Show ONLY: google_maps_link field
+                - Format: Direct link answer with minimal text
+                - DO NOT show: address, email, contact, rating, city, country, authorization status
+
+                Examples:
+                - Arabic: "رابط خرائط جوجل: [الرابط]" أو "إليك رابط الموقع على خرائط جوجل: [الرابط]"
+                - English: "Google Maps link: [link]" or "Here's the location on Google Maps: [link]"
+                - Urdu: "گوگل میپس لنک: [لنک]" یا "یہاں گوگل میپس پر مقام ہے: [لنک]"
+
+                Keep response SHORT (1-2 lines maximum)
+                If link is not available, say "غير متوفر" / "Not available" / "دستیاب نہیں"
+                """
+            elif specific_field_request == "contact_methods":
+                focus_instruction = f"""
+            🎯 CRITICAL: User is asking about CONTACT METHODS (email + phone)
+            - Show ONLY: contact_info AND email fields
+            - Format: List both methods clearly
+            - DO NOT show: address, rating, city, country, authorization, maps
+
+            Examples:
+            - Arabic: 
+            "وسائل التواصل مع الشركة:
+            📞 رقم التواصل: [الرقم]
+            📧 البريد الإلكتروني: [الإيميل]"
+
+            - English:
+            "Contact methods for the company:
+            📞 Phone: [number]
+            📧 Email: [email]"
+
+            - Urdu:
+            "کمپنی سے رابطے کے طریقے:
+            📞 رابطہ نمبر: [نمبر]
+            📧 ای میل: [ای میل]"
+
+            Keep response SHORT and focused
+            If any field not available, show "غير متوفر" / "Not available" / "دستیاب نہیں"
+            """
+
+            elif specific_field_request == "city":
+                focus_instruction = f"""
+            🎯 CRITICAL: User is asking ONLY about CITY
+            - Show ONLY: city field (or "المدينة" for Arabic)
+            - Format: Direct answer with city name only
+            - DO NOT show: country, address, email, contact, rating, maps
+
+            Examples:
+            - Arabic: "المدينة: مكة المكرمة" أو "الشركة موجودة في مكة"
+            - English: "City: Makkah" or "The company is located in Makkah"
+            - Urdu: "شہر: مکہ مکرمہ" یا "کمپنی مکہ میں واقع ہے"
+
+            Keep response SHORT (1 line maximum)
+            If city not available, say "غير متوفر" / "Not available" / "دستیاب نہیں"
+            """
+
+            elif specific_field_request == "country":
+                focus_instruction = f"""
+            🎯 CRITICAL: User is asking ONLY about COUNTRY
+            - Show ONLY: country field (or "الدولة" for Arabic)
+            - Format: Direct answer with country name only
+            - DO NOT show: city, address, email, contact, rating, maps
+
+            Examples:
+            - Arabic: "الدولة: المملكة العربية السعودية" أو "الشركة في السعودية"
+            - English: "Country: Saudi Arabia" or "The company is in Saudi Arabia"
+            - Urdu: "ملک: سعودی عرب" یا "کمپنی سعودی عرب میں ہے"
+
+            Keep response SHORT (1 line maximum)
+            If country not available, say "غير متوفر" / "Not available" / "دستیاب نہیں"
+            """
             else:
                 focus_instruction = "\n\n🎯 Show all relevant information"
         
