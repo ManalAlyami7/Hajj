@@ -161,20 +161,20 @@ class LLMManager:
         if len(text_lower.split()) <= 6:
             followup_keywords_ar = [
                 "موقع", "عنوان", "موجود", "معتمد", "مصرح", "رقم", "ايميل", 
-                "تفاصيل", "تقييم", "خريطة", "وين", "كيف", "متى", 
-                "هل هي", "هل هو", "فين", "ايش", "شنو", "موجودة",
+                "تفاصيل", "تقييم", "خريطة","تفاصيل", "تقييم", "تقييمات", "مراجعات", "نجوم", "النجوم", "جيد",
+                "وين", "كيف", "متى", "هل هي", "هل هو", "فين", "ايش", "شنو", "موجودة",
                 "في الرياض", "في مكة", "في جدة", "في المدينة"
             ]
             followup_keywords_en = [
                 "location", "address", "where", "authorized", "phone", "email", 
-                "details", "rating", "map", "is it", "contact", "info", "number",
+                "details", "rating","reviews", "stars", "good", "map", "is it", "contact", "info", "number",
                 "in riyadh", "in makkah", "in jeddah", "in medina", "there", "located"
             ]
 
             # Urdu follow-up keywords
             followup_keywords_ur = [
                 "کہاں", "پتہ", "مقام", "نمبر", "ای میل", "تفصیل", "رابطہ",
-                "منظور شدہ", "مجاز", "کیا ہے", "ریاض میں", "مکہ میں", "جدہ میں"
+                "منظور شدہ", "مجاز", "کیا ہے", "ریٹنگ", "اسٹار", "جائزے", "اچھی","ریاض میں", "مکہ میں", "جدہ میں"
             ]
             
             all_keywords = followup_keywords_ar + followup_keywords_en + followup_keywords_ur
@@ -207,9 +207,9 @@ Last company mentioned in conversation: {last_company if last_company else 'None
 
 🎯 CRITICAL FOLLOW-UP DETECTION:
 If user asks a follow-up question like:
-- Arabic: "وين موقعها؟" / "هل هي معتمدة؟" / "أعطني التفاصيل" / "رقم التواصل؟" / "هل موجودة في الرياض؟"
-- English: "Where is it located?" / "Is it authorized?" / "Give me details" / "Contact number?" / "Is it in Riyadh?"
-- Urdu: "یہ کہاں ہے؟" / "کیا یہ منظور شدہ ہے؟" / "تفصیل دیں" / "رابطہ نمبر؟" / "کیا ریاض میں ہے؟"
+- Arabic: "وين موقعها؟" / "هل هي معتمدة؟" / "أعطني التفاصيل" / "رقم التواصل؟" / "هل موجودة في الرياض؟" / "كم عدد التقييمات؟" / "ما هو التقييم؟" / "كم تقييم هذه الشركة؟" / "كم النجوم؟" / "هل تقييمها جيد؟"
+- English: "Where is it located?" / "Is it authorized?" / "Give me details" / "Contact number?" / "Is it in Riyadh?" / "How many reviews?" / "What's the rating?" / "How many stars?" / "Is its rating good?"
+- Urdu: "یہ کہاں ہے؟" / "کیا یہ منظور شدہ ہے؟" / "تفصیل دیں" / "رابطہ نمبر؟" / "کیا ریاض میں ہے؟" / "کتنے جائزے ہیں؟" / "ریٹنگ کیا ہے؟" / "کتنے اسٹار ملے؟" / "کیا ریٹنگ اچھی ہے؟"
 
 AND there's a last_company in memory, then:
 1. Classify as DATABASE
@@ -403,6 +403,16 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
             "rating": "rating_reviews",
             "تقييم": "rating_reviews", 
             "درجہ بندی": "rating_reviews",
+            "تقييمات": "rating_reviews",
+            "مراجعات": "rating_reviews",
+            "النجوم": "rating_reviews",
+            "نجوم": "rating_reviews",
+            "جيد": "rating_reviews",  # "هل تقييمها جيد؟"
+            "stars": "rating_reviews",
+            "good": "rating_reviews",
+            "ریٹنگ": "rating_reviews",
+            "اسٹار": "rating_reviews",
+            "اچھی": "rating_reviews",  # "کیا ریٹنگ اچھی ہے؟"
             "contact": "contact_Info",
             "رقم": "contact_Info",
             "نمبر": "contact_Info",
@@ -497,7 +507,14 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         # Detect if user asking for specific field only
         specific_field_request = None
         user_lower = user_input.lower()
-        if any(kw in user_lower for kw in ["rating", "تقييم", "درجہ بندی", "كم عدد التقييمات"]):
+        if any(kw in user_lower for kw in [
+            # English
+            "rating", "stars", "reviews", "how many reviews", "what is the rating", "is its rating good",
+            # Arabic
+            "تقييم", "تقييمات", "مراجعات", "النجوم", "نجوم", "كم عدد التقييمات", "ما هو التقييم", "كم تقييم", "هل تقييمها جيد",
+            # Urdu
+            "ریٹنگ", "اسٹار", "جائزے", "کتنے جائزے", "ریٹنگ کیا ہے", "کیا ریٹنگ اچھی ہے", "کتنے اسٹار", "درجہ بندی"
+        ]):
             specific_field_request = "rating"
         elif any(kw in user_lower for kw in ["contact", "رقم", "نمبر", "phone"]):
             specific_field_request = "contact"
@@ -647,7 +664,32 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         # Build focused instruction for LLM based on specific field request
         if specific_field_request:
             if specific_field_request == "rating":
-                focus_instruction = f"\n\n🎯 CRITICAL: User is asking ONLY about RATING/REVIEWS\n- Show ONLY: rating_reviews field\n- Format: Simple, direct answer about rating\n- Example Arabic: 'تقييم الشركة هو: 3.7 (3 تقييمات)'\n- Example English: 'The company rating is: 3.7 (3 reviews)'\n- DO NOT show: address, email, contact, city, country unless asked"
+                focus_instruction = f"""
+            🎯 CRITICAL: User is asking ONLY about RATING/REVIEWS/STARS
+            - Show ONLY: rating_reviews field
+            - Handle different question types:
+
+            1. "كم عدد التقييمات؟" / "How many reviews?" / "کتنے جائزے؟"
+            → Extract count only: "3 تقييمات" / "3 reviews" / "3 جائزے"
+
+            2. "ما هو التقييم؟" / "What is the rating?" / "ریٹنگ کیا ہے؟"
+            → Show full rating: "3.7 من 5" / "3.7 out of 5" / "3.7 میں سے 5"
+
+            3. "كم النجوم؟" / "How many stars?" / "کتنے اسٹار؟"
+            → Show stars: "3.7 نجوم" / "3.7 stars" / "3.7 اسٹار"
+
+            4. "هل تقييمها جيد؟" / "Is its rating good?" / "کیا ریٹنگ اچھی ہے؟"
+            → Evaluate and answer: "نعم، التقييم جيد (3.7 من 5)" / "Yes, good rating (3.7/5)" / "ہاں، اچھی ریٹنگ ہے (3.7/5)"
+
+            5. "كم تقييم هذه الشركة؟" → Show full: "3.7 (بناءً على 3 تقييمات)"
+
+            Examples:
+            - Arabic: "تقييم الشركة: 3.7 ⭐ (بناءً على 3 تقييمات)"
+            - English: "Company rating: 3.7 ⭐ (based on 3 reviews)"
+            - Urdu: "کمپنی کی ریٹنگ: 3.7 ⭐ (3 جائزوں کی بنیاد پر)"
+
+            DO NOT show: address, email, contact, city, country unless asked
+            """
             elif specific_field_request == "contact":
                 focus_instruction = f"\n\n🎯 CRITICAL: User is asking ONLY about CONTACT NUMBER\n- Show ONLY: contact_Info field\n- Format: Direct phone number answer\n- Example Arabic: 'رقم التواصل: +966...'\n- DO NOT show other fields"
             elif specific_field_request == "email":
