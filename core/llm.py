@@ -576,9 +576,16 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
                 prompt_user += "\n".join([f"- {row['hajj_company_en']} ({row['hajj_company_ar']})" for row in matching_rows[:5]])
             return {"summary": prompt_user}
 
-        # Prepare data for summary generation
-        data_preview = [{col: row.get(col, None) for col in requested_columns} for row in matching_rows[:50]]
+        # 🔧 FIX: Always send full data to LLM, but control what to display via prompt
+        # Prepare FULL data for context (not just requested columns)
+        data_preview = matching_rows[:50]  # Send all columns
         data_preview_json = json.dumps(data_preview, ensure_ascii=False)
+
+        # But tell LLM to focus only on requested columns
+        if requested_columns and len(requested_columns) <= 3:  # Specific question
+            focus_instruction = f"\n\n🎯 USER ASKED SPECIFICALLY ABOUT: {', '.join(requested_columns)}\n- Display ONLY these fields in your response\n- Do NOT show other fields (city, country, email, etc.) unless they are in the requested list\n- Keep the response focused and concise"
+        else:  # General question
+            focus_instruction = "\n\n🎯 This is a general query - show all relevant information"
 
         summary_prompt = f"""
 You are a multilingual fraud-prevention and travel assistant for Hajj agencies.
@@ -596,6 +603,7 @@ Your task:
 
 User question: {user_input}
 Data: {data_preview_json}
+{focus_instruction}
 
 Instructions:
 - ALWAYS respond in {language}
