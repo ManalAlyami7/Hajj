@@ -649,23 +649,25 @@ def check_agency_exists_in_supabase(
     agency_name: str, 
     city: str, 
     supabase_client: Client
-) -> bool:
+) -> Tuple[bool, Optional[Dict]]:  
     """Check if agency+city combination already exists in Supabase complaints table"""
     try:
-        response = supabase_client.table('complaints').select('id').ilike(
+        response = supabase_client.table('complaints').select('*').ilike(  # 👈 غيّر من 'id' إلى '*'
             'agency_name', agency_name
         ).ilike('city', city).limit(1).execute()
         
         exists = response.data and len(response.data) > 0
         
         if exists:
+            complaint_info = response.data[0]  
             logger.info(f"Agency '{agency_name}' in '{city}' already exists in Supabase complaints")
+            return True, complaint_info 
         
-        return exists
+        return False, None  
         
     except Exception as e:
         logger.error(f"Error checking Supabase for agency: {e}")
-        return False
+        return False, None  
 
 
 def submit_complaint_to_db(
@@ -705,12 +707,48 @@ def submit_complaint_to_db(
         
         already_exists = check_agency_exists_in_supabase(agency_name, city, supabase_client)
         
-        if already_exists:
+        already_exists = check_agency_exists_in_supabase(agency_name, city, supabase_client)
+        
+        if already_exists[0]:
+            existing_complaint = already_exists[1]
             logger.warning(f"Duplicate prevented: '{agency_name}' in '{city}' already in complaints")
+            
+            # Get existing complaint details
+            existing_date = existing_complaint.get('submission_date', 'N/A')
+            existing_status = existing_complaint.get('status', 'pending')
+            existing_id = existing_complaint.get('id', 'N/A')
+            
+            # Format status display
+            status_display = {
+                "pending": {"English": "Pending Review", "العربية": "قيد المراجعة", "اردو": "زیر نظرثانی"},
+                "under_investigation": {"English": "Under Investigation", "العربية": "قيد التحقيق", "اردو": "تحقیقات جاری"},
+                "resolved": {"English": "Resolved", "العربية": "تم الحل", "اردو": "حل ہو گیا"},
+                "closed": {"English": "Closed", "العربية": "مغلق", "اردو": "بند"}
+            }
+            
+            status_text = status_display.get(existing_status, status_display["pending"]).get(lang, existing_status)
+            
             duplicate_msg = {
-                "English": "This agency in this city has already been reported. Duplicate entry prevented.",
-                "العربية": "تم الإبلاغ عن هذه الوكالة في هذه المدينة بالفعل. تم منع الإدخال المكرر.",
-                "اردو": "اس شہر میں اس ایجنسی کی پہلے ہی اطلاع دی جا چکی ہے۔ نقل اندراج کو روک دیا گیا۔"
+                "English": f"""⚠️ <strong>Duplicate Report Detected</strong><br><br>
+                This agency in this city has already been reported:<br>
+                • <strong>Report ID:</strong> #{existing_id}<br>
+                • <strong>Status:</strong> {status_text}<br>
+                • <strong>Submitted:</strong> {existing_date}<br><br>
+                Please check with authorities regarding the existing report, or file a new complaint for a different agency.""",
+                
+                "العربية": f"""⚠️ <strong>تم الكشف عن تقرير مكرر</strong><br><br>
+                تم الإبلاغ عن هذه الوكالة في هذه المدينة بالفعل:<br>
+                • <strong>رقم التقرير:</strong> #{existing_id}<br>
+                • <strong>الحالة:</strong> {status_text}<br>
+                • <strong>تاريخ التقديم:</strong> {existing_date}<br><br>
+                يرجى التحقق مع السلطات بشأن التقرير الموجود، أو تقديم شكوى جديدة لوكالة مختلفة.""",
+                
+                "اردو": f"""⚠️ <strong>نقل رپورٹ کا پتہ چلا</strong><br><br>
+                اس شہر میں اس ایجنسی کی پہلے ہی اطلاع دی جا چکی ہے:<br>
+                • <strong>رپورٹ نمبر:</strong> #{existing_id}<br>
+                • <strong>حیثیت:</strong> {status_text}<br>
+                • <strong>جمع کرائی:</strong> {existing_date}<br><br>
+                موجودہ رپورٹ کے بارے میں حکام سے رابطہ کریں، یا کسی مختلف ایجنسی کے لیے نئی شکایت درج کریں۔"""
             }
             return False, duplicate_msg.get(lang, duplicate_msg["العربية"])
         
@@ -743,17 +781,56 @@ def submit_complaint_to_db(
             
             if agency_found_in_sqlite:
                 success_msg = {
-                    "English": f"Report #{report_id} filed {contact_status['English']} (Agency verified in database)",
-                    "العربية": f"تم تقديم التقرير #{report_id} {contact_status['العربية']} (تم التحقق من الوكالة في قاعدة البيانات)",
-                    "اردو": f"رپورٹ #{report_id} {contact_status['اردو']} درج کی گئی (ایجنسی ڈیٹا بیس میں تصدیق شدہ)"
+                    "English": f"""✅ <strong>New Report Successfully Filed</strong><br><br>
+                    • <strong>Report ID:</strong> #{report_id}<br>
+                    • <strong>Agency:</strong> {agency_name} (Verified)<br>
+                    • <strong>City:</strong> {city}<br>
+                    • <strong>Status:</strong> {contact_status['English']}<br>
+                    • <strong>Database:</strong> Agency verified in system<br><br>
+                    This is the <strong>first complaint</strong> filed against this agency in our database.""",
+                    
+                    "العربية": f"""✅ <strong>تم تقديم تقرير جديد بنجاح</strong><br><br>
+                    • <strong>رقم التقرير:</strong> #{report_id}<br>
+                    • <strong>الوكالة:</strong> {agency_name} (تم التحقق)<br>
+                    • <strong>المدينة:</strong> {city}<br>
+                    • <strong>الحالة:</strong> {contact_status['العربية']}<br>
+                    • <strong>قاعدة البيانات:</strong> تم التحقق من الوكالة في النظام<br><br>
+                    هذه هي <strong>أول شكوى</strong> مقدمة ضد هذه الوكالة في قاعدة البيانات لدينا.""",
+                    
+                    "اردو": f"""✅ <strong>نئی رپورٹ کامیابی سے درج کی گئی</strong><br><br>
+                    • <strong>رپورٹ نمبر:</strong> #{report_id}<br>
+                    • <strong>ایجنسی:</strong> {agency_name} (تصدیق شدہ)<br>
+                    • <strong>شہر:</strong> {city}<br>
+                    • <strong>حیثیت:</strong> {contact_status['اردو']}<br>
+                    • <strong>ڈیٹا بیس:</strong> ایجنسی نظام میں تصدیق شدہ<br><br>
+                    یہ ہمارے ڈیٹا بیس میں اس ایجنسی کے خلاف <strong>پہلی شکایت</strong> ہے۔"""
                 }
             else:
-                success_msg = {
-                    "English": f"Report #{report_id} filed {contact_status['English']} (New agency - under review)",
-                    "العربية": f"تم تقديم التقرير #{report_id} {contact_status['العربية']} (وكالة جديدة - قيد المراجعة)",
-                    "اردو": f"رپورٹ #{report_id} {contact_status['اردو']} درج کی گئی (نئی ایجنسی - زیر نظرثانی)"
+               success_msg = {
+                    "English": f"""✅ <strong>New Report Successfully Filed</strong><br><br>
+                    • <strong>Report ID:</strong> #{report_id}<br>
+                    • <strong>Agency:</strong> {agency_name} (New Entry)<br>
+                    • <strong>City:</strong> {city}<br>
+                    • <strong>Status:</strong> {contact_status['English']}<br>
+                    • <strong>Database:</strong> New agency - under review<br><br>
+                    This is the <strong>first complaint</strong> filed against this agency in our database.""",
+                    
+                    "العربية": f"""✅ <strong>تم تقديم تقرير جديد بنجاح</strong><br><br>
+                    • <strong>رقم التقرير:</strong> #{report_id}<br>
+                    • <strong>الوكالة:</strong> {agency_name} (إدخال جديد)<br>
+                    • <strong>المدينة:</strong> {city}<br>
+                    • <strong>الحالة:</strong> {contact_status['العربية']}<br>
+                    • <strong>قاعدة البيانات:</strong> وكالة جديدة - قيد المراجعة<br><br>
+                    هذه هي <strong>أول شكوى</strong> مقدمة ضد هذه الوكالة في قاعدة البيانات لدينا.""",
+                    
+                    "اردو": f"""✅ <strong>نئی رپورٹ کامیابی سے درج کی گئی</strong><br><br>
+                    • <strong>رپورٹ نمبر:</strong> #{report_id}<br>
+                    • <strong>ایجنسی:</strong> {agency_name} (نیا اندراج)<br>
+                    • <strong>شہر:</strong> {city}<br>
+                    • <strong>حیثیت:</strong> {contact_status['اردو']}<br>
+                    • <strong>ڈیٹا بیس:</strong> نئی ایجنسی - زیر نظرثانی<br><br>
+                    یہ ہمارے ڈیٹا بیس میں اس ایجنسی کے خلاف <strong>پہلی شکایت</strong> ہے۔"""
                 }
-            
             return True, success_msg.get(lang, success_msg["العربية"])
         else:
             logger.error("Supabase insert returned no data")
