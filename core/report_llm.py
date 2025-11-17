@@ -35,7 +35,7 @@ class RLLMManager:
 
     def validate_user_input_llm(self, step: int, user_input: str) -> Dict[str, any]:
         """
-        Validate user input using LLM with enhanced error handling
+        Validate user input using LLM with lenient validation for step 3
         
         Args:
             step: Current step in the reporting flow (1-4)
@@ -51,6 +51,20 @@ class RLLMManager:
                 "feedback": "Input cannot be empty. Please provide information."
             }
         
+        # Special handling for step 3 (complaint details) - be very lenient
+        if step == 3:
+            # If user provided at least 10 characters, accept it immediately
+            if len(user_input.strip()) >= 10:
+                return {
+                    "is_valid": True,
+                    "feedback": "Complaint details recorded."
+                }
+            else:
+                return {
+                    "is_valid": False,
+                    "feedback": "Please provide more details (at least 10 characters)."
+                }
+        
         role_map = {
             1: "agency name",
             2: "city name", 
@@ -59,45 +73,38 @@ class RLLMManager:
         }
         role = role_map.get(step, "input")
 
-        # Enhanced prompt with clearer structure and examples
+        # Enhanced prompt with examples
         prompt = f"""You are validating user input for a secure complaint reporting system.
 
-INPUT TYPE: {role}
-USER INPUT: "{user_input}"
+    INPUT TYPE: {role}
+    USER INPUT: "{user_input}"
 
-VALIDATION RULES:
-1. Agency name (step 1): Accept any reasonable business name, allow minor spelling variations
-2. City name (step 2): Accept any valid city/location name globally
-3. Complaint details (step 3):
-   - Must contain meaningful description of the incident
-   - Accept ALL dates (past, present, future) - users may report future bookings or past payments
-   - Minimum 20 characters for substance
-   - Check for clarity and completeness only
-4. Contact info (step 4): 
-   - Accept valid email format (contains @ and domain)
-   - Accept phone with 7+ digits
-   - Accept "skip" or "anonymous" to proceed without contact
+    VALIDATION RULES:
+    1. Agency name (step 1): Accept any reasonable business name, allow minor spelling variations
+    2. City name (step 2): Accept any valid city/location name globally
+    3. Complaint details (step 3): Accept any text with meaningful content (10+ characters)
+    4. Contact info (step 4): 
+    - Accept valid email format (contains @ and domain)
+    - Accept phone with 7+ digits
+    - Accept "skip" or "anonymous" or "تخطي" or "مجهول" or "چھوڑیں" to proceed without contact
 
-RESPONSE FORMAT (JSON only, no markdown):
-{{
-  "is_valid": true/false,
-  "feedback": "Brief, friendly message (max 100 chars)"
-}}
+    RESPONSE FORMAT (JSON only, no markdown):
+    {{
+    "is_valid": true/false,
+    "feedback": "Brief, friendly message (max 100 chars)"
+    }}
 
-EXAMPLES:
+    EXAMPLES:
 
-Valid agency: {{"is_valid": true, "feedback": "Agency name recorded successfully."}}
-Invalid agency: {{"is_valid": false, "feedback": "Please enter the full agency name."}}
+    Valid agency: {{"is_valid": true, "feedback": "Agency name recorded successfully."}}
+    Invalid agency: {{"is_valid": false, "feedback": "Please enter the full agency name."}}
 
-Valid city: {{"is_valid": true, "feedback": "Location recorded."}}
-Invalid city: {{"is_valid": false, "feedback": "Please enter a valid city name."}}
+    Valid city: {{"is_valid": true, "feedback": "Location recorded."}}
+    Invalid city: {{"is_valid": false, "feedback": "Please enter a valid city name."}}
 
-Valid complaint: {{"is_valid": true, "feedback": "Complaint details are clear and complete."}}
-Invalid complaint: {{"is_valid": false, "feedback": "Please provide more details about the incident (date, amount, what happened)."}}
-
-Valid contact: {{"is_valid": true, "feedback": "Contact information recorded."}}
-Invalid contact: {{"is_valid": false, "feedback": "Please enter a valid email/phone or type 'skip'."}}
-"""
+    Valid contact: {{"is_valid": true, "feedback": "Contact information recorded."}}
+    Invalid contact: {{"is_valid": false, "feedback": "Please enter a valid email/phone or type 'skip'."}}
+    """
 
         try:
             response = self.client.chat.completions.create(
@@ -105,12 +112,12 @@ Invalid contact: {{"is_valid": false, "feedback": "Please enter a valid email/ph
                 messages=[
                     {
                         "role": "system",
-                        "content": "You validate inputs for a secure reporting system. Respond ONLY with valid JSON."
+                        "content": "You validate inputs for a secure reporting system. Respond ONLY with valid JSON. Be lenient and accept reasonable inputs."
                     },
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0,
-                max_tokens=150  # Limit response size for efficiency
+                max_tokens=150
             )
             
             content = response.choices[0].message.content.strip()
@@ -135,12 +142,18 @@ Invalid contact: {{"is_valid": false, "feedback": "Please enter a valid email/ph
             
         except json.JSONDecodeError as e:
             logger.error(f"JSON decode error in LLM response: {e}")
+            # On error, be lenient and accept reasonable length input
+            if len(user_input.strip()) >= 3:
+                return {"is_valid": True, "feedback": "Input recorded."}
             return {
                 "is_valid": False,
-                "feedback": "System error during validation. Please try rephrasing your input."
+                "feedback": "System error. Please try rephrasing your input."
             }
         except Exception as e:
             logger.error(f"LLM validation error: {e}")
+            # On error, be lenient and accept reasonable length input
+            if len(user_input.strip()) >= 3:
+                return {"is_valid": True, "feedback": "Input recorded."}
             return {
                 "is_valid": False,
                 "feedback": "Validation service temporarily unavailable. Please try again."
