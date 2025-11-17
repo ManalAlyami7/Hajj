@@ -996,4 +996,508 @@ def show_progress_bar(step: int, total_steps: int = 4, lang: str = "العربي
         "اردو": f"مرحلہ {step} از {total_steps}"
     }
     
-    complete_text = t("progress_complete", lang
+    complete_text = t("progress_complete", lang, pct=int(progress))
+    
+    st.markdown(f"""
+    <div class="progress-container">
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: {progress}%"></div>
+        </div>
+        <div class="progress-text">
+            <span>{step_text.get(lang, step_text['العربية'])}</span>
+            <span>{complete_text}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def get_exit_context() -> Dict[str, any]:
+    """Analyze current state to determine exit context"""
+    step = st.session_state.get("report_step", 0)
+    data = st.session_state.get("complaint_data", {})
+    messages = st.session_state.get("report_messages", [])
+    
+    # Count only user messages (actual input)
+    user_messages = [m for m in messages if m.get("role") == "user"]
+    
+    if step == 0 or (step == 1 and len(user_messages) == 0):
+        return {
+            "status": "not_started",
+            "show_save": False,
+            "urgency": "low"
+        }
+    elif step == 1 or (step == 2 and "agency_name" in data and "city" not in data):
+        return {
+            "status": "just_started",
+            "show_save": True,
+            "urgency": "low",
+            "progress_pct": 25
+        }
+    elif step == 2 or (step == 3 and "city" in data and "complaint_text" not in data):
+        return {
+            "status": "partial",
+            "show_save": True,
+            "urgency": "medium",
+            "progress_pct": 50
+        }
+    elif step == 3 or (step == 4 and "complaint_text" in data):
+        return {
+            "status": "almost_complete",
+            "show_save": True,
+            "urgency": "high",
+            "progress_pct": 75
+        }
+    else:
+        return {
+            "status": "unknown",
+            "show_save": True,
+            "urgency": "medium"
+        }
+
+
+def render_exit_modal(lang: str = "العربية"):
+    """Render exit confirmation modal"""
+    context = get_exit_context()
+    status = context["status"]
+    
+    if status == "not_started":
+        st.warning("⚠️ " + t("modal_return_chat", lang))
+        st.info(t("modal_not_started_desc", lang))
+        
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("✅ " + t("modal_yes_return", lang), use_container_width=True, key="modal_yes", type="primary"):
+                st.session_state.app_mode = "chat"
+                st.session_state.report_messages = []
+                st.session_state.report_step = 0
+                st.session_state.complaint_data = {}
+                st.session_state.show_exit_modal = False
+                clear_draft()
+                st.switch_page("app.py")
+        with col2:
+            if st.button("📝 " + t("modal_stay_file", lang), use_container_width=True, key="modal_no"):
+                st.session_state.show_exit_modal = False
+                st.rerun()
+    
+    elif status == "just_started":
+        st.warning("⚠️ " + t("modal_exit_title", lang))
+        st.info(t("exit_just_started", lang))
+        
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            if st.button("💾 " + t("modal_save_draft", lang), use_container_width=True, key="modal_save"):
+                save_draft_to_session(st.session_state.complaint_data, st.session_state.report_step)
+                st.session_state.app_mode = "chat"
+                st.session_state.show_exit_modal = False
+                st.success(t("draft_saved_resume", lang))
+                time.sleep(1)
+                st.switch_page("app.py")
+        with col2:
+            if st.button("🗑️ " + t("modal_discard_exit", lang), use_container_width=True, key="modal_discard"):
+                st.session_state.app_mode = "chat"
+                st.session_state.show_exit_modal = False
+                clear_draft()
+                st.switch_page("app.py")
+        with col3:
+            if st.button("↩️ " + t("modal_continue", lang), use_container_width=True, type="primary", key="modal_no"):
+                st.session_state.show_exit_modal = False
+                st.rerun()
+    
+    elif status in ["partial", "almost_complete"]:
+        urgency_emoji = "🚨" if status == "almost_complete" else "⚠️"
+        
+        st.error(urgency_emoji + " " + t("modal_significant_progress", lang))
+        st.warning(t("modal_important", lang))
+        
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col1:
+            if st.button("💾 " + t("modal_save_and_exit", lang), use_container_width=True, type="primary", key="modal_save"):
+                save_draft_to_session(st.session_state.complaint_data, st.session_state.report_step)
+                st.session_state.app_mode = "chat"
+                st.session_state.show_exit_modal = False
+                st.success(t("draft_saved_resume", lang))
+                time.sleep(1)
+                st.switch_page("app.py")
+        with col2:
+            if st.button("🗑️ " + t("modal_discard_progress", lang), use_container_width=True, key="modal_discard"):
+                if st.session_state.get("confirm_discard_modal", False):
+                    st.session_state.app_mode = "chat"
+                    st.session_state.show_exit_modal = False
+                    st.session_state.confirm_discard_modal = False
+                    clear_draft()
+                    st.switch_page("app.py")
+                else:
+                    st.session_state.confirm_discard_modal = True
+                    st.warning(t("modal_confirm_discard", lang))
+                    st.rerun()
+        with col3:
+            if st.button("✍️ " + t("modal_continue_filing", lang), use_container_width=True, type="primary", key="modal_no"):
+                st.session_state.show_exit_modal = False
+                st.rerun()
+
+
+def render_draft_resume_prompt(lang: str = "العربية"):
+    """Show prompt to resume from saved draft"""
+    draft = load_draft_from_session()
+    if not draft:
+        return
+    
+    step = draft.get("step", 0)
+    data = draft.get("data", {})
+    
+    progress_items = []
+    if "agency_name" in data:
+        progress_items.append(t("draft_agency", lang, name=data['agency_name']))
+    if "city" in data:
+        progress_items.append(t("draft_city", lang, city=data['city']))
+    if "complaint_text" in data:
+        preview = data['complaint_text'][:80] + "..." if len(data['complaint_text']) > 80 else data['complaint_text']
+        progress_items.append(t("draft_details", lang, preview=preview))
+    
+    progress_text = "<br>".join(progress_items)
+    
+    st.markdown(f"""
+    <div class="draft-notification">
+        <div style="display: flex; align-items: center; margin-bottom: 0.75rem;">
+            <span style="font-size: 2rem; margin-right: 0.5rem;">💾</span>
+            <h3 style="margin: 0; color: #92400e;">{t("draft_found_title", lang)}</h3>
+        </div>
+        <p style="color: #78350f; margin-bottom: 1rem;">
+            {t("draft_found_desc", lang)}
+        </p>
+        <div class="draft-content">
+            {progress_text}
+        </div>
+        <p style="color: #92400e; font-size: 0.9rem; margin: 0;">
+            {t("draft_saved_at", lang, step=step)}
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button(t("resume_draft", lang), use_container_width=True, type="primary", key="resume_draft"):
+            st.session_state.complaint_data = data.copy()
+            st.session_state.report_step = step
+            
+            st.session_state.report_messages = [
+                {"role": "assistant", "content": t("resuming_draft", lang)}
+            ]
+            
+            if "agency_name" in data:
+                st.session_state.report_messages.append({
+                    "role": "assistant", 
+                    "content": t("report_agency_recorded", lang, name=data['agency_name'])
+                })
+            if "city" in data:
+                st.session_state.report_messages.append({
+                    "role": "assistant",
+                    "content": t("report_location_recorded", lang, city=data['city'])
+                })
+            if "complaint_text" in data:
+                preview = data['complaint_text'][:150] + "..." if len(data['complaint_text']) > 150 else data['complaint_text']
+                st.session_state.report_messages.append({
+                    "role": "assistant",
+                    "content": f"✅ <strong>{t('draft_details', lang, preview=preview)}</strong>"
+                })
+            
+            if step == 1:
+                st.session_state.report_messages.append({
+                    "role": "assistant",
+                    "content": t("report_step_1", lang)
+                })
+            elif step == 2:
+                st.session_state.report_messages.append({
+                    "role": "assistant",
+                    "content": t("report_step_2", lang)
+                })
+            elif step == 3:
+                st.session_state.report_messages.append({
+                    "role": "assistant",
+                    "content": t("report_step_3", lang)
+                })
+            elif step == 4:
+                st.session_state.report_messages.append({
+                    "role": "assistant",
+                    "content": t("report_step_4", lang)
+                })
+            
+            clear_draft()
+            st.success(t("draft_restored", lang))
+            time.sleep(1)
+            st.rerun()
+    
+    with col2:
+        if st.button(t("start_fresh", lang), use_container_width=True, type="secondary", key="discard_draft"):
+            clear_draft()
+            st.info(t("draft_discarded", lang))
+            time.sleep(1)
+            st.rerun()
+
+
+# =============================================================================
+# MAIN REPORT BOT INTERFACE
+# =============================================================================
+
+
+def render_report_bot():
+    """Render the enhanced secure report bot interface with multi-language support"""
+    
+    # Get current language from session state (default to Arabic)
+    lang = st.session_state.get("language", "العربية")
+    
+    # Check for saved draft first
+    draft = load_draft_from_session()
+    if draft and st.session_state.get("report_step", 0) == 0:
+        render_draft_resume_prompt(lang)
+        return
+    
+    # Initialize session state for report flow
+    if "report_messages" not in st.session_state:
+        st.session_state.report_messages = []
+        st.session_state.report_step = 0
+        st.session_state.complaint_data = {}
+        st.session_state.report_last_lang = None
+    
+    # Initialize LLM manager
+    if "llm_manager" not in st.session_state:
+        st.session_state.llm_manager = RLLMManager()
+
+    # Get database clients
+    supabase_client = get_supabase_client()
+    db_manager = st.session_state.get("db_manager", None)
+    
+    # Initial welcome messages - only on first load
+    if st.session_state.report_step == 0:
+        st.session_state.report_messages = [
+            {
+                "role": "assistant",
+                "content": t("report_welcome", lang)
+            },
+            {
+                "role": "assistant",
+                "content": t("report_step_1", lang)
+            }
+        ]
+        st.session_state.report_step = 1
+        st.session_state.report_last_lang = lang
+    # Handle language change during active session
+    elif st.session_state.get("report_last_lang") != lang and len(st.session_state.report_messages) <= 2:
+        st.session_state.report_messages = [
+            {
+                "role": "assistant",
+                "content": t("report_welcome", lang)
+            },
+            {
+                "role": "assistant",
+                "content": t("report_step_1", lang)
+            }
+        ]
+        st.session_state.report_last_lang = lang
+    
+    # Show progress bar
+    if st.session_state.report_step > 0:
+        show_progress_bar(st.session_state.report_step, lang=lang)
+    
+    # Display chat history
+    for message in st.session_state.report_messages:
+        with st.chat_message(message["role"]):
+            if message["role"] == "assistant":
+                st.markdown(
+                    f'<div class="bot-message">{message["content"]}</div>', 
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(message["content"])
+    
+    # Chat input with validation flow
+    if prompt := st.chat_input(t("chat_input_placeholder", lang), key="report_chat_input"):
+        step = st.session_state.report_step
+        
+        # Add user message to chat
+        st.session_state.report_messages.append({
+            "role": "user", 
+            "content": prompt
+        })
+        
+        # Show typing indicator
+        with st.chat_message("assistant"):
+            typing_placeholder = st.empty()
+            typing_placeholder.markdown("🤔 ...", unsafe_allow_html=True)
+            time.sleep(0.3)
+            
+            # Validate input with LLM
+            validation = st.session_state.llm_manager.validate_user_input_llm(step, prompt)
+            typing_placeholder.empty()
+        
+        # Handle validation failure
+        if not validation.get("is_valid", False):
+            feedback = validation.get('feedback', 'Invalid input. Please try again.')
+            st.session_state.report_messages.append({
+                "role": "assistant",
+                "content": t("report_validation_error", lang, feedback=feedback)
+            })
+            st.rerun()
+            return
+        
+        # Process valid input based on current step
+        data = st.session_state.complaint_data
+        
+        if step == 1:  # Agency name
+            data["agency_name"] = prompt
+            st.session_state.report_messages.append({
+                "role": "assistant",
+                "content": t("report_agency_recorded", lang, name=prompt) + "<br><br>" + t("report_step_2", lang)
+            })
+            st.session_state.report_step = 2
+            
+        elif step == 2:  # City location
+            data["city"] = prompt
+            st.session_state.report_messages.append({
+                "role": "assistant",
+                "content": t("report_location_recorded", lang, city=prompt) + "<br><br>" + t("report_step_3", lang)
+            })
+            st.session_state.report_step = 3
+            
+        elif step == 3:  # Complaint details
+            data["complaint_text"] = prompt
+            preview = prompt[:150] + "..." if len(prompt) > 150 else prompt
+            
+            summary = t("report_summary", lang, 
+                       agency=data['agency_name'],
+                       city=data['city'],
+                       details=preview)
+            
+            st.session_state.report_messages.append({
+                "role": "assistant",
+                "content": t("report_details_recorded", lang) + "<br><br>" + summary + "<br><br>" + t("report_step_4", lang)
+            })
+            st.session_state.report_step = 4
+            
+        elif step == 4:  # Final submission
+            skip_words = ["skip", "تخطي", "تخطى", "چھوڑیں", "anonymous", "مجهول", "گمنام"]
+            contact = "" if any(word in prompt.lower() for word in skip_words) else prompt
+            
+            # Submit with SQLite check and insert
+            success, message = submit_complaint_to_db(
+                data, 
+                contact, 
+                supabase_client,
+                db_manager,
+                lang
+            )
+            
+            if success:
+                st.session_state.report_messages.append({
+                    "role": "assistant",
+                    "content": t("report_success", lang, message=message)
+                })
+                st.success(t("report_submitted", lang))
+                clear_draft()
+                time.sleep(2)
+                
+                st.session_state.report_messages.clear()
+                st.session_state.report_step = 0
+                st.session_state.complaint_data.clear()
+                st.session_state.app_mode = "chat"
+                st.switch_page("app.py")
+            else:
+                st.error(f"❌ {message}")
+                st.session_state.report_messages.append({
+                    "role": "assistant",
+                    "content": t("report_failed", lang, message=message)
+                })
+                st.rerun()
+                return
+        
+        st.rerun()
+    
+    # Enhanced Sidebar
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown(f"### {t('secure_reporting', lang)}")
+        st.markdown(t("all_encrypted", lang))
+        
+        # Show current progress
+        context = get_exit_context()
+        if context["status"] != "not_started":
+            progress_pct = context.get("progress_pct", 0)
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); padding: 0.75rem; border-radius: 8px; margin: 1rem 0; border: 2px solid var(--color-primary-gold);">
+                <strong>{t("current_progress", lang)}</strong>
+                <div style="background: #e5e7eb; height: 6px; border-radius: 3px; margin-top: 0.5rem;">
+                    <div style="background: linear-gradient(90deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%); height: 100%; width: {progress_pct}%; border-radius: 3px;"></div>
+                </div>
+                <small style="color: #78350f;">{t("progress_complete", lang, pct=progress_pct)}</small>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        
+        if st.button(t("exit_reporting", lang), use_container_width=True, type="secondary"):
+            st.session_state.show_exit_modal = True
+            st.rerun()
+        
+        # Quick save draft button
+        if context.get("show_save", False) and context["status"] not in ["not_started"]:
+            if st.button(t("quick_save", lang), use_container_width=True, key="quick_save"):
+                save_draft_to_session(st.session_state.complaint_data, st.session_state.report_step)
+                st.success(t("draft_saved", lang))
+                time.sleep(1)
+
+
+# =============================================================================
+# MAIN APPLICATION ENTRY POINT
+# =============================================================================
+
+def main():
+    """Main application controller"""
+    
+    # Initialize app mode
+    if "app_mode" not in st.session_state:
+        st.session_state.app_mode = "chat"
+    if "show_exit_modal" not in st.session_state:
+        st.session_state.show_exit_modal = False
+    
+    # Get current language
+    lang = st.session_state.get("language", "العربية")
+    
+    # Set page config
+    st.set_page_config(
+        page_title=t("report_page_title", lang),
+        page_icon="🛡️",
+        layout="wide"
+    )
+
+    # Inject CSS with RTL support
+    st.markdown(get_css_styles(lang), unsafe_allow_html=True)
+    
+    # Ensure Supabase is initialized
+    get_supabase_client()
+    
+    # Render elegant header
+    st.markdown(f"""
+    <div class="header-container">
+        <h1 class="main-title">
+            🛡️ <span class="title-highlight">{t("report_main_title", lang)}</span>
+        </h1>
+        <p class="subtitle">{t("report_subtitle", lang)}</p>
+        <div class="header-badge">
+            {t("report_badge", lang)}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Show exit modal if triggered
+    if st.session_state.get("show_exit_modal", False):
+        render_exit_modal(lang)
+    
+    # Route to appropriate mode
+    if st.session_state.app_mode == "report":
+        render_report_bot()
+    elif st.session_state.app_mode == "chat":
+        st.switch_page("app.py")
+
+
+if __name__ == "__main__":
+    main()
