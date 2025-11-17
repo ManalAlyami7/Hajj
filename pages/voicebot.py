@@ -1,832 +1,999 @@
 """
-Hajj Voice Assistant - Modularized Version
-Features: Elegant sidebar, language selection, accessibility options, improved UX
-Uses modular components and translation system
-Updated with professional light background matching chat interface
+Hajj Complaint Reporting Bot - Main Application
+Enhanced UX with intelligent exit handling for all scenarios
+Multi-language support: English, Arabic, Urdu
+Updated to match Supabase schema with status field
+Redesigned with golden theme matching Voice Bot
 """
-import time
-import logging
-import hashlib
-from pathlib import Path
-import sys
-from io import BytesIO
-from mutagen.mp3 import MP3
 
 import streamlit as st
+from datetime import datetime
+import pytz
+import time
+from typing import Dict, Optional, Tuple
+import logging
 
-# Ensure project root is on sys.path
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+# Supabase imports
+from supabase import create_client, Client
 
-from core.voice_processor import VoiceProcessor
-from utils.translations import t
-from core.voice_graph import VoiceGraphBuilder
-from utils.voice_memory import ConversationMemory
-from ui.voice_sidebar import render_sidebar
+# Import core modules
+from core.report_llm import RLLMManager
+from utils.translations import t, LANGUAGE_MAP
 
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------
-# Session State Initialization
-# ---------------------------
-def initialize_session_state():
-    """Initialize all required session states"""
-    defaults = {
-        "language": 'العربية',
-        "font_size": 'normal',  # normal, large, extra-large
-        "high_contrast": False,
-        "last_audio_hash": None,
-        "is_processing": False,
-        "is_speaking": False,
-        "pending_audio": None,
-        "pending_audio_bytes": None,
-        "current_transcript": "",
-        "current_response": "",
-        "current_metadata": {},
-        "status": t("voice_status_ready", "العربية"),  # default language is English
-        "sidebar_state": "expanded",
-    }
-    for k, v in defaults.items():
-        if k not in st.session_state:
-            st.session_state[k] = v
-
-
-# Initialize states
-initialize_session_state()
-
-# Initialize memory
-memory = ConversationMemory(max_turns=10)
-
-# Page config
-st.set_page_config(
-    page_title=t('voice_page_title', st.session_state.language),
-    page_icon="🕋",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
-
-# ---------------------------
-# Hide Streamlit Navigation Menu
-# ---------------------------
-hide_streamlit_nav = """
-<style>
-[data-testid="stSidebarNav"] {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
+# =============================================================================
+# CONSTANTS
+# =============================================================================
+COMPLAINT_STATUS = {
+    "pending": "Pending Review",
+    "under_investigation": "Under Investigation",
+    "resolved": "Resolved",
+    "closed": "Closed"
 }
 
-section[data-testid="stSidebarNav"] {
-    display: none !important;
-}
-</style>
-"""
-st.markdown(hide_streamlit_nav, unsafe_allow_html=True)
 
-# Initialize voice processor
-@st.cache_resource
-def init_voice_graph():
-    voice_processor = VoiceProcessor()
-    graph_builder = VoiceGraphBuilder(voice_processor)
-    workflow = graph_builder.build()
-    return voice_processor, workflow
+# =============================================================================
+# SUPABASE CONFIGURATION
+# =============================================================================
 
-
-voice_processor, workflow = init_voice_graph()
-
-# Language settings
-def is_arabic_code(code):
-    return code in ('ar', 'arabic', 'العربية')
-def is_urdu(code):
-    return code in ('ur', 'اردو')
-
-
-is_arabic = is_arabic_code(st.session_state.language)
-is_urdus = is_urdu(st.session_state.language)
-
-# ---------------------------
-# Render Sidebar
-# ---------------------------
-render_sidebar(memory, st.session_state.language)
-
-# ---------------------------
-# Dynamic Styling
-# ---------------------------
-# Font size mapping
-font_sizes = {
-    'normal': {'base': '1rem', 'title': '2.2rem', 'transcript': '1.1rem', 'panel': '1.2rem'},
-    'large': {'base': '1.15rem', 'title': '2.5rem', 'transcript': '1.25rem', 'panel': '1.35rem'},
-    'extra-large': {'base': '1.3rem', 'title': '2.8rem', 'transcript': '1.4rem', 'panel': '1.5rem'}
-}
-
-current_sizes = font_sizes[st.session_state.font_size]
-
-# Color scheme - Updated for light background
-if st.session_state.high_contrast:
-    bg_gradient = "linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%)"
-    panel_bg = "rgba(255, 255, 255, 0.98)"
-    text_primary = "#000000"
-    text_secondary = "#333333"
-    border_color = "rgba(0, 0, 0, 0.3)"
-    status_bg = "rgba(255, 255, 255, 0.98)"
-    status_text = "#000000"
-    subtitle_color = "#333333"
-    record_label_color = "#000000"
-else:
-    bg_gradient = "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)"
-    panel_bg = "rgba(255, 255, 255, 0.95)"
-    text_primary = "#1f2937"
-    text_secondary = "#64748b"
-    border_color = "#e2e8f0"
-    status_bg = "rgba(255, 255, 255, 0.95)"
-    status_text = "#1f2937"
-    subtitle_color = "#64748b"
-    record_label_color = "#1f2937"
-
-# RTL support
-text_align = 'right' if is_arabic or is_urdus else 'left'
-flex_direction = 'row-reverse' if is_arabic or is_urdus else 'row'
-
-st.markdown(f"""
-<style>
+def get_supabase_client() -> Optional[Client]:
+    """
+    Initialize and return Supabase client with proper error handling
+    Uses st.cache_resource for singleton pattern
+    """
+    @st.cache_resource
+    def init_client() -> Optional[Client]:
+        try:
+            url = st.secrets.get('supabase_url')
+            key = st.secrets.get("supabase_key")
             
-/* Global Styles - Light Background */
-.stApp {{
-  background: {bg_gradient};
-  background-attachment: fixed;
-  overflow: hidden !important;
-  height: 100vh;
+            if not url or not key:
+                logger.error("Supabase credentials missing in secrets")
+                return None
+                
+            return create_client(url, key)
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize Supabase: {e}")
+            return None
+    
+    client = init_client()
+    if client is None:
+        lang = st.session_state.get("language", "العربية")
+        st.error(t("db_connection_error", lang))
+        st.stop()
+    return client
+
+
+# =============================================================================
+# CSS STYLING WITH RTL SUPPORT - GOLDEN THEME
+# =============================================================================
+
+def get_css_styles(lang: str) -> str:
+    """Generate CSS with RTL support for Arabic and Urdu - Golden Theme"""
+    is_rtl = lang in ["العربية", "اردو"]
+    text_align = "right" if is_rtl else "left"
+    direction = "rtl" if is_rtl else "ltr"
+    
+    # Font selection based on language
+    if lang == "العربية":
+        font_family = "'Cairo', 'Poppins', sans-serif"
+    elif lang == "اردو":
+        font_family = "'Noto Nastaliq Urdu', 'Cairo', 'Poppins', sans-serif"
+    else:
+        font_family = "'Poppins', sans-serif"
+    
+    return f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Cairo:wght@400;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap');
+
+/* ===== Golden Theme Variables - Matching Voice Bot ===== */
+:root {{
+    --color-primary-gold: #d4af37;
+    --color-secondary-gold: #b8941f;
+    --color-dark-gold: #9d7a1a;
+    --color-background-light: #f8fafc;
+    --color-background-mid: #e2e8f0;
+    --color-background-white: #ffffff;
+    --color-text-dark: #1f2937;
+    --color-text-mid: #64748b;
+    --color-border-subtle: #e2e8f0;
+    --color-success: #22c55e;
+    --color-warning: #f59e0b;
+    --color-error: #ef4444;
 }}
 
-#MainMenu, footer {{visibility: hidden;}}
-header {{visibility: visible !important;}}
-
-button[kind="header"] {{
-  visibility: visible !important;
-  display: flex !important;
+/* ===== Global Styles with RTL Support ===== */
+* {{
+    font-family: {font_family};
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }}
 
-.main .block-container {{
-  padding: 0.75rem 1rem;
-  max-width: 1400px;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  direction: {'rtl' if is_arabic or is_urdus else 'ltr'};
+.main {{
+    direction: {direction};
+    text-align: {text_align};
+    background: linear-gradient(135deg, var(--color-background-light) 0%, var(--color-background-mid) 100%);
+    background-attachment: fixed;
 }}
 
-/* Sidebar Styling - Light Theme */
+.block-container {{
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+    max-width: 1400px;
+}}
+
+/* ===== Elegant Header - Golden Theme ===== */
+.header-container {{
+    background: linear-gradient(135deg, var(--color-background-white) 0%, var(--color-background-light) 100%);
+    backdrop-filter: blur(15px);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    border: 2px solid var(--color-border-subtle);
+    animation: fadeInDown 0.6s ease-out;
+    position: relative;
+    overflow: hidden;
+    direction: {direction};
+}}
+
+.header-container::before {{
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 50%, var(--color-primary-gold) 100%);
+    animation: shimmer 3s infinite;
+}}
+
+@keyframes shimmer {{
+    0%, 100% {{ opacity: 1; }}
+    50% {{ opacity: 0.7; }}
+}}
+
+@keyframes fadeInDown {{
+    from {{ opacity: 0; transform: translateY(-20px); }}
+    to {{ opacity: 1; transform: translateY(0); }}
+}}
+
+.main-title {{
+    font-size: 3.2rem;
+    font-weight: 900;
+    color: var(--color-text-dark);
+    margin: 0;
+    letter-spacing: -1px;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.05);
+}}
+
+.title-highlight {{
+    background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 4px rgba(212, 175, 55, 0.3));
+}}
+
+.subtitle {{
+    color: var(--color-text-mid);
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+    font-weight: 400;
+    line-height: 1.6;
+}}
+
+.header-badge {{
+    background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%);
+    color: white;
+    padding: 0.3rem 1.15rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+    display: inline-block;
+}}
+
+/* ===== Progress Indicator - Golden Theme ===== */
+.progress-container {{
+    background: var(--color-background-white);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--color-border-subtle);
+    direction: {direction};
+}}
+
+.progress-bar {{
+    width: 100%;
+    height: 6px;
+    background: var(--color-border-subtle);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}}
+
+.progress-fill {{
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%);
+    border-radius: 10px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.4);
+}}
+
+.progress-text {{
+    display: flex;
+    justify-content: space-between;
+    color: var(--color-text-mid);
+    font-size: 0.85rem;
+    font-weight: 500;
+    direction: {direction};
+}}
+
+/* ===== Elegant Modal - Golden Theme ===== */
+.modal-content {{
+    background: var(--color-background-white);
+    border-radius: 16px;
+    padding: 2.5rem;
+    max-width: 450px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+    animation: slideInScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    text-align: center;
+    border: 2px solid var(--color-primary-gold);
+    direction: {direction};
+}}
+
+.modal-icon {{
+    font-size: 3rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-primary-gold);
+    filter: drop-shadow(0 2px 8px rgba(212, 175, 55, 0.3));
+}}
+
+.modal-title {{
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--color-text-dark);
+    margin-bottom: 0.75rem;
+}}
+
+.modal-text {{
+    color: var(--color-text-mid);
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+}}
+
+/* ===== Chat Messages with RTL - Golden Theme ===== */
+.stChatMessage {{
+    background: var(--color-background-white) !important;
+    backdrop-filter: blur(8px);
+    border-radius: 16px !important;
+    padding: 1.5rem !important;
+    margin: 1rem 0 !important;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05) !important;
+    border: 1px solid var(--color-border-subtle);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    animation: slideInUp 0.4s ease-out;
+    direction: {direction};
+    text-align: {text_align};
+}}
+
+.stChatMessage:hover {{
+    transform: translateY(-1px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08) !important;
+    border-color: var(--color-primary-gold);
+}}
+
+.stChatMessage[data-testid*="user"] {{
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+    border-{text_align}: 4px solid var(--color-primary-gold);
+}}
+
+.stChatMessage[data-testid*="assistant"] {{
+    background: linear-gradient(135deg, #f9fafb 0%, #f8fafc 100%) !important;
+    border-{text_align}: 4px solid var(--color-secondary-gold);
+}}
+
+.bot-message {{
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+    border: 2px solid var(--color-primary-gold) !important;
+    border-{text_align}: 6px solid var(--color-primary-gold) !important;
+    color: var(--color-text-dark) !important;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15);
+    font-weight: 500;
+    direction: {direction};
+    text-align: {text_align};
+}}
+
+.bot-message * {{
+    color: var(--color-text-dark) !important;
+}}
+
+/* ===== Sidebar with RTL - Golden Theme ===== */
 [data-testid="stSidebar"] {{
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border-right: 2px solid #e2e8f0;
+    background: linear-gradient(180deg, var(--color-background-white) 0%, var(--color-background-light) 100%);
+    border-{text_align}: 2px solid var(--color-border-subtle);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+    direction: {direction};
+    text-align: {text_align};
 }}
 
-[data-testid="stSidebar"] .stMarkdown {{
-  color: #1f2937;
+[data-testid="stSidebar"] *,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] div,
+[data-testid="stSidebar"] label {{
+    color: var(--color-text-dark) !important;
 }}
 
-[data-testid="collapsedControl"] {{
-  visibility: visible !important;
-  display: flex !important;
-  background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
-  color: white !important;
-  border-radius: 0.5rem !important;
-  padding: 0.5rem !important;
-  margin: 0.5rem !important;
-  transition: all 0.3s ease !important;
-  z-index: 9999 !important;
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3) !important;
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3 {{
+    color: var(--color-primary-gold) !important;
+    font-weight: 700;
 }}
 
-[data-testid="collapsedControl"]:hover {{
-  background: linear-gradient(135deg, #b8941f 0%, #9d7a1a 100%) !important;
-  transform: scale(1.05) !important;
-  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5) !important;
+/* ===== Modal Overlay ===== */
+.modal-overlay-backdrop {{
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 999998;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease-out;
 }}
 
-header[data-testid="stHeader"] {{
-  visibility: visible !important;
-  display: block !important;
-  background: transparent !important;
+.modal-popup {{
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 999999;
+    background: white;
+    border-radius: 20px;
+    padding: 2.5rem;
+    max-width: 550px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    animation: slideInScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    direction: {direction};
+    text-align: center;
 }}
 
-header[data-testid="stHeader"] button {{
-  visibility: visible !important;
-  display: flex !important;
+/* ===== Animations ===== */
+@keyframes fadeIn {{
+    from {{ opacity: 0; }}
+    to {{ opacity: 1; }}
 }}
 
-/* Voice Header */
-.voice-header {{
-  text-align: center;
-  padding: 0.75rem 0;
-  margin-bottom: 2rem;
+@keyframes slideInScale {{
+    from {{
+        opacity: 0;
+        transform: translate(-50%, -48%) scale(0.9);
+    }}
+    to {{
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }}
 }}
 
-.voice-title {{
-  font-size: {current_sizes['title']};
-  font-weight: 800;
-  letter-spacing: 2px;
-  background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 0.25rem;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+@keyframes slideInUp {{
+    from {{ opacity: 0; transform: translateY(10px); }}
+    to {{ opacity: 1; transform: translateY(0); }}
 }}
 
-.voice-subtitle {{
-  color: {subtitle_color};
-  font-size: {current_sizes['base']};
-  font-weight: 500;
-}}
-
-/* Main Container */
-.voice-container {{
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  flex: 1;
-  min-height: 0;
-  padding: 0 1rem;
-}}
-
-/* Left Panel - Avatar */
-.voice-left {{
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 2rem;
-  padding: 1.5rem;
-  backdrop-filter: blur(20px);
-  border: 2px solid {border_color};
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  position: relative;
-}}
-
-.voice-avatar {{
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 90px;
-  background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
-  box-shadow: 0 20px 60px rgba(212, 175, 55, 0.4);
-  border: 6px solid rgba(212, 175, 55, 0.2);
-  animation: float 3s ease-in-out infinite;
-  transition: all 0.3s ease;
-}}
-
-.voice-avatar.listening {{
-  animation: pulse-listening 0.8s infinite;
-  box-shadow: 0 0 80px rgba(212, 175, 55, 0.6);
-}}
-
-.voice-avatar.speaking {{
-  animation: pulse-speaking 0.6s infinite;
-  box-shadow: 0 0 80px rgba(184, 148, 31, 0.6);
-}}
-
-.voice-ring {{
-  position: absolute;
-  border: 3px solid rgba(212, 175, 55, 0.3);
-  border-radius: 50%;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  animation: expand 3s ease-out infinite;
-}}
-
-.voice-ring-1 {{width: 200px; height: 200px; animation-delay: 0s;}}
-.voice-ring-2 {{width: 240px; height: 240px; animation-delay: 1s;}}
-.voice-ring-3 {{width: 280px; height: 280px; animation-delay: 2s;}}
-
-@keyframes float {{
-  0%, 100% {{transform: translateY(0);}}
-  50% {{transform: translateY(-15px);}}
-}}
-
-@keyframes pulse-listening {{
-  0%, 100% {{transform: scale(1);}}
-  50% {{transform: scale(1.1);}}
-}}
-
-@keyframes pulse-speaking {{
-  0%, 100% {{transform: scale(1);}}
-  50% {{transform: scale(1.15);}}
-}}
-
-@keyframes expand {{
-  0% {{transform: translate(-50%, -50%) scale(0.8); opacity: 0.8;}}
-  100% {{transform: translate(-50%, -50%) scale(1.5); opacity: 0;}}
-}}
-
-.record-label {{
-  margin-top: 1.5rem;
-  color: {record_label_color};
-  font-weight: 600;
-  letter-spacing: 1.5px;
-  font-size: {current_sizes['base']};
-}}
-
-/* Right Panel - Transcript/Response */
-.transcript-container, .response-container {{
-  background: {panel_bg};
-  border-radius: 1.5rem;
-  padding: 1.25rem;
-  backdrop-filter: blur(18px);
-  border: 2px solid {border_color};
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}}
-
-.panel-header {{
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid {border_color};
-  flex-direction: {flex_direction};
-  position: relative;
-  width: 100%;
-}}
-
-.panel-icon {{
-  font-size: 1.75rem;
-  animation: icon-glow 2s ease-in-out infinite;
-  flex-shrink: 0;
-}}
-
-.panel-title {{
-  font-size: {current_sizes['panel']};
-  font-weight: 700;
-  color: {text_primary};
-  margin: 0;
-  flex-shrink: 0;
-}}
-
-.panel-badge {{
-  padding: 0.3rem 0.8rem;
-  border-radius: 1rem;
-  font-weight: 600;
-  font-size: 0.75rem;
-  background: rgba(212, 175, 55, 0.2);
-  color: #92400e;
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  margin-{'right' if is_arabic or is_urdus else 'left'}: auto;
-  flex-shrink: 0;
-  white-space: nowrap;
-}}
-
-.panel-icon.active {{
-  animation: icon-bounce 0.6s ease-in-out infinite;
-}}
-
-@keyframes icon-glow {{
-  0%, 100% {{opacity: 1;}}
-  50% {{opacity: 0.6;}}
-}}
-
-@keyframes icon-bounce {{
-  0%, 100% {{transform: translateY(0);}}
-  50% {{transform: translateY(-5px);}}
-}}
-
-.panel-badge.active {{
-  background: rgba(34, 197, 94, 0.2);
-  color: #166534;
-  border-color: rgba(34, 197, 94, 0.3);
-  animation: badge-pulse 1s infinite;
-}}
-
-@keyframes badge-pulse {{
-  0%, 100% {{opacity: 1;}}
-  50% {{opacity: 0.6;}}
-}}
-
-.transcript-text, .response-content {{
-  color: {text_primary};
-  font-size: {current_sizes['transcript']};
-  line-height: 1.6;
-  flex: 1;
-  overflow-y: auto;
-  padding-{'left' if is_arabic or is_urdus else 'right'}: 0.5rem;
-  text-align: {text_align};
-  font-weight: 500;
-}}
-
-.transcript-text.empty, .response-content.empty {{
-  color: {text_secondary};
-  font-style: italic;
-  overflow: hidden;
-  font-weight: normal;
-}}
-
-/* Status Indicator - Light Theme */
-.status-indicator {{
-  position: fixed;
-  top: 15px;
-  {'left' if is_arabic or is_urdus else 'right'}: 15px;
-  padding: 0.6rem 1.25rem;
-  background: {status_bg};
-  border-radius: 2rem;
-  color: {status_text};
-  font-weight: 600;
-  font-size: 0.85rem;
-  backdrop-filter: blur(10px);
-  border: 2px solid {border_color};
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  direction: {'rtl' if is_arabic or is_urdus else 'ltr'};
-}}
-
-.status-dot {{
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #22c55e;
-  animation: dot-pulse 1.5s infinite;
-}}
-
-.status-dot.listening {{background: #ef4444;}}
-.status-dot.speaking {{background: #f59e0b;}}
-
-@keyframes dot-pulse {{
-  0%, 100% {{opacity: 1;}}
-  50% {{opacity: 0.4;}}
-}}
-
-/* Responsive Design */
-@media (max-width: 1024px) {{
-  .voice-container {{
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }}
-  
-  .voice-avatar {{
-    width: 140px;
-    height: 140px;
-    font-size: 70px;
-  }}
-}}
-
-/* Hide audio element */
-audio {{
-  display: none !important;
-  visibility: hidden !important;
-  height: 0 !important;
-  width: 0 !important;
-  overflow: hidden !important;
-}}
-
-.audio-recorder-container {{
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}}
-
-/* Enhanced stop button styling */
+/* ===== Enhanced Button Styling - Matching Voice Bot ===== */
+button[kind="primary"],
+.stButton > button[kind="primary"],
 div[data-testid="stButton"] > button[kind="primary"] {{
-    background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
+    background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
     border: none !important;
     box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4) !important;
     transition: all 0.3s ease !important;
     font-weight: 600 !important;
-    animation: pulse-stop 2s infinite !important;
-    margin-top: 0.75rem !important;
-    border-radius: 8px !important;
-    padding: 0.75rem 1rem !important;
-    font-size: 1rem !important;
     color: white !important;
+    border-radius: 8px !important;
+    padding: 0.75rem 1.5rem !important;
 }}
 
+button[kind="primary"]:hover,
+.stButton > button[kind="primary"]:hover,
 div[data-testid="stButton"] > button[kind="primary"]:hover {{
     transform: translateY(-2px) !important;
     box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6) !important;
     background: linear-gradient(135deg, #e6c345 0%, #c9a527 100%) !important;
 }}
 
+button[kind="primary"]:active,
+.stButton > button[kind="primary"]:active,
 div[data-testid="stButton"] > button[kind="primary"]:active {{
     transform: translateY(0) !important;
     box-shadow: 0 2px 10px rgba(212, 175, 55, 0.5) !important;
 }}
 
-@keyframes pulse-stop {{
-    0%, 100% {{ box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4); }}
-    50% {{ box-shadow: 0 4px 25px rgba(212, 175, 55, 0.8); }}
+/* Secondary buttons - Golden Theme */
+button[kind="secondary"],
+.stButton > button[kind="secondary"],
+div[data-testid="stButton"] > button[kind="secondary"] {{
+    background: linear-gradient(135deg, var(--color-background-white) 0%, var(--color-background-light) 100%) !important;
+    border: 2px solid var(--color-primary-gold) !important;
+    color: var(--color-secondary-gold) !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    border-radius: 8px !important;
+    padding: 0.75rem 1.5rem !important;
 }}
 
-/* Scrollbar Styling */
+button[kind="secondary"]:hover,
+.stButton > button[kind="secondary"]:hover,
+div[data-testid="stButton"] > button[kind="secondary"]:hover {{
+    background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
+    color: white !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4) !important;
+}}
+
+/* Draft notification box - Golden Theme */
+.draft-notification {{
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-left: 4px solid var(--color-warning);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}}
+
+.draft-notification h3 {{
+    color: #92400e;
+    margin: 0 0 0.75rem 0;
+}}
+
+.draft-notification p {{
+    color: #78350f;
+    margin-bottom: 1rem;
+}}
+
+.draft-content {{
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}}
+
+/* Scrollbar Styling - Golden Theme */
 ::-webkit-scrollbar {{
-  width: 10px;
+    width: 10px;
 }}
 
 ::-webkit-scrollbar-track {{
-  background: #f1f5f9;
-  border-radius: 5px;
+    background: var(--color-background-light);
+    border-radius: 5px;
 }}
 
 ::-webkit-scrollbar-thumb {{
-  background: linear-gradient(180deg, #d4af37 0%, #b8941f 100%);
-  border-radius: 5px;
+    background: linear-gradient(180deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%);
+    border-radius: 5px;
 }}
 
 ::-webkit-scrollbar-thumb:hover {{
-  background: linear-gradient(180deg, #b8941f 0%, #9d7a1a 100%);
+    background: linear-gradient(180deg, var(--color-secondary-gold) 0%, var(--color-dark-gold) 100%);
 }}
 </style>
-""", unsafe_allow_html=True)
+"""
 
 
-# ---------------------------
-# Helper Functions
-# ---------------------------
-def _hash_bytes(b):
-    if b is None:
-        return None
-    if not isinstance(b, (bytes, bytearray)):
-        try:
-            b = b.getvalue()
-        except Exception:
-            raise TypeError(f"Unsupported type for hashing: {type(b)}")
-    return hashlib.sha256(b).hexdigest()
+# =============================================================================
+# TRANSLATION ADDITIONS FOR REPORT PAGE
+# =============================================================================
 
-# ---------------------------
-# Status Indicator
-# ---------------------------
-status_class = (
-    "speaking" if st.session_state.is_speaking
-    else "listening" if st.session_state.is_processing
-    else ""
-)
-status_text = st.session_state.status or t('voice_status_ready', st.session_state.language)
+# Add missing translations to translation_manager.py content
+REPORT_TRANSLATIONS = {
+    "English": {
+        "report_page_title": "Hajj Complaint Reporting",
+        "report_main_title": "Confidential Reporting Office",
+        "report_subtitle": "Secure and Encrypted Channel for Filing Agency Complaints",
+        "report_badge": "🔒 Trustworthy • Secure • Official",
+        "report_welcome": "🛡️ <strong>Welcome to the Confidential Reporting Office</strong><br><br>Thank you for your courage. Your report is vital in protecting Hajj and Umrah integrity.<br><br><strong>All information is encrypted and confidential.</strong>",
+        "report_step_1": "<strong>Step 1 of 4:</strong> What is the <strong>full name</strong> of the agency you want to report?",
+        "report_step_2": "<strong>Step 2 of 4:</strong> Which <strong>city</strong> is this agency located in?",
+        "report_step_3": "<strong>Step 3 of 4:</strong> Please describe the incident in detail:<br>- What happened?<br>- When? (approximate date)<br>- Any amounts or payments involved?<br>- Promises made that were broken?",
+        "report_step_4": "<strong>Step 4 of 4 (Optional):</strong> Provide contact info for follow-up, or type \"<strong>skip</strong>\" to remain anonymous.",
+        "report_agency_recorded": "✅ <strong>Agency recorded:</strong> {name}",
+        "report_location_recorded": "✅ <strong>Location recorded:</strong> {city}",
+        "report_details_recorded": "✅ <strong>Details recorded</strong>",
+        "report_summary": "<strong>Summary:</strong><br>- Agency: {agency}<br>- City: {city}<br>- Details: {details}",
+        "report_success": "✅ <strong>Report Successfully Filed</strong><br><br>{message}<br><br><strong>Status:</strong> Pending Review<br><br>Your report is now with the relevant authorities. Redirecting to main chat...",
+        "report_failed": "❌ <strong>Submission Failed</strong><br><br>{message}<br><br>Please try again or modify your submission.",
+        "report_validation_error": "⚠️ <strong>Validation Issue</strong><br><br>{feedback}",
+        "db_connection_error": "⚠️ Database connection failed. Please contact support.",
+        "secure_reporting": "🔒 Secure Reporting",
+        "all_encrypted": "All communications are encrypted and confidential",
+        "current_progress": "Current Progress",
+        "progress_complete": "{pct}% Complete",
+        "exit_reporting": "🚪 Exit Reporting Channel",
+        "quick_save": "💾 Quick Save Draft",
+        "draft_saved": "✅ Draft saved!",
+        "exit_not_started": "You haven't started the report yet.",
+        "exit_just_started": "You've only entered basic information.",
+        "exit_partial": "You're halfway through. Your agency and location are saved.",
+        "exit_almost_complete": "You're almost done! Only contact info remains.",
+        "exit_unsaved": "You have unsaved progress.",
+        "draft_found_title": "💾 Draft Report Found!",
+        "draft_found_desc": "You have a saved draft from your previous session. Would you like to continue where you left off?",
+        "draft_agency": "**Agency:** {name}",
+        "draft_city": "**City:** {city}",
+        "draft_details": "**Details:** {preview}",
+        "draft_saved_at": "📅 <em>Saved at step {step} of 4</em>",
+        "resume_draft": "✅ Resume Draft",
+        "start_fresh": "🗑️ Start Fresh",
+        "draft_restored": "✅ Draft restored!",
+        "draft_discarded": "Draft discarded. Starting new report...",
+        "modal_return_chat": "Return to Main Chat?",
+        "modal_not_started_desc": "You haven't started filing a report yet. You can return anytime to file a complaint.",
+        "modal_yes_return": "✅ Yes, Return to Chat",
+        "modal_stay_file": "📝 Stay & File Report",
+        "modal_exit_title": "Exit Reporting?",
+        "modal_save_draft": "💾 Save Draft",
+        "modal_discard_exit": "🗑️ Discard & Exit",
+        "modal_continue": "↩️ Continue",
+        "modal_significant_progress": "You Have Significant Progress!",
+        "modal_important": "⏰ Your report is important! Consider saving a draft to continue later.",
+        "modal_save_and_exit": "💾 Save Draft & Exit",
+        "modal_discard_progress": "🗑️ Discard Progress",
+        "modal_continue_filing": "✍️ Continue Filing",
+        "modal_confirm_discard": "⚠️ Are you sure? Click 'Discard Progress' again to confirm.",
+        "progress_discarded": "Progress discarded.",
+        "draft_saved_success": "✅ Draft saved! You can resume later.",
+        "draft_saved_resume": "✅ Draft saved! Resume anytime from the main menu.",
+        "resuming_draft": "🛡️ <strong>Welcome back!</strong> Resuming your saved draft...",
+        "chat_input_placeholder": "Type your response here...",
+        "report_submitted": "✅ Report submitted successfully!",
+    },
+    "العربية": {
+        "report_page_title": "الإبلاغ عن شكوى الحج",
+        "report_main_title": "مكتب الإبلاغ السري",
+        "report_subtitle": "قناة آمنة ومشفرة لتقديم شكاوى الوكالات",
+        "report_badge": "🔒 موثوق • آمن • رسمي",
+        "report_welcome": "🛡️ <strong>مرحباً بك في مكتب الإبلاغ السري</strong><br><br>شكراً لشجاعتك. تقريرك حيوي في حماية سلامة الحج والعمرة.<br><br><strong>جميع المعلومات مشفرة وسرية.</strong>",
+        "report_step_1": "<strong>الخطوة 1 من 4:</strong> ما هو <strong>الاسم الكامل</strong> للوكالة التي تريد الإبلاغ عنها؟",
+        "report_step_2": "<strong>الخطوة 2 من 4:</strong> في أي <strong>مدينة</strong> تقع هذه الوكالة؟",
+        "report_step_3": "<strong>الخطوة 3 من 4:</strong> يرجى وصف الحادثة بالتفصيل:<br>- ماذا حدث؟<br>- متى؟ (تاريخ تقريبي)<br>- أي مبالغ أو مدفوعات متضمنة؟<br>- وعود قُطعت ولم تُنفذ؟",
+        "report_step_4": "<strong>الخطوة 4 من 4 (اختياري):</strong> قدم معلومات الاتصال للمتابعة، أو اكتب \"<strong>تخطي</strong>\" للبقاء مجهولاً.",
+        "report_agency_recorded": "✅ <strong>تم تسجيل الوكالة:</strong> {name}",
+        "report_location_recorded": "✅ <strong>تم تسجيل الموقع:</strong> {city}",
+        "report_details_recorded": "✅ <strong>تم تسجيل التفاصيل</strong>",
+        "report_summary": "<strong>ملخص:</strong><br>- الوكالة: {agency}<br>- المدينة: {city}<br>- التفاصيل: {details}",
+        "report_success": "✅ <strong>تم تقديم التقرير بنجاح</strong><br><br>{message}<br><br><strong>الحالة:</strong> قيد المراجعة<br><br>تقريرك الآن مع السلطات المعنية. إعادة التوجيه إلى المحادثة الرئيسية...",
+        "report_failed": "❌ <strong>فشل الإرسال</strong><br><br>{message}<br><br>يرجى المحاولة مرة أخرى أو تعديل إرسالك.",
+        "report_validation_error": "⚠️ <strong>مشكلة في التحقق</strong><br><br>{feedback}",
+        "db_connection_error": "⚠️ فشل الاتصال بقاعدة البيانات. يرجى الاتصال بالدعم.",
+        "secure_reporting": "🔒 إبلاغ آمن",
+        "all_encrypted": "جميع الاتصالات مشفرة وسرية",
+        "current_progress": "التقدم الحالي",
+        "progress_complete": "{pct}٪ مكتمل",
+        "exit_reporting": "🚪 الخروج من قناة الإبلاغ",
+        "quick_save": "💾 حفظ سريع للمسودة",
+        "draft_saved": "✅ تم حفظ المسودة!",
+        "exit_not_started": "لم تبدأ التقرير بعد.",
+        "exit_just_started": "لقد أدخلت معلومات أساسية فقط.",
+        "exit_partial": "أنت في منتصف الطريق. تم حفظ الوكالة والموقع.",
+        "exit_almost_complete": "أنت على وشك الانتهاء! تبقى معلومات الاتصال فقط.",
+        "exit_unsaved": "لديك تقدم غير محفوظ.",
+        "draft_found_title": "💾 تم العثور على مسودة تقرير!",
+        "draft_found_desc": "لديك مسودة محفوظة من جلستك السابقة. هل تريد المتابعة من حيث توقفت؟",
+        "draft_agency": "**الوكالة:** {name}",
+        "draft_city": "**المدينة:** {city}",
+        "draft_details": "**التفاصيل:** {preview}",
+        "draft_saved_at": "📅 <em>محفوظة في الخطوة {step} من 4</em>",
+        "resume_draft": "✅ استئناف المسودة",
+        "start_fresh": "🗑️ ابدأ من جديد",
+        "draft_restored": "✅ تم استعادة المسودة!",
+        "draft_discarded": "تم تجاهل المسودة. بدء تقرير جديد...",
+        "modal_return_chat": "العودة إلى المحادثة الرئيسية؟",
+        "modal_not_started_desc": "لم تبدأ في تقديم تقرير بعد. يمكنك العودة في أي وقت لتقديم شكوى.",
+        "modal_yes_return": "✅ نعم، العودة إلى المحادثة",
+        "modal_stay_file": "📝 البقاء وتقديم التقرير",
+        "modal_exit_title": "الخروج من الإبلاغ؟",
+        "modal_save_draft": "💾 حفظ المسودة",
+        "modal_discard_exit": "🗑️ تجاهل والخروج",
+        "modal_continue": "↩️ متابعة",
+        "modal_significant_progress": "لديك تقدم كبير!",
+        "modal_important": "⏰ تقريرك مهم! فكر في حفظ مسودة للمتابعة لاحقاً.",
+        "modal_save_and_exit": "💾 حفظ المسودة والخروج",
+        "modal_discard_progress": "🗑️ تجاهل التقدم",
+        "modal_continue_filing": "✍️ متابعة التقديم",
+        "modal_confirm_discard": "⚠️ هل أنت متأكد؟ انقر على 'تجاهل التقدم' مرة أخرى للتأكيد.",
+        "progress_discarded": "تم تجاهل التقدم.",
+        "draft_saved_success": "✅ تم حفظ المسودة! يمكنك الاستئناف لاحقاً.",
+        "draft_saved_resume": "✅ تم حفظ المسودة! استأنف في أي وقت من القائمة الرئيسية.",
+        "resuming_draft": "🛡️ <strong>مرحباً بعودتك!</strong> استئناف المسودة المحفوظة...",
+        "chat_input_placeholder": "اكتب إجابتك هنا...",
+        "report_submitted": "✅ تم تقديم التقرير بنجاح!",
+    },
+    "اردو": {
+        "report_page_title": "حج کی شکایت کی رپورٹنگ",
+        "report_main_title": "خفیہ رپورٹنگ دفتر",
+        "report_subtitle": "ایجنسی کی شکایات درج کرنے کے لیے محفوظ اور خفیہ کاری شدہ چینل",
+        "report_badge": "🔒 قابل اعتماد • محفوظ • سرکاری",
+        "report_welcome": "🛡️ <strong>خفیہ رپورٹنگ دفتر میں خوش آمدید</strong><br><br>آپ کی ہمت کا شکریہ۔ آپ کی رپورٹ حج اور عمرہ کی سالمیت کی حفاظت میں اہم ہے۔<br><br><strong>تمام معلومات خفیہ کاری شدہ اور رازداری میں ہیں۔</strong>",
+        "report_step_1": "<strong>مرحلہ 1 از 4:</strong> اس ایجنسی کا <strong>مکمل نام</strong> کیا ہے جس کی آپ رپورٹ کرنا چاہتے ہیں؟",
+        "report_step_2": "<strong>مرحلہ 2 از 4:</strong> یہ ایجنسی کس <strong>شہر</strong> میں واقع ہے؟",
+        "report_step_3": "<strong>مرحلہ 3 از 4:</strong> براہ کرم واقعے کی تفصیل سے وضاحت کریں:<br>- کیا ہوا؟<br>- کب؟ (تقریباً تاریخ)<br>- کوئی رقم یا ادائیگیاں شامل؟<br>- وعدے جو توڑے گئے؟",
+        "report_step_4": "<strong>مرحلہ 4 از 4 (اختیاری):</strong> فالو اپ کے لیے رابطے کی معلومات فراہم کریں، یا گمنام رہنے کے لیے \"<strong>چھوڑیں</strong>\" لکھیں۔",
+        "report_agency_recorded": "✅ <strong>ایجنسی ریکارڈ کی گئی:</strong> {name}",
+        "report_location_recorded": "✅ <strong>مقام ریکارڈ کیا گیا:</strong> {city}",
+        "report_details_recorded": "✅ <strong>تفصیلات ریکارڈ کی گئیں</strong>",
+        "report_summary": "<strong>خلاصہ:</strong><br>- ایجنسی: {agency}<br>- شہر: {city}<br>- تفصیلات: {details}",
+        "report_success": "✅ <strong>رپورٹ کامیابی سے درج کی گئی</strong><br><br>{message}<br><br><strong>حیثیت:</strong> زیر نظرثانی<br><br>آپ کی رپورٹ اب متعلقہ حکام کے پاس ہے۔ مین چیٹ پر واپس جا رہے ہیں...",
+        "report_failed": "❌ <strong>جمع کروانا ناکام</strong><br><br>{message}<br><br>براہ کرم دوبارہ کوشش کریں یا اپنی جمع کروائی کو تبدیل کریں۔",
+        "report_validation_error": "⚠️ <strong>توثیق کا مسئلہ</strong><br><br>{feedback}",
+        "db_connection_error": "⚠️ ڈیٹا بیس کنکشن ناکام ہو گیا۔ براہ کرم سپورٹ سے رابطہ کریں۔",
+        "secure_reporting": "🔒 محفوظ رپورٹنگ",
+        "all_encrypted": "تمام مواصلات خفیہ کاری شدہ اور رازداری میں ہیں",
+        "current_progress": "موجودہ پیش رفت",
+        "progress_complete": "{pct}٪ مکمل",
+        "exit_reporting": "🚪 رپورٹنگ چینل سے باہر نکلیں",
+        "quick_save": "💾 فوری ڈرافٹ محفوظ کریں",
+        "draft_saved": "✅ ڈرافٹ محفوظ ہو گیا!",
+        "exit_not_started": "آپ نے ابھی رپورٹ شروع نہیں کی۔",
+        "exit_just_started": "آپ نے صرف بنیادی معلومات درج کیں۔",
+        "exit_partial": "آپ آدھے راستے پر ہیں۔ آپ کی ایجنسی اور مقام محفوظ ہیں۔",
+        "exit_almost_complete": "آپ تقریباً مکمل ہو چکے ہیں! صرف رابطے کی معلومات باقی ہیں۔",
+        "exit_unsaved": "آپ کی غیر محفوظ شدہ پیش رفت ہے۔",
+        "draft_found_title": "💾 ڈرافٹ رپورٹ ملی!",
+        "draft_found_desc": "آپ کے پچھلے سیشن سے ایک محفوظ شدہ ڈرافٹ موجود ہے۔ کیا آپ جہاں چھوڑا تھا وہاں سے جاری رکھنا چاہتے ہیں؟",
+        "draft_agency": "**ایجنسی:** {name}",
+        "draft_city": "**شہر:** {city}",
+        "draft_details": "**تفصیلات:** {preview}",
+        "draft_saved_at": "📅 <em>مرحلہ {step} از 4 پر محفوظ کیا گیا</em>",
+        "resume_draft": "✅ ڈرافٹ جاری رکھیں",
+        "start_fresh": "🗑️ نئے سرے سے شروع کریں",
+        "draft_restored": "✅ ڈرافٹ بحال ہو گیا!",
+        "draft_discarded": "ڈرافٹ مسترد کر دیا گیا۔ نئی رپورٹ شروع کر رہے ہیں...",
+        "modal_return_chat": "مین چیٹ پر واپس جائیں؟",
+        "modal_not_started_desc": "آپ نے ابھی رپورٹ درج کرنا شروع نہیں کیا۔ آپ کسی بھی وقت شکایت درج کرنے کے لیے واپس آ سکتے ہیں۔",
+        "modal_yes_return": "✅ ہاں، چیٹ پر واپس جائیں",
+        "modal_stay_file": "📝 رہیں اور رپورٹ درج کریں",
+        "modal_exit_title": "رپورٹنگ سے باہر نکلیں؟",
+        "modal_save_draft": "💾 ڈرافٹ محفوظ کریں",
+        "modal_discard_exit": "🗑️ مسترد کریں اور باہر نکلیں",
+        "modal_continue": "↩️ جاری رکھیں",
+        "modal_significant_progress": "آپ کی اہم پیش رفت ہے!",
+        "modal_important": "⏰ آپ کی رپورٹ اہم ہے! بعد میں جاری رکھنے کے لیے ڈرافٹ محفوظ کرنے پر غور کریں۔",
+        "modal_save_and_exit": "💾 ڈرافٹ محفوظ کریں اور باہر نکلیں",
+        "modal_discard_progress": "🗑️ پیش رفت مسترد کریں",
+        "modal_continue_filing": "✍️ فائلنگ جاری رکھیں",
+        "modal_confirm_discard": "⚠️ کیا آپ کو یقین ہے؟ تصدیق کے لیے 'پیش رفت مسترد کریں' پر دوبارہ کلک کریں۔",
+        "progress_discarded": "پیش رفت مسترد کر دی گئی۔",
+        "draft_saved_success": "✅ ڈرافٹ محفوظ ہو گیا! آپ بعد میں جاری رکھ سکتے ہیں۔",
+        "draft_saved_resume": "✅ ڈرافٹ محفوظ ہو گیا! مین مینو سے کسی بھی وقت جاری رکھیں۔",
+        "resuming_draft": "🛡️ <strong>واپسی مبارک!</strong> آپ کا محفوظ شدہ ڈرافٹ جاری ہو رہا ہے...",
+        "chat_input_placeholder": "اپنا جواب یہاں لکھیں...",
+        "report_submitted": "✅ رپورٹ کامیابی سے جمع کرائی گئی!",
+    }
+}
 
-st.markdown(f"""
-<div class="status-indicator">
-    <div class="status-dot {status_class}"></div>
-    {status_text}
-</div>
-""", unsafe_allow_html=True)
 
-# ---------------------------
-# Header
-# ---------------------------
-st.markdown(f"""
-<div class="voice-header">
-  <div><span class="voice-title">{t('voice_main_title', st.session_state.language)}</span></div>
-  <div class="voice-subtitle">{t('voice_subtitle', st.session_state.language)}</div>
-</div>
-""", unsafe_allow_html=True)
+# =============================================================================
+# DATABASE OPERATIONS
+# =============================================================================
 
-# ---------------------------
-# Main UI Layout
-# ---------------------------
-st.markdown('<div class="voice-container">', unsafe_allow_html=True)
-col_left, col_right = st.columns(2)
-
-with col_left:
-    avatar_class = (
-        "speaking" if st.session_state.is_speaking
-        else "listening" if st.session_state.is_processing
-        else ""
-    )
-    
-    recording_label = (
-        f"🔊 {t('voice_speaking', st.session_state.language)}" if st.session_state.is_speaking
-        else f"🎤 {t('voice_press_to_speak', st.session_state.language)}"
-    )
-
-    st.markdown(f"""
-    <div class="voice-left" style="position:relative;"> 
-      <div style="position:relative;">
-        <div class="voice-ring voice-ring-1"></div>
-        <div class="voice-ring voice-ring-2"></div>
-        <div class="voice-ring voice-ring-3"></div>
-        <div class="voice-avatar {avatar_class}">🕋</div>
-      </div>
-      <div class="record-label">{recording_label}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    audio_bytes = st.audio_input(
-        label="",
-        key="audio_recorder",
-        help=t('voice_press_to_speak', st.session_state.language)
-    )
-
-with col_right:
-    transcript = st.session_state.current_transcript or t('voice_speak_now', st.session_state.language)
-    response_text = st.session_state.current_response or t('voice_response_placeholder', st.session_state.language)
-
-    import html
-    clean_transcript = html.escape(transcript)
-    clean_response = html.escape(response_text)
-
-    transcript_icon_class = "active" if st.session_state.is_processing else ""
-    response_icon_class = "active" if st.session_state.is_speaking else ""
-    
-    transcript_badge_class = "active" if st.session_state.is_processing else ""
-    response_badge_class = "active" if st.session_state.is_speaking else ""
-
-    # Transcript panel
-    st.markdown(f"""
-    <div class="transcript-container">
-      <div class="panel-header">
-        <div class="panel-icon {transcript_icon_class}">🗣️</div>
-        <h3 class="panel-title">{t('voice_transcript_title', st.session_state.language)}</h3>
-      </div>
-      <div class="transcript-text">{clean_transcript}</div>
-    </div>
-    """, unsafe_allow_html=True)
-  
-    # Response panel
-    st.markdown(f"""
-    <div class="response-container" style="margin-top:1rem;">
-      <div class="panel-header">
-        <div class="panel-icon {response_icon_class}">🕋</div>
-        <h3 class="panel-title">{t('voice_response_title', st.session_state.language)}</h3>
-        <div class="panel-badge {response_badge_class}">
-            {'● ' + (t('voice_status_speaking', st.session_state.language)
-            if st.session_state.is_speaking
-            else t('voice_status_ready', st.session_state.language))}
-        </div>
-      </div>
-      <div class='response-content'>{clean_response}</div> 
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Stop button - Enhanced and properly positioned
-    if st.session_state.is_speaking:
-        if st.button(
-            f"⏹️ {t('voice_stop_speaking', st.session_state.language)}",
-            use_container_width=True,
-            type="primary",
-            key="stop_button"
-        ):
-            logger.info("Stop button pressed. Halting speech.")
-            st.session_state.pending_audio = None
-            st.session_state.is_speaking = False
-            st.session_state.status = t('voice_status_interrupted', st.session_state.language)
-            st.rerun()
-
-st.markdown('</div>', unsafe_allow_html=True)
-
-# ---------------------------
-# Play pending audio
-# ---------------------------
-if st.session_state.get('pending_audio'):
-    logger.info("Playing pending audio response...")
-    
+def check_agency_in_sqlite(agency_name: str, db_manager) -> Tuple[bool, Dict]:
+    """
+    Check if agency exists in SQLite agencies table
+    Checks both Arabic and English names
+    """
     try:
-        st.markdown("<div style='display:none'>", unsafe_allow_html=True)
-        st.audio(st.session_state.pending_audio, format="audio/mp3", autoplay=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+        normalized_name = agency_name.strip().lower()
+        
+        query = """
+        SELECT hajj_company_en, hajj_company_ar, city, country, 
+               email, contact_Info, rating_reviews, is_authorized,
+               google_maps_link, formatted_address
+        FROM agencies 
+        WHERE LOWER(hajj_company_en) = ? OR LOWER(hajj_company_ar) = ?
+        """
+        
+        result = db_manager.execute_query(query, (normalized_name, normalized_name))
+        
+        if result and len(result) > 0:
+            agency = result[0]
+            return True, {
+                "name_en": agency[0],
+                "name_ar": agency[1],
+                "city": agency[2],
+                "country": agency[3],
+                "email": agency[4],
+                "contact_info": agency[5],
+                "rating": agency[6],
+                "is_authorized": agency[7],
+                "maps_link": agency[8],
+                "address": agency[9]
+            }
+        
+        fuzzy_query = """
+        SELECT hajj_company_en, hajj_company_ar, city, country, 
+               email, contact_Info, rating_reviews, is_authorized,
+               google_maps_link, formatted_address
+        FROM agencies 
+        WHERE LOWER(hajj_company_en) LIKE ? OR LOWER(hajj_company_ar) LIKE ?
+        LIMIT 1
+        """
+        
+        result = db_manager.execute_query(fuzzy_query, (f"%{normalized_name}%", f"%{normalized_name}%"))
+        
+        if result and len(result) > 0:
+            agency = result[0]
+            return True, {
+                "name_en": agency[0],
+                "name_ar": agency[1],
+                "city": agency[2],
+                "country": agency[3],
+                "email": agency[4],
+                "contact_info": agency[5],
+                "rating": agency[6],
+                "is_authorized": agency[7],
+                "maps_link": agency[8],
+                "address": agency[9]
+            }
+        
+        return False, {}
+        
     except Exception as e:
-        logger.warning("Failed to play pending audio: %s", e)
+        logger.error(f"Error checking agency in SQLite: {e}")
+        return False, {}
 
-    audio_bytes = st.session_state.pending_audio
-    if isinstance(audio_bytes, bytes):
-        audio_file = BytesIO(audio_bytes)
-    else:
-        audio_file = audio_bytes
 
-    audio = MP3(audio_file)
-    duration = audio.info.length
-
-    # Simulate speaking
-    st.session_state.is_speaking = True
-    st.session_state.status = t('voice_status_speaking', st.session_state.language)
-
-    # Block for duration
-    time.sleep(duration+2)
-
-    # Update state after playback ends
-    st.session_state.is_speaking = False
-    st.session_state.status = t('voice_status_completed', st.session_state.language)
-    st.session_state.pending_audio = None
-
-    # Force re-render so Streamlit sees new state
-    st.rerun()
-
-# ---------------------------
-# Handle new audio input
-# ---------------------------
-if audio_bytes and not st.session_state.is_processing:
-    if hasattr(audio_bytes, 'read'):
-        audio = audio_bytes.read()
-        audio_bytes.seek(0)
-    else:
-        audio = audio_bytes
-    
-    audio_hash = _hash_bytes(audio)
-    
-    if audio_hash != st.session_state.last_audio_hash:
-        st.session_state.last_audio_hash = audio_hash
-        st.session_state.pending_audio_bytes = audio
-        st.session_state.is_processing = True
-        st.session_state.status = t('voice_status_analyzing', st.session_state.language)
-        st.rerun()
-
-# ---------------------------
-# Process pending audio
-# ---------------------------
-elif st.session_state.is_processing and st.session_state.get("pending_audio_bytes"):
+def check_agency_exists_in_supabase(
+    agency_name: str, 
+    city: str, 
+    supabase_client: Client
+) -> Tuple[bool, Optional[Dict]]:  
+    """Check if agency+city combination already exists in Supabase complaints table"""
     try:
-        logger.info("Running LangGraph workflow on pending audio...")
+        response = supabase_client.table('complaints').select('*').ilike(
+            'agency_name', agency_name
+        ).ilike('city', city).limit(1).execute()
+        
+        exists = response.data and len(response.data) > 0
+        
+        if exists:
+            complaint_info = response.data[0]  
+            logger.info(f"Agency '{agency_name}' in '{city}' already exists in Supabase complaints")
+            return True, complaint_info 
+        
+        return False, None  
+        
+    except Exception as e:
+        logger.error(f"Error checking Supabase for agency: {e}")
+        return False, None
 
-        pending_audio_bytes = st.session_state.pending_audio_bytes
-        conversation_history = memory.get_formatted_history(limit=5)
 
-        initial_state = {
-            "audio_bytes": pending_audio_bytes,
-            "transcript": "",
-            "detected_language": "",
-            "transcription_confidence": 0.0,
-            "user_input": "",
-            "language": "",
-            "intent": "",
-            "intent_confidence": 0.0,
-            "intent_reasoning": "",
-            "is_vague": False,
-            "is_arabic": False,
-            "urgency": "",
-            "sql_query": "",
-            "sql_params": {},
-            "sql_query_type": "",
-            "sql_filters": [],
-            "sql_explanation": "",
-            "sql_error": "",
-            "result_rows": [],
-            "columns": [],
-            "row_count": 0,
-            "summary": "",
-            "greeting_text": "",
-            "general_answer": "",
-            "response": "",
-            "response_tone": "",
-            "key_points": [],
-            "suggested_actions": [],
-            "includes_warning": False,
-            "verification_steps": [],
-            "official_sources": [],
-            "response_audio": b"",
-            "error": "",
-            "messages_history": memory.get_conversation_history(limit=5),
-            "conversation_context": conversation_history
+def submit_complaint_to_db(
+    data: Dict, 
+    contact: str, 
+    supabase_client: Client,
+    db_manager = None,
+    lang: str = "العربية"
+) -> Tuple[bool, str]:
+    """Submit complaint to database with proper error handling and duplicate prevention"""
+    try:
+        agency_name = data["agency_name"]
+        city = data["city"]
+        agency_found_in_sqlite = False
+        
+        if db_manager:
+            exists, agency_info = check_agency_in_sqlite(agency_name, db_manager)
+            
+            if exists:
+                agency_found_in_sqlite = True
+                logger.info(f"Agency found in SQLite: {agency_info.get('name_en', agency_name)}")
+                
+                agency_name_official = agency_info.get('name_en') or agency_info.get('name_ar') or agency_name
+                
+                is_authorized = agency_info.get('is_authorized', 'No')
+                if is_authorized == 'Yes':
+                    logger.warning(f"Report filed against AUTHORIZED agency: {agency_name_official}")
+                
+                if agency_info.get('city'):
+                    city = agency_info['city']
+                
+                agency_name = agency_name_official
+                
+                logger.info(f"Using official name: {agency_name}, City: {city}")
+            else:
+                logger.info(f"Agency NOT found in SQLite: {agency_name}")
+        
+        already_exists = check_agency_exists_in_supabase(agency_name, city, supabase_client)
+        
+        if already_exists[0]:
+            existing_complaint = already_exists[1]
+            logger.warning(f"Duplicate prevented: '{agency_name}' in '{city}' already in complaints")
+            
+            existing_date = existing_complaint.get('submission_date', 'N/A')
+            existing_status = existing_complaint.get('status', 'pending')
+            existing_id = existing_complaint.get('id', 'N/A')
+            
+            status_display = {
+                "pending": {"English": "Pending Review", "العربية": "قيد المراجعة", "اردو": "زیر نظرثانی"},
+                "under_investigation": {"English": "Under Investigation", "العربية": "قيد التحقيق", "اردو": "تحقیقات جاری"},
+                "resolved": {"English": "Resolved", "العربية": "تم الحل", "اردو": "حل ہو گیا"},
+                "closed": {"English": "Closed", "العربية": "مغلق", "اردو": "بند"}
+            }
+            
+            status_text = status_display.get(existing_status, status_display["pending"]).get(lang, existing_status)
+            
+            duplicate_msg = {
+                "English": f"""⚠️ <strong>Duplicate Report Detected</strong><br><br>
+                This agency in this city has already been reported:<br>
+                • <strong>Report ID:</strong> #{existing_id}<br>
+                • <strong>Status:</strong> {status_text}<br>
+                • <strong>Submitted:</strong> {existing_date}<br><br>
+                Please check with authorities regarding the existing report, or file a new complaint for a different agency.""",
+                
+                "العربية": f"""⚠️ <strong>تم الكشف عن تقرير مكرر</strong><br><br>
+                تم الإبلاغ عن هذه الوكالة في هذه المدينة بالفعل:<br>
+                • <strong>رقم التقرير:</strong> #{existing_id}<br>
+                • <strong>الحالة:</strong> {status_text}<br>
+                • <strong>تاريخ التقديم:</strong> {existing_date}<br><br>
+                يرجى التحقق مع السلطات بشأن التقرير الموجود، أو تقديم شكوى جديدة لوكالة مختلفة.""",
+                
+                "اردو": f"""⚠️ <strong>نقل رپورٹ کا پتہ چلا</strong><br><br>
+                اس شہر میں اس ایجنسی کی پہلے ہی اطلاع دی جا چکی ہے:<br>
+                • <strong>رپورٹ نمبر:</strong> #{existing_id}<br>
+                • <strong>حیثیت:</strong> {status_text}<br>
+                • <strong>جمع کرائی:</strong> {existing_date}<br><br>
+                موجودہ رپورٹ کے بارے میں حکام سے رابطہ کریں، یا کسی مختلف ایجنسی کے لیے نئی شکایت درج کریں۔"""
+            }
+            return False, duplicate_msg.get(lang, duplicate_msg["العربية"])
+        
+        insert_data = {
+            "agency_name": agency_name,
+            "city": city,
+            "complaint_text": data["complaint_text"],
+            "user_contact": contact if contact else None,
+            "submission_date": datetime.now(pytz.utc).strftime('%Y-%m-%d %H:%M:%S'),
+            "status": "pending"
         }
 
-        result = workflow.invoke(initial_state)
-
-        transcript = result.get("transcript", "")
-        response_text = result.get("response", "")
-        response_audio = result.get("response_audio", None)
-
-        st.session_state.current_transcript = transcript or t('voice_no_speech', st.session_state.language)
-        st.session_state.current_response = response_text or t('voice_could_not_understand', st.session_state.language)
-
-        st.session_state.current_metadata = {
-            "key_points": result.get("key_points", []),
-            "suggested_actions": result.get("suggested_actions", []),
-            "verification_steps": result.get("verification_steps", []),
-            "official_sources": result.get("official_sources", []),
-        }
-
-        if response_audio:
-            st.session_state.pending_audio = response_audio
-            st.session_state.is_speaking = True
-            st.session_state.status = t('voice_status_speaking', st.session_state.language)
+        response = supabase_client.table('complaints').insert(insert_data).execute()
+        
+        if response.data and len(response.data) > 0:
+            report_id = response.data[0].get('id', 'N/A')
+            
+            if contact:
+                contact_status = {
+                    "English": f"with secure contact",
+                    "العربية": f"مع معلومات اتصال آمنة",
+                    "اردو": f"محفوظ رابطے کے ساتھ"
+                }
+            else:
+                contact_status = {
+                    "English": f"anonymously",
+                    "العربية": f"بشكل مجهول",
+                    "اردو": f"گمنام طور پر"
+                }
+            
+            if agency_found_in_sqlite:
+                success_msg = {
+                    "English": f"""✅ <strong>New Report Successfully Filed</strong><br><br>
+                    • <strong>Report ID:</strong> #{report_id}<br>
+                    • <strong>Agency:</strong> {agency_name} (Verified)<br>
+                    • <strong>City:</strong> {city}<br>
+                    • <strong>Status:</strong> {contact_status['English']}<br>
+                    • <strong>Database:</strong> Agency verified in system<br><br>
+                    This is the <strong>first complaint</strong> filed against this agency in our database.""",
+                    
+                    "العربية": f"""✅ <strong>تم تقديم تقرير جديد بنجاح</strong><br><br>
+                    • <strong>رقم التقرير:</strong> #{report_id}<br>
+                    • <strong>الوكالة:</strong> {agency_name} (تم التحقق)<br>
+                    • <strong>المدينة:</strong> {city}<br>
+                    • <strong>الحالة:</strong> {contact_status['العربية']}<br>
+                    • <strong>قاعدة البيانات:</strong> تم التحقق من الوكالة في النظام<br><br>
+                    هذه هي <strong>أول شكوى</strong> مقدمة ضد هذه الوكالة في قاعدة البيانات لدينا.""",
+                    
+                    "اردو": f"""✅ <strong>نئی رپورٹ کامیابی سے درج کی گئی</strong><br><br>
+                    • <strong>رپورٹ نمبر:</strong> #{report_id}<br>
+                    • <strong>ایجنسی:</strong> {agency_name} (تصدیق شدہ)<br>
+                    • <strong>شہر:</strong> {city}<br>
+                    • <strong>حیثیت:</strong> {contact_status['اردو']}<br>
+                    • <strong>ڈیٹا بیس:</strong> ایجنسی نظام میں تصدیق شدہ<br><br>
+                    یہ ہمارے ڈیٹا بیس میں اس ایجنسی کے خلاف <strong>پہلی شکایت</strong> ہے۔"""
+                }
+            else:
+               success_msg = {
+                    "English": f"""✅ <strong>New Report Successfully Filed</strong><br><br>
+                    • <strong>Report ID:</strong> #{report_id}<br>
+                    • <strong>Agency:</strong> {agency_name} (New Entry)<br>
+                    • <strong>City:</strong> {city}<br>
+                    • <strong>Status:</strong> {contact_status['English']}<br>
+                    • <strong>Database:</strong> New agency - under review<br><br>
+                    This is the <strong>first complaint</strong> filed against this agency in our database.""",
+                    
+                    "العربية": f"""✅ <strong>تم تقديم تقرير جديد بنجاح</strong><br><br>
+                    • <strong>رقم التقرير:</strong> #{report_id}<br>
+                    • <strong>الوكالة:</strong> {agency_name} (إدخال جديد)<br>
+                    • <strong>المدينة:</strong> {city}<br>
+                    • <strong>الحالة:</strong> {contact_status['العربية']}<br>
+                    • <strong>قاعدة البيانات:</strong> وكالة جديدة - قيد المراجعة<br><br>
+                    هذه هي <strong>أول شكوى</strong> مقدمة ضد هذه الوكالة في قاعدة البيانات لدينا.""",
+                    
+                    "اردو": f"""✅ <strong>نئی رپورٹ کامیابی سے درج کی گئی</strong><br><br>
+                    • <strong>رپورٹ نمبر:</strong> #{report_id}<br>
+                    • <strong>ایجنسی:</strong> {agency_name} (نیا اندراج)<br>
+                    • <strong>شہر:</strong> {city}<br>
+                    • <strong>حیثیت:</strong> {contact_status['اردو']}<br>
+                    • <strong>ڈیٹا بیس:</strong> نئی ایجنسی - زیر نظرثانی<br><br>
+                    یہ ہمارے ڈیٹا بیس میں اس ایجنسی کے خلاف <strong>پہلی شکایت</strong> ہے۔"""
+                }
+            return True, success_msg.get(lang, success_msg["العربية"])
         else:
-            st.session_state.status = t('voice_status_ready', st.session_state.language)
-
-        if transcript:
-            memory.add_message('user', transcript)
-            memory.extract_entities(transcript)
-        if response_text:
-            memory.add_message('assistant', response_text)
-
+            logger.error("Supabase insert returned no data")
+            error_msg = {
+                "English": "Database insert failed - no data returned",
+                "العربية": "فشل إدراج قاعدة البيانات - لم يتم إرجاع بيانات",
+                "اردو": "ڈیٹا بیس داخلہ ناکام - کوئی ڈیٹا واپس نہیں آیا"
+            }
+            return False, error_msg.get(lang, error_msg["العربية"])
+            
     except Exception as e:
-        logger.exception("Error during voice processing: %s", e)
-        st.session_state.current_transcript = f"❌ Error: {str(e)}"
-        st.session_state.current_response = t('voice_error_processing', st.session_state.language)
-        st.session_state.status = t('voice_status_error', st.session_state.language)
-        st.session_state.pending_audio = None
+        logger.error(f"Database submission error: {e}")
+        error_msg = {
+            "English": f"Database error: {str(e)}",
+            "العربية": f"خطأ في قاعدة البيانات: {str(e)}",
+            "اردو": f"ڈیٹا بیس کی خرابی: {str(e)}"
+        }
+        return False, error_msg.get(lang, error_msg["العربية"])
 
-    finally:
-        st.session_state.is_processing = False
-        st.session_state.status = t('voice_status_ready', st.session_state.language)
-        st.session_state.pending_audio_bytes = None
-        st.rerun()
+
+def save_draft_to_session(data: Dict, step: int):
+    """Save partial report as draft in session state"""
+    st.session_state.draft_report = {
+        "data": data.copy(),
+        "step": step,
+        "timestamp": datetime.now(pytz.utc).isoformat()
+    }
+    logger.info(f"Draft saved at step {step}")
+
+
+def load_draft_from_session() -> Optional[Dict]:
+    """Load draft report from session state"""
+    return st.session_state.get("draft_report", None)
+
+
+def clear_draft():
+    """Clear saved draft"""
+    if "draft_report" in st.session_state:
+        del st.session_state.draft_report
+        logger.info("Draft cleared")
+
+
+# =============================================================================
+# UI COMPONENTS
+# =============================================================================
+
+def show_progress_bar(step: int, total_steps: int = 4, lang: str = "العربية"):
+    """Display elegant progress indicator"""
+    progress = (step / total_steps) * 100
+    
+    step_text = {
+        "English": f"Step {step} of {total_steps}",
+        "العربية": f"الخطوة {step} من {total_steps}",
+        "اردو": f"مرحلہ {step} از {total_steps}"
+    }
+    
+    complete_text = t("progress_complete", lang
