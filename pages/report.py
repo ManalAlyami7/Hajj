@@ -706,7 +706,7 @@ def render_unified_sidebar(lang: str):
         # Icon and Title
         st.markdown(f"""
         <div class="sidebar-icon-container">
-            <div class="sidebar-icon">{get_openmoji_html('🛡️', '4em', 'openmoji-pulse')}</div>
+            <div class="sidebar-icon">🛡️</div>
             <h2 class="sidebar-title">{texts['title']}</h2>
             <p class="sidebar-subtitle">{texts['subtitle']}</p>
         </div>
