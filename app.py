@@ -1,6 +1,7 @@
 """
 Hajj Chatbot - Main Application
 Modern, elegant design with professional Golden Islamic theme
+COMPLETE FILE - Replace your entire app.py with this
 """
 
 import streamlit as st
@@ -28,7 +29,7 @@ st.set_page_config(
 )
 
 # -----------------------------
-# Modern Professional CSS - Golden Theme
+# GOLDEN THEME CSS - COMPLETE
 # -----------------------------
 st.markdown("""
 <style>
@@ -41,17 +42,19 @@ st.markdown("""
         --color-dark-gold: #9d7a1a;
         --color-light-gold: #e6c345;
         --color-gold-glow: rgba(212, 175, 55, 0.3);
+        --color-bg-light: #f8fafc;
+        --color-bg-mid: #e2e8f0;
     }
     
     /* ===== Global Styles ===== */
     * {
         font-family: 'Poppins', 'Cairo', sans-serif;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
-    /* ===== Main Background - Clean Light with Golden Touch ===== */
+    /* ===== Main Background ===== */
     .main {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        background: linear-gradient(135deg, var(--color-bg-light) 0%, var(--color-bg-mid) 100%);
         background-attachment: fixed;
     }
     
@@ -61,7 +64,7 @@ st.markdown("""
         max-width: 1600px;
     }
     
-    /* ===== Header Section - Golden Theme ===== */
+    /* ===== Header Section - GOLDEN ===== */
     .header-container {
         background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
         backdrop-filter: blur(20px);
@@ -92,13 +95,23 @@ st.markdown("""
         50% { opacity: 0.7; }
     }
     
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
     .main-title {
         font-size: 3.5rem;
         font-weight: 900;
         color: #1f2937;
         margin: 0;
         letter-spacing: -0.5px;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.05);
     }
     
     .title-highlight {
@@ -129,7 +142,7 @@ st.markdown("""
         box-shadow: 0 4px 15px var(--color-gold-glow);
     }
     
-    /* ===== Chat Messages - Golden Theme ===== */
+    /* ===== Chat Messages - GOLDEN ===== */
     .stChatMessage {
         background: white !important;
         backdrop-filter: blur(10px);
@@ -140,6 +153,17 @@ st.markdown("""
         border: 2px solid #e2e8f0;
         transition: all 0.3s ease !important;
         animation: slideUp 0.3s ease-out;
+    }
+    
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
     
     .stChatMessage:hover {
@@ -154,58 +178,51 @@ st.markdown("""
         border-left: 5px solid var(--color-primary-gold);
     }
     
-    /* Assistant Message - Golden Soft */
+    /* Assistant Message */
     .stChatMessage[data-testid*="assistant"] {
         background: linear-gradient(135deg, #f9fafb 0%, #f8fafc 100%) !important;
         border-left: 5px solid var(--color-secondary-gold);
     }
     
-    @keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    /* ===== Sidebar Styling - Golden Dark Theme ===== */
+    /* ===== SIDEBAR - GOLDEN DARK ===== */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1a1f2e 0%, #0f1419 100%);
-        border-right: 3px solid var(--color-primary-gold);
-        box-shadow: 2px 0 20px var(--color-gold-glow);
+        background: linear-gradient(180deg, #1a1f2e 0%, #0f1419 100%) !important;
+        border-right: 3px solid var(--color-primary-gold) !important;
+        box-shadow: 2px 0 20px var(--color-gold-glow) !important;
     }
     
     [data-testid="stSidebar"] .block-container {
-        padding: 2rem 1.5rem;
+        padding: 2rem 1.5rem !important;
     }
     
-    /* All sidebar text white */
+    /* Sidebar Text - ALL WHITE */
+    [data-testid="stSidebar"],
     [data-testid="stSidebar"] *,
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] span,
     [data-testid="stSidebar"] div,
-    [data-testid="stSidebar"] label {
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] .stMarkdown {
         color: #f8fafc !important;
     }
     
+    /* Sidebar Headers - GOLDEN */
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {
         color: var(--color-primary-gold) !important;
-        font-weight: 800;
-        text-shadow: 0 2px 8px var(--color-gold-glow);
+        font-weight: 800 !important;
+        text-shadow: 0 2px 8px var(--color-gold-glow) !important;
     }
     
-    /* Hide default navigation */
+    /* Hide Navigation */
     [data-testid="stSidebarNav"] {
         display: none !important;
     }
     
-    /* Sidebar Buttons - Golden Theme */
-    [data-testid="stSidebar"] .stButton > button {
+    /* Sidebar Buttons - GOLDEN */
+    [data-testid="stSidebar"] .stButton > button,
+    [data-testid="stSidebar"] button {
         background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
         color: white !important;
         border: 2px solid var(--color-primary-gold) !important;
@@ -215,17 +232,18 @@ st.markdown("""
         font-size: 1rem !important;
         transition: all 0.3s ease !important;
         width: 100% !important;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        box-shadow: 0 4px 15px var(--color-gold-glow);
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+        box-shadow: 0 4px 15px var(--color-gold-glow) !important;
     }
     
-    [data-testid="stSidebar"] .stButton > button:hover {
+    [data-testid="stSidebar"] .stButton > button:hover,
+    [data-testid="stSidebar"] button:hover {
         background: linear-gradient(135deg, var(--color-light-gold) 0%, var(--color-primary-gold) 100%) !important;
-        transform: translateY(-3px);
-        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+        transform: translateY(-3px) !important;
+        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5) !important;
     }
     
-    /* Collapsed Sidebar Button - Golden */
+    /* Collapsed Sidebar Button - GOLDEN */
     [data-testid="collapsedControl"] {
         background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
         color: white !important;
@@ -241,9 +259,9 @@ st.markdown("""
         box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5) !important;
     }
     
-    /* Stat Cards - Golden Theme */
+    /* Stat Cards - GOLDEN */
     .stat-card {
-        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%) !important;
         backdrop-filter: blur(10px);
         padding: 2rem;
         border-radius: 18px;
@@ -263,23 +281,23 @@ st.markdown("""
     .stat-number {
         font-size: 3rem;
         font-weight: 900;
-        color: var(--color-primary-gold);
+        color: var(--color-primary-gold) !important;
         margin-bottom: 0.5rem;
         text-shadow: 0 2px 8px var(--color-gold-glow);
         line-height: 1;
     }
     
     .stat-label {
-        color: #f8fafc;
+        color: #f8fafc !important;
         font-size: 1rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 1.5px;
     }
     
-    /* Radio Buttons - Golden Theme */
+    /* Radio Buttons - GOLDEN */
     [data-testid="stSidebar"] .stRadio > div {
-        background: rgba(212, 175, 55, 0.1);
+        background: rgba(212, 175, 55, 0.1) !important;
         padding: 1rem;
         border-radius: 14px;
         border: 2px solid rgba(212, 175, 55, 0.3);
@@ -291,14 +309,14 @@ st.markdown("""
         font-size: 1rem !important;
     }
     
-    /* Dividers - Golden */
+    /* Dividers - GOLDEN */
     [data-testid="stSidebar"] hr {
         border-color: rgba(212, 175, 55, 0.3) !important;
         border-width: 2px !important;
-        margin: 2rem 0;
+        margin: 2rem 0 !important;
     }
     
-    /* Chat Input - Golden Theme */
+    /* Chat Input - GOLDEN */
     .stChatInput > div {
         border-radius: 24px;
         border: 2px solid var(--color-primary-gold);
@@ -318,11 +336,44 @@ st.markdown("""
         font-weight: 500;
     }
     
-    .stChatInput input::placeholder {
-        color: #94a3b8 !important;
+    /* Primary Buttons - GOLDEN */
+    button[kind="primary"],
+    .stButton > button[kind="primary"],
+    div[data-testid="stButton"] > button[kind="primary"] {
+        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
+        border: none !important;
+        box-shadow: 0 4px 15px var(--color-gold-glow) !important;
+        color: white !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+        padding: 0.75rem 1.5rem !important;
+        transition: all 0.3s ease !important;
     }
     
-    /* Scrollbar - Golden Theme */
+    button[kind="primary"]:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5) !important;
+        background: linear-gradient(135deg, var(--color-light-gold) 0%, var(--color-primary-gold) 100%) !important;
+    }
+    
+    /* Secondary Buttons - GOLDEN */
+    button[kind="secondary"],
+    .stButton > button[kind="secondary"] {
+        background: white !important;
+        border: 2px solid var(--color-primary-gold) !important;
+        color: var(--color-secondary-gold) !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    button[kind="secondary"]:hover {
+        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
+        color: white !important;
+        transform: translateY(-2px) !important;
+    }
+    
+    /* Scrollbar - GOLDEN */
     ::-webkit-scrollbar {
         width: 10px;
         height: 10px;
@@ -343,44 +394,28 @@ st.markdown("""
         background: linear-gradient(180deg, var(--color-light-gold) 0%, var(--color-primary-gold) 100%);
     }
     
-    /* Primary Buttons - Golden Theme */
-    button[kind="primary"],
-    .stButton > button[kind="primary"],
-    div[data-testid="stButton"] > button[kind="primary"] {
-        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
-        border: none !important;
-        box-shadow: 0 4px 15px var(--color-gold-glow) !important;
-        color: white !important;
-        font-weight: 600 !important;
-        border-radius: 12px !important;
-        padding: 0.75rem 1.5rem !important;
-        transition: all 0.3s ease !important;
+    /* Loading - GOLDEN */
+    .stSpinner > div {
+        border-color: var(--color-primary-gold) !important;
     }
     
-    button[kind="primary"]:hover,
-    .stButton > button[kind="primary"]:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5) !important;
-        background: linear-gradient(135deg, var(--color-light-gold) 0%, var(--color-primary-gold) 100%) !important;
+    /* Success/Error Messages */
+    .stSuccess {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        border-left: 5px solid #22c55e;
+        border-radius: 12px;
     }
     
-    /* Secondary Buttons - Golden Theme */
-    button[kind="secondary"],
-    .stButton > button[kind="secondary"] {
-        background: white !important;
-        border: 2px solid var(--color-primary-gold) !important;
-        color: var(--color-secondary-gold) !important;
-        font-weight: 600 !important;
-        border-radius: 12px !important;
-        padding: 0.75rem 1.5rem !important;
-        transition: all 0.3s ease !important;
+    .stError {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        border-left: 5px solid #ef4444;
+        border-radius: 12px;
     }
     
-    button[kind="secondary"]:hover {
-        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
-        color: white !important;
-        transform: translateY(-2px) !important;
-        box-shadow: 0 4px 15px var(--color-gold-glow) !important;
+    .stInfo {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 5px solid var(--color-primary-gold);
+        border-radius: 12px;
     }
     
     /* RTL Support */
@@ -389,124 +424,14 @@ st.markdown("""
         text-align: right;
     }
     
-    /* Animations */
-    @keyframes fadeInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
-    }
-    
-    /* Loading Animation - Golden */
-    .stSpinner > div {
-        border-color: var(--color-primary-gold) !important;
-    }
-    
-    /* Success/Error Messages - Golden Accent */
-    .stSuccess {
-        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        border-left: 5px solid #22c55e;
-        border-radius: 12px;
-        color: #065f46 !important;
-    }
-    
-    .stError {
-        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-        border-left: 5px solid #ef4444;
-        border-radius: 12px;
-        color: #991b1b !important;
-    }
-    
-    .stInfo {
-        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        border-left: 5px solid var(--color-primary-gold);
-        border-radius: 12px;
-        color: #92400e !important;
-    }
-    
-    .stWarning {
-        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        border-left: 5px solid #f59e0b;
-        border-radius: 12px;
-        color: #78350f !important;
-    }
-    
-    /* Quick Actions Grid */
-    .quick-actions-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin: 2rem 0;
-    }
-    
-    /* Feature Badge - Golden */
-    .feature-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        background: rgba(212, 175, 55, 0.15);
-        border: 2px solid rgba(212, 175, 55, 0.3);
-        border-radius: 50px;
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
-        font-weight: 600;
-        color: var(--color-secondary-gold);
-        margin: 0.25rem;
-    }
-    
-    /* Welcome Box - Golden */
-    .welcome-box {
-        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-        border: 2px solid var(--color-primary-gold);
-        border-radius: 20px;
-        padding: 2rem;
-        margin: 2rem 0;
-        box-shadow: 0 4px 20px var(--color-gold-glow);
-    }
-    
-    .welcome-box h3 {
-        color: var(--color-secondary-gold);
-        margin-bottom: 1rem;
-    }
-    
-    .welcome-box ul {
-        list-style: none;
-        padding: 0;
-    }
-    
-    .welcome-box li {
-        padding: 0.5rem 0;
-        color: #78350f;
-        font-weight: 500;
-    }
-    
-    /* Responsive Design */
+    /* Responsive */
     @media (max-width: 768px) {
         .main-title {
             font-size: 2.5rem;
         }
-        
         .header-container {
             padding: 2rem 1.5rem;
         }
-        
-        .stat-card {
-            padding: 1.5rem;
-        }
-        
         .stat-number {
             font-size: 2.5rem;
         }
@@ -529,28 +454,13 @@ def _trim_session_memory(max_messages: int = 80, max_message_chars: int = 1000):
 
 
 # -----------------------------
-# Initialize Application
+# Main Application
 # -----------------------------
 def main():
     """Main application entry point"""
     
     # Initialize session state
     initialize_session_state()
-    
-    # # Load existing chat memory
-    # try:
-    #     load_chat_memory()
-    # except Exception:
-    #     pass
-
-    # # Trim session memory
-    # _trim_session_memory()
-    
-    # # Persist trimmed memory
-    # try:
-    #     save_chat_memory()
-    # except Exception:
-    #     pass
     
     # Initialize core managers
     db_manager = DatabaseManager()
@@ -564,17 +474,17 @@ def main():
     # Render sidebar
     sidebar.render()
     
-    # Render modern header with translated badge - Golden Theme
+    # Render GOLDEN header
     lang = st.session_state.language
     is_rtl = lang in ['العربية', 'اردو']
     
-    # Build the badge text with translations - check all possible language values
+    # Badge text
     if 'عرب' in lang or lang == 'العربية' or lang == 'Arabic':
-        badge_text = f"✨ مدعوم بالذكاء الاصطناعي • فوري • متعدد اللغات"
+        badge_text = "✨ مدعوم بالذكاء الاصطناعي • فوري • متعدد اللغات"
     elif 'اردو' in lang or lang == 'Urdu':
-        badge_text = f"✨ AI سے چلنے والا • حقیقی وقت • کثیر لسانی"
-    else:  # English
-        badge_text = f"✨ AI-Powered • Real-Time • Multilingual"
+        badge_text = "✨ AI سے چلنے والا • حقیقی وقت • کثیر لسانی"
+    else:
+        badge_text = "✨ AI-Powered • Real-Time • Multilingual"
     
     st.markdown(f"""
     <div class="header-container{' rtl' if is_rtl else ''}">
