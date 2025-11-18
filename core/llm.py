@@ -9,6 +9,7 @@ Added Urdu language detection and response generation
 
 import random
 import streamlit as st
+from langcahin.wrappers import wrap_openai
 from openai import OpenAI
 import io
 import re
@@ -136,7 +137,7 @@ class LLMManager:
             logger.error("OpenAI API key not found")
             st.warning("⚠️ OpenAI API key missing in Streamlit secrets")
             st.stop()
-        return OpenAI(api_key=api_key)
+        return wrap_openai(OpenAI(api_key=api_key))
     
     def build_chat_context(self, limit: Optional[int] = 20) -> List[Dict[str, str]]:
         """Build chat context from recent messages"""
