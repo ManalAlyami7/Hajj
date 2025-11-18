@@ -14,4 +14,4 @@ altair>=5.0.0
 streamlit_autorefresh
 supabase
 streamlit_js_eval
-langcahin
+langchain
