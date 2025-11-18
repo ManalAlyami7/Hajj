@@ -115,6 +115,7 @@ class LLMManager:
     def __init__(self):
         """Initialize OpenAI client and company memory"""
         self.client = self._get_client()
+        self.model_name = "gpt-4o-mini"
         self.voice_map = {
             "العربية": "onyx",
             "English": "alloy",
@@ -275,7 +276,7 @@ Classify the intent, extract company name if mentioned, provide confidence score
         
         try:
             response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
+                model=self.model_name,
                 messages=[
                     {"role": "system", "content": "You classify user intents and extract company names for a Hajj agency verification system. Pay special attention to follow-up questions that reference previously mentioned companies."},
                     {"role": "user", "content": intent_prompt},
@@ -348,7 +349,7 @@ Keep the response concise, friendly, and professional."""
         
         try:
             response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
+                model=self.model_name,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_input},
@@ -381,7 +382,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=self.model_name,
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_input},
@@ -489,7 +490,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         
         try:
             response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
+                model=self.model_name,
                 messages=[
                     {"role": "system", "content": "You are a SQL expert that generates safe queries for a Hajj agency database. Pay special attention to context notes about previously mentioned companies. Support Arabic, English, and Urdu queries."},
                     {"role": "user", "content": sql_prompt},
@@ -991,7 +992,7 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
 
         try:
             response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
+                model=self.model_name,
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant summarizing Hajj agency data in a friendly and structured way."},
                     {"role": "user", "content": summary_prompt}
@@ -1034,7 +1035,16 @@ Avoid religious rulings or fatwa - stick to practical guidance."""
         except Exception as e:
             logger.error(f"TTS failed: {e}")
             return None
-    
+    def count_tokens(self, text):
+        from tiktoken import encoding_for_model
+        enc = encoding_for_model(self.model_name)
+        return len(enc.encode(text))
+
+    def attach_usage_metadata(self, **metadata):
+        # Send to LangSmith via LangGraph tracing
+        # This is pseudo-code; adapt to your LangGraph setup
+        self.client.log_run_metadata(metadata)
+
     def _detect_language_from_text(self, text: str) -> Optional[str]:
         """
         Detect if text is Arabic or English based on character analysis
@@ -1097,7 +1107,7 @@ Add a simple example of a more specific question.
         
         try:
             response = self.client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
+                model=self.model_name,
                 messages=[
                     {"role": "system", "content": "You help users provide more specific Hajj agency queries."},
                     {"role": "user", "content": prompt}
