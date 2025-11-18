@@ -11,6 +11,7 @@ import re
 from typing import Optional, List, Dict, Literal
 from pydantic import BaseModel, Field
 import logging
+from langsmith.wrappers import wrap_openai
 import json
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -100,6 +101,7 @@ class LLMManager:
     def __init__(self):
         """Initialize OpenAI client"""
         self.client = self._get_client()
+
         self.voice_map = {
             "العربية": "onyx",  # Deeper voice for Arabic
             "English": "alloy"
@@ -109,11 +111,16 @@ class LLMManager:
     def _get_client(_self):
         """Get cached OpenAI client"""
         api_key = st.secrets.get("OPENAI_API_KEY") or st.secrets.get("key")
+        LANGCHAIN_TRACING_V2 = st.secrets.get("LANGCHAIN_TRACING_V2")
+        LANGCHAIN_ENDPOINT = st.secrets.get("LANGCHAIN_ENDPOINT")
+        LANGCHAIN_API_KEY = st.secrets.get("LANGCHAIN_API_KEY")
+        LANGCHAIN_PROJECT = st.secrets.get("LANGCHAIN_PROJECT2")
+
         if not api_key:
             logger.error("OpenAI API key not found")
             st.warning("⚠️ OpenAI API key missing in Streamlit secrets")
             st.stop()
-        return OpenAI(api_key=api_key)
+        return openai_wrap(OpenAI(api_key=api_key))
     
 
     
