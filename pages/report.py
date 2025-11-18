@@ -344,6 +344,15 @@ def get_css_styles(lang: str) -> str:
     text-align: {text_align};
 }}
 
+/* Hide Streamlit navigation menu */
+[data-testid="stSidebarNav"] {{
+    display: none !important;
+}}
+
+section[data-testid="stSidebarNav"] {{
+    display: none !important;
+}}
+
 /* Sidebar Text Colors */
 [data-testid="stSidebar"],
 [data-testid="stSidebar"] *,
