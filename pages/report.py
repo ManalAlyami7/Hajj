@@ -18,7 +18,6 @@ from supabase import create_client, Client
 # Import core modules
 from core.report_llm import RLLMManager
 from utils.translations import t, LANGUAGE_MAP
-from utils.openmoji import get_openmoji_html, OPENMOJI_CSS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
