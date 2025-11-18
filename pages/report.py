@@ -77,11 +77,27 @@ def get_supabase_client() -> Optional[Client]:
     @st.cache_resource
     def init_client() -> Optional[Client]:
         try:
-            url = st.secrets.get('supabase_url')
-            key = st.secrets.get('supabase_key')
+            # Try different possible key names for Supabase
+            url = None
+            key = None
+            
+            # Check for URL
+            if 'supabase_url' in st.secrets:
+                url = st.secrets['supabase_url']
+            elif 'SUPABASE_URL' in st.secrets:
+                url = st.secrets['SUPABASE_URL']
+            
+            # Check for key
+            if 'supabase_key' in st.secrets:
+                key = st.secrets['supabase_key']
+            elif 'SUPABASE_KEY' in st.secrets:
+                key = st.secrets['SUPABASE_KEY']
+            elif 'supabase_anon_key' in st.secrets:
+                key = st.secrets['supabase_anon_key']
             
             if not url or not key:
                 logger.error("Supabase credentials missing in secrets")
+                logger.info(f"Available secrets: {list(st.secrets.keys())}")
                 return None
                 
             return create_client(url, key)
@@ -90,12 +106,16 @@ def get_supabase_client() -> Optional[Client]:
             logger.error(f"Failed to initialize Supabase: {e}")
             return None
     
-    client = init_client()
-    if client is None:
-        lang = st.session_state.get("language", "العربية")
-        st.error(t("db_connection_error", lang))
-        st.stop()
-    return client
+    try:
+        client = init_client()
+        if client is None:
+            logger.warning("Supabase client is None - skipping connection check")
+            # Don't stop the app, just return None
+            return None
+        return client
+    except Exception as e:
+        logger.error(f"Error getting Supabase client: {e}")
+        return None
 
 
 # =============================================================================
@@ -762,11 +782,19 @@ def render_report_bot():
     
     # Initialize LLM
     if "llm_manager" not in st.session_state:
-        st.session_state.llm_manager = RLLMManager()
+        try:
+            st.session_state.llm_manager = RLLMManager()
+        except Exception as e:
+            logger.error(f"Failed to initialize LLM: {e}")
+            st.session_state.llm_manager = None
 
-    # Get clients
+    # Get clients (don't stop if Supabase fails)
     supabase_client = get_supabase_client()
     db_manager = st.session_state.get("db_manager", None)
+    
+    # Show warning if Supabase is not available
+    if supabase_client is None:
+        st.warning("⚠️ " + t("db_connection_error", lang) if "db_connection_error" in dir(t) else "Database connection unavailable. Reports will not be saved.")
     
     # Initial welcome
     if st.session_state.report_step == 0:
@@ -827,23 +855,28 @@ def render_report_bot():
             skip_words = ["skip", "تخطي", "تخطى", "چھوڑیں"]
             contact = "" if any(word in prompt.lower() for word in skip_words) else prompt
             
-            success, message = submit_complaint_to_db(data, contact, supabase_client, db_manager, lang)
-            
-            if success:
-                st.session_state.report_messages.append({
-                    "role": "assistant",
-                    "content": t("report_success", lang, message=message)
-                })
-                st.success(t("report_submitted", lang))
-                time.sleep(2)
-                
-                # Clear and return to chat
-                st.session_state.report_messages.clear()
-                st.session_state.report_step = 0
-                st.session_state.complaint_data.clear()
-                st.switch_page("app.py")
+            # Check if Supabase is available
+            if supabase_client is None:
+                st.error("❌ Cannot submit report: Database connection unavailable")
+                st.session_state.report_step = 3  # Go back to previous step
             else:
-                st.error(message)
+                success, message = submit_complaint_to_db(data, contact, supabase_client, db_manager, lang)
+                
+                if success:
+                    st.session_state.report_messages.append({
+                        "role": "assistant",
+                        "content": t("report_success", lang, message=message)
+                    })
+                    st.success(t("report_submitted", lang))
+                    time.sleep(2)
+                    
+                    # Clear and return to chat
+                    st.session_state.report_messages.clear()
+                    st.session_state.report_step = 0
+                    st.session_state.complaint_data.clear()
+                    st.switch_page("app.py")
+                else:
+                    st.error(message)
         
         st.rerun()
 
@@ -867,8 +900,11 @@ def main():
     # Inject GOLDEN CSS
     st.markdown(get_css_styles(lang), unsafe_allow_html=True)
     
-    # Ensure Supabase
-    get_supabase_client()
+    # Try to get Supabase (but don't stop if it fails)
+    try:
+        get_supabase_client()
+    except Exception as e:
+        logger.error(f"Supabase initialization failed: {e}")
     
     # Render GOLDEN header
     st.markdown(f"""
