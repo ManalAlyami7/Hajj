@@ -9,7 +9,7 @@ Added Urdu language detection and response generation
 
 import random
 import streamlit as st
-from langcahin.wrappers import wrap_openai
+from langchain.wrappers import wrap_openai
 from openai import OpenAI
 import io
 import re
