@@ -335,7 +335,7 @@ def get_css_styles(lang: str) -> str:
     to {{ opacity: 1; transform: translateY(0); }}
 }}
 
-/* ===== UNIFIED GOLDEN SIDEBAR - MATCHING CHAT & VOICEBOT ===== */
+/* ===== UNIFIED GOLDEN SIDEBAR - NO NAVIGATION BUTTONS ===== */
 [data-testid="stSidebar"] {{
     background: linear-gradient(180deg, #1a1f2e 0%, #0f1419 100%) !important;
     border-{text_align}: 3px solid var(--color-primary-gold) !important;
@@ -669,7 +669,7 @@ def show_progress_bar(step: int, total_steps: int = 4, lang: str = "العربي
 
 
 def render_unified_sidebar(lang: str):
-    """Render unified golden sidebar matching Chat & Voicebot pages"""
+    """Render unified golden sidebar without navigation buttons"""
     
     # Sidebar titles
     sidebar_titles = {
@@ -713,23 +713,6 @@ def render_unified_sidebar(lang: str):
             <p class="sidebar-subtitle">{texts['subtitle']}</p>
         </div>
         """, unsafe_allow_html=True)
-        
-        # Navigation Buttons
-        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            if st.button("💬", use_container_width=True, key="nav_chat", type="secondary"):
-                st.switch_page("app.py")
-        
-        with col2:
-            if st.button("🎙️", use_container_width=True, key="nav_voice", type="secondary"):
-                st.switch_page("pages/voicebot.py")
-        
-        with col3:
-            if st.button("🛡️", use_container_width=True, key="nav_report", type="primary"):
-                st.rerun()
         
         # Divider
         st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
