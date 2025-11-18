@@ -1,8 +1,8 @@
 """
 Hajj Complaint Reporting Bot - Main Application
 Enhanced UX with Golden Theme matching main app
+UNIFIED GOLDEN SIDEBAR matching Chat & Voicebot pages
 Multi-language support: English, Arabic, Urdu
-COMPLETE FILE - استبدل pages/report.py بالكامل بهذا الكود
 """
 
 import streamlit as st
@@ -45,7 +45,7 @@ def get_supabase_client() -> Optional[Client]:
     def init_client() -> Optional[Client]:
         try:
             url = st.secrets.get('supabase_url')
-            key = st.secrets.get("supabase_key")
+            key = st.secrets.get('supabase_key')
             
             if not url or not key:
                 logger.error("Supabase credentials missing in secrets")
@@ -66,11 +66,11 @@ def get_supabase_client() -> Optional[Client]:
 
 
 # =============================================================================
-# CSS STYLING - COMPLETE GOLDEN THEME
+# CSS STYLING - UNIFIED GOLDEN THEME WITH MATCHING SIDEBAR
 # =============================================================================
 
 def get_css_styles(lang: str) -> str:
-    """Generate CSS with RTL support and GOLDEN THEME"""
+    """Generate CSS with RTL support and UNIFIED GOLDEN THEME"""
     is_rtl = lang in ["العربية", "اردو"]
     text_align = "right" if is_rtl else "left"
     direction = "rtl" if is_rtl else "ltr"
@@ -229,29 +229,6 @@ def get_css_styles(lang: str) -> str:
     direction: {direction};
 }}
 
-/* ===== Modal - GOLDEN ===== */
-.modal-icon {{
-    font-size: 3rem;
-    margin-bottom: 0.75rem;
-    color: var(--color-primary-gold);
-    filter: drop-shadow(0 2px 8px var(--color-gold-glow));
-}}
-
-.modal-title {{
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: var(--color-text-dark);
-    margin-bottom: 0.75rem;
-}}
-
-.modal-text {{
-    color: var(--color-text-mid);
-    font-size: 1rem;
-    font-weight: 400;
-    line-height: 1.5;
-    margin-bottom: 1.5rem;
-}}
-
 /* ===== Chat Messages - GOLDEN ===== */
 .stChatMessage {{
     background: white !important;
@@ -305,7 +282,7 @@ def get_css_styles(lang: str) -> str:
     to {{ opacity: 1; transform: translateY(0); }}
 }}
 
-/* ===== SIDEBAR - GOLDEN DARK ===== */
+/* ===== UNIFIED GOLDEN SIDEBAR - MATCHING CHAT & VOICEBOT ===== */
 [data-testid="stSidebar"] {{
     background: linear-gradient(180deg, #1a1f2e 0%, #0f1419 100%) !important;
     border-{text_align}: 3px solid var(--color-primary-gold) !important;
@@ -314,6 +291,7 @@ def get_css_styles(lang: str) -> str:
     text-align: {text_align};
 }}
 
+/* Sidebar Text Colors */
 [data-testid="stSidebar"],
 [data-testid="stSidebar"] *,
 [data-testid="stSidebar"] p,
@@ -331,6 +309,75 @@ def get_css_styles(lang: str) -> str:
     text-shadow: 0 2px 8px var(--color-gold-glow) !important;
 }}
 
+/* Sidebar Icon Container */
+.sidebar-icon-container {{
+    text-align: center;
+    padding: 2rem 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(184, 148, 31, 0.05) 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}}
+
+.sidebar-icon {{
+    font-size: 4em;
+    margin-bottom: 0.5rem;
+    filter: drop-shadow(0 4px 12px var(--color-gold-glow));
+    animation: iconPulse 3s ease-in-out infinite;
+}}
+
+@keyframes iconPulse {{
+    0%, 100% {{ transform: scale(1); opacity: 1; }}
+    50% {{ transform: scale(1.05); opacity: 0.9; }}
+}}
+
+.sidebar-title {{
+    color: var(--color-primary-gold) !important;
+    font-size: 1.8rem !important;
+    font-weight: 800 !important;
+    margin: 0.5rem 0 !important;
+    text-shadow: 0 2px 8px var(--color-gold-glow) !important;
+}}
+
+.sidebar-subtitle {{
+    color: rgba(248, 250, 252, 0.8) !important;
+    font-size: 0.9rem !important;
+    font-weight: 400 !important;
+    margin-bottom: 1rem !important;
+}}
+
+/* Sidebar Info Cards */
+.sidebar-info-card {{
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(184, 148, 31, 0.1) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    margin: 1rem 0;
+    text-align: {text_align};
+}}
+
+.sidebar-info-card h4 {{
+    color: var(--color-primary-gold) !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 0.5rem !important;
+}}
+
+.sidebar-info-card p {{
+    color: rgba(248, 250, 252, 0.9) !important;
+    font-size: 0.85rem !important;
+    line-height: 1.5 !important;
+    margin: 0 !important;
+}}
+
+/* Sidebar Divider */
+.sidebar-divider {{
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, var(--color-primary-gold) 50%, transparent 100%);
+    margin: 1.5rem 0;
+    opacity: 0.3;
+}}
+
 /* Sidebar Buttons - GOLDEN */
 [data-testid="stSidebar"] .stButton > button,
 [data-testid="stSidebar"] button {{
@@ -342,6 +389,7 @@ def get_css_styles(lang: str) -> str:
     font-weight: 700 !important;
     transition: all 0.3s ease !important;
     box-shadow: 0 4px 15px var(--color-gold-glow) !important;
+    width: 100% !important;
 }}
 
 [data-testid="stSidebar"] .stButton > button:hover,
@@ -464,7 +512,7 @@ button[kind="secondary"]:hover {{
 
 
 # =============================================================================
-# DATABASE OPERATIONS (Keep all your existing functions)
+# DATABASE OPERATIONS
 # =============================================================================
 
 def check_agency_in_sqlite(agency_name: str, db_manager) -> Tuple[bool, Dict]:
@@ -618,163 +666,78 @@ def show_progress_bar(step: int, total_steps: int = 4, lang: str = "العربي
     """, unsafe_allow_html=True)
 
 
-# =============================================================================
-# MAIN REPORT BOT INTERFACE  
-# Keep all your existing report bot logic
-# =============================================================================
-
-def render_report_bot():
-    """Render report bot interface"""
+def render_unified_sidebar(lang: str):
+    """Render unified golden sidebar matching Chat & Voicebot pages"""
     
-    lang = st.session_state.get("language", "العربية")
+    # Sidebar titles
+    sidebar_titles = {
+        "English": {
+            "title": "Complaint Report",
+            "subtitle": "Secure & Anonymous",
+            "info_title": "🔐 Your Privacy",
+            "info_text": "All reports are encrypted and stored securely. Your identity remains protected.",
+            "secure_title": "✅ Secure Process",
+            "secure_text": "End-to-end encrypted reporting system for your safety.",
+            "exit": "← Exit Reporting"
+        },
+        "العربية": {
+            "title": "تقرير الشكوى",
+            "subtitle": "آمن ومجهول",
+            "info_title": "🔐 خصوصيتك",
+            "info_text": "جميع التقارير مشفرة ومحفوظة بشكل آمن. هويتك محمية تماماً.",
+            "secure_title": "✅ عملية آمنة",
+            "secure_text": "نظام إبلاغ مشفر من طرف إلى طرف لسلامتك.",
+            "exit": "← الخروج من الإبلاغ"
+        },
+        "اردو": {
+            "title": "شکایت کی رپورٹ",
+            "subtitle": "محفوظ اور گمنام",
+            "info_title": "🔐 آپ کی رازداری",
+            "info_text": "تمام رپورٹس خفیہ اور محفوظ طریقے سے محفوظ ہیں۔ آپ کی شناخت محفوظ رہتی ہے۔",
+            "secure_title": "✅ محفوظ عمل",
+            "secure_text": "آپ کی حفاظت کے لیے اینڈ ٹو اینڈ خفیہ رپورٹنگ سسٹم۔",
+            "exit": "← رپورٹنگ سے باہر نکلیں"
+        }
+    }
     
-    # Initialize session
-    if "report_messages" not in st.session_state:
-        st.session_state.report_messages = []
-        st.session_state.report_step = 0
-        st.session_state.complaint_data = {}
+    texts = sidebar_titles.get(lang, sidebar_titles["العربية"])
     
-    # Initialize LLM
-    if "llm_manager" not in st.session_state:
-        st.session_state.llm_manager = RLLMManager()
-
-    # Get clients
-    supabase_client = get_supabase_client()
-    db_manager = st.session_state.get("db_manager", None)
-    
-    # Initial welcome
-    if st.session_state.report_step == 0:
-        st.session_state.report_messages = [
-            {"role": "assistant", "content": t("report_welcome", lang)},
-            {"role": "assistant", "content": t("report_step_1", lang)}
-        ]
-        st.session_state.report_step = 1
-    
-    # Show progress
-    if st.session_state.report_step > 0:
-        show_progress_bar(st.session_state.report_step, lang=lang)
-    
-    # Display chat
-    for message in st.session_state.report_messages:
-        with st.chat_message(message["role"]):
-            if message["role"] == "assistant":
-                st.markdown(
-                    f'<div class="bot-message">{message["content"]}</div>', 
-                    unsafe_allow_html=True
-                )
-            else:
-                st.markdown(message["content"])
-    
-    # Chat input
-    if prompt := st.chat_input(t("chat_input_placeholder", lang), key="report_chat_input"):
-        st.session_state.report_messages.append({"role": "user", "content": prompt})
-        
-        step = st.session_state.report_step
-        data = st.session_state.complaint_data
-        
-        # Process based on step
-        if step == 1:
-            data["agency_name"] = prompt
-            st.session_state.report_messages.append({
-                "role": "assistant",
-                "content": t("report_agency_recorded", lang, name=prompt) + "<br><br>" + t("report_step_2", lang)
-            })
-            st.session_state.report_step = 2
-            
-        elif step == 2:
-            data["city"] = prompt
-            st.session_state.report_messages.append({
-                "role": "assistant",
-                "content": t("report_location_recorded", lang, city=prompt) + "<br><br>" + t("report_step_3", lang)
-            })
-            st.session_state.report_step = 3
-            
-        elif step == 3:
-            data["complaint_text"] = prompt
-            st.session_state.report_messages.append({
-                "role": "assistant",
-                "content": t("report_details_recorded", lang) + "<br><br>" + t("report_step_4", lang)
-            })
-            st.session_state.report_step = 4
-            
-        elif step == 4:
-            skip_words = ["skip", "تخطي", "تخطى", "چھوڑیں"]
-            contact = "" if any(word in prompt.lower() for word in skip_words) else prompt
-            
-            success, message = submit_complaint_to_db(data, contact, supabase_client, db_manager, lang)
-            
-            if success:
-                st.session_state.report_messages.append({
-                    "role": "assistant",
-                    "content": t("report_success", lang, message=message)
-                })
-                st.success(t("report_submitted", lang))
-                time.sleep(2)
-                
-                # Clear and return to chat
-                st.session_state.report_messages.clear()
-                st.session_state.report_step = 0
-                st.session_state.complaint_data.clear()
-                st.switch_page("app.py")
-            else:
-                st.error(message)
-        
-        st.rerun()
-    
-    # Sidebar
     with st.sidebar:
-        st.markdown("---")
-        st.markdown(f"### {t('secure_reporting', lang)}")
-        st.markdown(t("all_encrypted", lang))
+        # Icon and Title
+        st.markdown(f"""
+        <div class="sidebar-icon-container">
+            <div class="sidebar-icon">🛡️</div>
+            <h2 class="sidebar-title">{texts['title']}</h2>
+            <p class="sidebar-subtitle">{texts['subtitle']}</p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        st.markdown("---")
+        # Privacy Info
+        st.markdown(f"""
+        <div class="sidebar-info-card">
+            <h4>{texts['info_title']}</h4>
+            <p>{texts['info_text']}</p>
+        </div>
+        """, unsafe_allow_html=True)
         
-        if st.button(t("exit_reporting", lang), use_container_width=True, type="secondary", key="exit_btn"):
+        # Divider
+        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
+        
+        # Secure Process Info
+        st.markdown(f"""
+        <div class="sidebar-info-card">
+            <h4>{texts['secure_title']}</h4>
+            <p>{texts['secure_text']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Divider
+        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
+        
+        # Exit Button
+        if st.button(texts['exit'], use_container_width=True, type="secondary", key="exit_btn"):
             st.session_state.report_messages.clear()
             st.session_state.report_step = 0
             st.session_state.complaint_data.clear()
             clear_draft()
             st.switch_page("app.py")
-
-
-# =============================================================================
-# MAIN APPLICATION ENTRY POINT
-# =============================================================================
-
-def main():
-    """Main application controller"""
-    
-    lang = st.session_state.get("language", "العربية")
-    
-    # Set page config
-    st.set_page_config(
-        page_title=t("report_page_title", lang),
-        page_icon="🛡️",
-        layout="wide"
-    )
-
-    # Inject GOLDEN CSS
-    st.markdown(get_css_styles(lang), unsafe_allow_html=True)
-    
-    # Ensure Supabase
-    get_supabase_client()
-    
-    # Render GOLDEN header
-    st.markdown(f"""
-    <div class="header-container">
-        <h1 class="main-title">
-            🛡️ <span class="title-highlight">{t("report_main_title", lang)}</span>
-        </h1>
-        <p class="subtitle">{t("report_subtitle", lang)}</p>
-        <div class="header-badge">
-            {t("report_badge", lang)}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Render bot
-    render_report_bot()
-
-
-if __name__ == "__main__":
-    main()
