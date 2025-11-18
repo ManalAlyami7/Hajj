@@ -128,6 +128,10 @@ class LLMManager:
     def _get_client(_self):
         """Get cached OpenAI client"""
         api_key = st.secrets.get("OPENAI_API_KEY") or st.secrets.get("key")
+        LANGCHAIN_TRACING_V2 = st.secrets.get("LANGCHAIN_TRACING_V2")
+        LANGCHAIN_ENDPOINT = st.secrets.get("LANGCHAIN_ENDPOINT")
+        LANGCHAIN_API_KEY = st.secrets.get("LANGCHAIN_API_KEY")
+        LANGCHAIN_PROJECT = st.secrets.get("LANGCHAIN_PROJECT")
         if not api_key:
             logger.error("OpenAI API key not found")
             st.warning("⚠️ OpenAI API key missing in Streamlit secrets")
