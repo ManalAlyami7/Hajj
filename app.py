@@ -1,7 +1,6 @@
 """
 Hajj Chatbot - Main Application
-Modern, elegant design with professional Golden Islamic theme
-COMPLETE GOLDEN THEME FILE
+Modern, elegant design with professional Islamic theme
 """
 
 import streamlit as st
@@ -29,32 +28,21 @@ st.set_page_config(
 )
 
 # -----------------------------
-# GOLDEN THEME CSS - COMPLETE
+# Modern Professional CSS
 # -----------------------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Cairo:wght@400;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap');
-    
-    /* ===== Golden Theme Variables ===== */
-    :root {
-        --color-primary-gold: #d4af37;
-        --color-secondary-gold: #b8941f;
-        --color-dark-gold: #9d7a1a;
-        --color-light-gold: #e6c345;
-        --color-gold-glow: rgba(212, 175, 55, 0.3);
-        --color-bg-light: #f8fafc;
-        --color-bg-mid: #e2e8f0;
-    }
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Cairo:wght@400;600;700;800&display=swap');
     
     /* ===== Global Styles ===== */
     * {
         font-family: 'Poppins', 'Cairo', sans-serif;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s ease;
     }
     
-    /* ===== Main Background ===== */
+    /* ===== Main Background - Clean White/Light ===== */
     .main {
-        background: linear-gradient(135deg, var(--color-bg-light) 0%, var(--color-bg-mid) 100%);
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         background-attachment: fixed;
     }
     
@@ -64,16 +52,16 @@ st.markdown("""
         max-width: 1600px;
     }
     
-    /* ===== Header Section - GOLDEN ===== */
+    /* ===== Header Section ===== */
     .header-container {
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
         backdrop-filter: blur(20px);
         border-radius: 24px;
         padding: 3rem 2.5rem;
         margin-bottom: 2.5rem;
-        box-shadow: 0 10px 40px rgba(212, 175, 55, 0.15);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
         text-align: center;
-        border: 2px solid var(--color-primary-gold);
+        border: 2px solid #d4af37;
         animation: fadeInDown 0.6s ease-out;
         position: relative;
         overflow: hidden;
@@ -86,40 +74,23 @@ st.markdown("""
         left: 0;
         right: 0;
         height: 5px;
-        background: linear-gradient(90deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 50%, var(--color-primary-gold) 100%);
-        animation: shimmer 3s infinite;
-    }
-    
-    @keyframes shimmer {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
-    }
-    
-    @keyframes fadeInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        background: linear-gradient(90deg, #d4af37 0%, #f4e5b5 50%, #d4af37 100%);
     }
     
     .main-title {
         font-size: 3.5rem;
         font-weight: 900;
-        color: #1f2937;
+        color: #1a1f2e;
         margin: 0;
         letter-spacing: -0.5px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
     }
     
     .title-highlight {
-        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%);
+        background: linear-gradient(135deg, #d4af37 0%, #f4e5b5 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        filter: drop-shadow(0 2px 4px var(--color-gold-glow));
     }
     
     .subtitle {
@@ -132,17 +103,17 @@ st.markdown("""
     
     .header-badge {
         display: inline-block;
-        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%);
+        background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
         color: white;
         padding: 0.5rem 1.5rem;
         border-radius: 50px;
         font-size: 0.9rem;
         font-weight: 700;
         margin-top: 1rem;
-        box-shadow: 0 4px 15px var(--color-gold-glow);
+        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
     }
     
-    /* ===== Chat Messages - GOLDEN ===== */
+    /* ===== Chat Messages ===== */
     .stChatMessage {
         background: white !important;
         backdrop-filter: blur(10px);
@@ -150,118 +121,84 @@ st.markdown("""
         padding: 2rem !important;
         margin: 1.5rem 0 !important;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
-        border: 2px solid #e2e8f0;
+        border: 2px solid #f1f5f9;
         transition: all 0.3s ease !important;
-        animation: slideUp 0.3s ease-out;
-    }
-    
-    @keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
     }
     
     .stChatMessage:hover {
         transform: translateY(-3px);
-        box-shadow: 0 8px 30px rgba(212, 175, 55, 0.2) !important;
-        border-color: var(--color-primary-gold);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1) !important;
+        border-color: #d4af37;
     }
     
-    /* User Message - Golden Light */
+    /* User Message */
     .stChatMessage[data-testid*="user"] {
-        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
-        border-left: 5px solid var(--color-primary-gold);
+        background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;
+        border-left: 5px solid #0ea5e9;
     }
     
     /* Assistant Message */
     .stChatMessage[data-testid*="assistant"] {
-        background: linear-gradient(135deg, #f9fafb 0%, #f8fafc 100%) !important;
-        border-left: 5px solid var(--color-secondary-gold);
+        background: linear-gradient(135deg, #fef9e7 0%, #fef3c7 100%) !important;
+        border-left: 5px solid #d4af37;
     }
     
-    /* ===== SIDEBAR - GOLDEN DARK ===== */
+    /* ===== Sidebar Styling ===== */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1a1f2e 0%, #0f1419 100%) !important;
-        border-right: 3px solid var(--color-primary-gold) !important;
-        box-shadow: 2px 0 20px var(--color-gold-glow) !important;
+        background: linear-gradient(180deg, #1a1f2e 0%, #0f1419 100%);
+        border-right: 3px solid #d4af37;
     }
     
     [data-testid="stSidebar"] .block-container {
-        padding: 2rem 1.5rem !important;
+        padding: 2rem 1.5rem;
     }
     
-    /* Sidebar Text - ALL WHITE */
-    [data-testid="stSidebar"],
+    /* All sidebar text white */
     [data-testid="stSidebar"] *,
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] span,
     [data-testid="stSidebar"] div,
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] .stMarkdown {
+    [data-testid="stSidebar"] label {
         color: #f8fafc !important;
     }
     
-    /* Sidebar Headers - GOLDEN */
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {
-        color: var(--color-primary-gold) !important;
-        font-weight: 800 !important;
-        text-shadow: 0 2px 8px var(--color-gold-glow) !important;
+        color: #d4af37 !important;
+        font-weight: 800;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
     
-    /* Hide Navigation */
+    /* Hide default navigation */
     [data-testid="stSidebarNav"] {
         display: none !important;
     }
     
-    /* Sidebar Buttons - GOLDEN */
-    [data-testid="stSidebar"] .stButton > button,
-    [data-testid="stSidebar"] button {
-        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
+    /* Sidebar Buttons */
+    [data-testid="stSidebar"] .stButton > button {
+        background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
         color: white !important;
-        border: 2px solid var(--color-primary-gold) !important;
+        border: 2px solid #d4af37 !important;
         border-radius: 14px !important;
         padding: 1rem 1.5rem !important;
         font-weight: 700 !important;
         font-size: 1rem !important;
         transition: all 0.3s ease !important;
         width: 100% !important;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
-        box-shadow: 0 4px 15px var(--color-gold-glow) !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
     }
     
-    [data-testid="stSidebar"] .stButton > button:hover,
-    [data-testid="stSidebar"] button:hover {
-        background: linear-gradient(135deg, var(--color-light-gold) 0%, var(--color-primary-gold) 100%) !important;
-        transform: translateY(-3px) !important;
-        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5) !important;
+    [data-testid="stSidebar"] .stButton > button:hover {
+        background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%) !important;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
     }
     
-    /* Collapsed Sidebar Button - GOLDEN */
-    [data-testid="collapsedControl"] {
-        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
-        color: white !important;
-        border-radius: 0.5rem !important;
-        padding: 0.5rem !important;
-        box-shadow: 0 4px 12px var(--color-gold-glow) !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    [data-testid="collapsedControl"]:hover {
-        background: linear-gradient(135deg, var(--color-secondary-gold) 0%, var(--color-dark-gold) 100%) !important;
-        transform: scale(1.05) !important;
-        box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5) !important;
-    }
-    
-    /* Stat Cards - GOLDEN */
+    /* Stat Cards */
     .stat-card {
-        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%) !important;
+        background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
         backdrop-filter: blur(10px);
         padding: 2rem;
         border-radius: 18px;
@@ -274,30 +211,30 @@ st.markdown("""
     
     .stat-card:hover {
         transform: translateY(-5px) scale(1.02);
-        box-shadow: 0 10px 30px var(--color-gold-glow);
-        border-color: var(--color-primary-gold);
+        box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4);
+        border-color: rgba(212, 175, 55, 0.7);
     }
     
     .stat-number {
         font-size: 3rem;
         font-weight: 900;
-        color: var(--color-primary-gold) !important;
+        color: #d4af37;
         margin-bottom: 0.5rem;
-        text-shadow: 0 2px 8px var(--color-gold-glow);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
         line-height: 1;
     }
     
     .stat-label {
-        color: #f8fafc !important;
+        color: #f8fafc;
         font-size: 1rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 1.5px;
     }
     
-    /* Radio Buttons - GOLDEN */
+    /* Radio Buttons */
     [data-testid="stSidebar"] .stRadio > div {
-        background: rgba(212, 175, 55, 0.1) !important;
+        background: rgba(212, 175, 55, 0.1);
         padding: 1rem;
         border-radius: 14px;
         border: 2px solid rgba(212, 175, 55, 0.3);
@@ -309,71 +246,37 @@ st.markdown("""
         font-size: 1rem !important;
     }
     
-    /* Dividers - GOLDEN */
+    /* Dividers */
     [data-testid="stSidebar"] hr {
         border-color: rgba(212, 175, 55, 0.3) !important;
         border-width: 2px !important;
-        margin: 2rem 0 !important;
+        margin: 2rem 0;
     }
     
-    /* Chat Input - GOLDEN */
+    /* Chat Input */
     .stChatInput > div {
         border-radius: 24px;
-        border: 2px solid var(--color-primary-gold);
+        border: 2px solid #d4af37;
         background: white;
-        box-shadow: 0 4px 20px rgba(212, 175, 55, 0.15);
-        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
     
     .stChatInput > div:focus-within {
-        border-color: var(--color-secondary-gold);
-        box-shadow: 0 0 0 4px var(--color-gold-glow);
+        border-color: #b8941f;
+        box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
     }
     
     .stChatInput input {
-        color: #1f2937 !important;
+        color: #1a1f2e !important;
         font-size: 1.05rem !important;
         font-weight: 500;
     }
     
-    /* Primary Buttons - GOLDEN */
-    button[kind="primary"],
-    .stButton > button[kind="primary"],
-    div[data-testid="stButton"] > button[kind="primary"] {
-        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
-        border: none !important;
-        box-shadow: 0 4px 15px var(--color-gold-glow) !important;
-        color: white !important;
-        font-weight: 600 !important;
-        border-radius: 12px !important;
-        padding: 0.75rem 1.5rem !important;
-        transition: all 0.3s ease !important;
+    .stChatInput input::placeholder {
+        color: #94a3b8 !important;
     }
     
-    button[kind="primary"]:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5) !important;
-        background: linear-gradient(135deg, var(--color-light-gold) 0%, var(--color-primary-gold) 100%) !important;
-    }
-    
-    /* Secondary Buttons - GOLDEN */
-    button[kind="secondary"],
-    .stButton > button[kind="secondary"] {
-        background: white !important;
-        border: 2px solid var(--color-primary-gold) !important;
-        color: var(--color-secondary-gold) !important;
-        font-weight: 600 !important;
-        border-radius: 12px !important;
-        transition: all 0.3s ease !important;
-    }
-    
-    button[kind="secondary"]:hover {
-        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
-        color: white !important;
-        transform: translateY(-2px) !important;
-    }
-    
-    /* Scrollbar - GOLDEN */
+    /* Scrollbar */
     ::-webkit-scrollbar {
         width: 10px;
         height: 10px;
@@ -385,37 +288,12 @@ st.markdown("""
     }
     
     ::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%);
+        background: linear-gradient(180deg, #d4af37 0%, #b8941f 100%);
         border-radius: 10px;
-        box-shadow: 0 2px 8px var(--color-gold-glow);
     }
     
     ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(180deg, var(--color-light-gold) 0%, var(--color-primary-gold) 100%);
-    }
-    
-    /* Loading - GOLDEN */
-    .stSpinner > div {
-        border-color: var(--color-primary-gold) !important;
-    }
-    
-    /* Success/Error Messages */
-    .stSuccess {
-        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        border-left: 5px solid #22c55e;
-        border-radius: 12px;
-    }
-    
-    .stError {
-        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-        border-left: 5px solid #ef4444;
-        border-radius: 12px;
-    }
-    
-    .stInfo {
-        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        border-left: 5px solid var(--color-primary-gold);
-        border-radius: 12px;
+        background: linear-gradient(180deg, #f4e5b5 0%, #d4af37 100%);
     }
     
     /* RTL Support */
@@ -424,14 +302,91 @@ st.markdown("""
         text-align: right;
     }
     
-    /* Responsive */
+    /* Animations */
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+    
+    /* Loading Animation */
+    .stSpinner > div {
+        border-color: #d4af37 !important;
+    }
+    
+    /* Success/Error Messages */
+    .stSuccess {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        border-left: 5px solid #22c55e;
+        border-radius: 12px;
+        color: #065f46 !important;
+    }
+    
+    .stError {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        border-left: 5px solid #ef4444;
+        border-radius: 12px;
+        color: #991b1b !important;
+    }
+    
+    .stInfo {
+        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+        border-left: 5px solid #3b82f6;
+        border-radius: 12px;
+        color: #1e40af !important;
+    }
+    
+    /* Quick Actions Grid */
+    .quick-actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+    
+    /* Feature Badge */
+    .feature-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(212, 175, 55, 0.1);
+        border: 2px solid rgba(212, 175, 55, 0.3);
+        border-radius: 50px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #d4af37;
+        margin: 0.25rem;
+    }
+    
+    /* Responsive Design */
     @media (max-width: 768px) {
         .main-title {
             font-size: 2.5rem;
         }
+        
         .header-container {
             padding: 2rem 1.5rem;
         }
+        
+        .stat-card {
+            padding: 1.5rem;
+        }
+        
         .stat-number {
             font-size: 2.5rem;
         }
@@ -454,13 +409,28 @@ def _trim_session_memory(max_messages: int = 80, max_message_chars: int = 1000):
 
 
 # -----------------------------
-# Main Application
+# Initialize Application
 # -----------------------------
 def main():
     """Main application entry point"""
     
     # Initialize session state
     initialize_session_state()
+    
+    # # Load existing chat memory
+    # try:
+    #     load_chat_memory()
+    # except Exception:
+    #     pass
+
+    # # Trim session memory
+    # _trim_session_memory()
+    
+    # # Persist trimmed memory
+    # try:
+    #     save_chat_memory()
+    # except Exception:
+    #     pass
     
     # Initialize core managers
     db_manager = DatabaseManager()
@@ -474,17 +444,17 @@ def main():
     # Render sidebar
     sidebar.render()
     
-    # Render GOLDEN header
+    # Render modern header with translated badge
     lang = st.session_state.language
     is_rtl = lang in ['العربية', 'اردو']
     
-    # Badge text
+    # Build the badge text with translations - check all possible language values
     if 'عرب' in lang or lang == 'العربية' or lang == 'Arabic':
-        badge_text = "✨ مدعوم بالذكاء الاصطناعي • فوري • متعدد اللغات"
+        badge_text = f"✨ مدعوم بالذكاء الاصطناعي • فوري • متعدد اللغات"
     elif 'اردو' in lang or lang == 'Urdu':
-        badge_text = "✨ AI سے چلنے والا • حقیقی وقت • کثیر لسانی"
-    else:
-        badge_text = "✨ AI-Powered • Real-Time • Multilingual"
+        badge_text = f"✨ AI سے چلنے والا • حقیقی وقت • کثیر لسانی"
+    else:  # English
+        badge_text = f"✨ AI-Powered • Real-Time • Multilingual"
     
     st.markdown(f"""
     <div class="header-container{' rtl' if is_rtl else ''}">
@@ -503,4 +473,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
