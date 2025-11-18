@@ -737,9 +737,17 @@ def render_report_bot():
         
         st.markdown("---")
         
-        if st.button(t("exit_reporting", lang), use_container_width=True, type="secondary"):
+        # Exit button - يرجع للشات
+        if st.button(t("exit_reporting", lang), use_container_width=True, type="secondary", key="exit_btn"):
+            # Clear report session
+            st.session_state.report_messages = []
+            st.session_state.report_step = 0
+            st.session_state.complaint_data = {}
+            clear_draft()
+            # Return to main chat
             st.switch_page("app.py")
         
+        # Quick save button
         if st.button(t("quick_save", lang), use_container_width=True, key="quick_save"):
             save_draft_to_session(st.session_state.complaint_data, st.session_state.report_step)
             st.success(t("draft_saved", lang))
@@ -755,9 +763,7 @@ def main():
     
     # Initialize app mode
     if "app_mode" not in st.session_state:
-        st.session_state.app_mode = "chat"
-    if "show_exit_modal" not in st.session_state:
-        st.session_state.show_exit_modal = False
+        st.session_state.app_mode = "report"
     
     # Get language
     lang = st.session_state.get("language", "العربية")
@@ -776,8 +782,10 @@ def main():
     get_supabase_client()
     
     # Render GOLDEN header
+    is_rtl = lang in ["العربية", "اردو"]
+    
     st.markdown(f"""
-    <div class="header-container">
+    <div class="header-container" style="direction: {'rtl' if is_rtl else 'ltr'};">
         <h1 class="main-title">
             🛡️ <span class="title-highlight">{t("report_main_title", lang)}</span>
         </h1>
