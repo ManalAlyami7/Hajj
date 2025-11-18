@@ -120,7 +120,7 @@ class LLMManager:
             logger.error("OpenAI API key not found")
             st.warning("⚠️ OpenAI API key missing in Streamlit secrets")
             st.stop()
-        return openai_wrap(OpenAI(api_key=api_key))
+        return wrap_openai(OpenAI(api_key=api_key))
     
 
     
