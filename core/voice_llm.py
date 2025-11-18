@@ -113,7 +113,7 @@ class LLMManager:
         api_key = st.secrets.get("OPENAI_API_KEY") or st.secrets.get("key")
         LANGCHAIN_TRACING_V2 = st.secrets.get("LANGCHAIN_TRACING_V2")
         LANGCHAIN_ENDPOINT = st.secrets.get("LANGCHAIN_ENDPOINT")
-        LANGCHAIN_API_KEY = st.secrets.get("LANGCHAIN_API_KEY")
+        LANGCHAIN_API_KEY = st.secrets.get("LANGCHAIN_API_KEY2")
         LANGCHAIN_PROJECT = st.secrets.get("LANGCHAIN_PROJECT2")
 
         if not api_key:
