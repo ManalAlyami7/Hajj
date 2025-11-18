@@ -1,8 +1,8 @@
 """
 Hajj Complaint Reporting Bot - Main Application
 Enhanced UX with Golden Theme matching main app
-UNIFIED GOLDEN SIDEBAR matching Chat & Voicebot pages
 Multi-language support: English, Arabic, Urdu
+COMPLETE WORKING FILE
 """
 
 import streamlit as st
@@ -11,6 +11,7 @@ import pytz
 import time
 from typing import Dict, Optional, Tuple
 import logging
+import os
 
 # Supabase imports
 from supabase import create_client, Client
@@ -22,6 +23,38 @@ from utils.translations import t, LANGUAGE_MAP
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# API KEY CONFIGURATION
+# =============================================================================
+
+def configure_api_keys():
+    """Configure API keys from Streamlit secrets"""
+    try:
+        # Set OpenAI API key - try different possible key names
+        openai_key = None
+        
+        # Try different variations of the key name
+        possible_keys = ['key', 'openai_api_key', 'OPENAI_API_KEY', 'api_key']
+        
+        for key_name in possible_keys:
+            if key_name in st.secrets:
+                openai_key = st.secrets[key_name]
+                break
+        
+        if openai_key:
+            os.environ['OPENAI_API_KEY'] = openai_key
+            logger.info("OpenAI API key configured successfully")
+        else:
+            logger.warning("OpenAI API key not found in secrets")
+            
+    except Exception as e:
+        logger.error(f"Error configuring API keys: {e}")
+
+
+# Configure keys at module load
+configure_api_keys()
 
 
 # =============================================================================
@@ -66,11 +99,11 @@ def get_supabase_client() -> Optional[Client]:
 
 
 # =============================================================================
-# CSS STYLING - UNIFIED GOLDEN THEME WITH MATCHING SIDEBAR
+# CSS STYLING - COMPLETE GOLDEN THEME
 # =============================================================================
 
 def get_css_styles(lang: str) -> str:
-    """Generate CSS with RTL support and UNIFIED GOLDEN THEME"""
+    """Generate CSS with RTL support and GOLDEN THEME"""
     is_rtl = lang in ["العربية", "اردو"]
     text_align = "right" if is_rtl else "left"
     direction = "rtl" if is_rtl else "ltr"
@@ -346,44 +379,6 @@ def get_css_styles(lang: str) -> str:
     margin-bottom: 1rem !important;
 }}
 
-/* Navigation Buttons Container */
-.nav-buttons-container {{
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin: 1.5rem 0;
-}}
-
-.nav-button {{
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(184, 148, 31, 0.1) 100%);
-    border: 1px solid rgba(212, 175, 55, 0.3);
-    border-radius: 12px;
-    padding: 0.85rem 1rem;
-    color: #f8fafc !important;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}}
-
-.nav-button:hover {{
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(184, 148, 31, 0.2) 100%);
-    border-color: var(--color-primary-gold);
-    transform: translateX(-5px);
-}}
-
-.nav-button-icon {{
-    font-size: 1.5em;
-    filter: drop-shadow(0 2px 4px var(--color-gold-glow));
-}}
-
-.nav-button-text {{
-    font-size: 0.95rem;
-    font-weight: 600;
-}}
-
 /* Sidebar Info Cards */
 .sidebar-info-card {{
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(184, 148, 31, 0.1) 100%);
@@ -474,9 +469,9 @@ button[kind="primary"]:hover,
 
 button[kind="secondary"],
 .stButton > button[kind="secondary"] {{
-    background: white !important;
+    background: rgba(255, 255, 255, 0.1) !important;
     border: 2px solid var(--color-primary-gold) !important;
-    color: var(--color-secondary-gold) !important;
+    color: #f8fafc !important;
     font-weight: 600 !important;
     border-radius: 12px !important;
     transition: all 0.3s ease !important;
@@ -553,43 +548,6 @@ button[kind="secondary"]:hover {{
 # DATABASE OPERATIONS
 # =============================================================================
 
-def check_agency_in_sqlite(agency_name: str, db_manager) -> Tuple[bool, Dict]:
-    """Check if agency exists in SQLite agencies table"""
-    try:
-        normalized_name = agency_name.strip().lower()
-        
-        query = """
-        SELECT hajj_company_en, hajj_company_ar, city, country, 
-               email, contact_Info, rating_reviews, is_authorized,
-               google_maps_link, formatted_address
-        FROM agencies 
-        WHERE LOWER(hajj_company_en) = ? OR LOWER(hajj_company_ar) = ?
-        """
-        
-        result = db_manager.execute_query(query, (normalized_name, normalized_name))
-        
-        if result and len(result) > 0:
-            agency = result[0]
-            return True, {
-                "name_en": agency[0],
-                "name_ar": agency[1],
-                "city": agency[2],
-                "country": agency[3],
-                "email": agency[4],
-                "contact_info": agency[5],
-                "rating": agency[6],
-                "is_authorized": agency[7],
-                "maps_link": agency[8],
-                "address": agency[9]
-            }
-        
-        return False, {}
-        
-    except Exception as e:
-        logger.error(f"Error checking agency in SQLite: {e}")
-        return False, {}
-
-
 def check_agency_exists_in_supabase(
     agency_name: str, 
     city: str, 
@@ -655,20 +613,6 @@ def submit_complaint_to_db(
         return False, str(e)
 
 
-def save_draft_to_session(data: Dict, step: int):
-    """Save draft"""
-    st.session_state.draft_report = {
-        "data": data.copy(),
-        "step": step,
-        "timestamp": datetime.now(pytz.utc).isoformat()
-    }
-
-
-def load_draft_from_session() -> Optional[Dict]:
-    """Load draft"""
-    return st.session_state.get("draft_report", None)
-
-
 def clear_draft():
     """Clear draft"""
     if "draft_report" in st.session_state:
@@ -716,7 +660,7 @@ def render_unified_sidebar(lang: str):
             "info_text": "All reports are encrypted and stored securely. Your identity remains protected.",
             "secure_title": "✅ Secure Process",
             "secure_text": "End-to-end encrypted reporting system for your safety.",
-            "exit": "← Exit Reporting"
+            "exit": "← Back to Chat"
         },
         "العربية": {
             "title": "تقرير الشكوى",
@@ -725,7 +669,7 @@ def render_unified_sidebar(lang: str):
             "info_text": "جميع التقارير مشفرة ومحفوظة بشكل آمن. هويتك محمية تماماً.",
             "secure_title": "✅ عملية آمنة",
             "secure_text": "نظام إبلاغ مشفر من طرف إلى طرف لسلامتك.",
-            "exit": "← الخروج من الإبلاغ"
+            "exit": "← العودة للمحادثة"
         },
         "اردو": {
             "title": "شکایت کی رپورٹ",
@@ -734,7 +678,7 @@ def render_unified_sidebar(lang: str):
             "info_text": "تمام رپورٹس خفیہ اور محفوظ طریقے سے محفوظ ہیں۔ آپ کی شناخت محفوظ رہتی ہے۔",
             "secure_title": "✅ محفوظ عمل",
             "secure_text": "آپ کی حفاظت کے لیے اینڈ ٹو اینڈ خفیہ رپورٹنگ سسٹم۔",
-            "exit": "← رپورٹنگ سے باہر نکلیں"
+            "exit": "← چیٹ پر واپس جائیں"
         }
     }
     
@@ -749,6 +693,26 @@ def render_unified_sidebar(lang: str):
             <p class="sidebar-subtitle">{texts['subtitle']}</p>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Navigation Buttons
+        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if st.button("💬", use_container_width=True, key="nav_chat", type="secondary"):
+                st.switch_page("app.py")
+        
+        with col2:
+            if st.button("🎙️", use_container_width=True, key="nav_voice", type="secondary"):
+                st.switch_page("pages/voicebot.py")
+        
+        with col3:
+            if st.button("🛡️", use_container_width=True, key="nav_report", type="primary"):
+                st.rerun()
+        
+        # Divider
+        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
         
         # Privacy Info
         st.markdown(f"""
@@ -772,10 +736,159 @@ def render_unified_sidebar(lang: str):
         # Divider
         st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
         
-        # Exit Button
-        if st.button(texts['exit'], use_container_width=True, type="secondary", key="exit_btn"):
+        # Exit Button (Golden)
+        if st.button(texts['exit'], use_container_width=True, type="primary", key="exit_btn_sidebar"):
             st.session_state.report_messages.clear()
             st.session_state.report_step = 0
             st.session_state.complaint_data.clear()
             clear_draft()
             st.switch_page("app.py")
+
+
+# =============================================================================
+# MAIN REPORT BOT INTERFACE
+# =============================================================================
+
+def render_report_bot():
+    """Render report bot interface"""
+    
+    lang = st.session_state.get("language", "العربية")
+    
+    # Initialize session
+    if "report_messages" not in st.session_state:
+        st.session_state.report_messages = []
+        st.session_state.report_step = 0
+        st.session_state.complaint_data = {}
+    
+    # Initialize LLM
+    if "llm_manager" not in st.session_state:
+        st.session_state.llm_manager = RLLMManager()
+
+    # Get clients
+    supabase_client = get_supabase_client()
+    db_manager = st.session_state.get("db_manager", None)
+    
+    # Initial welcome
+    if st.session_state.report_step == 0:
+        st.session_state.report_messages = [
+            {"role": "assistant", "content": t("report_welcome", lang)},
+            {"role": "assistant", "content": t("report_step_1", lang)}
+        ]
+        st.session_state.report_step = 1
+    
+    # Show progress
+    if st.session_state.report_step > 0:
+        show_progress_bar(st.session_state.report_step, lang=lang)
+    
+    # Display chat
+    for message in st.session_state.report_messages:
+        with st.chat_message(message["role"]):
+            if message["role"] == "assistant":
+                st.markdown(
+                    f'<div class="bot-message">{message["content"]}</div>', 
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(message["content"])
+    
+    # Chat input
+    if prompt := st.chat_input(t("chat_input_placeholder", lang), key="report_chat_input"):
+        st.session_state.report_messages.append({"role": "user", "content": prompt})
+        
+        step = st.session_state.report_step
+        data = st.session_state.complaint_data
+        
+        # Process based on step
+        if step == 1:
+            data["agency_name"] = prompt
+            st.session_state.report_messages.append({
+                "role": "assistant",
+                "content": t("report_agency_recorded", lang, name=prompt) + "<br><br>" + t("report_step_2", lang)
+            })
+            st.session_state.report_step = 2
+            
+        elif step == 2:
+            data["city"] = prompt
+            st.session_state.report_messages.append({
+                "role": "assistant",
+                "content": t("report_location_recorded", lang, city=prompt) + "<br><br>" + t("report_step_3", lang)
+            })
+            st.session_state.report_step = 3
+            
+        elif step == 3:
+            data["complaint_text"] = prompt
+            st.session_state.report_messages.append({
+                "role": "assistant",
+                "content": t("report_details_recorded", lang) + "<br><br>" + t("report_step_4", lang)
+            })
+            st.session_state.report_step = 4
+            
+        elif step == 4:
+            skip_words = ["skip", "تخطي", "تخطى", "چھوڑیں"]
+            contact = "" if any(word in prompt.lower() for word in skip_words) else prompt
+            
+            success, message = submit_complaint_to_db(data, contact, supabase_client, db_manager, lang)
+            
+            if success:
+                st.session_state.report_messages.append({
+                    "role": "assistant",
+                    "content": t("report_success", lang, message=message)
+                })
+                st.success(t("report_submitted", lang))
+                time.sleep(2)
+                
+                # Clear and return to chat
+                st.session_state.report_messages.clear()
+                st.session_state.report_step = 0
+                st.session_state.complaint_data.clear()
+                st.switch_page("app.py")
+            else:
+                st.error(message)
+        
+        st.rerun()
+
+
+# =============================================================================
+# MAIN APPLICATION ENTRY POINT
+# =============================================================================
+
+def main():
+    """Main application controller"""
+    
+    lang = st.session_state.get("language", "العربية")
+    
+    # Set page config
+    st.set_page_config(
+        page_title=t("report_page_title", lang),
+        page_icon="🛡️",
+        layout="wide"
+    )
+
+    # Inject GOLDEN CSS
+    st.markdown(get_css_styles(lang), unsafe_allow_html=True)
+    
+    # Ensure Supabase
+    get_supabase_client()
+    
+    # Render GOLDEN header
+    st.markdown(f"""
+    <div class="header-container">
+        <h1 class="main-title">
+            🛡️ <span class="title-highlight">{t("report_main_title", lang)}</span>
+        </h1>
+        <p class="subtitle">{t("report_subtitle", lang)}</p>
+        <div class="header-badge">
+            {t("report_badge", lang)}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Render unified sidebar
+    render_unified_sidebar(lang)
+    
+    # Render bot
+    render_report_bot()
+
+
+if __name__ == "__main__":
+    main()
