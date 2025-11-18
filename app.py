@@ -1,6 +1,6 @@
 """
 Hajj Chatbot - Main Application
-Modern, elegant design with professional Islamic theme
+Modern, elegant design with professional Golden Islamic theme
 """
 
 import streamlit as st
@@ -28,11 +28,20 @@ st.set_page_config(
 )
 
 # -----------------------------
-# Modern Professional CSS
+# Modern Professional CSS - Golden Theme
 # -----------------------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Cairo:wght@400;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Cairo:wght@400;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap');
+    
+    /* ===== Golden Theme Variables ===== */
+    :root {
+        --color-primary-gold: #d4af37;
+        --color-secondary-gold: #b8941f;
+        --color-dark-gold: #9d7a1a;
+        --color-light-gold: #e6c345;
+        --color-gold-glow: rgba(212, 175, 55, 0.3);
+    }
     
     /* ===== Global Styles ===== */
     * {
@@ -40,9 +49,9 @@ st.markdown("""
         transition: all 0.3s ease;
     }
     
-    /* ===== Main Background - Clean White/Light ===== */
+    /* ===== Main Background - Clean Light with Golden Touch ===== */
     .main {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
         background-attachment: fixed;
     }
     
@@ -52,16 +61,16 @@ st.markdown("""
         max-width: 1600px;
     }
     
-    /* ===== Header Section ===== */
+    /* ===== Header Section - Golden Theme ===== */
     .header-container {
-        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
         backdrop-filter: blur(20px);
         border-radius: 24px;
         padding: 3rem 2.5rem;
         margin-bottom: 2.5rem;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 10px 40px rgba(212, 175, 55, 0.15);
         text-align: center;
-        border: 2px solid #d4af37;
+        border: 2px solid var(--color-primary-gold);
         animation: fadeInDown 0.6s ease-out;
         position: relative;
         overflow: hidden;
@@ -74,23 +83,30 @@ st.markdown("""
         left: 0;
         right: 0;
         height: 5px;
-        background: linear-gradient(90deg, #d4af37 0%, #f4e5b5 50%, #d4af37 100%);
+        background: linear-gradient(90deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 50%, var(--color-primary-gold) 100%);
+        animation: shimmer 3s infinite;
+    }
+    
+    @keyframes shimmer {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
     }
     
     .main-title {
         font-size: 3.5rem;
         font-weight: 900;
-        color: #1a1f2e;
+        color: #1f2937;
         margin: 0;
         letter-spacing: -0.5px;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.05);
     }
     
     .title-highlight {
-        background: linear-gradient(135deg, #d4af37 0%, #f4e5b5 100%);
+        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+        filter: drop-shadow(0 2px 4px var(--color-gold-glow));
     }
     
     .subtitle {
@@ -103,17 +119,17 @@ st.markdown("""
     
     .header-badge {
         display: inline-block;
-        background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
+        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%);
         color: white;
         padding: 0.5rem 1.5rem;
         border-radius: 50px;
         font-size: 0.9rem;
         font-weight: 700;
         margin-top: 1rem;
-        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        box-shadow: 0 4px 15px var(--color-gold-glow);
     }
     
-    /* ===== Chat Messages ===== */
+    /* ===== Chat Messages - Golden Theme ===== */
     .stChatMessage {
         background: white !important;
         backdrop-filter: blur(10px);
@@ -121,32 +137,45 @@ st.markdown("""
         padding: 2rem !important;
         margin: 1.5rem 0 !important;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
-        border: 2px solid #f1f5f9;
+        border: 2px solid #e2e8f0;
         transition: all 0.3s ease !important;
+        animation: slideUp 0.3s ease-out;
     }
     
     .stChatMessage:hover {
         transform: translateY(-3px);
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1) !important;
-        border-color: #d4af37;
+        box-shadow: 0 8px 30px rgba(212, 175, 55, 0.2) !important;
+        border-color: var(--color-primary-gold);
     }
     
-    /* User Message */
+    /* User Message - Golden Light */
     .stChatMessage[data-testid*="user"] {
-        background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;
-        border-left: 5px solid #0ea5e9;
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+        border-left: 5px solid var(--color-primary-gold);
     }
     
-    /* Assistant Message */
+    /* Assistant Message - Golden Soft */
     .stChatMessage[data-testid*="assistant"] {
-        background: linear-gradient(135deg, #fef9e7 0%, #fef3c7 100%) !important;
-        border-left: 5px solid #d4af37;
+        background: linear-gradient(135deg, #f9fafb 0%, #f8fafc 100%) !important;
+        border-left: 5px solid var(--color-secondary-gold);
     }
     
-    /* ===== Sidebar Styling ===== */
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* ===== Sidebar Styling - Golden Dark Theme ===== */
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #1a1f2e 0%, #0f1419 100%);
-        border-right: 3px solid #d4af37;
+        border-right: 3px solid var(--color-primary-gold);
+        box-shadow: 2px 0 20px var(--color-gold-glow);
     }
     
     [data-testid="stSidebar"] .block-container {
@@ -165,9 +194,9 @@ st.markdown("""
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {
-        color: #d4af37 !important;
+        color: var(--color-primary-gold) !important;
         font-weight: 800;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        text-shadow: 0 2px 8px var(--color-gold-glow);
     }
     
     /* Hide default navigation */
@@ -175,11 +204,11 @@ st.markdown("""
         display: none !important;
     }
     
-    /* Sidebar Buttons */
+    /* Sidebar Buttons - Golden Theme */
     [data-testid="stSidebar"] .stButton > button {
-        background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
+        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
         color: white !important;
-        border: 2px solid #d4af37 !important;
+        border: 2px solid var(--color-primary-gold) !important;
         border-radius: 14px !important;
         padding: 1rem 1.5rem !important;
         font-weight: 700 !important;
@@ -187,16 +216,32 @@ st.markdown("""
         transition: all 0.3s ease !important;
         width: 100% !important;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-        box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
+        box-shadow: 0 4px 15px var(--color-gold-glow);
     }
     
     [data-testid="stSidebar"] .stButton > button:hover {
-        background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%) !important;
+        background: linear-gradient(135deg, var(--color-light-gold) 0%, var(--color-primary-gold) 100%) !important;
         transform: translateY(-3px);
         box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
     }
     
-    /* Stat Cards */
+    /* Collapsed Sidebar Button - Golden */
+    [data-testid="collapsedControl"] {
+        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
+        color: white !important;
+        border-radius: 0.5rem !important;
+        padding: 0.5rem !important;
+        box-shadow: 0 4px 12px var(--color-gold-glow) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    [data-testid="collapsedControl"]:hover {
+        background: linear-gradient(135deg, var(--color-secondary-gold) 0%, var(--color-dark-gold) 100%) !important;
+        transform: scale(1.05) !important;
+        box-shadow: 0 6px 16px rgba(212, 175, 55, 0.5) !important;
+    }
+    
+    /* Stat Cards - Golden Theme */
     .stat-card {
         background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
         backdrop-filter: blur(10px);
@@ -211,16 +256,16 @@ st.markdown("""
     
     .stat-card:hover {
         transform: translateY(-5px) scale(1.02);
-        box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4);
-        border-color: rgba(212, 175, 55, 0.7);
+        box-shadow: 0 10px 30px var(--color-gold-glow);
+        border-color: var(--color-primary-gold);
     }
     
     .stat-number {
         font-size: 3rem;
         font-weight: 900;
-        color: #d4af37;
+        color: var(--color-primary-gold);
         margin-bottom: 0.5rem;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        text-shadow: 0 2px 8px var(--color-gold-glow);
         line-height: 1;
     }
     
@@ -232,7 +277,7 @@ st.markdown("""
         letter-spacing: 1.5px;
     }
     
-    /* Radio Buttons */
+    /* Radio Buttons - Golden Theme */
     [data-testid="stSidebar"] .stRadio > div {
         background: rgba(212, 175, 55, 0.1);
         padding: 1rem;
@@ -246,28 +291,29 @@ st.markdown("""
         font-size: 1rem !important;
     }
     
-    /* Dividers */
+    /* Dividers - Golden */
     [data-testid="stSidebar"] hr {
         border-color: rgba(212, 175, 55, 0.3) !important;
         border-width: 2px !important;
         margin: 2rem 0;
     }
     
-    /* Chat Input */
+    /* Chat Input - Golden Theme */
     .stChatInput > div {
         border-radius: 24px;
-        border: 2px solid #d4af37;
+        border: 2px solid var(--color-primary-gold);
         background: white;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 4px 20px rgba(212, 175, 55, 0.15);
+        transition: all 0.3s ease;
     }
     
     .stChatInput > div:focus-within {
-        border-color: #b8941f;
-        box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
+        border-color: var(--color-secondary-gold);
+        box-shadow: 0 0 0 4px var(--color-gold-glow);
     }
     
     .stChatInput input {
-        color: #1a1f2e !important;
+        color: #1f2937 !important;
         font-size: 1.05rem !important;
         font-weight: 500;
     }
@@ -276,7 +322,7 @@ st.markdown("""
         color: #94a3b8 !important;
     }
     
-    /* Scrollbar */
+    /* Scrollbar - Golden Theme */
     ::-webkit-scrollbar {
         width: 10px;
         height: 10px;
@@ -288,12 +334,53 @@ st.markdown("""
     }
     
     ::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, #d4af37 0%, #b8941f 100%);
+        background: linear-gradient(180deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%);
         border-radius: 10px;
+        box-shadow: 0 2px 8px var(--color-gold-glow);
     }
     
     ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(180deg, #f4e5b5 0%, #d4af37 100%);
+        background: linear-gradient(180deg, var(--color-light-gold) 0%, var(--color-primary-gold) 100%);
+    }
+    
+    /* Primary Buttons - Golden Theme */
+    button[kind="primary"],
+    .stButton > button[kind="primary"],
+    div[data-testid="stButton"] > button[kind="primary"] {
+        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
+        border: none !important;
+        box-shadow: 0 4px 15px var(--color-gold-glow) !important;
+        color: white !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+        padding: 0.75rem 1.5rem !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    button[kind="primary"]:hover,
+    .stButton > button[kind="primary"]:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5) !important;
+        background: linear-gradient(135deg, var(--color-light-gold) 0%, var(--color-primary-gold) 100%) !important;
+    }
+    
+    /* Secondary Buttons - Golden Theme */
+    button[kind="secondary"],
+    .stButton > button[kind="secondary"] {
+        background: white !important;
+        border: 2px solid var(--color-primary-gold) !important;
+        color: var(--color-secondary-gold) !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+        padding: 0.75rem 1.5rem !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    button[kind="secondary"]:hover {
+        background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
+        color: white !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 15px var(--color-gold-glow) !important;
     }
     
     /* RTL Support */
@@ -323,12 +410,12 @@ st.markdown("""
         }
     }
     
-    /* Loading Animation */
+    /* Loading Animation - Golden */
     .stSpinner > div {
-        border-color: #d4af37 !important;
+        border-color: var(--color-primary-gold) !important;
     }
     
-    /* Success/Error Messages */
+    /* Success/Error Messages - Golden Accent */
     .stSuccess {
         background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
         border-left: 5px solid #22c55e;
@@ -344,10 +431,17 @@ st.markdown("""
     }
     
     .stInfo {
-        background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-        border-left: 5px solid #3b82f6;
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 5px solid var(--color-primary-gold);
         border-radius: 12px;
-        color: #1e40af !important;
+        color: #92400e !important;
+    }
+    
+    .stWarning {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 5px solid #f59e0b;
+        border-radius: 12px;
+        color: #78350f !important;
     }
     
     /* Quick Actions Grid */
@@ -358,19 +452,45 @@ st.markdown("""
         margin: 2rem 0;
     }
     
-    /* Feature Badge */
+    /* Feature Badge - Golden */
     .feature-badge {
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        background: rgba(212, 175, 55, 0.1);
+        background: rgba(212, 175, 55, 0.15);
         border: 2px solid rgba(212, 175, 55, 0.3);
         border-radius: 50px;
         padding: 0.5rem 1rem;
         font-size: 0.9rem;
         font-weight: 600;
-        color: #d4af37;
+        color: var(--color-secondary-gold);
         margin: 0.25rem;
+    }
+    
+    /* Welcome Box - Golden */
+    .welcome-box {
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border: 2px solid var(--color-primary-gold);
+        border-radius: 20px;
+        padding: 2rem;
+        margin: 2rem 0;
+        box-shadow: 0 4px 20px var(--color-gold-glow);
+    }
+    
+    .welcome-box h3 {
+        color: var(--color-secondary-gold);
+        margin-bottom: 1rem;
+    }
+    
+    .welcome-box ul {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .welcome-box li {
+        padding: 0.5rem 0;
+        color: #78350f;
+        font-weight: 500;
     }
     
     /* Responsive Design */
@@ -444,7 +564,7 @@ def main():
     # Render sidebar
     sidebar.render()
     
-    # Render modern header with translated badge
+    # Render modern header with translated badge - Golden Theme
     lang = st.session_state.language
     is_rtl = lang in ['العربية', 'اردو']
     
