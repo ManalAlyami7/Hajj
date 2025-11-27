@@ -1,6 +1,6 @@
 """
 Professional Sidebar Interface Module
-Enhanced with sleek top-corner report button and team section
+Enhanced with sleek top-corner report button
 """
 
 import streamlit as st
@@ -68,7 +68,6 @@ class SidebarInterface:
             self._render_examples,
             self._render_clear_button,
             self._render_features,
-            self._render_team,
             self._render_footer
         ]
         
@@ -660,74 +659,6 @@ class SidebarInterface:
         </div>
         """
         st.markdown(feature_html, unsafe_allow_html=True)
-    
-    # ------------------------------------------------------------------------
-    # TEAM SECTION
-    # ------------------------------------------------------------------------
-    def _render_team(self) -> None:
-        """Render team members section"""
-        lang = st.session_state.get("language", "English")
-        
-        # Title based on language
-        if lang == "العربية":
-            title = "👥 فريق التطوير"
-        elif lang == "اردو":
-            title = "👥 ڈویلپمنٹ ٹیم"
-        else:
-            title = "👥 Development Team"
-        
-        st.markdown(f"<h3>{title}</h3>", unsafe_allow_html=True)
-        
-        # Team members data
-        team_members = [
-            {
-                "name": "Raghad Almangour",
-                "name_ar": "رغد المنقور",
-                "linkedin": "https://linkedin.com/in/raghad-almanqour"
-            },
-            {
-                "name": "Manal Alyami",
-                "name_ar": "منال اليامي",
-                "linkedin": "https://www.linkedin.com/in/manal-alyami/"
-            },
-            {
-                "name": "Nora Alhuwaidi",
-                "name_ar": "نورا الهويدي",
-                "linkedin": "https://www.linkedin.com/in/nora-alhuwaidi-2a89841b3/"
-            }
-        ]
-        
-        # Render each team member
-        for member in team_members:
-            name = member["name_ar"] if lang == "العربية" else member["name"]
-            
-            team_html = f"""
-            <div style="
-                background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
-                padding: 1rem;
-                border-radius: 12px;
-                margin-bottom: 0.8rem;
-                border: 2px solid rgba(212, 175, 55, 0.3);
-                transition: all 0.3s ease;
-            " onmouseover="this.style.background='linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(212, 175, 55, 0.15) 100%)'; this.style.borderColor='rgba(212, 175, 55, 0.6)'; this.style.transform='translateX(5px)';" 
-               onmouseout="this.style.background='linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%)'; this.style.borderColor='rgba(212, 175, 55, 0.3)'; this.style.transform='translateX(0)';">
-                <p style="color: #f8fafc; font-weight: 700; margin: 0 0 0.5rem 0; font-size: 0.95rem;">
-                    {name}
-                </p>
-                <a href="{member['linkedin']}" target="_blank" style="
-                    color: #d4af37;
-                    text-decoration: none;
-                    font-size: 0.85rem;
-                    font-weight: 600;
-                    display: flex;
-                    align-items: center;
-                    gap: 0.4rem;
-                " onmouseover="this.style.color='#f4e5b5';" onmouseout="this.style.color='#d4af37';">
-                    🔗 LinkedIn
-                </a>
-            </div>
-            """
-            st.markdown(team_html, unsafe_allow_html=True)
     
     # ------------------------------------------------------------------------
     # FOOTER SECTION
