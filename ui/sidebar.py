@@ -664,7 +664,7 @@ class SidebarInterface:
     # FOOTER SECTION
     # ------------------------------------------------------------------------
     def _render_footer(self) -> None:
-        """Render a professional multilingual footer with team LinkedIn profiles."""
+        """Render professional footer with multilingual support and LinkedIn links"""
         lang = st.session_state.get("language", "English")
         year = datetime.now().year
 
@@ -672,52 +672,33 @@ class SidebarInterface:
         developed_by_text = {
             "English": "Developed by",
             "العربية": "تم التطوير بواسطة",
-            "اردو": "کی طرف سے تیار کردہ"
+            "اردو": "کی طرف سے تیار شدہ"
         }.get(lang, "Developed by")
 
-        team_text = {
-            "English": "Team",
-            "العربية": "فريق العمل",
-            "اردو": "ٹیم"
-        }.get(lang, "Team")
-
-        linkedin_text = {
-            "English": "LinkedIn Profiles",
-            "العربية": "حسابات لينكدإن",
-            "اردو": "لنکڈاِن پروفائلز"
-        }.get(lang, "LinkedIn Profiles")
-
-        direction = "rtl" if lang in ["العربية", "اردو"] else "ltr"
+        contact_text = {
+            "English": "Connect on LinkedIn",
+            "العربية": "تواصلوا عبر لينكدإن",
+            "اردو": "لنکڈاِن پر رابطہ کریں"
+        }.get(lang, "Connect on LinkedIn")
 
         footer_html = f"""
-        <div class="sidebar-footer" style="text-align: {'right' if direction=='rtl' else 'left'}; direction:{direction};">
-            <p style="margin:0 0 0.4rem 0;">© {year}</p>
-            <p style="margin:0 0 0.2rem 0; font-weight:600;">{developed_by_text} — {team_text}</p>
-
-            <div style="margin-top:0.4rem;">
-                <a href="https://linkedin.com/in/raghad-almanqour" target="_blank" style="display:block; margin-bottom:4px; text-decoration:none;">
-                    🔗 Raghad Almanqour
-                </a>
-                <a href="https://www.linkedin.com/in/manal-alyami/" target="_blank" style="display:block; margin-bottom:4px; text-decoration:none;">
-                    🔗 Manal Alyami
-                </a>
-                <a href="https://www.linkedin.com/in/nora-alhuwaidi-2a89841b3/" target="_blank" style="display:block; margin-bottom:4px; text-decoration:none;">
-                    🔗 Nora Alhuwaidi
-                </a>
-            </div>
-
-            <p style="margin-top:0.5rem; opacity:0.7; font-size:0.85rem;">
-                {linkedin_text}
+        <div class="sidebar-footer">
+            <p>© {year} {t('assistant_title', lang).replace('🕋 ', '')}</p>
+            <p style="margin-top: 0.3rem;">
+                {developed_by_text}: 
+                <a href="https://linkedin.com/in/raghad-almanqour" target="_blank">Raghad</a>, 
+                <a href="https://www.linkedin.com/in/manal-alyami/" target="_blank">Manal</a>, 
+                <a href="https://www.linkedin.com/in/nora-alhuwaidi-2a89841b3/" target="_blank">Nora</a>
             </p>
-
-            <p style="margin-top: 0.6rem;">
+            <p style="margin-top: 0.3rem;">
+                {contact_text}
+            </p>
+            <p style="margin-top: 0.5rem;">
                 {t('footer_powered', lang)} <strong>{t('footer_chat', lang)}</strong>
             </p>
         </div>
         """
-
         st.markdown(footer_html, unsafe_allow_html=True)
-
 
     
     # ------------------------------------------------------------------------
