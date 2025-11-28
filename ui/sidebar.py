@@ -37,6 +37,10 @@ LANGUAGE_OPTIONS = {
     "اردو 🇵🇰": "اردو"
 }
 
+st.markdown("""
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+""", unsafe_allow_html=True)
+
 
 # ============================================================================
 # SIDEBAR INTERFACE CLASS
@@ -664,11 +668,10 @@ class SidebarInterface:
     # FOOTER SECTION
     # ------------------------------------------------------------------------
     def _render_footer(self) -> None:
-        """Render professional footer with multilingual support and LinkedIn links"""
+        """Render footer with LinkedIn icons for each name"""
         lang = st.session_state.get("language", "English")
         year = datetime.now().year
 
-        # النصوص حسب اللغة
         developed_by_text = {
             "English": "Developed by",
             "العربية": "تم التطوير بواسطة",
@@ -682,23 +685,39 @@ class SidebarInterface:
         }.get(lang, "Connect on LinkedIn")
 
         footer_html = f"""
-        <div class="sidebar-footer">
+        <div class="sidebar-footer" style="line-height: 1.7;">
+
             <p>© {year} {t('assistant_title', lang).replace('🕋 ', '')}</p>
-            <p style="margin-top: 0.3rem;">
-                {developed_by_text}: 
-                <a href="https://linkedin.com/in/raghad-almanqour" target="_blank">Raghad Almangour</a>, 
-                <a href="https://www.linkedin.com/in/manal-alyami/" target="_blank">Manal Alyami</a>, 
+
+            <p style="margin-top: 0.3rem;">{developed_by_text}:</p>
+
+            <p>
+                <i class="fab fa-linkedin" style="color:#0077b5;margin-left:6px;"></i>
+                <a href="https://linkedin.com/in/raghad-almanqour" target="_blank">Raghad Almangour</a>
+            </p>
+
+            <p>
+                <i class="fab fa-linkedin" style="color:#0077b5;margin-left:6px;"></i>
+                <a href="https://www.linkedin.com/in/manal-alyami/" target="_blank">Manal Alyami</a>
+            </p>
+
+            <p>
+                <i class="fab fa-linkedin" style="color:#0077b5;margin-left:6px;"></i>
                 <a href="https://www.linkedin.com/in/nora-alhuwaidi-2a89841b3/" target="_blank">Nora Alhuwaidi</a>
             </p>
+
             <p style="margin-top: 0.3rem;">
                 {contact_text}
             </p>
+
             <p style="margin-top: 0.5rem;">
                 {t('footer_powered', lang)} <strong>{t('footer_chat', lang)}</strong>
             </p>
         </div>
         """
+
         st.markdown(footer_html, unsafe_allow_html=True)
+
 
     
     # ------------------------------------------------------------------------
