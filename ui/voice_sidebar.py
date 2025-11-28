@@ -554,18 +554,58 @@ class VoicebotSidebarRenderer:
             st.error(f"Error loading memory: {str(e)}")
     
     def _render_footer(self) -> None:
-        """Render professional footer"""
-        year = datetime.now().year
-        
-        footer_html = f"""
-        <div class="sidebar-footer">
-            <p>© {year} {t('footer_title_voice', self.language_code)}</p>
-            <p style="margin-top: 0.5rem;">
-                {t('footer_powered', self.language_code)} <strong>{t('footer_tech', self.language_code)}</strong>
-            </p>
-        </div>
-        """
-        st.markdown(footer_html, unsafe_allow_html=True)
+            """Render professional footer with multilingual support and LinkedIn links"""
+            lang = st.session_state.get("language", "English")
+            year = datetime.now().year
+
+            # النصوص حسب اللغة
+            developed_by_text = {
+                "English": "Developed by",
+                "العربية": "تم التطوير بواسطة",
+                "اردو": "کی طرف سے تیار شدہ"
+            }.get(lang, "Developed by")
+
+            footer_html = f"""
+            <div class="sidebar-footer">
+                <p>© {year} {t('assistant_title', lang).replace('🕋 ', '')}</p>
+                <p style="margin-top: 0.8rem; font-weight: 600; color: #d4af37;">
+                    {developed_by_text}
+                </p>
+                <div style="margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <a href="https://linkedin.com/in/raghad-almanqour" target="_blank" 
+                        style="display: flex; align-items: center; gap: 0.4rem; text-decoration: none; color: #cbd5e1; transition: color 0.3s;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#0A66C2">
+                                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                            </svg>
+                            <span>Raghad Almangour</span>
+                        </a>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <a href="https://www.linkedin.com/in/manal-alyami/" target="_blank" 
+                        style="display: flex; align-items: center; gap: 0.4rem; text-decoration: none; color: #cbd5e1; transition: color 0.3s;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#0A66C2">
+                                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                            </svg>
+                            <span>Manal Alyami</span>
+                        </a>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <a href="https://www.linkedin.com/in/nora-alhuwaidi-2a89841b3/" target="_blank" 
+                        style="display: flex; align-items: center; gap: 0.4rem; text-decoration: none; color: #cbd5e1; transition: color 0.3s;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="#0A66C2">
+                                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                            </svg>
+                            <span>Nora Alhuwaidi</span>
+                        </a>
+                    </div>
+                </div>
+                <p style="margin-top: 0.8rem;">
+                    {t('footer_powered', lang)} <strong>{t('footer_chat', lang)}</strong>
+                </p>
+            </div>
+            """
+            st.markdown(footer_html, unsafe_allow_html=True)
     
     # ------------------------------------------------------------------------
     # HELPER METHODS
