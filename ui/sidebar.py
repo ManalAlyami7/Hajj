@@ -664,19 +664,42 @@ class SidebarInterface:
     # FOOTER SECTION
     # ------------------------------------------------------------------------
     def _render_footer(self) -> None:
-        """Render professional footer"""
+        """Render professional footer with multilingual support and LinkedIn links"""
         lang = st.session_state.get("language", "English")
         year = datetime.now().year
-        
+
+        # النصوص حسب اللغة
+        developed_by_text = {
+            "English": "Developed by",
+            "العربية": "تم التطوير بواسطة",
+            "اردو": "کی طرف سے تیار شدہ"
+        }.get(lang, "Developed by")
+
+        contact_text = {
+            "English": "Connect on LinkedIn",
+            "العربية": "تواصلوا عبر لينكدإن",
+            "اردو": "لنکڈاِن پر رابطہ کریں"
+        }.get(lang, "Connect on LinkedIn")
+
         footer_html = f"""
         <div class="sidebar-footer">
             <p>© {year} {t('assistant_title', lang).replace('🕋 ', '')}</p>
+            <p style="margin-top: 0.3rem;">
+                {developed_by_text}: 
+                <a href="https://linkedin.com/in/raghad-almanqour" target="_blank">Raghad</a>, 
+                <a href="https://www.linkedin.com/in/manal-alyami/" target="_blank">Manal</a>, 
+                <a href="https://www.linkedin.com/in/nora-alhuwaidi-2a89841b3/" target="_blank">Nora</a>
+            </p>
+            <p style="margin-top: 0.3rem;">
+                {contact_text}
+            </p>
             <p style="margin-top: 0.5rem;">
                 {t('footer_powered', lang)} <strong>{t('footer_chat', lang)}</strong>
             </p>
         </div>
         """
         st.markdown(footer_html, unsafe_allow_html=True)
+
     
     # ------------------------------------------------------------------------
     # TIME UTILITIES
