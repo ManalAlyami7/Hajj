@@ -668,7 +668,7 @@ class SidebarInterface:
     # FOOTER SECTION
     # ------------------------------------------------------------------------
     def _render_footer(self) -> None:
-        """Render footer with LinkedIn icons for each name"""
+        """Render footer with LinkedIn icons for each name (multilingual & clean)"""
         lang = st.session_state.get("language", "English")
         year = datetime.now().year
 
@@ -684,39 +684,37 @@ class SidebarInterface:
             "اردو": "لنکڈاِن پر رابطہ کریں"
         }.get(lang, "Connect on LinkedIn")
 
+        # LinkedIn accounts
+        accounts = [
+            ("Raghad Almangour", "https://linkedin.com/in/raghad-almanqour"),
+            ("Manal Alyami", "https://www.linkedin.com/in/manal-alyami/"),
+            ("Nora Alhuwaidi", "https://www.linkedin.com/in/nora-alhuwaidi-2a89841b3/")
+        ]
+
+        # Build HTML
         footer_html = f"""
-        <div class="sidebar-footer" style="line-height: 1.7;">
-
+        <div class="sidebar-footer" style="line-height:1.7; text-align:center; padding-top:1rem;">
             <p>© {year} {t('assistant_title', lang).replace('🕋 ', '')}</p>
+            <p style="margin-top:0.5rem;">{developed_by_text}:</p>
+        """
 
-            <p style="margin-top: 0.3rem;">{developed_by_text}:</p>
-
-            <p>
-                <i class="fab fa-linkedin" style="color:#0077b5;margin-left:6px;"></i>
-                <a href="https://linkedin.com/in/raghad-almanqour" target="_blank">Raghad Almangour</a>
+        for name, link in accounts:
+            footer_html += f"""
+            <p style="margin:0.2rem 0;">
+                <a href="{link}" target="_blank" style="text-decoration:none; color:#0077b5; font-weight:600;">
+                    <i class="fab fa-linkedin" style="font-size:1.2rem; vertical-align:middle; margin-right:6px;"></i>{name}
+                </a>
             </p>
+            """
 
-            <p>
-                <i class="fab fa-linkedin" style="color:#0077b5;margin-left:6px;"></i>
-                <a href="https://www.linkedin.com/in/manal-alyami/" target="_blank">Manal Alyami</a>
-            </p>
-
-            <p>
-                <i class="fab fa-linkedin" style="color:#0077b5;margin-left:6px;"></i>
-                <a href="https://www.linkedin.com/in/nora-alhuwaidi-2a89841b3/" target="_blank">Nora Alhuwaidi</a>
-            </p>
-
-            <p style="margin-top: 0.3rem;">
-                {contact_text}
-            </p>
-
-            <p style="margin-top: 0.5rem;">
-                {t('footer_powered', lang)} <strong>{t('footer_chat', lang)}</strong>
-            </p>
+        footer_html += f"""
+            <p style="margin-top:0.5rem;">{contact_text}</p>
+            <p style="margin-top:0.5rem;">{t('footer_powered', lang)} <strong>{t('footer_chat', lang)}</strong></p>
         </div>
         """
 
         st.markdown(footer_html, unsafe_allow_html=True)
+
 
 
     
