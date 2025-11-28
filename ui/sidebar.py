@@ -686,9 +686,9 @@ class SidebarInterface:
             <p>© {year} {t('assistant_title', lang).replace('🕋 ', '')}</p>
             <p style="margin-top: 0.3rem;">
                 {developed_by_text}: 
-                <a href="https://linkedin.com/in/raghad-almanqour" target="_blank">Raghad</a>, 
-                <a href="https://www.linkedin.com/in/manal-alyami/" target="_blank">Manal</a>, 
-                <a href="https://www.linkedin.com/in/nora-alhuwaidi-2a89841b3/" target="_blank">Nora</a>
+                <a href="https://linkedin.com/in/raghad-almanqour" target="_blank">Raghad Almangour</a>, 
+                <a href="https://www.linkedin.com/in/manal-alyami/" target="_blank">Manal Alyami</a>, 
+                <a href="https://www.linkedin.com/in/nora-alhuwaidi-2a89841b3/" target="_blank">Nora Alhuwaidi</a>
             </p>
             <p style="margin-top: 0.3rem;">
                 {contact_text}
