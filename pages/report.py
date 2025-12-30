@@ -129,13 +129,13 @@ def get_css_styles(lang: str) -> str:
     direction = "rtl" if is_rtl else "ltr"
     
     if lang == "العربية" or lang == "اردو":
-        font_family = "'Inter', 'Amiri', sans-serif"
+        font_family = "'Tajawal', 'Poppins', sans-serif"
     else:
-        font_family = "'Inter', 'Amiri', sans-serif"
+        font_family = "'Inter', 'Tajawal', sans-serif"
     
     return f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap');
 
 /* ===== GOLDEN THEME VARIABLES ===== */
 :root {{
@@ -883,7 +883,7 @@ def main():
     # Set page config
     st.set_page_config(
         page_title=t("report_page_title", lang),
-        page_icon="favicon.png",
+        page_icon="talbiyah.png",
         layout="wide"
     )
 

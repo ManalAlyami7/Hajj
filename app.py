@@ -22,7 +22,7 @@ from utils.state import initialize_session_state, save_chat_memory, load_chat_me
 # -----------------------------
 st.set_page_config(
     page_title=t("page_title", "English"),
-    page_icon="favicon.png",
+    page_icon="talbiyah.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -32,11 +32,11 @@ st.set_page_config(
 # -----------------------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800;900&display=swap');
     
     /* ===== Global Styles ===== */
     * {
-        font-family: 'Inter', 'Amiri', sans-serif;
+        font-family: 'Inter', 'Tajawal', sans-serif;
     }
     
     /* ===== Main Background - Clean White/Light ===== */

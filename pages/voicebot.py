@@ -63,7 +63,7 @@ memory = ConversationMemory(max_turns=10)
 # Page config
 st.set_page_config(
     page_title=t('voice_page_title', st.session_state.language),
-    page_icon="favicon.png",
+    page_icon="talbiyah.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -150,12 +150,18 @@ else:
 text_align = 'right' if is_arabic or is_urdus else 'left'
 flex_direction = 'row-reverse' if is_arabic or is_urdus else 'row'
 
+# Font size variables for CSS template
+font_size_base = current_sizes.get('base', '1rem')
+font_size_title = current_sizes.get('title', '2.2rem')
+font_size_transcript = current_sizes.get('transcript', '1.1rem')
+font_size_panel = current_sizes.get('panel', '1.2rem')
+
 st.markdown(f"""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800;900&display=swap');
     
     * {
-        font-family: 'Inter', 'Amiri', sans-serif;
+        font-family: 'Inter', 'Tajawal', sans-serif;
     }
             
 /* Global Styles - Light Background */
@@ -231,7 +237,7 @@ header[data-testid="stHeader"] button {{
 }}
 
 .voice-title {{
-  font-size: {current_sizes['title']};
+  font-size: {font_size_title};
   font-weight: 800;
   letter-spacing: 2px;
   background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
@@ -243,7 +249,7 @@ header[data-testid="stHeader"] button {{
 
 .voice-subtitle {{
   color: {subtitle_color};
-  font-size: {current_sizes['base']};
+  font-size: {font_size_base};
   font-weight: 500;
 }}
 
@@ -343,7 +349,7 @@ header[data-testid="stHeader"] button {{
   color: {record_label_color};
   font-weight: 600;
   letter-spacing: 1.5px;
-  font-size: {current_sizes['base']};
+  font-size: {font_size_base};
 }}
 
 /* Enhanced Right Panel - Transcript/Response */
@@ -393,7 +399,7 @@ header[data-testid="stHeader"] button {{
 }}
 
 .panel-title {{
-  font-size: {current_sizes['panel']};
+  font-size: {font_size_panel};
   font-weight: 700;
   color: {text_primary};
   margin: 0;
@@ -441,7 +447,7 @@ header[data-testid="stHeader"] button {{
 
 .transcript-text, .response-content {{
   color: {text_primary};
-  font-size: {current_sizes['transcript']};
+  font-size: {font_size_transcript};
   line-height: 1.7;
   flex: 1;
   overflow-y: auto;
@@ -704,7 +710,7 @@ with col_right:
     st.markdown(f"""
     <div class="transcript-container">
       <div class="panel-header">
-        <img src="favicon.png" class="panel-icon {transcript_icon_class}" width="24" height="24" style="object-fit: contain; margin-right: 0.5rem;">
+        <img src="talbiyah.png" class="panel-icon {transcript_icon_class}" width="24" height="24" style="object-fit: contain; margin-right: 0.5rem;">
         <h3 class="panel-title">{t('voice_transcript_title', st.session_state.language)}</h3>
       </div>
       <div class="transcript-text">{clean_transcript}</div>
@@ -715,7 +721,7 @@ with col_right:
     st.markdown(f"""
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
-        <img src="favicon.png" class="panel-icon {response_icon_class}" width="24" height="24" style="object-fit: contain; margin-right: 0.5rem;">
+        <img src="talbiyah.png" class="panel-icon {response_icon_class}" width="24" height="24" style="object-fit: contain; margin-right: 0.5rem;">
         <h3 class="panel-title">{t('voice_response_title', st.session_state.language)}</h3>
         <div class="panel-badge {response_badge_class}">
             {'● ' + (t('voice_status_speaking', st.session_state.language)

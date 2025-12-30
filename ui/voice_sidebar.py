@@ -84,10 +84,10 @@ class VoicebotSidebarRenderer:
         """Return professional CSS as string"""
         return f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800;900&display=swap');
     
     * {
-        font-family: 'Inter', 'Amiri', sans-serif;
+        font-family: 'Inter', 'Tajawal', sans-serif;
     }
     
     /* ===== Sidebar Base Styling ===== */
@@ -180,7 +180,7 @@ class VoicebotSidebarRenderer:
     }}
 
     /* ===== Enhanced Button Styling ===== */
-    [data-testid="stSidebar"] .stButton > button {
+    [data-testid="stSidebar"] .stButton > button {{
         width: 100%;
         padding: 1.1rem 1.5rem;
         border-radius: 14px;
@@ -193,9 +193,9 @@ class VoicebotSidebarRenderer:
         letter-spacing: 0.02em;
         box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
         margin: 0.6rem 0 !important;
-    }
+    }}
         
-    [data-testid="stSidebar"] .stButton > button:hover {{}
+    [data-testid="stSidebar"] .stButton > button:hover {{
         background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%) !important;
         border-color: #f4e5b5 !important;
         transform: translateY(-3px) scale(1.02);
@@ -344,22 +344,22 @@ class VoicebotSidebarRenderer:
         50% { transform: scale(1.1); }
     }
     
-    .sidebar-title {
+    .sidebar-title {{
         margin: 0;
         font-size: 2.2rem;
         font-weight: 900;
         color: #d4af37;
         text-shadow: 0 3px 10px rgba(212, 175, 55, 0.4);
         letter-spacing: -0.03em;
-    }
+    }}
     
-    .sidebar-subtitle {
+    .sidebar-subtitle {{
         color: #cbd5e1;
         font-size: 1.1rem;
         margin-top: 1rem;
         line-height: 1.6;
         font-weight: 600;
-    }
+    }}
 
     /* ===== Footer Styling ===== */
     .sidebar-footer {{
@@ -407,7 +407,7 @@ class VoicebotSidebarRenderer:
         """Render professional header"""
         header_html = f"""
         <div class="sidebar-header">
-            <img src="favicon.png" class="sidebar-icon" width="60" height="60" style="object-fit: contain; margin-bottom: 1rem;">
+            <img src="talbiyah.png" class="sidebar-icon" width="60" height="60" style="object-fit: contain; margin-bottom: 1rem;">
             <h2 class="sidebar-title">{t('voice_main_title', self.language_code).replace('🕋 ', '')}</h2>
             <p class="sidebar-subtitle">{t('assistant_subtitle', self.language_code)}</p>
         </div>
