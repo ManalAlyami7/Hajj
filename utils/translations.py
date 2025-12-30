@@ -8,7 +8,7 @@ Updated with Report Page translations
 TRANSLATIONS = {
     "English": {
         # Page
-        "page_title": "Hajj Chatbot",
+        "page_title": "Talbiyah تلبية",
         "main_title": "Talbiyah تلبية",
         "subtitle": "Ask anything about Hajj companies worldwide • AI-powered • Real-time data",
         
@@ -213,7 +213,7 @@ TRANSLATIONS = {
     
     "العربية": {
         # Page
-        "page_title": "روبوت الحج",
+        "page_title": " تلبية",
         "main_title": "معلومات بيانات الحج الذكية",
         "subtitle": "اسأل عن شركات الحج حول العالم • مدعوم بالذكاء الاصطناعي • بيانات فورية",
         

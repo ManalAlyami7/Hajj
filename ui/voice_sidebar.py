@@ -84,10 +84,10 @@ class VoicebotSidebarRenderer:
         """Return professional CSS as string"""
         return f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap');
     
     * {
-        font-family: 'Tajawal', sans-serif;
+        font-family: 'Inter', 'Amiri', sans-serif;
     }
     
     /* ===== Sidebar Base Styling ===== */
@@ -179,26 +179,27 @@ class VoicebotSidebarRenderer:
         color: #f8fafc !important;
     }}
 
-    /* ===== Button Styling ===== */
-    [data-testid="stSidebar"] .stButton > button {{
+    /* ===== Enhanced Button Styling ===== */
+    [data-testid="stSidebar"] .stButton > button {
         width: 100%;
-        padding: 0.9rem 1.25rem;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 0.95rem;
-        border: 2px solid #d4af37 !important;
+        padding: 1.1rem 1.5rem;
+        border-radius: 14px;
+        font-weight: 700;
+        font-size: 1.05rem;
+        border: 2.5px solid #d4af37 !important;
         background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%) !important;
         color: #1a1f2e !important;
         transition: all 0.3s ease;
-        letter-spacing: 0.015em;
-        box-shadow: 0 3px 10px rgba(212, 175, 55, 0.3);
-    }}
-
-    [data-testid="stSidebar"] .stButton > button:hover {{
+        letter-spacing: 0.02em;
+        box-shadow: 0 5px 15px rgba(212, 175, 55, 0.4);
+        margin: 0.6rem 0 !important;
+    }
+        
+    [data-testid="stSidebar"] .stButton > button:hover {{}
         background: linear-gradient(135deg, #f4e5b5 0%, #d4af37 100%) !important;
         border-color: #f4e5b5 !important;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 14px rgba(212, 175, 55, 0.4);
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 8px 20px rgba(212, 175, 55, 0.5);
     }}
 
     /* ===== Primary Button ===== */
@@ -325,40 +326,40 @@ class VoicebotSidebarRenderer:
     }}
 
     /* ===== Header Styling ===== */
-    .sidebar-header {{
+    .sidebar-header {
         text-align: center;
-        padding: 1.5rem 0 2rem 0;
-    }}
-
-    .sidebar-icon {{
-        font-size: 4rem;
+        padding: 2rem 0 2.5rem 0;
+    }
+    
+    .sidebar-icon {
+        font-size: 5rem;
         display: block;
-        margin-bottom: 1.2rem;
+        margin-bottom: 1.5rem;
         animation: pulse 2s infinite;
-        filter: drop-shadow(0 4px 8px rgba(212, 175, 55, 0.3));
-    }}
-
-    @keyframes pulse {{
-        0%, 100% {{ transform: scale(1); }}
-        50% {{ transform: scale(1.08); }}
-    }}
-
-    .sidebar-title {{
+        filter: drop-shadow(0 6px 12px rgba(212, 175, 55, 0.4));
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    
+    .sidebar-title {
         margin: 0;
-        font-size: 2rem;
+        font-size: 2.2rem;
         font-weight: 900;
         color: #d4af37;
-        text-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
-        letter-spacing: -0.025em;
-    }}
-
-    .sidebar-subtitle {{
+        text-shadow: 0 3px 10px rgba(212, 175, 55, 0.4);
+        letter-spacing: -0.03em;
+    }
+    
+    .sidebar-subtitle {
         color: #cbd5e1;
-        font-size: 1rem;
-        margin-top: 0.75rem;
-        line-height: 1.5;
+        font-size: 1.1rem;
+        margin-top: 1rem;
+        line-height: 1.6;
         font-weight: 600;
-    }}
+    }
 
     /* ===== Footer Styling ===== */
     .sidebar-footer {{
@@ -406,7 +407,7 @@ class VoicebotSidebarRenderer:
         """Render professional header"""
         header_html = f"""
         <div class="sidebar-header">
-            <img src="talbiyah.png" class="sidebar-icon" width="60" height="60" style="object-fit: contain; margin-bottom: 1rem;">
+            <img src="favicon.png" class="sidebar-icon" width="60" height="60" style="object-fit: contain; margin-bottom: 1rem;">
             <h2 class="sidebar-title">{t('voice_main_title', self.language_code).replace('🕋 ', '')}</h2>
             <p class="sidebar-subtitle">{t('assistant_subtitle', self.language_code)}</p>
         </div>

@@ -128,16 +128,14 @@ def get_css_styles(lang: str) -> str:
     text_align = "right" if is_rtl else "left"
     direction = "rtl" if is_rtl else "ltr"
     
-    if lang == "العربية":
-        font_family = "'Cairo', 'Poppins', sans-serif"
-    elif lang == "اردو":
-        font_family = "'Noto Nastaliq Urdu', 'Cairo', 'Poppins', sans-serif"
+    if lang == "العربية" or lang == "اردو":
+        font_family = "'Inter', 'Amiri', sans-serif"
     else:
-        font_family = "'Poppins', sans-serif"
+        font_family = "'Inter', 'Amiri', sans-serif"
     
     return f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Cairo:wght@400;600;700;800&family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap');
 
 /* ===== GOLDEN THEME VARIABLES ===== */
 :root {{

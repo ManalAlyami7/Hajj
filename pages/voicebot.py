@@ -152,10 +152,10 @@ flex_direction = 'row-reverse' if is_arabic or is_urdus else 'row'
 
 st.markdown(f"""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Amiri:wght@400;700&display=swap');
     
     * {
-        font-family: 'Tajawal', sans-serif;
+        font-family: 'Inter', 'Amiri', sans-serif;
     }
             
 /* Global Styles - Light Background */
@@ -257,33 +257,39 @@ header[data-testid="stHeader"] button {{
   padding: 0 1rem;
 }}
 
-/* Left Panel - Avatar */
+/* Enhanced Left Panel - Avatar */
 .voice-left {{
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 2rem;
-  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 2.5rem;
+  padding: 2rem;
   backdrop-filter: blur(20px);
-  border: 2px solid {border_color};
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 2.5px solid {border_color};
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   position: relative;
+  transition: all 0.3s ease;
+}}
+
+.voice-left:hover {{
+  transform: translateY(-5px);
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.18);
 }}
 
 .voice-avatar {{
-  width: 180px;
-  height: 180px;
+  width: 200px;
+  height: 200px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 90px;
+  font-size: 100px;
   background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
-  box-shadow: 0 20px 60px rgba(212, 175, 55, 0.4);
-  border: 6px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 25px 70px rgba(212, 175, 55, 0.5);
+  border: 7px solid rgba(212, 175, 55, 0.25);
   animation: float 3s ease-in-out infinite;
   transition: all 0.3s ease;
 }}
@@ -340,31 +346,44 @@ header[data-testid="stHeader"] button {{
   font-size: {current_sizes['base']};
 }}
 
-/* Right Panel - Transcript/Response */
+/* Enhanced Right Panel - Transcript/Response */
 .transcript-container, .response-container {{
   background: {panel_bg};
-  border-radius: 1.5rem;
-  padding: 1.25rem;
-  backdrop-filter: blur(18px);
-  border: 2px solid {border_color};
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border-radius: 1.8rem;
+  padding: 1.5rem;
+  backdrop-filter: blur(20px);
+  border: 2.5px solid {border_color};
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12);
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: all 0.3s ease;
+}}
+
+.transcript-container:hover, .response-container:hover {{
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.15);
 }}
 
 .panel-header {{
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid {border_color};
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 3px solid {border_color};
   flex-direction: {flex_direction};
   position: relative;
   width: 100%;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 1rem;
+  border-radius: 1rem;
+  margin-left: -1rem;
+  margin-right: -1rem;
+  margin-top: -1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }}
 
 .panel-icon {{
@@ -423,12 +442,14 @@ header[data-testid="stHeader"] button {{
 .transcript-text, .response-content {{
   color: {text_primary};
   font-size: {current_sizes['transcript']};
-  line-height: 1.6;
+  line-height: 1.7;
   flex: 1;
   overflow-y: auto;
-  padding-{'left' if is_arabic or is_urdus else 'right'}: 0.5rem;
+  padding: 0 0.75rem;
   text-align: {text_align};
   font-weight: 500;
+  padding-{'left' if is_arabic or is_urdus else 'right'}: 0.75rem;
+  margin-top: 0.5rem;
 }}
 
 .transcript-text.empty, .response-content.empty {{
@@ -438,25 +459,31 @@ header[data-testid="stHeader"] button {{
   font-weight: normal;
 }}
 
-/* Status Indicator - Light Theme */
+/* Enhanced Status Indicator - Light Theme */
 .status-indicator {{
   position: fixed;
   top: 15px;
   {'left' if is_arabic or is_urdus else 'right'}: 15px;
-  padding: 0.6rem 1.25rem;
+  padding: 0.75rem 1.5rem;
   background: {status_bg};
-  border-radius: 2rem;
+  border-radius: 2.2rem;
   color: {status_text};
   font-weight: 600;
-  font-size: 0.85rem;
-  backdrop-filter: blur(10px);
-  border: 2px solid {border_color};
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-size: 0.9rem;
+  backdrop-filter: blur(12px);
+  border: 2.5px solid {border_color};
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   direction: {'rtl' if is_arabic or is_urdus else 'ltr'};
+  transition: all 0.3s ease;
+}}
+
+.status-indicator:hover {{
+  transform: scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }}
 
 .status-dot {{
