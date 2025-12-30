@@ -63,7 +63,7 @@ memory = ConversationMemory(max_turns=10)
 # Page config
 st.set_page_config(
     page_title=t('voice_page_title', st.session_state.language),
-    page_icon="🕋",
+    page_icon="talbiyah.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -152,6 +152,11 @@ flex_direction = 'row-reverse' if is_arabic or is_urdus else 'row'
 
 st.markdown(f"""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
+    
+    * {
+        font-family: 'Tajawal', sans-serif;
+    }
             
 /* Global Styles - Light Background */
 .stApp {{
@@ -568,9 +573,35 @@ def _hash_bytes(b):
 # ---------------------------
 # Status Indicator
 # ---------------------------
-status_class = (
-    "speaking" if st.session_state.is_speaking
-    else "listening" if st.session_state.is_processing
+defaults = {
+    "voice_messages": [],
+    "last_audio": None,
+    "is_recording": False,
+    "is_processing": False,
+    "is_speaking": False,
+    "current_transcript": "",
+    "current_response": "",
+    "current_metadata": {},
+    "status": "Ready",
+}
+for k, v in defaults.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
+
+# ---------------------------
+# UI Header
+# ---------------------------
+st.markdown("""
+<div class="voice-header">
+  <div>🕋<span class="voice-title"> Hajj Voice Assistant</span></div>
+  <div class="voice-subtitle">Real-time Speech Recognition & AI Responses</div>
+</div>
+""", unsafe_allow_html=True)
+
+# Status
+status_dot_class = (
+    "listening" if st.session_state.is_recording
+    else "speaking" if st.session_state.is_speaking
     else ""
 )
 status_text = st.session_state.status or t('voice_status_ready', st.session_state.language)

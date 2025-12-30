@@ -21,8 +21,8 @@ from utils.state import initialize_session_state, save_chat_memory, load_chat_me
 # Page Configuration
 # -----------------------------
 st.set_page_config(
-    page_title="Hajj Assistant Chatbot",
-    page_icon="🕋",
+    page_title=t("page_title", "English"),
+    page_icon="talbiyah.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -32,12 +32,11 @@ st.set_page_config(
 # -----------------------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Cairo:wght@400;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
     
     /* ===== Global Styles ===== */
     * {
-        font-family: 'Poppins', 'Cairo', sans-serif;
-        transition: all 0.3s ease;
+        font-family: 'Tajawal', sans-serif;
     }
     
     /* ===== Main Background - Clean White/Light ===== */

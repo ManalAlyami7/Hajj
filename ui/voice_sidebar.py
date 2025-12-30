@@ -84,6 +84,12 @@ class VoicebotSidebarRenderer:
         """Return professional CSS as string"""
         return f"""
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
+    
+    * {
+        font-family: 'Tajawal', sans-serif;
+    }
+    
     /* ===== Sidebar Base Styling ===== */
     [data-testid="stSidebar"] {{
         left: {'auto !important' if self.is_rtl else '0 !important'};

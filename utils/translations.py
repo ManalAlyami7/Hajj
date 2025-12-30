@@ -9,11 +9,11 @@ TRANSLATIONS = {
     "English": {
         # Page
         "page_title": "Hajj Chatbot",
-        "main_title": "Hajj Data Intelligence",
+        "main_title": "Talbiyah تلبية",
         "subtitle": "Ask anything about Hajj companies worldwide • AI-powered • Real-time data",
         
         # Assistant
-        "assistant_title": "🕋 Hajj Assistant",
+        "assistant_title": "🕋 Talbiyah تلبية",
         "assistant_subtitle": "Your AI-powered guide",
         "footer_chat": "AI Technology",
         
@@ -218,7 +218,7 @@ TRANSLATIONS = {
         "subtitle": "اسأل عن شركات الحج حول العالم • مدعوم بالذكاء الاصطناعي • بيانات فورية",
         
         # Assistant
-        "assistant_title": "🕋 مساعد الحج",
+        "assistant_title": " مساعد تلبية",
         "assistant_subtitle": "دليلك الذكي المدعوم بالذكاء الاصطناعي",
         "footer_chat": "تقنية الذكاء الاصطناعي",
         

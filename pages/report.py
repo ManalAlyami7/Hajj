@@ -885,7 +885,7 @@ def main():
     # Set page config
     st.set_page_config(
         page_title=t("report_page_title", lang),
-        page_icon="🛡️",
+        page_icon="talbiyah.png",
         layout="wide"
     )
 
