@@ -22,7 +22,7 @@ from utils.state import initialize_session_state, save_chat_memory, load_chat_me
 # -----------------------------
 st.set_page_config(
     page_title=t("page_title", "English"),
-    page_icon="talbiyah.png",
+    page_icon="favicon.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
