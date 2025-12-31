@@ -55,12 +55,12 @@ st.markdown("""
     .header-container {
         background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
         backdrop-filter: blur(20px);
-        border-radius: 24px;
-        padding: 3rem 2.5rem;
-        margin-bottom: 2.5rem;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        border-radius: 20px;
+        padding: 2.5rem 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 35px rgba(0, 0, 0, 0.08);
         text-align: center;
-        border: 2px solid #d4af37;
+        border: 1.5px solid #d4af37;
         animation: fadeInDown 0.6s ease-out;
         position: relative;
         overflow: hidden;
@@ -77,11 +77,11 @@ st.markdown("""
     }
     
     .main-title {
-        font-size: 3.5rem;
+        font-size: 2.75rem;
         font-weight: 900;
         color: #1a1f2e;
         margin: 0;
-        letter-spacing: -0.5px;
+        letter-spacing: -0.25px;
         text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
     }
     
@@ -94,10 +94,10 @@ st.markdown("""
     
     .subtitle {
         color: #64748b;
-        font-size: 1.1rem;
-        margin-top: 0.75rem;
+        font-size: 1rem;
+        margin-top: 0.5rem;
         font-weight: 500;
-        line-height: 1.5;
+        line-height: 1.45;
     }
     
     .header-badge {
