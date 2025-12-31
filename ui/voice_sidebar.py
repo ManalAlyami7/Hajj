@@ -250,7 +250,7 @@ class VoicebotSidebarRenderer:
     }}
 
     /* ===== Memory Panel ===== */
-    .memory-panel {
+    .memory-panel {{
         background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(212, 175, 55, 0.04) 100%);
         padding: 1.25rem;
         border-radius: 16px;
@@ -259,7 +259,7 @@ class VoicebotSidebarRenderer:
         margin-top: 0.6rem;
         transition: all 0.3s ease;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
+    }}
 
     .memory-panel:hover {{
         background: linear-gradient(135deg, rgba(212, 175, 55, 0.12) 0%, rgba(212, 175, 55, 0.08) 100%);
@@ -267,13 +267,13 @@ class VoicebotSidebarRenderer:
         transform: translateY(-2px);
     }}
 
-    .memory-panel-row {
+    .memory-panel-row {{
         display: flex;
         justify-content: space-between;
         margin-bottom: 0.6rem;
         direction: {'rtl' if self.is_rtl else 'ltr'};
         align-items: center;
-    }
+    }}
 
     .memory-panel-row:last-child {{
         margin-bottom: 0;
