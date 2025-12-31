@@ -426,7 +426,7 @@ class SidebarInterface:
         lang = st.session_state.language
         header_html = f"""
         <div class="sidebar-header">
-            <img src="/static/talbiyah.png" class="sidebar-icon" width="60" height="60" style="object-fit: contain; margin-bottom: 1rem;">
+            <img src="talbiyah.png" class="sidebar-icon" width="60" height="60" style="object-fit: contain; margin-bottom: 1rem;">
             <h2 class="sidebar-title">{t('assistant_title', lang).replace('🕋 ', '')}</h2>
             <p class="sidebar-subtitle">{t('assistant_subtitle', lang)}</p>
         </div>

@@ -715,7 +715,7 @@ def render_unified_sidebar(lang: str):
         # Icon and Title
         st.markdown(f"""
         <div class="sidebar-icon-container">
-            <img src="/static/talbiyah.png" class="sidebar-icon" width="60" height="60" style="object-fit: contain; margin-bottom: 1rem;">
+            <img src="talbiyah.png" class="sidebar-icon" width="60" height="60" style="object-fit: contain; margin-bottom: 1rem;">
             <h2 class="sidebar-title">{texts['title']}</h2>
             <p class="sidebar-subtitle">{texts['subtitle']}</p>
         </div>
@@ -883,7 +883,7 @@ def main():
     # Set page config
     st.set_page_config(
         page_title=t("report_page_title", lang),
-        page_icon="talbiyah.png",
+        page_icon="favicon.png",
         layout="wide"
     )
 

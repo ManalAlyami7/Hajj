@@ -641,7 +641,7 @@ status_text = st.session_state.status or t('voice_status_ready', st.session_stat
 
 st.markdown(f"""
 <div class="status-indicator">
-    <div class="status-dot {status_class}"></div>
+    <div class="status-dot {status_dot_class}"></div>
     {status_text}
 </div>
 """, unsafe_allow_html=True)
@@ -710,7 +710,7 @@ with col_right:
     st.markdown(f"""
     <div class="transcript-container">
       <div class="panel-header">
-        <img src="/static/talbiyah.png" class="panel-icon {transcript_icon_class}" width="24" height="24" style="object-fit: contain; margin-right: 0.5rem;">
+        <img src="talbiyah.png" class="panel-icon {transcript_icon_class}" width="24" height="24" style="object-fit: contain; margin-right: 0.5rem;">
         <h3 class="panel-title">{t('voice_transcript_title', st.session_state.language)}</h3>
       </div>
       <div class="transcript-text">{clean_transcript}</div>
@@ -721,7 +721,7 @@ with col_right:
     st.markdown(f"""
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
-        <img src="/static/talbiyah.png" class="panel-icon {response_icon_class}" width="24" height="24" style="object-fit: contain; margin-right: 0.5rem;">
+        <img src="talbiyah.png" class="panel-icon {response_icon_class}" width="24" height="24" style="object-fit: contain; margin-right: 0.5rem;">
         <h3 class="panel-title">{t('voice_response_title', st.session_state.language)}</h3>
         <div class="panel-badge {response_badge_class}">
             {'● ' + (t('voice_status_speaking', st.session_state.language)
