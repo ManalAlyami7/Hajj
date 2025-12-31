@@ -8,12 +8,12 @@ Updated with Report Page translations
 TRANSLATIONS = {
     "English": {
         # Page
-        "page_title": "Talbiyah تلبية",
-        "main_title": "Talbiyah تلبية",
+        "page_title": "Talbiyah",
+        "main_title": "Talbiyah",
         "subtitle": "Ask anything about Hajj companies worldwide • AI-powered • Real-time data",
         
         # Assistant
-        "assistant_title": "🕋 Talbiyah تلبية",
+        "assistant_title": "🕋 Talbiyah Assistant",
         "assistant_subtitle": "Your AI-powered guide",
         "footer_chat": "AI Technology",
         
@@ -113,8 +113,8 @@ TRANSLATIONS = {
         "general_help": "General Help",
         
         # Voice Bot
-        "voice_page_title": "Hajj Voice Verification Assistant",
-        "voice_main_title": "Hajj Voice Assistant",
+        "voice_page_title": "Talbiyah Voice Verification Assistant",
+        "voice_main_title": "Talbiyah Voice Assistant",
         "voice_subtitle": "Your trusted companion for verifying authorized Hajj agencies and protecting pilgrims",
         "voice_recording": "Listening to your voice...",
         "voice_press_to_speak": "Tap to Ask a Question",
@@ -141,8 +141,8 @@ TRANSLATIONS = {
         "voice_stop_speaking": "Stop",
         
         # Report Page Translations
-        "report_page_title": "Hajj Complaint Reporting",
-        "report_main_title": "Confidential Reporting Office",
+        "report_page_title": "Talbiyah Complaint Reporting",
+        "report_main_title": "Talbiyah Reporting Office",
         "report_subtitle": "Secure and Encrypted Channel for Filing Agency Complaints",
         "report_badge": "🔒 Trustworthy • Secure • Official",
         "report_welcome": "🛡️ <strong>Welcome to the Confidential Reporting Office</strong><br><br>Thank you for your courage. Your report is vital in protecting Hajj and Umrah integrity.<br><br><strong>All information is encrypted and confidential.</strong>",
@@ -214,7 +214,7 @@ TRANSLATIONS = {
     "العربية": {
         # Page
         "page_title": " تلبية",
-        "main_title": "معلومات بيانات الحج الذكية",
+        "main_title": " مساعد تلبية",
         "subtitle": "اسأل عن شركات الحج حول العالم • مدعوم بالذكاء الاصطناعي • بيانات فورية",
         
         # Assistant
@@ -318,8 +318,8 @@ TRANSLATIONS = {
         "general_help": "مساعدة عامة",
         
         # Voice Bot
-        "voice_page_title": "مساعد الحج الصوتي للتحقق",
-        "voice_main_title": "مساعد الحج الصوتي",
+        "voice_page_title": " مساعد تلبية الصوتي",
+        "voice_main_title": " مساعد تلبية الصوتي",
         "voice_subtitle": "رفيقك الموثوق للتحقق من وكالات الحج المعتمدة وحماية الحجاج",
         "voice_recording": "جاري الاستماع لصوتك...",
         "voice_press_to_speak": "اضغط لطرح سؤال",
@@ -346,9 +346,9 @@ TRANSLATIONS = {
         "voice_stop_speaking": "إيقاف",
         
         # Report Page Translations
-        "report_page_title": "الإبلاغ عن شكوى الحج",
-        "report_main_title": "مكتب الإبلاغ السري",
-        "report_subtitle": "قناة آمنة ومشفرة لتقديم شكاوى الوكالات",
+        "report_page_title": " إبلاغ تلبية",
+        "report_main_title": " مركز إبلاغ تلبية",
+        "report_subtitle": "قناة آمنة ومشفرة للإبلاغ عن شكاوى الوكالات"
         "report_badge": "🔒 موثوق • آمن • رسمي",
         "report_welcome": "🛡️ <strong>مرحباً بك في مكتب الإبلاغ السري</strong><br><br>شكراً لشجاعتك. تقريرك حيوي في حماية سلامة الحج والعمرة.<br><br><strong>جميع المعلومات مشفرة وسرية.</strong>",
         "report_step_1": "<strong>الخطوة 1 من 4:</strong> ما هو <strong>الاسم الكامل</strong> للوكالة التي تريد الإبلاغ عنها؟",
@@ -418,12 +418,12 @@ TRANSLATIONS = {
     
     "اردو": {
         # Page
-        "page_title": "حج چیٹ بوٹ",
-        "main_title": "حج ڈیٹا انٹیلیجنس",
+        "page_title": " تلبیہ",
+        "main_title": " تلبیہ",
         "subtitle": "دنیا بھر کی حج کمپنیوں کے بارے میں کچھ بھی پوچھیں • AI سے چلنے والا • حقیقی وقت کا ڈیٹا",
         
         # Assistant
-        "assistant_title": "🕋 حج معاون",
+        "assistant_title": " تلبیہ اسسٹنٹ",
         "assistant_subtitle": "آپ کا AI سے چلنے والا رہنما",
         "footer_chat": "اے آئی ٹیکنالوجی",
         
@@ -523,9 +523,9 @@ TRANSLATIONS = {
         "general_help": "عمومی مدد",
         
         # Voice Bot
-        "voice_page_title": "حج صوتی تصدیق معاون",
-        "voice_main_title": "حج صوتی معاون",
-        "voice_subtitle": "مجاز حج ایجنسیوں کی تصدیق اور حجاج کی حفاظت کے لیے آپ کا قابل اعتماد ساتھی",
+        "voice_page_title": " تلبیہ وائس اسسٹنٹ",
+        "voice_main_title": " تلبیہ وائس اسسٹنٹ",
+        "voice_subtitle": "آپ کا اعتماد مند ساتھی جو مجاز حج ایجنسیوں کی تصدیق اور عازمین کی حفاظت کے لیے ہے",
         "voice_recording": "آپ کی آواز سن رہا ہوں...",
         "voice_press_to_speak": "سوال پوچھنے کے لیے ٹیپ کریں",
         "voice_speaking": "معاون جواب دے رہا ہے...",
@@ -551,9 +551,9 @@ TRANSLATIONS = {
         "voice_stop_speaking": "رکیں",
         
         # Report Page Translations
-        "report_page_title": "حج کی شکایت کی رپورٹنگ",
-        "report_main_title": "خفیہ رپورٹنگ دفتر",
-        "report_subtitle": "ایجنسی کی شکایات درج کرنے کے لیے محفوظ اور خفیہ کاری شدہ چینل",
+        "report_page_title": " تلبیہ رپورٹنگ",
+        "report_main_title": " تلبیہ رپورٹنگ دفتر",
+        "report_subtitle": "ایجنسی کی شکایات درج کرنے کے لیے محفوظ اور خفیہ کاری شدہ چینل"
         "report_badge": "🔒 قابل اعتماد • محفوظ • سرکاری",
         "report_welcome": "🛡️ <strong>خفیہ رپورٹنگ دفتر میں خوش آمدید</strong><br><br>آپ کی ہمت کا شکریہ۔ آپ کی رپورٹ حج اور عمرہ کی سالمیت کی حفاظت میں اہم ہے۔<br><br><strong>تمام معلومات خفیہ کاری شدہ اور رازداری میں ہیں۔</strong>",
         "report_step_1": "<strong>مرحلہ 1 از 4:</strong> اس ایجنسی کا <strong>مکمل نام</strong> کیا ہے جس کی آپ رپورٹ کرنا چاہتے ہیں؟",

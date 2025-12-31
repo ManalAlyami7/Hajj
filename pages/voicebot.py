@@ -624,10 +624,10 @@ for k, v in defaults.items():
 # ---------------------------
 # UI Header
 # ---------------------------
-st.markdown("""
+st.markdown(f"""
 <div class="voice-header">
-  <div>🕋<span class="voice-title"> Hajj Voice Assistant</span></div>
-  <div class="voice-subtitle">Real-time Speech Recognition & AI Responses</div>
+  <div>🕋<span class="voice-title"> {t('voice_main_title', st.session_state.language)}</span></div>
+  <div class="voice-subtitle">{t('voice_subtitle', st.session_state.language)}</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -710,7 +710,7 @@ with col_right:
     st.markdown(f"""
     <div class="transcript-container">
       <div class="panel-header">
-        <img src="talbiyah.png" class="panel-icon {transcript_icon_class}" width="24" height="24" style="object-fit: contain; margin-right: 0.5rem;">
+        <img src="/static/talbiyah.png" class="panel-icon {transcript_icon_class}" width="24" height="24" style="object-fit: contain; margin-right: 0.5rem;">
         <h3 class="panel-title">{t('voice_transcript_title', st.session_state.language)}</h3>
       </div>
       <div class="transcript-text">{clean_transcript}</div>
@@ -721,7 +721,7 @@ with col_right:
     st.markdown(f"""
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
-        <img src="talbiyah.png" class="panel-icon {response_icon_class}" width="24" height="24" style="object-fit: contain; margin-right: 0.5rem;">
+        <img src="/static/talbiyah.png" class="panel-icon {response_icon_class}" width="24" height="24" style="object-fit: contain; margin-right: 0.5rem;">
         <h3 class="panel-title">{t('voice_response_title', st.session_state.language)}</h3>
         <div class="panel-badge {response_badge_class}">
             {'● ' + (t('voice_status_speaking', st.session_state.language)

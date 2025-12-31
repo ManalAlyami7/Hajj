@@ -82,6 +82,14 @@ class VoicebotSidebarRenderer:
     
     def _get_professional_css(self) -> str:
         """Return professional CSS as string"""
+        # Pre-assign RTL values to avoid f-string syntax issues
+        left_value = 'auto !important' if self.is_rtl else '0 !important'
+        right_value = '0 !important' if self.is_rtl else 'auto !important'
+        border_right_value = 'none' if self.is_rtl else '2px solid #d4af37'
+        border_left_value = '2px solid #d4af37' if self.is_rtl else 'none'
+        transform_value = 'transform: translateX(0) !important;' if self.is_rtl else ''
+        direction_value = 'rtl' if self.is_rtl else 'ltr'
+        
         return f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800;900&display=swap');
@@ -92,19 +100,19 @@ class VoicebotSidebarRenderer:
     
     /* ===== Sidebar Base Styling ===== */
     [data-testid="stSidebar"] {{
-        left: {'auto !important' if self.is_rtl else '0 !important'};
-        right: {'0 !important' if self.is_rtl else 'auto !important'};
+        left: {left_value};
+        right: {right_value};
         background: linear-gradient(180deg, #0f1419 0%, #1a1f2e 100%) !important;
-        border-right: {'none' if self.is_rtl else '2px solid #d4af37'} !important;
-        border-left: {'2px solid #d4af37' if self.is_rtl else 'none'} !important;
+        border-right: {border_right_value} !important;
+        border-left: {border_left_value} !important;
     }}
 
     [data-testid="stSidebar"] > div:first-child {{
-        {'transform: translateX(0) !important;' if self.is_rtl else ''}
+        {transform_value}
     }}
 
     [data-testid="stSidebar"] .block-container {{
-        direction: {'rtl' if self.is_rtl else 'ltr'};
+        direction: {direction_value};
         padding: 2rem 1.5rem;
     }}
 
@@ -326,23 +334,23 @@ class VoicebotSidebarRenderer:
     }}
 
     /* ===== Header Styling ===== */
-    .sidebar-header {
+    .sidebar-header {{
         text-align: center;
         padding: 2rem 0 2.5rem 0;
-    }
+    }}
     
-    .sidebar-icon {
+    .sidebar-icon {{
         font-size: 5rem;
         display: block;
         margin-bottom: 1.5rem;
         animation: pulse 2s infinite;
         filter: drop-shadow(0 6px 12px rgba(212, 175, 55, 0.4));
-    }
+    }}
     
-    @keyframes pulse {
+    @keyframes pulse {{
         0%, 100% { transform: scale(1); }
         50% { transform: scale(1.1); }
-    }
+    }}
     
     .sidebar-title {{
         margin: 0;
@@ -407,9 +415,9 @@ class VoicebotSidebarRenderer:
         """Render professional header"""
         header_html = f"""
         <div class="sidebar-header">
-            <img src="talbiyah.png" class="sidebar-icon" width="60" height="60" style="object-fit: contain; margin-bottom: 1rem;">
+            <img src="/static/talbiyah.png" class="sidebar-icon" width="60" height="60" style="object-fit: contain; margin-bottom: 1rem;">
             <h2 class="sidebar-title">{t('voice_main_title', self.language_code).replace('🕋 ', '')}</h2>
-            <p class="sidebar-subtitle">{t('assistant_subtitle', self.language_code)}</p>
+            <p class="sidebar-subtitle">{t('voice_subtitle', self.language_code)}</p>
         </div>
         """
         st.markdown(header_html, unsafe_allow_html=True)
