@@ -94,9 +94,9 @@ class VoicebotSidebarRenderer:
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800;900&display=swap');
     
-    * {
+    * {{
         font-family: 'Inter', 'Tajawal', sans-serif;
-    }
+    }}
     
     /* ===== Sidebar Base Styling ===== */
     [data-testid="stSidebar"] {{
@@ -111,10 +111,10 @@ class VoicebotSidebarRenderer:
         {transform_value}
     }}
 
-    [data-testid="stSidebar"] .block-container {
+    [data-testid="stSidebar"] .block-container {{
         direction: {direction_value};
         padding: 1.75rem 1.25rem;
-    }
+    }}
 
     /* ===== Text Colors ===== */
     [data-testid="stSidebar"] .stMarkdown {{
@@ -130,14 +130,14 @@ class VoicebotSidebarRenderer:
 
     /* ===== Headers ===== */
     [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3 {
+    [data-testid="stSidebar"] h3 {{
         color: #d4af37 !important;
         font-weight: 800;
         text-align: center;
         letter-spacing: -0.025em;
         margin-bottom: 0.75rem;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
+    }}
 
     [data-testid="stSidebar"] p {{
         color: #cbd5e1 !important;
