@@ -713,9 +713,9 @@ def render_unified_sidebar(lang: str):
     
     with st.sidebar:
         # Icon and Title
+        st.image("talbiyah.png", width=60)
         st.markdown(f"""
         <div class="sidebar-icon-container">
-            <img src="C:/Hajj/static/talbiyah.png" class="sidebar-icon" width="60" height="60" style="object-fit: contain; margin-bottom: 1rem;">
             <h2 class="sidebar-title">{texts['title']}</h2>
             <p class="sidebar-subtitle">{texts['subtitle']}</p>
         </div>

@@ -716,7 +716,7 @@ with col_right:
     st.markdown(f"""
     <div class="response-container" style="margin-top:1rem;">
       <div class="panel-header">
-        <img src="C:/Hajj/static/talbiyah.png" class="panel-icon {response_icon_class}" width="24" height="24" style="object-fit: contain; margin-right: 0.5rem;">
+        <img src="/static/talbiyah.png" class="panel-icon {response_icon_class}" width="24" height="24" style="object-fit: contain; margin-right: 0.5rem;">
         <h3 class="panel-title">{t('voice_response_title', st.session_state.language)}</h3>
         <div class="panel-badge {response_badge_class}">
             {'● ' + (t('voice_status_speaking', st.session_state.language)
