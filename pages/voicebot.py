@@ -63,7 +63,7 @@ memory = ConversationMemory(max_turns=10)
 # Page config
 st.set_page_config(
     page_title=t('voice_page_title', st.session_state.language),
-    page_icon="talbiyah.png",
+    page_icon="favicon.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -624,12 +624,7 @@ for k, v in defaults.items():
 # ---------------------------
 # UI Header
 # ---------------------------
-st.markdown(f"""
-<div class="voice-header">
-  <div>🕋<span class="voice-title"> {t('voice_main_title', st.session_state.language)}</span></div>
-  <div class="voice-subtitle">{t('voice_subtitle', st.session_state.language)}</div>
-</div>
-""", unsafe_allow_html=True)
+
 
 # Status
 status_dot_class = (
