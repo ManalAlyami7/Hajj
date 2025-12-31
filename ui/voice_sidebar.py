@@ -415,7 +415,7 @@ class VoicebotSidebarRenderer:
         """Render professional header"""
         header_html = f"""
         <div class="sidebar-header">
-            <img src="static/talbiyah.png" class="sidebar-icon" width="60" height="60" style="object-fit: contain; margin-bottom: 1rem;">
+            <img src="//static/talbiyah.png" class="sidebar-icon" width="60" height="60" style="object-fit: contain; margin-bottom: 1rem;">
             <h2 class="sidebar-title">{t('voice_main_title', self.language_code).replace('🕋 ', '')}</h2>
             <p class="sidebar-subtitle">{t('voice_subtitle', self.language_code)}</p>
         </div>
