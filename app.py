@@ -94,10 +94,10 @@ st.markdown("""
     
     .subtitle {
         color: #64748b;
-        font-size: 1.25rem;
-        margin-top: 1rem;
+        font-size: 1.1rem;
+        margin-top: 0.75rem;
         font-weight: 500;
-        line-height: 1.6;
+        line-height: 1.5;
     }
     
     .header-badge {
@@ -116,19 +116,19 @@ st.markdown("""
     .stChatMessage {
         background: white !important;
         backdrop-filter: blur(10px);
-        border-radius: 24px !important;
-        padding: 1.75rem !important;
-        margin: 1.5rem 0 !important;
-        box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08) !important;
-        border: 2px solid #e2e8f0;
+        border-radius: 20px !important;
+        padding: 1.5rem !important;
+        margin: 1.25rem 0 !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+        border: 1.5px solid #e2e8f0;
         transition: all 0.3s ease !important;
         position: relative;
         overflow: hidden;
     }
     
     .stChatMessage:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 35px rgba(0, 0, 0, 0.12) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
         border-color: #d4af37;
     }
     

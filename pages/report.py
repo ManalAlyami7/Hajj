@@ -370,21 +370,21 @@ section[data-testid="stSidebarNav"] {{
 }}
 
 /* Sidebar Icon Container */
-.sidebar-icon-container {
+.sidebar-icon-container {{
     text-align: center;
     padding: 1.5rem 1rem 1.25rem;
     margin-bottom: 1.25rem;
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(184, 148, 31, 0.05) 100%);
     border-radius: 16px;
     border: 1px solid rgba(212, 175, 55, 0.3);
-}
+}}
 
-.sidebar-icon {
+.sidebar-icon {{
     font-size: 4em;
     margin-bottom: 0.25rem;
     filter: drop-shadow(0 4px 12px var(--color-gold-glow));
     animation: iconPulse 3s ease-in-out infinite;
-}
+}}
 
 @keyframes iconPulse {{
     0%, 100% {{ transform: scale(1); opacity: 1; }}
