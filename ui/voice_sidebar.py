@@ -293,7 +293,7 @@ class VoicebotSidebarRenderer:
     }}
 
     /* ===== Sample Questions ===== */
-    .sample-question {
+    .sample-question {{
         background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(212, 175, 55, 0.04) 100%);
         padding: 0.85rem 1.1rem;
         border-radius: 14px;
@@ -307,7 +307,7 @@ class VoicebotSidebarRenderer:
         font-weight: 600;
         line-height: 1.6;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    }
+    }}
 
     .sample-question:hover {{
         background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
@@ -334,18 +334,18 @@ class VoicebotSidebarRenderer:
     }}
 
     /* ===== Header Styling ===== */
-    .sidebar-header {
+    .sidebar-header {{
         text-align: center;
         padding: 1.75rem 0 2.25rem 0;
-    }
+    }}
     
-    .sidebar-icon {
+    .sidebar-icon {{
         font-size: 5rem;
         display: block;
         margin-bottom: 1.25rem;
         animation: pulse 2s infinite;
         filter: drop-shadow(0 6px 12px rgba(212, 175, 55, 0.4));
-    }
+    }}
     
     @keyframes pulse {{
         0%, 100% {{ transform: scale(1); }}
