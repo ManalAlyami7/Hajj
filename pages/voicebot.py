@@ -270,11 +270,11 @@ header[data-testid="stHeader"] button {{
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.98);
-  border-radius: 2.5rem;
-  padding: 1.75rem;
-  backdrop-filter: blur(20px);
-  border: 2px solid {border_color};
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  border-radius: 2rem;
+  padding: 1.5rem;
+  backdrop-filter: blur(18px);
+  border: 1.5px solid {border_color};
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
   overflow: hidden;
   position: relative;
   transition: all 0.3s ease;
@@ -355,11 +355,11 @@ header[data-testid="stHeader"] button {{
 /* Enhanced Right Panel - Transcript/Response */
 .transcript-container, .response-container {{
   background: {panel_bg};
-  border-radius: 1.8rem;
-  padding: 1.25rem;
-  backdrop-filter: blur(20px);
-  border: 2px solid {border_color};
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  border-radius: 1.6rem;
+  padding: 1.1rem;
+  backdrop-filter: blur(18px);
+  border: 1.5px solid {border_color};
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
   flex: 1;
   min-height: 0;
   display: flex;
@@ -470,15 +470,15 @@ header[data-testid="stHeader"] button {{
   position: fixed;
   top: 15px;
   {'left' if is_arabic or is_urdus else 'right'}: 15px;
-  padding: 0.6rem 1.25rem;
+  padding: 0.5rem 1.1rem;
   background: {status_bg};
-  border-radius: 2rem;
+  border-radius: 1.8rem;
   color: {status_text};
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   backdrop-filter: blur(12px);
-  border: 2px solid {border_color};
-  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.15);
+  border: 1.5px solid {border_color};
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
   display: flex;
   align-items: center;

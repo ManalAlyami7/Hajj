@@ -436,7 +436,7 @@ section[data-testid="stSidebarNav"] {{
     background: linear-gradient(90deg, transparent 0%, var(--color-primary-gold) 50%, transparent 100%);
     margin: 1.2rem 0;
     opacity: 0.3;
-}
+}}
 
 /* Sidebar Buttons - GOLDEN */
 [data-testid="stSidebar"] .stButton > button,

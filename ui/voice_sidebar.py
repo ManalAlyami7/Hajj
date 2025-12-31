@@ -111,10 +111,10 @@ class VoicebotSidebarRenderer:
         {transform_value}
     }}
 
-    [data-testid="stSidebar"] .block-container {{
+    [data-testid="stSidebar"] .block-container {
         direction: {direction_value};
-        padding: 2rem 1.5rem;
-    }}
+        padding: 1.75rem 1.25rem;
+    }
 
     /* ===== Text Colors ===== */
     [data-testid="stSidebar"] .stMarkdown {{
@@ -130,14 +130,14 @@ class VoicebotSidebarRenderer:
 
     /* ===== Headers ===== */
     [data-testid="stSidebar"] h2,
-    [data-testid="stSidebar"] h3 {{
+    [data-testid="stSidebar"] h3 {
         color: #d4af37 !important;
         font-weight: 800;
         text-align: center;
         letter-spacing: -0.025em;
-        margin-bottom: 1rem;
+        margin-bottom: 0.75rem;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }}
+    }
 
     [data-testid="stSidebar"] p {{
         color: #cbd5e1 !important;
