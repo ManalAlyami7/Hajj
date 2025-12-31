@@ -104,11 +104,11 @@ st.markdown("""
         display: inline-block;
         background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
         color: white;
-        padding: 0.5rem 1.5rem;
+        padding: 0.4rem 1.25rem;
         border-radius: 50px;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         font-weight: 700;
-        margin-top: 1rem;
+        margin-top: 0.75rem;
         box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
     }
     
@@ -117,8 +117,8 @@ st.markdown("""
         background: white !important;
         backdrop-filter: blur(10px);
         border-radius: 24px !important;
-        padding: 2.25rem !important;
-        margin: 1.75rem 0 !important;
+        padding: 1.75rem !important;
+        margin: 1.5rem 0 !important;
         box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08) !important;
         border: 2px solid #e2e8f0;
         transition: all 0.3s ease !important;
@@ -162,7 +162,7 @@ st.markdown("""
     }
     
     [data-testid="stSidebar"] .block-container {
-        padding: 2rem 1.5rem;
+        padding: 1.75rem 1.25rem;
     }
     
     /* All sidebar text white */
@@ -193,14 +193,14 @@ st.markdown("""
         color: white !important;
         border: 2px solid #d4af37 !important;
         border-radius: 16px !important;
-        padding: 1.1rem 1.5rem !important;
+        padding: 0.9rem 1.25rem !important;
         font-weight: 700 !important;
         font-size: 1.05rem !important;
         transition: all 0.3s ease !important;
         width: 100% !important;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         box-shadow: 0 6px 18px rgba(212, 175, 55, 0.35);
-        margin: 0.5rem 0 !important;
+        margin: 0.4rem 0 !important;
     }
     
     [data-testid="stSidebar"] .stButton > button:hover {
