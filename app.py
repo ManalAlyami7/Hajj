@@ -224,12 +224,12 @@ st.markdown("""
     .stat-card {
         background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%);
         backdrop-filter: blur(10px);
-        padding: 2rem;
-        border-radius: 18px;
+        padding: 1.75rem;
+        border-radius: 16px;
         text-align: center;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        margin: 1rem 0;
-        border: 2px solid rgba(212, 175, 55, 0.4);
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+        margin: 0.85rem 0;
+        border: 1.5px solid rgba(212, 175, 55, 0.4);
         transition: all 0.3s ease;
     }
     
@@ -240,10 +240,10 @@ st.markdown("""
     }
     
     .stat-number {
-        font-size: 3rem;
+        font-size: 2.75rem;
         font-weight: 900;
         color: #d4af37;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.4rem;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
         line-height: 1;
     }

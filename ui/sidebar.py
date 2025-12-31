@@ -173,7 +173,7 @@ class SidebarInterface:
         }
         
         [data-testid="stSidebar"] .block-container {
-            padding: 2rem 1.5rem;
+            padding: 1.75rem 1.25rem;
         }
         
         /* Sidebar Text Colors */
@@ -204,24 +204,24 @@ class SidebarInterface:
         /* Sidebar Dividers */
         [data-testid="stSidebar"] hr {
             border-color: rgba(212, 175, 55, 0.3) !important;
-            border-width: 2px !important;
-            margin: 1.5rem 0;
+            border-width: 1.5px !important;
+            margin: 1.25rem 0;
         }
         
         /* Sidebar Buttons */
         [data-testid="stSidebar"] .stButton > button {
             width: 100%;
-            padding: 0.85rem 1.25rem;
-            border-radius: 14px;
+            padding: 0.75rem 1.1rem;
+            border-radius: 12px;
             font-weight: 700;
             font-size: 1rem;
-            border: 2px solid #d4af37;
+            border: 1.5px solid #d4af37;
             background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
             color: #1a1f2e;
             transition: all 0.3s ease;
             letter-spacing: 0.025em;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.3);
         }
         
         [data-testid="stSidebar"] .stButton > button:hover {
