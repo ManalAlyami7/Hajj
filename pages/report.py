@@ -313,10 +313,10 @@ def get_css_styles(lang: str) -> str:
 
 .bot-message {{
     background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
-    border: 2px solid var(--color-primary-gold) !important;
-    border-{text_align}: 6px solid var(--color-primary-gold) !important;
+    border: 1.5px solid var(--color-primary-gold) !important;
+    border-{text_align}: 5px solid var(--color-primary-gold) !important;
     color: var(--color-text-dark) !important;
-    padding: 1.5rem;
+    padding: 1.25rem;
     border-radius: 12px;
     box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15);
     font-weight: 500;
@@ -391,13 +391,13 @@ section[data-testid="stSidebarNav"] {{
     50% {{ transform: scale(1.05); opacity: 0.9; }}
 }}
 
-.sidebar-title {
+.sidebar-title {{
     color: var(--color-primary-gold) !important;
     font-size: 1.7rem !important;
     font-weight: 800 !important;
     margin: 0.25rem 0 0.5rem 0 !important;
     text-shadow: 0 2px 8px var(--color-gold-glow) !important;
-}
+}}
 
 .sidebar-subtitle {{
     color: rgba(248, 250, 252, 0.8) !important;
@@ -407,21 +407,21 @@ section[data-testid="stSidebarNav"] {{
 }}
 
 /* Sidebar Info Cards */
-.sidebar-info-card {
+.sidebar-info-card {{
     background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(184, 148, 31, 0.1) 100%);
     border: 1px solid rgba(212, 175, 55, 0.3);
     border-radius: 12px;
     padding: 0.85rem;
     margin: 0.85rem 0;
     text-align: {text_align};
-}
+}}
 
-.sidebar-info-card h4 {
+.sidebar-info-card h4 {{
     color: var(--color-primary-gold) !important;
     font-size: 0.95rem !important;
     font-weight: 700 !important;
     margin-bottom: 0.4rem !important;
-}
+}}
 
 .sidebar-info-card p {{
     color: rgba(248, 250, 252, 0.9) !important;
@@ -431,7 +431,7 @@ section[data-testid="stSidebarNav"] {{
 }}
 
 /* Sidebar Divider */
-.sidebar-divider {
+.sidebar-divider {{
     height: 2px;
     background: linear-gradient(90deg, transparent 0%, var(--color-primary-gold) 50%, transparent 100%);
     margin: 1.2rem 0;
@@ -440,7 +440,7 @@ section[data-testid="stSidebarNav"] {{
 
 /* Sidebar Buttons - GOLDEN */
 [data-testid="stSidebar"] .stButton > button,
-[data-testid="stSidebar"] button {
+[data-testid="stSidebar"] button {{
     background: linear-gradient(135deg, var(--color-primary-gold) 0%, var(--color-secondary-gold) 100%) !important;
     color: white !important;
     border: 2px solid var(--color-primary-gold) !important;
@@ -450,7 +450,7 @@ section[data-testid="stSidebarNav"] {{
     transition: all 0.3s ease !important;
     box-shadow: 0 4px 15px var(--color-gold-glow) !important;
     width: 100% !important;
-}
+}}
 
 [data-testid="stSidebar"] .stButton > button:hover,
 [data-testid="stSidebar"] button:hover {{
