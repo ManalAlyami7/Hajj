@@ -211,7 +211,7 @@ class SidebarInterface:
         /* Sidebar Buttons */
         [data-testid="stSidebar"] .stButton > button {
             width: 100%;
-            padding: 1rem 1.5rem;
+            padding: 0.85rem 1.25rem;
             border-radius: 14px;
             font-weight: 700;
             font-size: 1rem;
@@ -302,7 +302,7 @@ class SidebarInterface:
         /* Radio Button Styling */
         [data-testid="stSidebar"] .stRadio > div {
             background: rgba(212, 175, 55, 0.1);
-            padding: 1rem;
+            padding: 0.85rem;
             border-radius: 14px;
             border: 2px solid rgba(212, 175, 55, 0.3);
         }
@@ -321,8 +321,8 @@ class SidebarInterface:
         .feature-item {
             display: flex;
             align-items: flex-start;
-            margin-bottom: 1.2rem;
-            padding: 1.2rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
             background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%);
             border-radius: 12px;
             border-left: 4px solid #d4af37;
@@ -364,12 +364,12 @@ class SidebarInterface:
         /* Header Styling */
         .sidebar-header {
             text-align: center;
-            padding: 1.5rem 0 2rem 0;
+            padding: 1.25rem 0 1.75rem 0;
         }
         
         .sidebar-icon {
             font-size: 4rem;
-            margin-bottom: 1.2rem;
+            margin-bottom: 1rem;
             display: block;
             animation: pulse 2s infinite;
             filter: drop-shadow(0 4px 8px rgba(212, 175, 55, 0.5));
